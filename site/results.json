@@ -1,0 +1,175 @@
+{
+  "pin": "posthog-js@1.418.10",
+  "package": "@itslil/posthog-js",
+  "node": "v22.21.1",
+  "codec": "lilscript-codec gzip-9 / brotli-11",
+  "comparison": "Same capture kernel on every official row: posthog-js@1.418.10 UUID, feature-flag utils, cookie identity, request router, token-bucket rate limit, and queue batching. Then Vite 8 Oxc, Terser, and esbuild with the settings named on each row. LilScript ships three compiles — cost_model raw, gzip, and brotli — because the search scores a different artifact for each codec. The npm file is the Brotli compile. The published posthog-js browser bundle is not a lane.",
+  "size": [
+    {
+      "id": "kernel",
+      "name": "Official kernel",
+      "raw": 25471,
+      "gzip9": 7081,
+      "brotli11": 6137,
+      "note": "posthog-js@1.418.10 UUID, flags, cookie, router, rate-limit, and queue algorithms — esbuild bundle, no minify",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "kernel-oxc-mangle",
+      "name": "Official · Vite 8 Oxc mangle on",
+      "raw": 10625,
+      "gzip9": 4043,
+      "brotli11": 3662,
+      "note": "Vite 8 Oxc minify of the same official kernel, mangle: true",
+      "primary": false,
+      "baseline": true,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "kernel-oxc-nomangle",
+      "name": "Official · Vite 8 Oxc mangle off",
+      "raw": 14629,
+      "gzip9": 4585,
+      "brotli11": 4163,
+      "note": "Vite 8 Oxc minify, mangle: false",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "kernel-terser-mangle",
+      "name": "Official · Terser mangle on · 3 passes",
+      "raw": 10662,
+      "gzip9": 4053,
+      "brotli11": 3699,
+      "note": "Terser compress passes=3, mangle: true",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "kernel-terser-nomangle",
+      "name": "Official · Terser mangle off · 3 passes",
+      "raw": 15289,
+      "gzip9": 4619,
+      "brotli11": 4230,
+      "note": "Terser compress passes=3, mangle: false",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "kernel-terser-passes-1",
+      "name": "Official · Terser mangle on · 1 pass",
+      "raw": 10662,
+      "gzip9": 4053,
+      "brotli11": 3699,
+      "note": "Terser compress passes=1, mangle: true",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "kernel-esbuild-esnext",
+      "name": "Official · esbuild minify esnext",
+      "raw": 10836,
+      "gzip9": 4157,
+      "brotli11": 3792,
+      "note": "esbuild minify:true, target:esnext, format:esm",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "kernel-esbuild-es2018",
+      "name": "Official · esbuild minify es2018",
+      "raw": 11428,
+      "gzip9": 4386,
+      "brotli11": 3956,
+      "note": "esbuild minify:true, target:es2018, format:esm",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    {
+      "id": "itslil",
+      "name": "@itslil/posthog-js · cost_model brotli",
+      "raw": 10408,
+      "gzip9": 4377,
+      "brotli11": 3915,
+      "note": "JS library compiled for Brotli. This is the npm ESM. Not post-minified.",
+      "primary": true,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": "brotli"
+    },
+    {
+      "id": "itslil-gzip",
+      "name": "@itslil/posthog-js · cost_model gzip",
+      "raw": 10410,
+      "gzip9": 4356,
+      "brotli11": 3910,
+      "note": "Same library, compiled with javascript.cost_model = gzip. Not the npm file.",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": "gzip"
+    },
+    {
+      "id": "itslil-bytes",
+      "name": "@itslil/posthog-js · cost_model raw",
+      "raw": 10461,
+      "gzip9": 4307,
+      "brotli11": 3818,
+      "note": "Same library, compiled with javascript.cost_model = raw. Not the npm file.",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": "raw"
+    },
+    {
+      "id": "itslil-closed",
+      "name": "@itslil/posthog-js · closed LilScript",
+      "raw": 10408,
+      "gzip9": 4377,
+      "brotli11": 3915,
+      "note": "Brotli compile with [mangle] extern_fields = false. Public JS keys mangle. Not the npm file.",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": "brotli"
+    }
+  ],
+  "matched": {
+    "raw": 10461,
+    "gzip9": 4356,
+    "brotli11": 3915,
+    "vsOxc": {
+      "raw": 0.9845647058823529,
+      "gzip9": 1.0774177590897849,
+      "brotli11": 1.0690879300928455
+    }
+  },
+  "hero": {
+    "brotliRatio": 1.0690879300928455,
+    "officialBrotli": 3662,
+    "itslilBrotli": 3915,
+    "gzipRatio": 1.0774177590897849,
+    "officialGzip": 4043,
+    "itslilGzip": 4356,
+    "rawRatio": 0.9845647058823529,
+    "officialRaw": 10625,
+    "itslilRaw": 10461,
+    "kernelRawBrotli": 6137
+  }
+}

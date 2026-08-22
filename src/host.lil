@@ -1,0 +1,162 @@
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue Math;
+extern JsValue Date;
+extern JsValue JSON;
+extern JsValue Number;
+extern JsValue Reflect;
+extern JsValue TypeError;
+extern JsValue RangeError;
+extern JsValue SyntaxError;
+extern JsValue parseInt;
+extern JsValue decodeURIComponent;
+
+export JsValue undef() {
+  return JS.undefined();
+}
+
+export bool isUndef(JsValue value) {
+  return JS.isUndefined(value);
+}
+
+export bool isNullish(JsValue value) {
+  return JS.isNullish(value);
+}
+
+export bool isStr(JsValue value) {
+  return JS.typeOf(value) == "string";
+}
+
+export bool isNum(JsValue value) {
+  return JS.typeOf(value) == "number";
+}
+
+export bool isBool(JsValue value) {
+  return JS.typeOf(value) == "boolean";
+}
+
+export bool isObj(JsValue value) {
+  return !JS.isNullish(value) && JS.typeOf(value) == "object";
+}
+
+export bool isArr(JsValue value) {
+  return JS.isArray(value);
+}
+
+export bool isFn(JsValue value) {
+  return JS.typeOf(value) == "function";
+}
+
+export string toStr(JsValue value) {
+  return JS.string(value);
+}
+
+export number toNum(JsValue value) {
+  return JS.number(value);
+}
+
+export int toInt(JsValue value) {
+  return JS.number(value).toInt();
+}
+
+export int len(JsValue value) {
+  return JS.number(value["length"]).toInt();
+}
+
+export JsValue objectKeys(JsValue target) {
+  return JS.invoke(Object, "keys", target);
+}
+
+export JsValue objectAssign(JsValue target, JsValue source) {
+  return JS.invoke(Object, "assign", target, source);
+}
+
+export JsValue copyObj(JsValue source) {
+  return JS.invoke(Object, "assign", JS.object(), source);
+}
+
+export bool hasOwn(JsValue target, string key) {
+  return JS.invoke(Object, "hasOwn", target, key).truthy();
+}
+
+export bool hasKey(JsValue target, string key) {
+  return JS.in(key, target);
+}
+
+export bool deleteKey(JsValue target, string key) {
+  return JS.invoke(Reflect, "deleteProperty", target, key).truthy();
+}
+
+export JsValue jsonParse(JsValue value) {
+  return JS.invoke(JSON, "parse", value);
+}
+
+export JsValue jsonStringify(JsValue value) {
+  return JS.invoke(JSON, "stringify", value);
+}
+
+export number nowMs() {
+  return JS.number(JS.invoke(Date, "now"));
+}
+
+export number random() {
+  return JS.number(JS.invoke(Math, "random"));
+}
+
+export number trunc(number value) {
+  return JS.number(JS.invoke(Math, "trunc", value));
+}
+
+export number absNum(number value) {
+  return JS.number(JS.invoke(Math, "abs", value));
+}
+
+export number maxNum(number left, number right) {
+  return JS.number(JS.invoke(Math, "max", left, right));
+}
+
+export bool isInteger(number value) {
+  return JS.invoke(Number, "isInteger", value).truthy();
+}
+
+export bool isFiniteNum(number value) {
+  return JS.invoke(Number, "isFinite", value).truthy();
+}
+
+export number parseIntHex(string value) {
+  return JS.number(JS.call(parseInt, JS.undefined(), value, 16));
+}
+
+export string decodeUri(string value) {
+  try {
+    return JS.string(JS.call(decodeURIComponent, JS.undefined(), value));
+  } catch {
+    return value;
+  }
+}
+
+export JsValue typeError(string message) {
+  return JS.construct(TypeError, message);
+}
+
+export JsValue rangeError(string message) {
+  return JS.construct(RangeError, message);
+}
+
+export JsValue syntaxError(string message) {
+  return JS.construct(SyntaxError, message);
+}
+
+export bool isNoLike(JsValue value) {
+  if (JS.strictEqual(value, false)) {
+    return true;
+  }
+  if (JS.strictEqual(value, 0)) {
+    return true;
+  }
+  if (!isStr(value)) {
+    return false;
+  }
+  string text = JS.string(value);
+  return text == "false" || text == "0" || text == "no";
+}

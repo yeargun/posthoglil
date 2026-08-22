@@ -1,0 +1,211 @@
+import {
+  isInteger,
+  nowMs,
+  parseIntHex,
+  random,
+  rangeError,
+  syntaxError,
+  trunc,
+  typeError
+} from "./host.lil";
+
+string digits = "0123456789abcdef";
+number maxTs = 281474976710655.0;
+number maxCounter = 4398046511103.0;
+number twoPow30 = 1073741824.0;
+Regex re32 = new Regex("^[0-9a-f]{32}$", "i");
+Regex re36 = new Regex("^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$", "i");
+Regex re38 = new Regex("^\\{([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})\\}$", "i");
+Regex re45 = new Regex("^urn:uuid:([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$", "i");
+
+int byteAt(number value, number divisor) {
+  number q = (value / divisor).floor();
+  return (q - (q / 256.0).floor() * 256.0).toInt();
+}
+
+number nextUint32Num() {
+  return trunc(random() * 65536.0) * 65536.0 + trunc(random() * 65536.0);
+}
+
+string bytesToString(Uint8Array bytes) {
+  string text = "";
+  int i = 0;
+  while (i < 16) {
+    int b = bytes[i];
+    text = text + digits.charAt(b >>> 4) + digits.charAt(b & 15);
+    if (i == 3 || i == 5 || i == 7 || i == 9) {
+      text = text + "-";
+    }
+    i = i + 1;
+  }
+  return text;
+}
+
+string bytesToHex(Uint8Array bytes) {
+  string text = "";
+  int i = 0;
+  while (i < 16) {
+    int b = bytes[i];
+    text = text + digits.charAt(b >>> 4) + digits.charAt(b & 15);
+    i = i + 1;
+  }
+  return text;
+}
+
+Uint8Array fieldsToBytes(number unixTsMs, int randA, int randBHi, int randBLo) {
+  Uint8Array bytes = new Uint8Array(16);
+  bytes[0] = byteAt(unixTsMs, 1099511627776.0);
+  bytes[1] = byteAt(unixTsMs, 4294967296.0);
+  bytes[2] = byteAt(unixTsMs, 16777216.0);
+  bytes[3] = byteAt(unixTsMs, 65536.0);
+  bytes[4] = byteAt(unixTsMs, 256.0);
+  bytes[5] = byteAt(unixTsMs, 1.0);
+  bytes[6] = 112 | (randA >>> 8);
+  bytes[7] = randA;
+  bytes[8] = 128 | (randBHi >>> 24);
+  bytes[9] = randBHi >>> 16;
+  bytes[10] = randBHi >>> 8;
+  bytes[11] = randBHi;
+  bytes[12] = randBLo >>> 24;
+  bytes[13] = randBLo >>> 16;
+  bytes[14] = randBLo >>> 8;
+  bytes[15] = randBLo;
+  return bytes;
+}
+
+void writeHexChunk(Uint8Array bytes, int offset, string hex) {
+  number n = parseIntHex(hex);
+  bytes[offset] = byteAt(n, 16777216.0);
+  bytes[offset + 1] = byteAt(n, 65536.0);
+  bytes[offset + 2] = byteAt(n, 256.0);
+  bytes[offset + 3] = byteAt(n, 1.0);
+}
+
+Uint8Array hexToBytes(string hex) {
+  Uint8Array bytes = new Uint8Array(16);
+  int i = 0;
+  while (i < 16) {
+    writeHexChunk(bytes, i, hex.slice(i * 2, i * 2 + 8));
+    i = i + 4;
+  }
+  return bytes;
+}
+
+string joinGroups(JsValue cap) {
+  return JS.string(cap[1]) + JS.string(cap[2]) + JS.string(cap[3]) + JS.string(cap[4]) + JS.string(cap[5]);
+}
+
+number genTimestamp = 0.0;
+number genCounter = 0.0;
+
+void resetCounter() {
+  number lo = nextUint32Num();
+  genCounter = nextUint32Num() * 1024.0 + (lo - (lo / 1024.0).floor() * 1024.0);
+}
+
+string generateOrAbortCore(number unixTsMs, number rollbackAllowance) {
+  if (!isInteger(unixTsMs) || unixTsMs < 1.0 || unixTsMs > maxTs) {
+    throw rangeError("`unixTsMs` must be a 48-bit positive integer");
+  }
+  if (rollbackAllowance < 0.0 || rollbackAllowance > maxTs) {
+    throw rangeError("`rollbackAllowance` out of reasonable range");
+  }
+  if (unixTsMs > genTimestamp) {
+    genTimestamp = unixTsMs;
+    resetCounter();
+  } else if (unixTsMs + rollbackAllowance >= genTimestamp) {
+    genCounter = genCounter + 1.0;
+    if (genCounter > maxCounter) {
+      genTimestamp = genTimestamp + 1.0;
+      resetCounter();
+    }
+  } else {
+    return "";
+  }
+  number randA = (genCounter / twoPow30).floor();
+  number randBHi = genCounter - randA * twoPow30;
+  return bytesToString(fieldsToBytes(genTimestamp, randA.toInt(), randBHi.toInt(), nextUint32Num().toInt()));
+}
+
+string generateOrResetCore(number unixTsMs, number rollbackAllowance) {
+  string value = generateOrAbortCore(unixTsMs, rollbackAllowance);
+  if (value == "") {
+    genTimestamp = 0.0;
+    return generateOrAbortCore(unixTsMs, rollbackAllowance);
+  }
+  return value;
+}
+
+string generateV4() {
+  Uint8Array bytes = new Uint8Array(16);
+  int i = 0;
+  while (i < 16) {
+    bytes[i] = (random() * 256.0).toInt();
+    i = i + 1;
+  }
+  bytes[6] = 64 | (bytes[6] >>> 4);
+  bytes[8] = 128 | (bytes[8] >>> 2);
+  return bytesToString(bytes);
+}
+
+export string uuidFromFieldsV7(number unixTsMs, number randA, number randBHi, number randBLo) {
+  if (
+    !isInteger(unixTsMs) ||
+    !isInteger(randA) ||
+    !isInteger(randBHi) ||
+    !isInteger(randBLo) ||
+    unixTsMs < 0.0 ||
+    randA < 0.0 ||
+    randBHi < 0.0 ||
+    randBLo < 0.0 ||
+    unixTsMs > maxTs ||
+    randA > 4095.0 ||
+    randBHi > 1073741823.0 ||
+    randBLo > 4294967295.0
+  ) {
+    throw rangeError("invalid field value");
+  }
+  return bytesToString(fieldsToBytes(unixTsMs, randA.toInt(), randBHi.toInt(), randBLo.toInt()));
+}
+
+export string parseUuid(string uuid) {
+  string hex = "";
+  int n = uuid.length;
+  if (n == 32) {
+    JsValue cap = re32.exec(uuid);
+    if (cap.truthy()) {
+      hex = JS.string(cap[0]);
+    }
+  } else if (n == 36) {
+    JsValue cap = re36.exec(uuid);
+    if (cap.truthy()) {
+      hex = joinGroups(cap);
+    }
+  } else if (n == 38) {
+    JsValue cap = re38.exec(uuid);
+    if (cap.truthy()) {
+      hex = joinGroups(cap);
+    }
+  } else if (n == 45) {
+    JsValue cap = re45.exec(uuid);
+    if (cap.truthy()) {
+      hex = joinGroups(cap);
+    }
+  }
+  if (hex == "") {
+    throw syntaxError("could not parse UUID string");
+  }
+  return bytesToString(hexToBytes(hex));
+}
+
+export string uuidToHex(string uuid) {
+  return parseUuid(uuid).replace(new Regex("-", "g"), "");
+}
+
+export string uuidv7() {
+  return generateOrResetCore(nowMs(), 10000.0);
+}
+
+export string uuidv4() {
+  return generateV4();
+}

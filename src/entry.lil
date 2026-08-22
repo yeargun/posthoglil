@@ -1,0 +1,111 @@
+import { uuidFromFieldsV7, uuidToHex, uuidv4, uuidv7, parseUuid } from "./uuid.lil";
+import {
+  MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES,
+  MINIMAL_FLAG_CALLED_EVENT_PROPERTIES,
+  createFlagsResponseFromFlagsAndPayloads,
+  flagDetailsToResults,
+  getFeatureFlagValue,
+  getFlagValuesFromFlags,
+  getPayloadsFromFlags,
+  minimizeFlagCalledEventProperties,
+  normalizeFlagsResponse,
+  parsePayload,
+  updateFlagValue
+} from "./flags.lil";
+import {
+  cookieStateToProperties,
+  cookieStoreFromHeader,
+  getConsentCookieName,
+  getPostHogCookieName,
+  isOptedOut,
+  parsePostHogCookie,
+  readPostHogCookie,
+  serializePostHogCookie
+} from "./cookie.lil";
+import {
+  apiHostFromConfig,
+  endpointFor,
+  flagsApiHostFromConfig,
+  regionForHost,
+  uiHostFromConfig
+} from "./router.lil";
+import { rateLimitContext } from "./rate-limit.lil";
+import { applyOffsets, clampFlushInterval, formatQueue, sortUnloadRequests } from "./queue.lil";
+
+export {
+  uuidv7,
+  uuidv4,
+  parseUuid,
+  uuidFromFieldsV7,
+  uuidToHex,
+  MINIMAL_FLAG_CALLED_EVENT_PROPERTIES,
+  MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES,
+  normalizeFlagsResponse,
+  getFeatureFlagValue,
+  getFlagValuesFromFlags,
+  getPayloadsFromFlags,
+  createFlagsResponseFromFlagsAndPayloads,
+  minimizeFlagCalledEventProperties,
+  parsePayload,
+  updateFlagValue,
+  flagDetailsToResults,
+  getPostHogCookieName,
+  serializePostHogCookie,
+  parsePostHogCookie,
+  cookieStoreFromHeader,
+  readPostHogCookie,
+  cookieStateToProperties,
+  getConsentCookieName,
+  isOptedOut,
+  apiHostFromConfig,
+  flagsApiHostFromConfig,
+  uiHostFromConfig,
+  regionForHost,
+  endpointFor,
+  rateLimitContext,
+  clampFlushInterval,
+  formatQueue,
+  applyOffsets,
+  sortUnloadRequests
+};
+
+JsValue kernel() {
+  JsValue api = JS.object();
+  api["uuidv7"] = uuidv7;
+  api["uuidv4"] = uuidv4;
+  api["parseUuid"] = parseUuid;
+  api["uuidFromFieldsV7"] = uuidFromFieldsV7;
+  api["uuidToHex"] = uuidToHex;
+  api["MINIMAL_FLAG_CALLED_EVENT_PROPERTIES"] = MINIMAL_FLAG_CALLED_EVENT_PROPERTIES;
+  api["MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES"] = MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES;
+  api["normalizeFlagsResponse"] = normalizeFlagsResponse;
+  api["getFeatureFlagValue"] = getFeatureFlagValue;
+  api["getFlagValuesFromFlags"] = getFlagValuesFromFlags;
+  api["getPayloadsFromFlags"] = getPayloadsFromFlags;
+  api["createFlagsResponseFromFlagsAndPayloads"] = createFlagsResponseFromFlagsAndPayloads;
+  api["minimizeFlagCalledEventProperties"] = minimizeFlagCalledEventProperties;
+  api["parsePayload"] = parsePayload;
+  api["updateFlagValue"] = updateFlagValue;
+  api["flagDetailsToResults"] = flagDetailsToResults;
+  api["getPostHogCookieName"] = getPostHogCookieName;
+  api["serializePostHogCookie"] = serializePostHogCookie;
+  api["parsePostHogCookie"] = parsePostHogCookie;
+  api["cookieStoreFromHeader"] = cookieStoreFromHeader;
+  api["readPostHogCookie"] = readPostHogCookie;
+  api["cookieStateToProperties"] = cookieStateToProperties;
+  api["getConsentCookieName"] = getConsentCookieName;
+  api["isOptedOut"] = isOptedOut;
+  api["apiHostFromConfig"] = apiHostFromConfig;
+  api["flagsApiHostFromConfig"] = flagsApiHostFromConfig;
+  api["uiHostFromConfig"] = uiHostFromConfig;
+  api["regionForHost"] = regionForHost;
+  api["endpointFor"] = endpointFor;
+  api["rateLimitContext"] = rateLimitContext;
+  api["clampFlushInterval"] = clampFlushInterval;
+  api["formatQueue"] = formatQueue;
+  api["applyOffsets"] = applyOffsets;
+  api["sortUnloadRequests"] = sortUnloadRequests;
+  return api;
+}
+
+export JsValue default = kernel();

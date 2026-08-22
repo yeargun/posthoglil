@@ -1,0 +1,15 @@
+[javascript]
+priority = "size-first"
+optimization_level = 8
+cost_model = "raw"
+assume_pristine_builtins = true
+strip_console = true
+candidate_search = "off"
+function_spelling = "arrow"
+
+[mangle]
+identifiers = true
+properties = true
+exports = false
+extern_fields = true
+pool_strings = true

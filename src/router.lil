@@ -1,0 +1,98 @@
+import { isStr, isUndef, toStr } from "./host.lil";
+
+Regex usHost = new Regex("https://(app|us|us-assets)(\\.i)?\\.posthog\\.com", "i");
+Regex euHost = new Regex("https://(eu|eu-assets)(\\.i)?\\.posthog\\.com", "i");
+
+string trimSlash(string host) {
+  string trimmed = host.trim();
+  if (trimmed.endsWith("/")) {
+    return trimmed.slice(0, trimmed.length - 1);
+  }
+  return trimmed;
+}
+
+string replaceIngestion(string host) {
+  int idx = host.indexOf(".i.posthog.com");
+  if (idx < 0) {
+    return host;
+  }
+  return host.slice(0, idx) + ".posthog.com" + host.slice(idx + 14);
+}
+
+export string apiHostFromConfig(string apiHost) {
+  string host = trimSlash(apiHost);
+  if (host == "https://app.posthog.com") {
+    return "https://us.i.posthog.com";
+  }
+  return host;
+}
+
+export string flagsApiHostFromConfig(JsValue config) {
+  JsValue custom = config["flags_api_host"];
+  if (isStr(custom) && toStr(custom) != "") {
+    return trimSlash(toStr(custom));
+  }
+  return apiHostFromConfig(toStr(config["api_host"]));
+}
+
+export string uiHostFromConfig(JsValue config) {
+  JsValue custom = config["ui_host"];
+  string host = "";
+  if (isStr(custom) && toStr(custom) != "") {
+    host = trimSlash(toStr(custom));
+  } else {
+    host = replaceIngestion(apiHostFromConfig(toStr(config["api_host"])));
+  }
+  if (host == "https://app.posthog.com") {
+    return "https://us.posthog.com";
+  }
+  return host;
+}
+
+export string regionForHost(string apiHost) {
+  string host = apiHostFromConfig(apiHost);
+  if (usHost.test(host)) {
+    return "us";
+  }
+  if (euHost.test(host)) {
+    return "eu";
+  }
+  return "custom";
+}
+
+string withSlash(string path) {
+  if (path == "") {
+    return "";
+  }
+  if (path.charAt(0) == "/") {
+    return path;
+  }
+  return "/" + path;
+}
+
+export string endpointFor(JsValue config, string target, string path) {
+  string resolved = withSlash(path);
+  if (target == "ui") {
+    return uiHostFromConfig(config) + resolved;
+  }
+  if (target == "flags") {
+    return flagsApiHostFromConfig(config) + resolved;
+  }
+  if (target == "assets" && resolved.startsWith("/static/")) {
+    JsValue override = config["asset_host"];
+    if (isStr(override) && toStr(override) != "") {
+      string host = trimSlash(toStr(override));
+      if (host != "") {
+        return host + resolved;
+      }
+    }
+  }
+  string region = regionForHost(toStr(config["api_host"]));
+  if (region == "custom") {
+    return apiHostFromConfig(toStr(config["api_host"])) + resolved;
+  }
+  if (target == "assets") {
+    return "https://" + region + "-assets.i.posthog.com" + resolved;
+  }
+  return "https://" + region + ".i.posthog.com" + resolved;
+}

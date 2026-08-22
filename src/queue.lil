@@ -1,0 +1,96 @@
+import {
+  absNum,
+  copyObj,
+  deleteKey,
+  isFiniteNum,
+  isNum,
+  isStr,
+  isUndef,
+  len,
+  objectKeys,
+  toNum,
+  toStr,
+  undef
+} from "./host.lil";
+
+number defaultFlush = 3000.0;
+
+export number clampFlushInterval(JsValue value) {
+  if (!isNum(value) || !isFiniteNum(toNum(value))) {
+    return defaultFlush;
+  }
+  number ms = toNum(value);
+  if (ms > 5000.0) {
+    return 5000.0;
+  }
+  if (ms < 250.0) {
+    return 250.0;
+  }
+  return ms;
+}
+
+export JsValue formatQueue(JsValue items) {
+  JsValue requests = JS.object();
+  int n = len(items);
+  int i = 0;
+  while (i < n) {
+    JsValue req = items[i];
+    JsValue batchKey = req["batchKey"];
+    string key = toStr(req["url"]);
+    if (isStr(batchKey) && toStr(batchKey) != "") {
+      key = toStr(batchKey);
+    } else if (!isUndef(batchKey) && !JS.isNullish(batchKey) && toStr(batchKey) != "") {
+      key = toStr(batchKey);
+    }
+    if (isUndef(requests[key])) {
+      JsValue next = JS.object();
+      next["url"] = req["url"];
+      next["batchKey"] = req["batchKey"];
+      next["data"] = JS.array();
+      requests[key] = next;
+    }
+    JS.invoke(requests[key]["data"], "push", req["data"]);
+    i = i + 1;
+  }
+  return requests;
+}
+
+export JsValue applyOffsets(JsValue data, number now) {
+  JsValue out = JS.array();
+  int n = len(data);
+  int i = 0;
+  while (i < n) {
+    JsValue next = copyObj(data[i]);
+    JsValue timestamp = next["timestamp"];
+    if (isNum(timestamp)) {
+      next["offset"] = absNum(toNum(timestamp) - now);
+      deleteKey(next, "timestamp");
+    }
+    JS.invoke(out, "push", next);
+    i = i + 1;
+  }
+  return out;
+}
+
+export JsValue sortUnloadRequests(JsValue requests) {
+  JsValue events = JS.array();
+  JsValue other = JS.array();
+  int n = len(requests);
+  int i = 0;
+  while (i < n) {
+    JsValue req = requests[i];
+    if (toStr(req["url"]).indexOf("/e") == 0) {
+      JS.invoke(events, "push", req);
+    } else {
+      JS.invoke(other, "push", req);
+    }
+    i = i + 1;
+  }
+  int j = 0;
+  int extra = len(other);
+  while (j < extra) {
+    JS.invoke(events, "push", other[j]);
+    j = j + 1;
+  }
+  return events;
+}

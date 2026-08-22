@@ -1,0 +1,39 @@
+import { isNum, isUndef, maxNum, toNum } from "./host.lil";
+
+number readNum(JsValue bucket, string key, number fallback) {
+  if (isUndef(bucket) || JS.isNullish(bucket)) {
+    return fallback;
+  }
+  JsValue value = bucket[key];
+  if (!isNum(value)) {
+    return fallback;
+  }
+  return toNum(value);
+}
+
+export JsValue rateLimitContext(JsValue bucket, number now, number eventsPerSecond, number burstLimit, bool checkOnly) {
+  number tokens = readNum(bucket, "tokens", burstLimit);
+  number last = readNum(bucket, "last", now);
+  number dropped = readNum(bucket, "dropped", 0.0);
+  tokens = tokens + ((now - last) / 1000.0) * eventsPerSecond;
+  last = now;
+  if (tokens > burstLimit) {
+    tokens = burstLimit;
+  }
+  bool limited = tokens < 1.0;
+  if (!limited && !checkOnly) {
+    tokens = maxNum(0.0, tokens - 1.0);
+  }
+  if (limited && !checkOnly) {
+    dropped = dropped + 1.0;
+  }
+  JsValue next = JS.object();
+  next["tokens"] = tokens;
+  next["last"] = last;
+  next["dropped"] = dropped;
+  JsValue result = JS.object();
+  result["isRateLimited"] = limited;
+  result["remainingTokens"] = tokens;
+  result["bucket"] = next;
+  return result;
+}

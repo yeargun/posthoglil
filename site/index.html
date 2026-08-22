@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="@itslil/posthog-js is a subset of posthog-js 1.418.10: UUID, flags, cookies, routing, rate limit, and queue batching. Size is versus that same official kernel, then Vite 8 Oxc, Terser, and esbuild — not the published PostHog IIFE."
+    />
+    <meta name="theme-color" content="#f54e00" />
+    <title>itslil/posthog-js — selected posthog-js 1.418.10 modules through LilScript</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <div class="progress" aria-hidden="true"></div>
+    <header class="nav shell">
+      <a class="wordmark" href="#top" aria-label="itslil/posthog-js home">
+        <span class="mark">ph</span>
+        <span>itslil/posthog-js</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#surface">surface</a>
+        <a href="#lab">playground</a>
+        <a href="#evidence">size</a>
+        <a href="https://github.com/yeargun/posthoglil">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero shell">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot"></span> posthog-js 1.418.10 · LilScript subset · @itslil/posthog-js</p>
+          <h1>Capture<br /><em>kernel.</em></h1>
+          <p class="lede">
+            This is not PostHog and not the published <code>posthog-js</code> browser bundle.
+            It is six algorithms from <code>posthog-js@1.418.10</code> — UUID, feature-flag
+            utils, cookie identity, request routing, a token bucket, and queue batching —
+            rewritten in LilScript. Autocapture, session replay, surveys, the client class,
+            and network transport are absent. Every number on this page compares that same
+            official kernel, then Vite 8 Oxc, Terser, and esbuild, with the settings named
+            on each row. The npm file is the Brotli-scored compile. gzip and raw each have
+            their own compile.
+          </p>
+          <div class="install-row">
+            <code>npm install @itslil/posthog-js</code>
+            <button class="copy" data-copy="npm install @itslil/posthog-js" type="button">copy</button>
+          </div>
+          <div class="hero-actions">
+            <a class="button primary" href="#evidence">Size receipts</a>
+            <a class="button secondary" href="https://github.com/yeargun/posthoglil">GitHub ↗</a>
+          </div>
+        </div>
+
+        <div class="scoreboard" aria-label="Compression results">
+          <div class="score-main">
+            <span class="score-label">Bytes over the wire, Brotli-11, against the official kernel minified by Vite 8 Oxc</span>
+            <strong id="hero-ratio">—<span>smaller</span></strong>
+            <p id="hero-bytes"></p>
+          </div>
+          <div class="score-grid">
+            <div><strong id="hero-shipped">—</strong><span>Brotli-11 you ship, vs Oxc</span></div>
+            <div><strong id="hero-gzip">—</strong><span>gzip-9, gzip-scored compile vs Oxc</span></div>
+            <div><strong id="hero-raw">—</strong><span>raw, raw-scored compile vs Oxc</span></div>
+            <div><strong id="hero-spec">—</strong><span>compat tests vs official kernel</span></div>
+          </div>
+          <p class="score-note">
+            Official rows are one kernel file, then Oxc, Terser, or esbuild, measured three ways.
+            LilScript searches a different artifact for each <code>cost_model</code>, so the gzip
+            and raw numbers come from those compiles — not from compressing the Brotli npm file.
+            Brotli is still the headline. The published PostHog IIFE is not a lane.
+            If LilScript is larger, the scoreboard says so.
+          </p>
+        </div>
+      </section>
+
+      <section class="ticker" aria-label="Ported modules">
+        <div>
+          uuidv7 <span>✦</span> uuidv4 <span>✦</span> feature flags <span>✦</span> cookies
+          <span>✦</span> consent <span>✦</span> request router <span>✦</span> token bucket
+          <span>✦</span> queue batching
+        </div>
+      </section>
+
+      <section class="performance shell" id="surface">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">What is actually here</p>
+            <h2>A kernel,<br />not the SDK.</h2>
+          </div>
+          <p>
+            The official side is extracted from <code>posthog-js@1.418.10</code> commit
+            <code>9b2a1b18</code> and lives in <code>official/</code>. LilScript implements
+            the same named functions. Compatibility tests assert the same outputs, including
+            UUID field bytes and cookie keys that official sets to <code>undefined</code>.
+          </p>
+        </div>
+        <div class="perf-cards" id="perf-cards"></div>
+        <div class="table-wrap light">
+          <table>
+            <thead>
+              <tr>
+                <th>Module</th>
+                <th>Official source</th>
+                <th>Kept</th>
+                <th>Left out</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">UUID</th>
+                <td>packages/core/src/vendor/uuidv7.ts</td>
+                <td>uuidv7, uuidv4, parse, fields, hex</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <th scope="row">Flags</th>
+                <td>packages/core/src/featureFlagUtils.ts</td>
+                <td>normalize, values, payloads, minimize</td>
+                <td>flag evaluation against a PostHog instance</td>
+              </tr>
+              <tr>
+                <th scope="row">Cookies</th>
+                <td>packages/core/src/cookie.ts</td>
+                <td>name, serialize, parse, consent, opt-out</td>
+                <td>document.cookie / persistence adapters</td>
+              </tr>
+              <tr>
+                <th scope="row">Router</th>
+                <td>packages/browser/src/utils/request-router.ts</td>
+                <td>api / flags / ui hosts, region, endpointFor</td>
+                <td>RequestRouter class, rewriteRequestPath</td>
+              </tr>
+              <tr>
+                <th scope="row">Rate limit</th>
+                <td>packages/browser/src/rate-limiter.ts</td>
+                <td>token-bucket context</td>
+                <td>persistence, $$client_ingestion_warning</td>
+              </tr>
+              <tr>
+                <th scope="row">Queue</th>
+                <td>packages/browser/src/request-queue.ts</td>
+                <td>flush clamp, format, offsets, unload sort</td>
+                <td>sendBeacon, timers, transport</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="perf-note" id="perf-note"></p>
+      </section>
+
+      <section class="lab shell" id="lab">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">The compiled runtime, in the browser</p>
+            <h2>Live<br />kernel.</h2>
+          </div>
+          <p>
+            Left is a JSON request. Right is UUID, cookie, flags, routing, rate-limit,
+            and queue output from <code>@itslil/posthog-js</code> or the official
+            <code>posthog-js@1.418.10</code> kernel — the same cut used for size.
+          </p>
+        </div>
+        <div class="playground">
+          <div class="play-toolbar">
+            <label>
+              <input type="radio" name="engine" value="lil" checked />
+              @itslil/posthog-js
+            </label>
+            <label>
+              <input type="radio" name="engine" value="official" />
+              official kernel
+            </label>
+            <button type="button" id="race">race 200×</button>
+            <span id="race-out"></span>
+          </div>
+          <div class="play-grid">
+            <textarea id="source" spellcheck="false" aria-label="Kernel request JSON"></textarea>
+            <pre class="lab-out" id="preview" aria-label="Kernel output"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="evidence" id="evidence">
+        <div class="shell">
+          <div class="section-heading inverse">
+            <div>
+              <p class="eyebrow">The receipts</p>
+              <h2>Raw, gzip,<br />and Brotli.</h2>
+            </div>
+            <p>
+              Official 1.418.10 kernel, then Vite 8 Oxc (mangle on/off), Terser
+              (3-pass mangle on/off, and 1-pass mangle on), and esbuild
+              (<code>esnext</code> and <code>es2018</code>). LilScript is not
+              post-minified. Each codec below uses the LilScript compile scored
+              for that codec (<code>cost_model = raw | gzip | brotli</code>).
+              The npm file is the Brotli compile. Closed LilScript is Brotli
+              with <code>extern_fields = false</code>.
+            </p>
+          </div>
+
+          <div class="codec-block">
+            <h3>Brotli-11</h3>
+            <p class="codec-lead">The wire number. LilScript row is <code>cost_model = brotli</code>, the npm file.</p>
+            <div class="total-bar" id="bar-brotli"></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lane</th>
+                    <th>Brotli-11</th>
+                    <th>vs Oxc</th>
+                  </tr>
+                </thead>
+                <tbody id="body-brotli"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="codec-block">
+            <h3>gzip-9</h3>
+            <p class="codec-lead">LilScript row is a separate compile: <code>cost_model = gzip</code>.</p>
+            <div class="total-bar" id="bar-gzip"></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lane</th>
+                    <th>gzip-9</th>
+                    <th>vs Oxc</th>
+                  </tr>
+                </thead>
+                <tbody id="body-gzip"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="codec-block">
+            <h3>Raw</h3>
+            <p class="codec-lead">LilScript row is a separate compile: <code>cost_model = raw</code>.</p>
+            <div class="total-bar" id="bar-raw"></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lane</th>
+                    <th>Raw</th>
+                    <th>vs Oxc</th>
+                  </tr>
+                </thead>
+                <tbody id="body-raw"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="codec-block">
+            <h3>All three, matched compiles</h3>
+            <p class="codec-lead">
+              Official rows are one file measured three ways. The LilScript library row takes raw from the
+              raw compile, gzip from the gzip compile, and Brotli from the Brotli compile.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lane</th>
+                    <th>Raw</th>
+                    <th>gzip-9</th>
+                    <th>Brotli-11</th>
+                    <th>Brotli vs Oxc</th>
+                  </tr>
+                </thead>
+                <tbody id="body-matched"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="method-note">
+            <p>
+              <strong>Why this surface.</strong> The published <code>posthog-js</code> IIFE
+              still contains autocapture, replay, surveys, and the client class. Putting
+              that file on one side and six algorithms on the other is not a comparison.
+              The fair fight is the 1.418.10 kernel in <code>official/</code>, then the
+              same Oxc, Terser, and esbuild work the JS ecosystem actually ships. Closed
+              LilScript is the other honest comparison: public JS keys mangle.
+              Losses stay on the page.
+            </p>
+            <a href="https://github.com/yeargun/posthoglil#what-is-compared">README ↗</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="closing shell">
+        <p class="eyebrow">Zero runtime dependencies</p>
+        <h2>Install the<br />current port.</h2>
+        <div class="install-row large">
+          <code>npm install @itslil/posthog-js</code>
+          <button class="copy" data-copy="npm install @itslil/posthog-js" type="button">copy</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <span>@itslil/posthog-js · Apache-2.0</span>
+      <span>Subset of posthog-js@1.418.10, rewritten in LilScript — not the full SDK</span>
+      <a href="https://github.com/yeargun/posthoglil">source ↗</a>
+    </footer>
+  </body>
+</html>

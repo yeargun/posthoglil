@@ -1,0 +1,66 @@
+{
+  "name": "@itslil/posthog-js",
+  "version": "1.418.10",
+  "description": "Selected posthog-js 1.418.10 web-SDK modules rewritten in LilScript. UUID, flags, cookies, routing, rate limit, and queue batching — not the full SDK.",
+  "keywords": [
+    "posthog",
+    "analytics",
+    "feature-flags",
+    "lilscript",
+    "itslil"
+  ],
+  "homepage": "https://yeargun.github.io/posthoglil/",
+  "bugs": "https://github.com/yeargun/posthoglil/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yeargun/posthoglil.git"
+  },
+  "license": "Apache-2.0",
+  "author": "yeargun",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/posthog.cjs",
+  "module": "./dist/posthog.esm.js",
+  "types": "./dist/posthog.d.ts",
+  "unpkg": "./dist/posthog.umd.js",
+  "jsdelivr": "./dist/posthog.umd.js",
+  "exports": {
+    ".": {
+      "types": "./dist/posthog.d.ts",
+      "import": "./dist/posthog.esm.js",
+      "require": "./dist/posthog.cjs",
+      "default": "./dist/posthog.esm.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "dist/posthog.esm.js",
+    "dist/posthog.cjs",
+    "dist/posthog.umd.js",
+    "dist/posthog.d.ts",
+    "LICENSE",
+    "NOTICE.md",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs --compile",
+    "build:dev": "node scripts/build.mjs --dev",
+    "build:site": "node scripts/build-site.mjs",
+    "test": "node --test test/compat.test.mjs test/api.test.mjs",
+    "measure": "node scripts/measure.mjs",
+    "check:site": "npm run build:site && node --test test/site.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "terser": "^5.43.1",
+    "vite": "8.2.1"
+  }
+}

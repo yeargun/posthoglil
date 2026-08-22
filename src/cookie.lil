@@ -1,0 +1,161 @@
+import {
+  decodeUri,
+  hasKey,
+  isArr,
+  isNoLike,
+  isNullish,
+  isStr,
+  isUndef,
+  jsonParse,
+  jsonStringify,
+  nowMs,
+  toStr,
+  undef
+} from "./host.lil";
+import { uuidv7 } from "./uuid.lil";
+
+Regex plusRe = new Regex("[+]", "g");
+Regex slashRe = new Regex("/", "g");
+Regex eqRe = new Regex("=", "g");
+
+JsValue cookieGet(JsValue self, JsValue name) {
+  JsValue cookies = self["c"];
+  string key = toStr(name);
+  if (!hasKey(cookies, key)) {
+    return undef();
+  }
+  return JS.object("value", cookies[key]);
+}
+
+export string getPostHogCookieName(string apiKey) {
+  return "ph_" + apiKey.replace(plusRe, "PL").replace(slashRe, "SL").replace(eqRe, "EQ") + "_posthog";
+}
+
+export string serializePostHogCookie(string anonymousId) {
+  number now = nowMs();
+  JsValue sesid = JS.array();
+  JS.invoke(sesid, "push", now);
+  JS.invoke(sesid, "push", uuidv7());
+  JS.invoke(sesid, "push", now);
+  JsValue payload = JS.object();
+  payload["distinct_id"] = anonymousId;
+  payload["$device_id"] = anonymousId;
+  payload["$user_state"] = "anonymous";
+  payload["$sesid"] = sesid;
+  return toStr(jsonStringify(payload));
+}
+
+bool isPlainObj(JsValue value) {
+  return !JS.isNullish(value) && JS.typeOf(value) == "object" && !JS.isArray(value);
+}
+
+export JsValue parsePostHogCookie(JsValue cookieValue) {
+  if (isUndef(cookieValue) || JS.isNullish(cookieValue) || !isStr(cookieValue) || toStr(cookieValue) == "") {
+    return null;
+  }
+  try {
+    JsValue parsed = jsonParse(cookieValue);
+    if (isUndef(parsed) || JS.isNullish(parsed) || !isPlainObj(parsed) || isUndef(parsed["distinct_id"])) {
+      return null;
+    }
+    JsValue sesid = parsed["$sesid"];
+    JsValue sessionId = undef();
+    if (isArr(sesid)) {
+      sessionId = sesid[1];
+    }
+    JsValue state = JS.object();
+    state["distinctId"] = toStr(parsed["distinct_id"]);
+    state["isIdentified"] = isStr(parsed["$user_state"]) && toStr(parsed["$user_state"]) == "identified";
+    if (isStr(sessionId)) {
+      state["sessionId"] = sessionId;
+    } else {
+      state["sessionId"] = undef();
+    }
+    if (isStr(parsed["$device_id"])) {
+      state["deviceId"] = parsed["$device_id"];
+    } else {
+      state["deviceId"] = undef();
+    }
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+export JsValue cookieStoreFromHeader(string cookieHeader) {
+  JsValue cookies = JS.object();
+  if (cookieHeader != "") {
+    string[] pairs = cookieHeader.split(";");
+    int i = 0;
+    while (i < pairs.length) {
+      string pair = pairs[i].trim();
+      int eq = pair.indexOf("=");
+      string key = "";
+      string raw = "";
+      if (eq < 0) {
+        key = pair;
+      } else {
+        key = pair.slice(0, eq).trim();
+        raw = pair.slice(eq + 1).trim();
+      }
+      if (key != "") {
+        cookies[key] = decodeUri(raw);
+      }
+      i = i + 1;
+    }
+  }
+  JsValue store = JS.object();
+  store["c"] = cookies;
+  store["get"] = JS.method1(cookieGet);
+  return store;
+}
+
+export JsValue readPostHogCookie(JsValue cookies, string apiKey) {
+  JsValue cookie = JS.invoke(cookies, "get", getPostHogCookieName(apiKey));
+  if (isUndef(cookie) || JS.isNullish(cookie)) {
+    return null;
+  }
+  return parsePostHogCookie(cookie["value"]);
+}
+
+export JsValue cookieStateToProperties(JsValue state) {
+  if (isUndef(state) || JS.isNullish(state)) {
+    return undef();
+  }
+  JsValue props = JS.object();
+  if (isStr(state["sessionId"])) {
+    props["$session_id"] = state["sessionId"];
+  }
+  if (isStr(state["deviceId"])) {
+    props["$device_id"] = state["deviceId"];
+  }
+  if (hasKey(props, "$session_id") || hasKey(props, "$device_id")) {
+    return props;
+  }
+  return undef();
+}
+
+export string getConsentCookieName(string apiKey, JsValue config) {
+  if (!isUndef(config) && !JS.isNullish(config)) {
+    JsValue named = config["consent_persistence_name"];
+    if (isStr(named) && toStr(named) != "") {
+      return toStr(named);
+    }
+    JsValue prefix = config["opt_out_capturing_cookie_prefix"];
+    if (isStr(prefix) && toStr(prefix) != "") {
+      return toStr(prefix) + apiKey;
+    }
+  }
+  return "__ph_opt_in_out_" + apiKey;
+}
+
+export bool isOptedOut(JsValue cookies, string apiKey, JsValue config) {
+  JsValue cookie = JS.invoke(cookies, "get", getConsentCookieName(apiKey, config));
+  if (!isUndef(cookie) && !JS.isNullish(cookie)) {
+    return isNoLike(cookie["value"]);
+  }
+  if (!isUndef(config) && !JS.isNullish(config) && config["opt_out_capturing_by_default"].truthy()) {
+    return true;
+  }
+  return false;
+}

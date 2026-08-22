@@ -1,0 +1,11 @@
+package=posthog-js
+version=1.418.10
+commit=9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb
+source=https://github.com/PostHog/posthog-js
+modules=packages/core/src/vendor/uuidv7.ts
+  packages/core/src/featureFlagUtils.ts
+  packages/core/src/cookie.ts
+  packages/browser/src/utils/request-router.ts
+  packages/browser/src/rate-limiter.ts
+  packages/browser/src/request-queue.ts
+note=Extracted capture-kernel algorithms only. Not the published posthog-js IIFE.

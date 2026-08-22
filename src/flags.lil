@@ -1,0 +1,344 @@
+import {
+  copyObj,
+  hasKey,
+  isStr,
+  isUndef,
+  jsonParse,
+  jsonStringify,
+  len,
+  objectKeys,
+  toStr,
+  undef
+} from "./host.lil";
+
+string[] campaignKeys = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "gad_source",
+  "mc_cid",
+  "gclid",
+  "gclsrc",
+  "dclid",
+  "gbraid",
+  "wbraid",
+  "fbclid",
+  "msclkid",
+  "twclid",
+  "li_fat_id",
+  "igshid",
+  "ttclid",
+  "rdt_cid",
+  "epik",
+  "qclid",
+  "sccid",
+  "irclid",
+  "_kx"
+];
+
+string[] flagCalledKeys = [
+  "$feature_flag",
+  "$feature_flag_response",
+  "$feature_flag_has_experiment",
+  "$feature_flag_id",
+  "$feature_flag_version",
+  "$feature_flag_reason",
+  "$feature_flag_request_id",
+  "$feature_flag_evaluated_at",
+  "$feature_flag_error",
+  "locally_evaluated",
+  "$groups",
+  "$process_person_profile",
+  "$geoip_disable",
+  "$current_url",
+  "$pathname",
+  "$referring_domain",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "gad_source",
+  "mc_cid",
+  "gclid",
+  "gclsrc",
+  "dclid",
+  "gbraid",
+  "wbraid",
+  "fbclid",
+  "msclkid",
+  "twclid",
+  "li_fat_id",
+  "igshid",
+  "ttclid",
+  "rdt_cid",
+  "epik",
+  "qclid",
+  "sccid",
+  "irclid",
+  "_kx",
+  "$session_id",
+  "$window_id",
+  "$lib",
+  "$lib_version",
+  "$device_id",
+  "$is_server"
+];
+
+export JsValue MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES = campaignKeys;
+export JsValue MINIMAL_FLAG_CALLED_EVENT_PROPERTIES = flagCalledKeys;
+
+JsValue empty() {
+  return JS.object();
+}
+
+JsValue orEmpty(JsValue value) {
+  if (isUndef(value) || JS.isNullish(value)) {
+    return empty();
+  }
+  return value;
+}
+
+bool enabledFromValue(JsValue value) {
+  if (isStr(value)) {
+    return true;
+  }
+  return value.truthy();
+}
+
+JsValue variantFromValue(JsValue value) {
+  if (isStr(value)) {
+    return value;
+  }
+  return undef();
+}
+
+export JsValue parsePayload(JsValue response) {
+  if (!isStr(response)) {
+    return response;
+  }
+  try {
+    return jsonParse(response);
+  } catch {
+    return response;
+  }
+}
+
+export JsValue getFeatureFlagValue(JsValue detail) {
+  if (isUndef(detail)) {
+    return undef();
+  }
+  JsValue variant = detail["variant"];
+  if (!isUndef(variant) && !JS.isNullish(variant)) {
+    return variant;
+  }
+  return detail["enabled"];
+}
+
+export JsValue getFlagValuesFromFlags(JsValue flags) {
+  JsValue source = orEmpty(flags);
+  JsValue keys = objectKeys(source);
+  JsValue out = empty();
+  int i = 0;
+  int n = len(keys);
+  while (i < n) {
+    string key = toStr(keys[i]);
+    JsValue value = getFeatureFlagValue(source[key]);
+    if (!isUndef(value)) {
+      out[key] = value;
+    }
+    i = i + 1;
+  }
+  return out;
+}
+
+export JsValue getPayloadsFromFlags(JsValue flags) {
+  JsValue source = orEmpty(flags);
+  JsValue keys = objectKeys(source);
+  JsValue out = empty();
+  int i = 0;
+  int n = len(keys);
+  while (i < n) {
+    string key = toStr(keys[i]);
+    JsValue details = source[key];
+    if (!isUndef(details) && !JS.isNullish(details) && details["enabled"].truthy()) {
+      JsValue metadata = details["metadata"];
+      if (!isUndef(metadata) && !JS.isNullish(metadata) && !isUndef(metadata["payload"])) {
+        JsValue payload = metadata["payload"];
+        if (payload.truthy()) {
+          out[key] = parsePayload(payload);
+        } else {
+          out[key] = undef();
+        }
+      }
+    }
+    i = i + 1;
+  }
+  return out;
+}
+
+JsValue detailFromValue(string key, JsValue value, JsValue payload) {
+  JsValue meta = empty();
+  meta["id"] = undef();
+  meta["version"] = undef();
+  meta["description"] = undef();
+  if (payload.truthy()) {
+    meta["payload"] = jsonStringify(payload);
+  } else {
+    meta["payload"] = undef();
+  }
+  JsValue detail = empty();
+  detail["key"] = key;
+  detail["enabled"] = enabledFromValue(value);
+  detail["variant"] = variantFromValue(value);
+  detail["reason"] = undef();
+  detail["metadata"] = meta;
+  return detail;
+}
+
+JsValue parsePayloadMap(JsValue rawPayloads) {
+  JsValue source = orEmpty(rawPayloads);
+  JsValue keys = objectKeys(source);
+  JsValue out = empty();
+  int index = 0;
+  int count = len(keys);
+  while (index < count) {
+    string key = toStr(keys[index]);
+    out[key] = parsePayload(source[key]);
+    index = index + 1;
+  }
+  return out;
+}
+
+JsValue detailsFromV1(JsValue featureFlags, JsValue featureFlagPayloads) {
+  JsValue source = orEmpty(featureFlags);
+  JsValue keys = objectKeys(source);
+  JsValue out = empty();
+  int index = 0;
+  int count = len(keys);
+  while (index < count) {
+    string key = toStr(keys[index]);
+    out[key] = detailFromValue(key, source[key], featureFlagPayloads[key]);
+    index = index + 1;
+  }
+  return out;
+}
+
+export JsValue normalizeFlagsResponse(JsValue flagsResponse) {
+  JsValue out = copyObj(flagsResponse);
+  if (hasKey(flagsResponse, "flags")) {
+    out["featureFlags"] = getFlagValuesFromFlags(flagsResponse["flags"]);
+    out["featureFlagPayloads"] = getPayloadsFromFlags(flagsResponse["flags"]);
+    return out;
+  }
+  JsValue featureFlags = orEmpty(flagsResponse["featureFlags"]);
+  JsValue featureFlagPayloads = parsePayloadMap(flagsResponse["featureFlagPayloads"]);
+  out["featureFlags"] = featureFlags;
+  out["featureFlagPayloads"] = featureFlagPayloads;
+  out["flags"] = detailsFromV1(featureFlags, featureFlagPayloads);
+  return out;
+}
+
+export JsValue createFlagsResponseFromFlagsAndPayloads(JsValue featureFlags, JsValue featureFlagPayloads) {
+  JsValue flags = orEmpty(featureFlags);
+  JsValue payloads = orEmpty(featureFlagPayloads);
+  JsValue enabled = empty();
+  JsValue seen = empty();
+  JsValue flagKeys = objectKeys(flags);
+  JsValue payloadKeys = objectKeys(payloads);
+  int i = 0;
+  int n = len(flagKeys);
+  while (i < n) {
+    string key = toStr(flagKeys[i]);
+    seen[key] = true;
+    if (flags[key].truthy() || payloads[key].truthy()) {
+      JsValue value = flags[key];
+      if (isUndef(value) || JS.isNullish(value)) {
+        enabled[key] = true;
+      } else {
+        enabled[key] = value;
+      }
+    }
+    i = i + 1;
+  }
+  i = 0;
+  n = len(payloadKeys);
+  while (i < n) {
+    string key = toStr(payloadKeys[i]);
+    if (!hasKey(seen, key) && (flags[key].truthy() || payloads[key].truthy())) {
+      JsValue value = flags[key];
+      if (isUndef(value) || JS.isNullish(value)) {
+        enabled[key] = true;
+      } else {
+        enabled[key] = value;
+      }
+    }
+    i = i + 1;
+  }
+  JsValue packed = empty();
+  packed["featureFlags"] = enabled;
+  packed["featureFlagPayloads"] = payloads;
+  return normalizeFlagsResponse(packed);
+}
+
+export JsValue updateFlagValue(JsValue flag, JsValue value) {
+  JsValue next = copyObj(flag);
+  next["enabled"] = enabledFromValue(value);
+  next["variant"] = variantFromValue(value);
+  return next;
+}
+
+export JsValue flagDetailsToResults(JsValue flagDetails) {
+  JsValue keys = objectKeys(orEmpty(flagDetails));
+  JsValue results = JS.array();
+  int i = 0;
+  int n = len(keys);
+  while (i < n) {
+    JsValue detail = flagDetails[toStr(keys[i])];
+    JsValue value = getFeatureFlagValue(detail);
+    JsValue rawPayload = undef();
+    JsValue metadata = detail["metadata"];
+    if (!isUndef(metadata) && !JS.isNullish(metadata)) {
+      rawPayload = metadata["payload"];
+    }
+    JsValue row = empty();
+    row["key"] = detail["key"];
+    row["enabled"] = enabledFromValue(value);
+    row["variant"] = variantFromValue(value);
+    if (isUndef(rawPayload)) {
+      row["payload"] = null;
+    } else {
+      row["payload"] = parsePayload(rawPayload);
+    }
+    JS.invoke(results, "push", row);
+    i = i + 1;
+  }
+  return results;
+}
+
+void copyIfPresent(JsValue source, JsValue target, string key) {
+  JsValue value = source[key];
+  if (!isUndef(value)) {
+    target[key] = value;
+  }
+}
+
+export JsValue minimizeFlagCalledEventProperties(JsValue properties, JsValue transportKeys) {
+  JsValue out = empty();
+  int i = 0;
+  while (i < flagCalledKeys.length) {
+    copyIfPresent(properties, out, flagCalledKeys[i]);
+    i = i + 1;
+  }
+  if (!isUndef(transportKeys) && !JS.isNullish(transportKeys)) {
+    int n = len(transportKeys);
+    int j = 0;
+    while (j < n) {
+      copyIfPresent(properties, out, toStr(transportKeys[j]));
+      j = j + 1;
+    }
+  }
+  return out;
+}
