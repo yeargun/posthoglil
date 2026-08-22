@@ -7,9 +7,11 @@ import { bundleOfficialKernel } from "../scripts/official-bundle.mjs"
 import { writeFileSync, mkdirSync } from "node:fs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const lilPath = existsSync(resolve(root, "dist/posthog.esm.js"))
-  ? resolve(root, "dist/posthog.esm.js")
-  : resolve(root, "dist/posthog.dev.js")
+const lilPath = process.env.POSTHOGLIL_ARTIFACT
+  ? resolve(root, process.env.POSTHOGLIL_ARTIFACT)
+  : existsSync(resolve(root, "dist/posthog.esm.js"))
+    ? resolve(root, "dist/posthog.esm.js")
+    : resolve(root, "dist/posthog.dev.js")
 
 mkdirSync(resolve(root, ".tmp"), { recursive: true })
 const officialPath = resolve(root, ".tmp/official-kernel.js")

@@ -10,6 +10,7 @@ const officialOxc =
   sizes.lanes.find((lane) => lane.baseline)
 const kernelRaw = sizes.lanes.find((lane) => lane.id === "kernel")
 const itslil = sizes.lanes.find((lane) => lane.primary)
+const itslilPackage = sizes.lanes.find((lane) => lane.id === "itslil-package")
 const itslilGzip = sizes.lanes.find((lane) => lane.id === "itslil-gzip")
 const itslilBytes = sizes.lanes.find((lane) => lane.id === "itslil-bytes")
 
@@ -36,6 +37,8 @@ const results = {
     brotliRatio: itslil && officialOxc ? itslil.brotli11 / officialOxc.brotli11 : null,
     officialBrotli: officialOxc?.brotli11 ?? null,
     itslilBrotli: itslil?.brotli11 ?? null,
+    packageBrotli: itslilPackage?.brotli11 ?? null,
+    packageRaw: itslilPackage?.raw ?? null,
     gzipRatio: itslilGzip && officialOxc ? itslilGzip.gzip9 / officialOxc.gzip9 : null,
     officialGzip: officialOxc?.gzip9 ?? null,
     itslilGzip: itslilGzip?.gzip9 ?? null,

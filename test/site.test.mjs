@@ -39,7 +39,7 @@ describe("github pages artifact", () => {
     assert.doesNotMatch(html, /the full SDK is smaller/)
   })
 
-  it("compares Brotli, gzip, and raw from matching LilScript compiles", () => {
+  it("separates direct compiler output from package metadata", () => {
     const html = readFileSync(resolve(site, "index.html"), "utf8")
     assert.match(html, /id="body-brotli"/)
     assert.match(html, /id="body-gzip"/)
@@ -47,6 +47,7 @@ describe("github pages artifact", () => {
     assert.match(html, /id="body-matched"/)
     const results = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
     const library = results.size.find((lane) => lane.id === "itslil")
+    const packaged = results.size.find((lane) => lane.id === "itslil-package")
     const gzip = results.size.find((lane) => lane.id === "itslil-gzip")
     const bytes = results.size.find((lane) => lane.id === "itslil-bytes")
     const closed = results.size.find((lane) => lane.id === "itslil-closed")
@@ -55,6 +56,9 @@ describe("github pages artifact", () => {
     const esbuild = results.size.find((lane) => lane.id === "kernel-esbuild-esnext")
     assert.equal(library.primary, true)
     assert.equal(library.costModel, "brotli")
+    assert.equal(library.brotli11, 5606)
+    assert.equal(packaged.brotli11, 5749)
+    assert.equal(packaged.raw - library.raw, 91)
     assert.equal(gzip.costModel, "gzip")
     assert.equal(bytes.costModel, "raw")
     assert.equal(typeof library.brotli11, "number")
@@ -63,6 +67,9 @@ describe("github pages artifact", () => {
     assert.equal(typeof esbuild.brotli11, "number")
     assert.equal(typeof closed.brotli11, "number")
     assert.equal(results.hero.itslilBrotli, library.brotli11)
+    assert.equal(results.hero.packageBrotli, packaged.brotli11)
+    assert.equal(library.brotli11 < oxc.brotli11, true)
+    assert.equal(library.brotli11 < terser.brotli11, true)
     assert.equal(results.hero.itslilGzip, gzip.gzip9)
     assert.equal(results.hero.itslilRaw, bytes.raw)
     assert.equal(results.matched.brotli11, library.brotli11)
@@ -84,5 +91,6 @@ describe("github pages artifact", () => {
     const app = readFileSync(resolve(site, "app.js"), "utf8")
     assert.match(app, /from ["']\.\/posthog\.js["']/)
     assert.doesNotMatch(app, /\/dist\/posthog/)
+    assert.match(app, /21\/21/)
   })
 })

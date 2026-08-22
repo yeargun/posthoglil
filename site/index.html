@@ -40,8 +40,9 @@
             helpers — rewritten in LilScript. Autocapture, session replay, surveys, the
             client class, and network transport are absent. Every number on this page
             compares that same official kernel, then Vite 8 Oxc, Terser, and esbuild, with
-            the settings named on each row. The npm file is the Brotli-scored compile.
-            gzip and raw each have their own compile.
+            the settings named on each row. The headline is the direct Brotli-scored
+            compiler artifact. The npm ESM adds its license banner and is reported
+            separately; gzip and raw each have their own compile.
           </p>
           <div class="install-row">
             <code>npm install @itslil/posthog-js</code>
@@ -55,20 +56,22 @@
 
         <div class="scoreboard" aria-label="Compression results">
           <div class="score-main">
-            <span class="score-label">Bytes over the wire, Brotli-11, against the official kernel minified by Vite 8 Oxc</span>
+            <span class="score-label">Direct compiler output, Brotli-11, against the official kernel minified by Vite 8 Oxc</span>
             <strong id="hero-ratio">—<span>smaller</span></strong>
             <p id="hero-bytes"></p>
           </div>
           <div class="score-grid">
-            <div><strong id="hero-shipped">—</strong><span>Brotli-11 you ship, vs Oxc</span></div>
-            <div><strong id="hero-gzip">—</strong><span>gzip-9, gzip-scored compile vs Oxc</span></div>
-            <div><strong id="hero-raw">—</strong><span>raw, raw-scored compile vs Oxc</span></div>
+            <div><strong id="hero-shipped">—</strong><span>Brotli-scored compiler output vs Oxc</span></div>
+            <div><strong id="hero-package">—</strong><span>packaged ESM, including license banner</span></div>
+            <div><strong id="hero-gzip">—</strong><span>gzip-9, previous verified objective snapshot</span></div>
+            <div><strong id="hero-raw">—</strong><span>raw, previous verified objective snapshot</span></div>
             <div><strong id="hero-spec">—</strong><span>compat tests vs official kernel</span></div>
           </div>
           <p class="score-note">
             Official rows are one kernel file, then Oxc, Terser, or esbuild, measured three ways.
             LilScript searches a different artifact for each <code>cost_model</code>, so the gzip
-            and raw numbers come from those compiles — not from compressing the Brotli npm file.
+            and raw numbers come from those compiles. The npm ESM adds a 91-byte raw license
+            banner, so its packaged size is a separate row rather than compiler credit.
             Brotli is still the headline. The published PostHog IIFE is not a lane.
             If LilScript is larger, the scoreboard says so.
           </p>
@@ -239,14 +242,15 @@
               (<code>esnext</code> and <code>es2018</code>). LilScript is not
               post-minified. Each codec below uses the LilScript compile scored
               for that codec (<code>cost_model = raw | gzip | brotli</code>).
-              The npm file is the Brotli compile. Closed LilScript is Brotli
-              with <code>extern_fields = false</code>.
+              The direct compiler artifacts exclude package metadata. The npm ESM
+              wraps the Brotli compile with a license banner and has its own row.
+              Closed LilScript uses <code>extern_fields = false</code>.
             </p>
           </div>
 
           <div class="codec-block">
             <h3>Brotli-11</h3>
-            <p class="codec-lead">The wire number. LilScript row is <code>cost_model = brotli</code>, the npm file.</p>
+            <p class="codec-lead">The LilScript compiler row is <code>cost_model = brotli</code>; the packaged ESM and its license banner are shown separately.</p>
             <div class="total-bar" id="bar-brotli"></div>
             <div class="table-wrap">
               <table>
@@ -299,10 +303,11 @@
           </div>
 
           <div class="codec-block">
-            <h3>All three, matched compiles</h3>
+            <h3>All three, verified objective artifacts</h3>
             <p class="codec-lead">
               Official rows are one file measured three ways. The LilScript library row takes raw from the
-              raw compile, gzip from the gzip compile, and Brotli from the Brotli compile.
+              raw compile, gzip from the gzip compile, and Brotli from the Brotli compile. Raw and gzip retain
+              the previous verified snapshot because this update intentionally did not launch more exhaustive builds.
             </p>
             <div class="table-wrap">
               <table>

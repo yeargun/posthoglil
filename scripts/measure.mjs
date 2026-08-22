@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { copyFileSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { measureFile } from "./codec.mjs"
@@ -6,17 +6,13 @@ import { minifyLanes } from "./minify-lanes.mjs"
 import { bundleOfficialKernel } from "./official-bundle.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const lilPath = join(root, "dist/posthog.esm.js")
+const lilPath = join(root, "dist/posthog.raw.js")
+const packagePath = join(root, "dist/posthog.esm.js")
 const closedPath = join(root, "dist/posthog.closed.js")
 const gzipPath = join(root, "dist/posthog.gzip.js")
 const bytesPath = join(root, "dist/posthog.bytes.js")
-const licenseBanner = `${readFileSync(lilPath, "utf8").split("\n", 1)[0]}\n`
 const lanesDir = join(root, ".tmp", "lanes")
 const officialPath = join(root, ".tmp", "official-kernel.js")
-
-function withBanner(path) {
-  return `${licenseBanner}${readFileSync(path, "utf8").trimEnd()}\n`
-}
 
 mkdirSync(lanesDir, { recursive: true })
 mkdirSync(join(root, ".tmp"), { recursive: true })
@@ -77,31 +73,37 @@ const artifacts = [
   },
   {
     id: "itslil",
-    name: "@itslil/posthog-js · cost_model brotli",
-    note: "JS library compiled for Brotli. This is the npm ESM. Not post-minified.",
+    name: "LilScript compiler · cost_model brotli",
+    note: "Direct compiler output, not post-minified and without package metadata.",
     sourcePath: lilPath,
     primary: true,
     costModel: "brotli",
   },
   {
+    id: "itslil-package",
+    name: "@itslil/posthog-js · packaged ESM",
+    note: "The same Brotli-scored output with the package license banner added.",
+    sourcePath: packagePath,
+  },
+  {
     id: "itslil-gzip",
-    name: "@itslil/posthog-js · cost_model gzip",
-    note: "Same library, compiled with javascript.cost_model = gzip. Not the npm file.",
-    code: withBanner(gzipPath),
+    name: "LilScript compiler · cost_model gzip",
+    note: "Direct compiler output scored for gzip. Not the packaged ESM.",
+    sourcePath: gzipPath,
     costModel: "gzip",
   },
   {
     id: "itslil-bytes",
-    name: "@itslil/posthog-js · cost_model raw",
-    note: "Same library, compiled with javascript.cost_model = raw. Not the npm file.",
-    code: withBanner(bytesPath),
+    name: "LilScript compiler · cost_model raw",
+    note: "Direct compiler output scored for raw bytes. Not the packaged ESM.",
+    sourcePath: bytesPath,
     costModel: "raw",
   },
   {
     id: "itslil-closed",
-    name: "@itslil/posthog-js · closed LilScript",
-    note: "Brotli compile with [mangle] extern_fields = false. Public JS keys mangle. Not the npm file.",
-    code: withBanner(closedPath),
+    name: "LilScript compiler · closed fields",
+    note: "Direct Brotli compiler output with [mangle] extern_fields = false. Not packaged.",
+    sourcePath: closedPath,
     costModel: "brotli",
   },
 ]
@@ -139,7 +141,7 @@ const report = {
   package: "@itslil/posthog-js",
   codec: "lilscript-codec gzip-9 / brotli-11",
   comparison:
-    "Same capture kernel on every official row: posthog-js@1.418.10 UUID, feature-flag utils, cookie identity, request router, token-bucket rate limit, queue batching, bot detection, string/number/type helpers, JSON sanitize, URL trim, and the bucketed exception limiter. Then Vite 8 Oxc, Terser, and esbuild with the settings named on each row. LilScript ships three compiles — cost_model raw, gzip, and brotli — because the search scores a different artifact for each codec. The npm file is the Brotli compile. The published posthog-js browser bundle is not a lane.",
+    "Same capture kernel on every compiler row: posthog-js@1.418.10 UUID, feature-flag utils, cookie identity, request router, token-bucket rate limit, queue batching, bot detection, string/number/type helpers, JSON sanitize, URL trim, and the bucketed exception limiter. Then Vite 8 Oxc, Terser, and esbuild with the settings named on each row. LilScript emits separate raw-, gzip-, and Brotli-scored artifacts. Compiler comparisons exclude package metadata; the packaged ESM and its license banner are reported as a separate lane. The published posthog-js browser bundle is not a lane.",
   matched: {
     raw: rawBuild?.raw ?? null,
     gzip9: gzipBuild?.gzip9 ?? null,

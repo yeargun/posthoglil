@@ -35,16 +35,17 @@ Every size number is the **same surface**: official `posthog-js@1.418.10` source
 - Terser, 3-pass mangling on and off, and 1-pass mangling on
 - esbuild minify, `target: esnext` and `target: es2018`
 
-`@itslil/posthog-js` is the LilScript compiler's own ESM: not bundled, not post-minified, license banner included.
+`@itslil/posthog-js` is the LilScript compiler's own ESM: not bundled and not post-minified. The package wrapper adds the license banner after compilation.
 
 The published npm `posthog-js` IIFE still contains the client, autocapture, and replay. It is not a lane. Comparing this port to that file would be a different product against a subset.
 
-LilScript scores a different artifact for each `javascript.cost_model`. Official Oxc / Terser / esbuild rows are one file measured three ways. The LilScript **library** numbers take raw from the raw compile, gzip from the gzip compile, and Brotli from the Brotli compile. The npm file is the Brotli compile.
+LilScript scores a different artifact for each `javascript.cost_model`. Official Oxc / Terser / esbuild rows are one file measured three ways. Compiler-to-minifier comparisons use the direct JavaScript artifacts without package metadata on either side. The npm ESM adds a 91-byte raw license banner and is reported separately.
 
-- **JS library** (`[mangle] extern_fields = true`). Public names stay readable.
-- **Closed LilScript** (`lilscript.closed.toml`, `extern_fields = false`, Brotli compile). Not published.
+- **Direct compiler output** (`[mangle] extern_fields = true`). Public names stay readable.
+- **Packaged ESM**. The verified Brotli artifact plus its license banner.
+- **Closed LilScript** (`lilscript.closed.toml`, `extern_fields = false`). Not published.
 
-Measured with `lilscript-codec` gzip-9 / Brotli-11. LilScript lanes include the same license banner.
+Measured with `lilscript-codec` gzip-9 / Brotli-11.
 
 Pin: `posthog-js@1.418.10` commit `9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb`.
 
@@ -58,15 +59,21 @@ Pin: `posthog-js@1.418.10` commit `9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb`.
 | Official · Terser mangle on · 1 pass | 16,343 | 6,234 | 5,626 | — |
 | Official · esbuild minify esnext | 16,551 | 6,355 | 5,775 | — |
 | Official · esbuild minify es2018 | 17,213 | 6,598 | 5,943 | — |
-| **`@itslil/posthog-js` · matched compiles** | **16,223** | **6,415** | **5,793** | **1.01× / 1.04× / 1.03×** |
-| `@itslil/posthog-js` · cost_model brotli (npm) | 17,070 | 6,532 | 5,793 | 1.03× Brotli |
-| `@itslil/posthog-js` · cost_model gzip | 16,527 | 6,415 | 5,721 | 1.04× gzip |
-| `@itslil/posthog-js` · cost_model raw | 16,223 | 6,546 | 5,801 | 1.01× raw |
-| `@itslil/posthog-js` · closed LilScript | 17,070 | 6,532 | 5,793 | 1.03× Brotli |
+| **LilScript compiler · cost_model brotli** | **16,683** | **6,381** | **5,606** | **0.997× Brotli** |
+| `@itslil/posthog-js` · packaged ESM | 16,774 | 6,439 | 5,749 | 1.02× Brotli |
+| LilScript compiler · closed fields | 16,801 | 6,513 | 5,696 | 1.01× Brotli |
+| Previous verified gzip snapshot, packaged | 16,527 | 6,415 | 5,721 | 1.04× gzip |
+| Previous verified raw snapshot, packaged | 16,223 | 6,546 | 5,801 | 1.01× raw |
 
-Against official kernel · Oxc mangle on, the matched library compiles are **3.0% larger on Brotli-11**, **3.6% larger on gzip-9**, and **0.6% larger raw**. Same 19 compat tests.
+The current direct Brotli-scored compiler output is **16 bytes (0.3%) smaller than Oxc** and **20 bytes (0.4%) smaller than Terser**, with all **21 compatibility tests** passing. The packaged ESM remains 127 Brotli bytes above Oxc because it includes the license banner; that packaging cost is not credited to the compiler. Raw and gzip retain their previous verified snapshots because this update deliberately did not launch another exhaustive search.
 
-Oxc with mangling is the smallest official lane on every codec. Terser is 4 Brotli bytes behind Oxc. The published LilScript file is 171 Brotli bytes behind Oxc and 18 bytes behind esbuild `esnext` (5,775). Closed LilScript matches the npm file: the public kernel names are the API, so `extern_fields = false` does not buy anything here.
+Oxc with mangling is the smallest official lane on every codec. Terser is 4 Brotli bytes behind Oxc.
+
+### Why the PostHog win is narrow
+
+This kernel is mostly dense leaf utilities. Its public export names, protocol keys, PostHog field names, user-agent strings, and observable object shapes are fixed, leaving little structural scaffolding for LilScript to erase. Oxc and Terser already compress this kind of straight-line JavaScript close to the codec floor.
+
+LilScript's larger wins happen when types and closed-world knowledge let it remove objects, wrappers, branches, generic machinery, or whole dependency paths. Those opportunities are deliberately scarce in this like-for-like kernel. Here the remaining advantage comes from globally scored expression shapes and binding assignments, so a 16-byte Brotli win is small but expected rather than evidence of a missing 10–30% transformation.
 
 If LilScript is larger on a codec, that row stays. Losses are part of the comparison.
 

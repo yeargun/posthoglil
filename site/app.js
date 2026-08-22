@@ -89,7 +89,14 @@ function laneById(id) {
 }
 
 function barClass(id) {
-  if (id === "itslil" || id === "itslil-gzip" || id === "itslil-bytes") return "bar-lil"
+  if (
+    id === "itslil" ||
+    id === "itslil-package" ||
+    id === "itslil-gzip" ||
+    id === "itslil-bytes"
+  ) {
+    return "bar-lil"
+  }
   if (id === "itslil-closed") return "bar-closed"
   return "bar-official"
 }
@@ -125,7 +132,7 @@ function matchedLibraryRow() {
   if (!brotli || !gzip || !bytes) return null
   return {
     id: "itslil-matched",
-    name: "@itslil/posthog-js · matched compiles",
+    name: "LilScript compiler · verified artifacts by objective",
     raw: bytes.raw,
     gzip9: gzip.gzip9,
     brotli11: brotli.brotli11,
@@ -135,15 +142,22 @@ function matchedLibraryRow() {
 function renderHero() {
   const oxc = laneById("kernel-oxc-mangle")
   const itslil = laneById("itslil")
+  const packaged = laneById("itslil-package")
   const gzip = laneById("itslil-gzip")
   const bytes = laneById("itslil-bytes")
-  document.querySelector("#hero-spec").textContent = "19/19"
+  document.querySelector("#hero-spec").textContent = "21/21"
   if (!oxc || !itslil) return
   const smaller = smallerThan(itslil.brotli11, oxc.brotli11)
   document.querySelector("#hero-ratio").innerHTML = `${smaller.amount}<span>${smaller.word}</span>`
   document.querySelector("#hero-bytes").textContent =
     `${formatter.format(oxc.brotli11)} B → ${formatter.format(itslil.brotli11)} B Brotli-11`
   document.querySelector("#hero-shipped").textContent = smallerThan(itslil.brotli11, oxc.brotli11).text
+  if (packaged) {
+    document.querySelector("#hero-package").textContent = smallerThan(
+      packaged.brotli11,
+      oxc.brotli11,
+    ).text
+  }
   if (gzip) {
     document.querySelector("#hero-gzip").textContent = smallerThan(gzip.gzip9, oxc.gzip9).text
   }
@@ -155,7 +169,13 @@ function renderHero() {
 function renderSize() {
   const oxc = laneById("kernel-oxc-mangle")
   if (!oxc) return
-  renderCodec("brotli11", "itslil", ["itslil-closed"], "#bar-brotli", "#body-brotli")
+  renderCodec(
+    "brotli11",
+    "itslil",
+    ["itslil-package", "itslil-closed"],
+    "#bar-brotli",
+    "#body-brotli",
+  )
   renderCodec("gzip9", "itslil-gzip", [], "#bar-gzip", "#body-gzip")
   renderCodec("raw", "itslil-bytes", [], "#bar-raw", "#body-raw")
 
@@ -164,6 +184,7 @@ function renderSize() {
     ...OFFICIAL_SIZE_IDS.map(laneById),
     matched,
     laneById("itslil"),
+    laneById("itslil-package"),
     laneById("itslil-gzip"),
     laneById("itslil-bytes"),
     laneById("itslil-closed"),
@@ -199,7 +220,7 @@ function renderSurface() {
     },
     {
       label: "compat cases versus the official kernel",
-      value: "19/19",
+      value: "21/21",
       geo: true,
     },
     {

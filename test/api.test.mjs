@@ -5,9 +5,11 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { describe, it } from "node:test"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const lilPath = existsSync(resolve(root, "dist/posthog.esm.js"))
-  ? resolve(root, "dist/posthog.esm.js")
-  : resolve(root, "dist/posthog.dev.js")
+const lilPath = process.env.POSTHOGLIL_ARTIFACT
+  ? resolve(root, process.env.POSTHOGLIL_ARTIFACT)
+  : existsSync(resolve(root, "dist/posthog.esm.js"))
+    ? resolve(root, "dist/posthog.esm.js")
+    : resolve(root, "dist/posthog.dev.js")
 const source = readFileSync(lilPath, "utf8")
 
 const names = [
