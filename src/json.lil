@@ -1,0 +1,28 @@
+export string sanitizeString(string value) {
+  string output = "";
+  int n = value.length;
+  int index = 0;
+  while (index < n) {
+    int codeUnit = value.charCodeAt(index);
+    if (codeUnit >= 55296 && codeUnit <= 56319) {
+      int nextCodeUnit = 0;
+      if (index + 1 < n) {
+        nextCodeUnit = value.charCodeAt(index + 1);
+      }
+      if (nextCodeUnit >= 56320 && nextCodeUnit <= 57343) {
+        output = output + value.charAt(index) + value.charAt(index + 1);
+        index = index + 1;
+      } else {
+        output = output + "\uFFFD";
+      }
+    } else {
+      if (codeUnit >= 56320 && codeUnit <= 57343) {
+        output = output + "\uFFFD";
+      } else {
+        output = output + value.charAt(index);
+      }
+    }
+    index = index + 1;
+  }
+  return output;
+}

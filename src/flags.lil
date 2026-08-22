@@ -7,7 +7,6 @@ import {
   jsonStringify,
   len,
   objectKeys,
-  toStr,
   undef
 } from "./host.lil";
 
@@ -55,30 +54,7 @@ string[] flagCalledKeys = [
   "$current_url",
   "$pathname",
   "$referring_domain",
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
-  "gad_source",
-  "mc_cid",
-  "gclid",
-  "gclsrc",
-  "dclid",
-  "gbraid",
-  "wbraid",
-  "fbclid",
-  "msclkid",
-  "twclid",
-  "li_fat_id",
-  "igshid",
-  "ttclid",
-  "rdt_cid",
-  "epik",
-  "qclid",
-  "sccid",
-  "irclid",
-  "_kx",
+  ...campaignKeys,
   "$session_id",
   "$window_id",
   "$lib",
@@ -144,7 +120,7 @@ export JsValue getFlagValuesFromFlags(JsValue flags) {
   int i = 0;
   int n = len(keys);
   while (i < n) {
-    string key = toStr(keys[i]);
+    JsValue key = keys[i];
     JsValue value = getFeatureFlagValue(source[key]);
     if (!isUndef(value)) {
       out[key] = value;
@@ -161,7 +137,7 @@ export JsValue getPayloadsFromFlags(JsValue flags) {
   int i = 0;
   int n = len(keys);
   while (i < n) {
-    string key = toStr(keys[i]);
+    JsValue key = keys[i];
     JsValue details = source[key];
     if (!isUndef(details) && !JS.isNullish(details) && details["enabled"].truthy()) {
       JsValue metadata = details["metadata"];
@@ -179,7 +155,7 @@ export JsValue getPayloadsFromFlags(JsValue flags) {
   return out;
 }
 
-JsValue detailFromValue(string key, JsValue value, JsValue payload) {
+JsValue detailFromValue(JsValue key, JsValue value, JsValue payload) {
   JsValue meta = empty();
   meta["id"] = undef();
   meta["version"] = undef();
@@ -205,7 +181,7 @@ JsValue parsePayloadMap(JsValue rawPayloads) {
   int index = 0;
   int count = len(keys);
   while (index < count) {
-    string key = toStr(keys[index]);
+    JsValue key = keys[index];
     out[key] = parsePayload(source[key]);
     index = index + 1;
   }
@@ -219,7 +195,7 @@ JsValue detailsFromV1(JsValue featureFlags, JsValue featureFlagPayloads) {
   int index = 0;
   int count = len(keys);
   while (index < count) {
-    string key = toStr(keys[index]);
+    JsValue key = keys[index];
     out[key] = detailFromValue(key, source[key], featureFlagPayloads[key]);
     index = index + 1;
   }
@@ -251,7 +227,7 @@ export JsValue createFlagsResponseFromFlagsAndPayloads(JsValue featureFlags, JsV
   int i = 0;
   int n = len(flagKeys);
   while (i < n) {
-    string key = toStr(flagKeys[i]);
+    JsValue key = flagKeys[i];
     seen[key] = true;
     if (flags[key].truthy() || payloads[key].truthy()) {
       JsValue value = flags[key];
@@ -266,8 +242,8 @@ export JsValue createFlagsResponseFromFlagsAndPayloads(JsValue featureFlags, JsV
   i = 0;
   n = len(payloadKeys);
   while (i < n) {
-    string key = toStr(payloadKeys[i]);
-    if (!hasKey(seen, key) && (flags[key].truthy() || payloads[key].truthy())) {
+    JsValue key = payloadKeys[i];
+    if (!JS.in(key, seen) && (flags[key].truthy() || payloads[key].truthy())) {
       JsValue value = flags[key];
       if (isUndef(value) || JS.isNullish(value)) {
         enabled[key] = true;
@@ -296,7 +272,7 @@ export JsValue flagDetailsToResults(JsValue flagDetails) {
   int i = 0;
   int n = len(keys);
   while (i < n) {
-    JsValue detail = flagDetails[toStr(keys[i])];
+    JsValue detail = flagDetails[keys[i]];
     JsValue value = getFeatureFlagValue(detail);
     JsValue rawPayload = undef();
     JsValue metadata = detail["metadata"];
@@ -318,7 +294,7 @@ export JsValue flagDetailsToResults(JsValue flagDetails) {
   return results;
 }
 
-void copyIfPresent(JsValue source, JsValue target, string key) {
+void copyIfPresent(JsValue source, JsValue target, JsValue key) {
   JsValue value = source[key];
   if (!isUndef(value)) {
     target[key] = value;
@@ -336,7 +312,7 @@ export JsValue minimizeFlagCalledEventProperties(JsValue properties, JsValue tra
     int n = len(transportKeys);
     int j = 0;
     while (j < n) {
-      copyIfPresent(properties, out, toStr(transportKeys[j]));
+      copyIfPresent(properties, out, transportKeys[j]);
       j = j + 1;
     }
   }

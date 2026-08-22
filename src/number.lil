@@ -1,0 +1,83 @@
+import { isBool, isFiniteNum, isNum, isStr, toNum, toStr, undef } from "./host.lil";
+import { isNumber } from "./types.lil";
+
+export number clampToRange(
+  JsValue value,
+  number min,
+  number max,
+  JsValue logger,
+  JsValue fallbackValue = JS.undefined()
+) {
+  if (min > max) {
+    JS.invoke(logger, "warn", "min cannot be greater than max.");
+    min = max;
+  }
+  if (!isNumber(value)) {
+    JS.invoke(
+      logger,
+      "warn",
+      " must be a number. using max or fallback. max: " + toStr(max) + ", fallback: " + toStr(fallbackValue)
+    );
+    JsValue next = fallbackValue;
+    if (!next.truthy()) {
+      next = max;
+    }
+    return clampToRange(next, min, max, logger);
+  }
+  number n = toNum(value);
+  if (n > max) {
+    JS.invoke(logger, "warn", " cannot be  greater than max: " + toStr(max) + ". Using max value instead.");
+    return max;
+  }
+  if (n < min) {
+    JS.invoke(logger, "warn", " cannot be less than min: " + toStr(min) + ". Using min value instead.");
+    return min;
+  }
+  return n;
+}
+
+export bool getRemoteConfigBool(JsValue field, string key, bool defaultValue = true) {
+  if (JS.isNullish(field)) {
+    return defaultValue;
+  }
+  if (isBool(field)) {
+    return field.truthy();
+  }
+  if (JS.typeOf(field) == "object") {
+    JsValue value = field[key];
+    if (isBool(value)) {
+      return value.truthy();
+    }
+    return defaultValue;
+  }
+  return defaultValue;
+}
+
+export JsValue getRemoteConfigNumber(JsValue field, string key) {
+  if (JS.isNullish(field) || JS.typeOf(field) != "object") {
+    return undef();
+  }
+  JsValue value = field[key];
+  if (isNum(value) && isFiniteNum(toNum(value))) {
+    return value;
+  }
+  if (isStr(value)) {
+    string trimmed = toStr(value).trim();
+    if (trimmed == "") {
+      return undef();
+    }
+    number parsed = toNum(JS.call(Number, JS.undefined(), trimmed));
+    if (isFiniteNum(parsed)) {
+      return parsed;
+    }
+  }
+  return undef();
+}
+
+export bool isValidSampleRate(JsValue value) {
+  if (!isNum(value)) {
+    return false;
+  }
+  number n = toNum(value);
+  return isFiniteNum(n) && n >= 0.0 && n <= 1.0;
+}

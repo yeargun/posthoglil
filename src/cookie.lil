@@ -3,7 +3,6 @@ import {
   hasKey,
   isArr,
   isNoLike,
-  isNullish,
   isStr,
   isUndef,
   jsonParse,
@@ -45,17 +44,13 @@ export string serializePostHogCookie(string anonymousId) {
   return toStr(jsonStringify(payload));
 }
 
-bool isPlainObj(JsValue value) {
-  return !JS.isNullish(value) && JS.typeOf(value) == "object" && !JS.isArray(value);
-}
-
 export JsValue parsePostHogCookie(JsValue cookieValue) {
-  if (isUndef(cookieValue) || JS.isNullish(cookieValue) || !isStr(cookieValue) || toStr(cookieValue) == "") {
+  if (isUndef(cookieValue) || JS.isNullish(cookieValue) || !cookieValue.truthy()) {
     return null;
   }
   try {
     JsValue parsed = jsonParse(cookieValue);
-    if (isUndef(parsed) || JS.isNullish(parsed) || !isPlainObj(parsed) || isUndef(parsed["distinct_id"])) {
+    if (!parsed.truthy() || JS.typeOf(parsed) != "object" || isUndef(parsed["distinct_id"])) {
       return null;
     }
     JsValue sesid = parsed["$sesid"];
@@ -65,7 +60,7 @@ export JsValue parsePostHogCookie(JsValue cookieValue) {
     }
     JsValue state = JS.object();
     state["distinctId"] = toStr(parsed["distinct_id"]);
-    state["isIdentified"] = isStr(parsed["$user_state"]) && toStr(parsed["$user_state"]) == "identified";
+    state["isIdentified"] = JS.strictEqual(parsed["$user_state"], "identified");
     if (isStr(sessionId)) {
       state["sessionId"] = sessionId;
     } else {
@@ -138,11 +133,11 @@ export JsValue cookieStateToProperties(JsValue state) {
 export string getConsentCookieName(string apiKey, JsValue config) {
   if (!isUndef(config) && !JS.isNullish(config)) {
     JsValue named = config["consent_persistence_name"];
-    if (isStr(named) && toStr(named) != "") {
+    if (isStr(named) && named.truthy()) {
       return toStr(named);
     }
     JsValue prefix = config["opt_out_capturing_cookie_prefix"];
-    if (isStr(prefix) && toStr(prefix) != "") {
+    if (isStr(prefix) && prefix.truthy()) {
       return toStr(prefix) + apiKey;
     }
   }

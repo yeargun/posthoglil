@@ -1,7 +1,7 @@
 {
   "name": "@itslil/posthog-js",
   "version": "1.418.10",
-  "description": "Selected posthog-js 1.418.10 web-SDK modules rewritten in LilScript. UUID, flags, cookies, routing, rate limit, and queue batching — not the full SDK.",
+  "description": "Selected posthog-js 1.418.10 web-SDK modules rewritten in LilScript. UUID, flags, cookies, routing, rate limits, queue, bot detection, and portable helpers — not the full SDK.",
   "keywords": [
     "posthog",
     "analytics",

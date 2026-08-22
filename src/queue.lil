@@ -4,10 +4,8 @@ import {
   deleteKey,
   isFiniteNum,
   isNum,
-  isStr,
   isUndef,
   len,
-  objectKeys,
   toNum,
   toStr,
   undef
@@ -36,11 +34,9 @@ export JsValue formatQueue(JsValue items) {
   while (i < n) {
     JsValue req = items[i];
     JsValue batchKey = req["batchKey"];
-    string key = toStr(req["url"]);
-    if (isStr(batchKey) && toStr(batchKey) != "") {
-      key = toStr(batchKey);
-    } else if (!isUndef(batchKey) && !JS.isNullish(batchKey) && toStr(batchKey) != "") {
-      key = toStr(batchKey);
+    JsValue key = req["url"];
+    if (batchKey.truthy()) {
+      key = batchKey;
     }
     if (isUndef(requests[key])) {
       JsValue next = JS.object();

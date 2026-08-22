@@ -1,6 +1,6 @@
 # @itslil/posthog-js
 
-This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It is a **capture kernel** from `posthog-js@1.418.10` — UUID, feature-flag utils, cookie identity, request routing, a token bucket, and queue batching — rewritten in [LilScript](https://github.com/yeargun/lilscript).
+This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It is a **capture kernel** from `posthog-js@1.418.10` — UUID, feature-flag utils, cookie identity, request routing, token and bucketed rate limits, queue batching, bot detection, and the portable string / number / type / JSON / URL helpers — rewritten in [LilScript](https://github.com/yeargun/lilscript).
 
 It is not affiliated with PostHog. Autocapture, session replay, surveys, product tours, heatmaps, web vitals, the `PostHog` client, network transport, and persistence adapters are absent.
 
@@ -17,6 +17,8 @@ import {
   parsePostHogCookie,
   endpointFor,
   rateLimitContext,
+  isBlockedUA,
+  getPersonPropertiesHash,
   formatQueue,
 } from "@itslil/posthog-js"
 
@@ -48,25 +50,23 @@ Pin: `posthog-js@1.418.10` commit `9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb`.
 
 | Lane | Raw | gzip-9 | Brotli-11 | vs Oxc on that codec |
 | --- | ---: | ---: | ---: | ---: |
-| Official kernel | 25,471 | 7,081 | 6,137 | — |
-| Official · Vite 8 Oxc mangle on | 10,625 | 4,043 | 3,662 | baseline |
-| Official · Vite 8 Oxc mangle off | 14,629 | 4,585 | 4,163 | — |
-| Official · Terser mangle on · 3 passes | 10,662 | 4,053 | 3,699 | — |
-| Official · Terser mangle off · 3 passes | 15,289 | 4,619 | 4,230 | — |
-| Official · Terser mangle on · 1 pass | 10,662 | 4,053 | 3,699 | — |
-| Official · esbuild minify esnext | 10,836 | 4,157 | 3,792 | — |
-| Official · esbuild minify es2018 | 11,428 | 4,386 | 3,956 | — |
-| **`@itslil/posthog-js` · matched compiles** | **10,461** | **4,356** | **3,915** | **0.98× / 1.08× / 1.07×** |
-| `@itslil/posthog-js` · cost_model brotli (npm) | 10,408 | 4,377 | 3,915 | 1.07× Brotli |
-| `@itslil/posthog-js` · cost_model gzip | 10,410 | 4,356 | 3,910 | 1.08× gzip |
-| `@itslil/posthog-js` · cost_model raw | 10,461 | 4,307 | 3,818 | 0.98× raw |
-| `@itslil/posthog-js` · closed LilScript | 10,408 | 4,377 | 3,915 | 1.07× Brotli |
+| Official kernel | 35,193 | 9,732 | 8,561 | — |
+| Official · Vite 8 Oxc mangle on | 16,123 | 6,194 | 5,622 | baseline |
+| Official · Vite 8 Oxc mangle off | 22,034 | 6,951 | 6,307 | — |
+| Official · Terser mangle on · 3 passes | 16,343 | 6,234 | 5,626 | — |
+| Official · Terser mangle off · 3 passes | 23,298 | 7,111 | 6,428 | — |
+| Official · Terser mangle on · 1 pass | 16,343 | 6,234 | 5,626 | — |
+| Official · esbuild minify esnext | 16,551 | 6,355 | 5,775 | — |
+| Official · esbuild minify es2018 | 17,213 | 6,598 | 5,943 | — |
+| **`@itslil/posthog-js` · matched compiles** | **16,223** | **6,415** | **5,793** | **1.01× / 1.04× / 1.03×** |
+| `@itslil/posthog-js` · cost_model brotli (npm) | 17,070 | 6,532 | 5,793 | 1.03× Brotli |
+| `@itslil/posthog-js` · cost_model gzip | 16,527 | 6,415 | 5,721 | 1.04× gzip |
+| `@itslil/posthog-js` · cost_model raw | 16,223 | 6,546 | 5,801 | 1.01× raw |
+| `@itslil/posthog-js` · closed LilScript | 17,070 | 6,532 | 5,793 | 1.03× Brotli |
 
-Against official kernel · Oxc mangle on, the matched library compiles are **6.9% larger on Brotli-11**, **7.7% larger on gzip-9**, and **1.5% smaller raw**. Same 16 compat tests.
+Against official kernel · Oxc mangle on, the matched library compiles are **3.0% larger on Brotli-11**, **3.6% larger on gzip-9**, and **0.6% larger raw**. Same 19 compat tests.
 
-Oxc with mangling is the smallest official lane on every codec. Terser is 37 Brotli bytes behind. esbuild `esnext` is 130 Brotli bytes behind Oxc. The published LilScript file sits between esbuild `esnext` (3,792) and esbuild `es2018` (3,956).
-
-The raw-scored compile Brotli-compresses to 3,818 B, which is smaller than the Brotli-scored npm file. The headline still uses the Brotli compile, because that is what ships. Even 3,818 B is larger than Oxc. Closed LilScript matches the npm file: the public kernel names are the API, so `extern_fields = false` does not buy anything here.
+Oxc with mangling is the smallest official lane on every codec. Terser is 4 Brotli bytes behind Oxc. The published LilScript file is 171 Brotli bytes behind Oxc and 18 bytes behind esbuild `esnext` (5,775). Closed LilScript matches the npm file: the public kernel names are the API, so `extern_fields = false` does not buy anything here.
 
 If LilScript is larger on a codec, that row stays. Losses are part of the comparison.
 
@@ -80,6 +80,13 @@ If LilScript is larger on a codec, that row stays. Losses are part of the compar
 | Router | `packages/browser/src/utils/request-router.ts` | hosts, region, `endpointFor` | `RequestRouter` class, `rewriteRequestPath` |
 | Rate limit | `packages/browser/src/rate-limiter.ts` | token-bucket context | persistence, `$$client_ingestion_warning` |
 | Queue | `packages/browser/src/request-queue.ts` | flush clamp, format, offsets, unload sort | `sendBeacon`, timers, transport |
+| Bot | `packages/core/src/utils/bot-detection.ts` | `DEFAULT_BLOCKED_UA_STRS`, `isBlockedUA` | navigator / UA-CH `isLikelyBot` |
+| Strings | `packages/core/src/utils/string-utils.ts` | includes, trim, strip `$`, distinct-id, person hash | `safeJsonStringify` |
+| Numbers | `packages/core/src/utils/number-utils.ts` | clamp, remote-config bool/number, sample rate | — |
+| Types | `packages/core/src/utils/type-utils.ts` | empty/primitive/builtin, yes/no-like, unsafe-event lists | DOM `FormData` / `File` / `Event` |
+| JSON | `packages/core/src/utils/json-utils.ts` | `sanitizeString` | `toJsonSafeValue` |
+| URL | `packages/core/src/utils/index.ts` | `removeTrailingSlash`, `stripUrlHash` | retries, timestamps |
+| Bucketed limiter | `packages/core/src/utils/bucketed-rate-limiter.ts` | config resolve, consume | class wrapper, logger callback |
 
 Compatibility tests compare LilScript output to the official kernel, not to the published IIFE.
 

@@ -2,6 +2,7 @@ import { isStr, isUndef, toStr } from "./host.lil";
 
 Regex usHost = new Regex("https://(app|us|us-assets)(\\.i)?\\.posthog\\.com", "i");
 Regex euHost = new Regex("https://(eu|eu-assets)(\\.i)?\\.posthog\\.com", "i");
+string ingestion = "i.posthog.com";
 
 string trimSlash(string host) {
   string trimmed = host.trim();
@@ -12,24 +13,25 @@ string trimSlash(string host) {
 }
 
 string replaceIngestion(string host) {
-  int idx = host.indexOf(".i.posthog.com");
+  string suffix = "." + ingestion;
+  int idx = host.indexOf(suffix);
   if (idx < 0) {
     return host;
   }
-  return host.slice(0, idx) + ".posthog.com" + host.slice(idx + 14);
+  return host.slice(0, idx) + ".posthog.com" + host.slice(idx + suffix.length);
 }
 
 export string apiHostFromConfig(string apiHost) {
   string host = trimSlash(apiHost);
   if (host == "https://app.posthog.com") {
-    return "https://us.i.posthog.com";
+    return "https://us." + ingestion;
   }
   return host;
 }
 
 export string flagsApiHostFromConfig(JsValue config) {
   JsValue custom = config["flags_api_host"];
-  if (isStr(custom) && toStr(custom) != "") {
+  if (isStr(custom) && custom.truthy()) {
     return trimSlash(toStr(custom));
   }
   return apiHostFromConfig(toStr(config["api_host"]));
@@ -38,7 +40,7 @@ export string flagsApiHostFromConfig(JsValue config) {
 export string uiHostFromConfig(JsValue config) {
   JsValue custom = config["ui_host"];
   string host = "";
-  if (isStr(custom) && toStr(custom) != "") {
+  if (isStr(custom) && custom.truthy()) {
     host = trimSlash(toStr(custom));
   } else {
     host = replaceIngestion(apiHostFromConfig(toStr(config["api_host"])));
@@ -80,7 +82,7 @@ export string endpointFor(JsValue config, string target, string path) {
   }
   if (target == "assets" && resolved.startsWith("/static/")) {
     JsValue override = config["asset_host"];
-    if (isStr(override) && toStr(override) != "") {
+    if (isStr(override) && override.truthy()) {
       string host = trimSlash(toStr(override));
       if (host != "") {
         return host + resolved;
@@ -91,8 +93,9 @@ export string endpointFor(JsValue config, string target, string path) {
   if (region == "custom") {
     return apiHostFromConfig(toStr(config["api_host"])) + resolved;
   }
+  string suffix = ingestion + resolved;
   if (target == "assets") {
-    return "https://" + region + "-assets.i.posthog.com" + resolved;
+    return "https://" + region + "-assets." + suffix;
   }
-  return "https://" + region + ".i.posthog.com" + resolved;
+  return "https://" + region + "." + suffix;
 }

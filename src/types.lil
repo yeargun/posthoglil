@@ -1,0 +1,109 @@
+import {
+  asObject,
+  isArr,
+  isObj,
+  len,
+  objectKeys,
+  objectTag,
+  toNum
+} from "./host.lil";
+import { includes } from "./string.lil";
+
+export bool isNumber(JsValue x) {
+  return objectTag(x) == "[object Number]" && JS.strictEqual(x, x);
+}
+
+export bool isStringValue(JsValue x) {
+  return objectTag(x) == "[object String]";
+}
+
+export bool isObjectValue(JsValue x) {
+  return JS.strictEqual(x, asObject(x)) && !isArr(x);
+}
+
+export bool isEmptyObject(JsValue x) {
+  if (!isObjectValue(x)) {
+    return false;
+  }
+  return len(objectKeys(x)) == 0;
+}
+
+export bool isEmptyString(JsValue x) {
+  if (!isStringValue(x)) {
+    return false;
+  }
+  return JS.string(x).trim().length == 0;
+}
+
+export bool isPositiveNumber(JsValue value) {
+  return isNumber(value) && toNum(value) > 0.0;
+}
+
+export bool isPrimitive(JsValue value) {
+  return !isObj(value);
+}
+
+export bool isBuiltin(JsValue candidate, string className) {
+  return objectTag(candidate) == "[object " + className + "]";
+}
+
+string[] unsafeEvents = [
+  "$snapshot",
+  "$pageview",
+  "$pageleave",
+  "$set",
+  "survey dismissed",
+  "survey sent",
+  "survey shown",
+  "$identify",
+  "$groupidentify",
+  "$create_alias",
+  "$$client_ingestion_warning",
+  "$web_experiment_applied",
+  "$feature_enrollment_update",
+  "$feature_flag_called"
+];
+
+string[] unsafeEventProperties = ["token"];
+
+export JsValue knownUnsafeEditableEvent = unsafeEvents;
+export JsValue knownUnsafeEditableEventProperty = unsafeEventProperties;
+
+export bool isKnownUnsafeEditableEvent(JsValue x) {
+  return includes(unsafeEvents, x);
+}
+
+export bool isKnownUnsafeEditableEventProperty(JsValue x) {
+  return includes(unsafeEventProperties, x);
+}
+
+JsValue makeYesLike() {
+  JsValue list = JS.array();
+  JS.invoke(list, "push", true);
+  JS.invoke(list, "push", "true");
+  JS.invoke(list, "push", 1);
+  JS.invoke(list, "push", "1");
+  JS.invoke(list, "push", "yes");
+  return list;
+}
+
+JsValue makeNoLike() {
+  JsValue list = JS.array();
+  JS.invoke(list, "push", false);
+  JS.invoke(list, "push", "false");
+  JS.invoke(list, "push", 0);
+  JS.invoke(list, "push", "0");
+  JS.invoke(list, "push", "no");
+  return list;
+}
+
+export JsValue yesLikeValues = makeYesLike();
+export JsValue noLikeValues = makeNoLike();
+
+export bool isYesLike(JsValue val) {
+  return includes(yesLikeValues, val);
+}
+
+export bool isNoLike(JsValue val) {
+  return includes(noLikeValues, val);
+}

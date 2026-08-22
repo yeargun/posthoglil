@@ -211,3 +211,168 @@ describe("router, rate limit, queue", () => {
     assert.equal(lil.clampFlushInterval("x"), official.clampFlushInterval("x"))
   })
 })
+
+describe("bot detection", () => {
+  it("matches the default blocked UA list and lookups", () => {
+    assert.deepEqual(lil.DEFAULT_BLOCKED_UA_STRS, official.DEFAULT_BLOCKED_UA_STRS)
+    const bots = [
+      "Mozilla/5.0 AppleWebKit/537.36 (compatible; Googlebot/2.1)",
+      "Mozilla/5.0 (compatible; GPTBot/1.0)",
+      "HeadlessChrome/122.0.0.0",
+      "Slackbot-LinkExpanding 1.0",
+    ]
+    const humans = [
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:129.0) Gecko/20100101 Firefox/129.0",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.6478.127 Electron/31.2.1 Safari/537.36",
+    ]
+    for (const ua of bots) {
+      assert.equal(lil.isBlockedUA(ua), official.isBlockedUA(ua))
+      assert.equal(lil.isBlockedUA(ua), true)
+      assert.equal(lil.isBlockedUA(ua.toUpperCase()), true)
+    }
+    for (const ua of humans) {
+      assert.equal(lil.isBlockedUA(ua), official.isBlockedUA(ua))
+      assert.equal(lil.isBlockedUA(ua), false)
+    }
+    assert.equal(lil.isBlockedUA(undefined), official.isBlockedUA(undefined))
+    assert.equal(lil.isBlockedUA("Mozilla/5.0 testington", ["testington"]), true)
+  })
+})
+
+describe("strings, numbers, types, json, url", () => {
+  it("matches string helpers and person-property hashes", () => {
+    assert.equal(lil.includes("feature_flag", "flag"), official.includes("feature_flag", "flag"))
+    assert.equal(lil.includes(["a", "b"], "b"), official.includes(["a", "b"], "b"))
+    assert.equal(lil.trim("  \u00A0hi\uFEFF  "), official.trim("  \u00A0hi\uFEFF  "))
+    assert.equal(lil.stripLeadingDollar("$set"), official.stripLeadingDollar("$set"))
+    assert.equal(lil.stripLeadingDollar("set"), official.stripLeadingDollar("set"))
+    assert.equal(lil.isDistinctIdStringLike("Distinct_ID"), official.isDistinctIdStringLike("Distinct_ID"))
+    assert.equal(lil.isDistinctIdStringLike("user"), official.isDistinctIdStringLike("user"))
+    assert.equal(
+      lil.getPersonPropertiesHash("user-1", { b: "value-b", a: "value-a" }),
+      official.getPersonPropertiesHash("user-1", { b: "value-b", a: "value-a" }),
+    )
+    assert.equal(
+      lil.getPersonPropertiesHash("user-1", { nested: { z: 1, a: 2 } }, { other: { y: 3, b: 4 } }),
+      official.getPersonPropertiesHash("user-1", { nested: { z: 1, a: 2 } }, { other: { y: 3, b: 4 } }),
+    )
+    assert.equal(lil.getPersonPropertiesHash("user-1"), official.getPersonPropertiesHash("user-1"))
+  })
+
+  it("matches clamp, remote config, and sample-rate checks", () => {
+    const silent = { warn() {} }
+    const cases = [
+      [null, 10, 100, undefined],
+      ["not-a-number", 10, 100, undefined],
+      [150, 10, 100, undefined],
+      [5, 10, 100, undefined],
+      [50, 10, 100, undefined],
+      ["invalid", 10, 100, 20],
+      [Number.NaN, 10, 100, 20],
+      [Number.POSITIVE_INFINITY, 10, 100, undefined],
+      [Number.NEGATIVE_INFINITY, 10, 100, undefined],
+    ]
+    for (const [value, min, max, fallback] of cases) {
+      assert.equal(
+        lil.clampToRange(value, min, max, silent, fallback),
+        official.clampToRange(value, min, max, silent, fallback),
+      )
+    }
+    assert.equal(lil.clampToRange(50, 100, 10, silent), official.clampToRange(50, 100, 10, silent))
+    assert.equal(lil.getRemoteConfigBool(undefined, "key"), official.getRemoteConfigBool(undefined, "key"))
+    assert.equal(lil.getRemoteConfigBool(undefined, "key", false), official.getRemoteConfigBool(undefined, "key", false))
+    assert.equal(lil.getRemoteConfigBool(false, "key", true), official.getRemoteConfigBool(false, "key", true))
+    assert.equal(
+      lil.getRemoteConfigBool({ autocaptureExceptions: false }, "autocaptureExceptions"),
+      official.getRemoteConfigBool({ autocaptureExceptions: false }, "autocaptureExceptions"),
+    )
+    assert.equal(
+      lil.getRemoteConfigNumber({ sampleRate: "0.5" }, "sampleRate"),
+      official.getRemoteConfigNumber({ sampleRate: "0.5" }, "sampleRate"),
+    )
+    assert.equal(
+      lil.getRemoteConfigNumber({ sampleRate: "   " }, "sampleRate"),
+      official.getRemoteConfigNumber({ sampleRate: "   " }, "sampleRate"),
+    )
+    for (const value of [0, 0.5, 1, -0.1, 1.1, Number.POSITIVE_INFINITY, Number.NaN, "0.5", null]) {
+      assert.equal(lil.isValidSampleRate(value), official.isValidSampleRate(value))
+    }
+  })
+
+  it("matches portable type, json, and url helpers", () => {
+    assert.equal(lil.isNumber(1), official.isNumber(1))
+    assert.equal(lil.isNumber(Number.NaN), official.isNumber(Number.NaN))
+    assert.equal(lil.isNumber(Number.POSITIVE_INFINITY), official.isNumber(Number.POSITIVE_INFINITY))
+    assert.equal(lil.isEmptyObject({}), official.isEmptyObject({}))
+    assert.equal(lil.isEmptyObject({ a: 1 }), official.isEmptyObject({ a: 1 }))
+    assert.equal(lil.isEmptyObject([]), official.isEmptyObject([]))
+    assert.equal(lil.isEmptyString("  "), official.isEmptyString("  "))
+    assert.equal(lil.isEmptyString("x"), official.isEmptyString("x"))
+    assert.equal(lil.isPositiveNumber(1), official.isPositiveNumber(1))
+    assert.equal(lil.isPositiveNumber(0), official.isPositiveNumber(0))
+    assert.equal(lil.isPrimitive(null), official.isPrimitive(null))
+    assert.equal(lil.isPrimitive({}), official.isPrimitive({}))
+    assert.equal(lil.isBuiltin(new Date("2024-01-01"), "Date"), official.isBuiltin(new Date("2024-01-01"), "Date"))
+    assert.equal(lil.isYesLike("yes"), official.isYesLike("yes"))
+    assert.equal(lil.isNoLike(0), official.isNoLike(0))
+    assert.deepEqual(lil.yesLikeValues, official.yesLikeValues)
+    assert.deepEqual(lil.noLikeValues, official.noLikeValues)
+    assert.deepEqual(lil.knownUnsafeEditableEvent, official.knownUnsafeEditableEvent)
+    assert.equal(lil.isKnownUnsafeEditableEvent("$pageview"), official.isKnownUnsafeEditableEvent("$pageview"))
+    assert.equal(lil.isKnownUnsafeEditableEvent("clicked"), official.isKnownUnsafeEditableEvent("clicked"))
+    assert.equal(lil.isKnownUnsafeEditableEventProperty("token"), official.isKnownUnsafeEditableEventProperty("token"))
+    assert.equal(lil.sanitizeString("ok"), official.sanitizeString("ok"))
+    assert.equal(lil.sanitizeString("\uD800"), official.sanitizeString("\uD800"))
+    assert.equal(lil.sanitizeString("😀"), official.sanitizeString("😀"))
+    assert.equal(lil.removeTrailingSlash("me/wat///"), official.removeTrailingSlash("me/wat///"))
+    assert.equal(lil.removeTrailingSlash("/me"), official.removeTrailingSlash("/me"))
+    assert.equal(lil.stripUrlHash("https://example.com/path#section"), official.stripUrlHash("https://example.com/path#section"))
+    assert.equal(lil.stripUrlHash(undefined), official.stripUrlHash(undefined))
+  })
+})
+
+describe("bucketed rate limiter", () => {
+  it("resolves config and consumes tokens the same way", () => {
+    assert.deepEqual(lil.resolveExceptionRateLimiterConfig(), official.resolveExceptionRateLimiterConfig())
+    assert.deepEqual(
+      lil.resolveExceptionRateLimiterConfig({
+        exceptionRateLimiterRefillRate: 5,
+        __exceptionRateLimiterRefillRate: 3,
+        exceptionRateLimiterBucketSize: 50,
+        __exceptionRateLimiterBucketSize: 30,
+      }),
+      official.resolveExceptionRateLimiterConfig({
+        exceptionRateLimiterRefillRate: 5,
+        __exceptionRateLimiterRefillRate: 3,
+        exceptionRateLimiterBucketSize: 50,
+        __exceptionRateLimiterBucketSize: 30,
+      }),
+    )
+    const lilBuckets = {}
+    const officialBuckets = {}
+    const args = [1000, 1, 3, 1000]
+    assert.equal(
+      lil.consumeBucketedRateLimit(lilBuckets, "ResizeObserver", ...args),
+      official.consumeBucketedRateLimit(officialBuckets, "ResizeObserver", ...args),
+    )
+    assert.deepEqual(lilBuckets, officialBuckets)
+    assert.equal(
+      lil.consumeBucketedRateLimit(lilBuckets, "ResizeObserver", ...args),
+      official.consumeBucketedRateLimit(officialBuckets, "ResizeObserver", ...args),
+    )
+    assert.equal(
+      lil.consumeBucketedRateLimit(lilBuckets, "ResizeObserver", ...args),
+      official.consumeBucketedRateLimit(officialBuckets, "ResizeObserver", ...args),
+    )
+    assert.equal(
+      lil.consumeBucketedRateLimit(lilBuckets, "ResizeObserver", ...args),
+      official.consumeBucketedRateLimit(officialBuckets, "ResizeObserver", ...args),
+    )
+    assert.deepEqual(lilBuckets, officialBuckets)
+    assert.equal(
+      lil.consumeBucketedRateLimit(lilBuckets, "ResizeObserver", 4000, 1, 3, 1000),
+      official.consumeBucketedRateLimit(officialBuckets, "ResizeObserver", 4000, 1, 3, 1000),
+    )
+    assert.deepEqual(lilBuckets, officialBuckets)
+  })
+})

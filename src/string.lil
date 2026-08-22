@@ -1,0 +1,67 @@
+import { isArr, jsonStringify, len, objectKeys, toStr, undef } from "./host.lil";
+
+export bool includes(JsValue haystack, JsValue needle) {
+  return JS.number(JS.invoke(haystack, "indexOf", needle)).toInt() != -1;
+}
+
+export string trim(string str) {
+  return str.trim();
+}
+
+Regex leadingDollar = new Regex("^\\$", "");
+
+export string stripLeadingDollar(string s) {
+  return JS.string(JS.invoke(s, "replace", leadingDollar, ""));
+}
+
+export bool isDistinctIdStringLike(string value) {
+  string lower = value.toLowerCase();
+  return lower == "distinct_id" || lower == "distinctid";
+}
+
+JsValue deepSortKeys(JsValue value) {
+  if (JS.isNullish(value) || JS.typeOf(value) != "object") {
+    return value;
+  }
+  if (isArr(value)) {
+    JsValue out = JS.array();
+    int n = len(value);
+    int i = 0;
+    while (i < n) {
+      JS.invoke(out, "push", deepSortKeys(value[i]));
+      i = i + 1;
+    }
+    return out;
+  }
+  JsValue keys = objectKeys(value);
+  JS.invoke(keys, "sort");
+  JsValue acc = JS.object();
+  int n = len(keys);
+  int i = 0;
+  while (i < n) {
+    string key = toStr(keys[i]);
+    acc[key] = deepSortKeys(value[key]);
+    i = i + 1;
+  }
+  return acc;
+}
+
+export string getPersonPropertiesHash(
+  string distinct_id,
+  JsValue userPropertiesToSet = JS.undefined(),
+  JsValue userPropertiesToSetOnce = JS.undefined()
+) {
+  JsValue payload = JS.object();
+  payload["distinct_id"] = distinct_id;
+  if (userPropertiesToSet.truthy()) {
+    payload["userPropertiesToSet"] = deepSortKeys(userPropertiesToSet);
+  } else {
+    payload["userPropertiesToSet"] = undef();
+  }
+  if (userPropertiesToSetOnce.truthy()) {
+    payload["userPropertiesToSetOnce"] = deepSortKeys(userPropertiesToSetOnce);
+  } else {
+    payload["userPropertiesToSetOnce"] = undef();
+  }
+  return toStr(jsonStringify(payload));
+}

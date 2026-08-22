@@ -25,6 +25,33 @@ import {
 import { apiHostFromConfig, endpointFor, flagsApiHostFromConfig, regionForHost, uiHostFromConfig } from './router'
 import { rateLimitContext } from './rate-limit'
 import { applyOffsets, clampFlushInterval, formatQueue, sortUnloadRequests } from './queue'
+import { DEFAULT_BLOCKED_UA_STRS, isBlockedUA } from './bot-detection'
+import { getPersonPropertiesHash, includes, isDistinctIdStringLike, stripLeadingDollar, trim } from './string-utils'
+import { clampToRange, getRemoteConfigBool, getRemoteConfigNumber, isValidSampleRate } from './number-utils'
+import {
+  isBuiltin,
+  isEmptyObject,
+  isEmptyString,
+  isKnownUnsafeEditableEvent,
+  isKnownUnsafeEditableEventProperty,
+  isNoLike,
+  isNumber,
+  isPositiveNumber,
+  isPrimitive,
+  isYesLike,
+  knownUnsafeEditableEvent,
+  knownUnsafeEditableEventProperty,
+  noLikeValues,
+  yesLikeValues,
+} from './type-utils'
+import { sanitizeString } from './json-utils'
+import { removeTrailingSlash, stripUrlHash } from './url'
+import {
+  DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE,
+  DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+  consumeBucketedRateLimit,
+  resolveExceptionRateLimiterConfig,
+} from './bucketed-rate-limit'
 
 export function parseUuid(value: string): string {
   return UUID.parse(value).toString()
@@ -73,6 +100,38 @@ const kernel = {
   formatQueue,
   applyOffsets,
   sortUnloadRequests,
+  DEFAULT_BLOCKED_UA_STRS,
+  isBlockedUA,
+  includes,
+  trim,
+  stripLeadingDollar,
+  isDistinctIdStringLike,
+  getPersonPropertiesHash,
+  clampToRange,
+  getRemoteConfigBool,
+  getRemoteConfigNumber,
+  isValidSampleRate,
+  isNumber,
+  isEmptyObject,
+  isEmptyString,
+  isPositiveNumber,
+  isPrimitive,
+  isBuiltin,
+  isYesLike,
+  isNoLike,
+  isKnownUnsafeEditableEvent,
+  isKnownUnsafeEditableEventProperty,
+  knownUnsafeEditableEvent,
+  knownUnsafeEditableEventProperty,
+  yesLikeValues,
+  noLikeValues,
+  sanitizeString,
+  removeTrailingSlash,
+  stripUrlHash,
+  DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+  DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE,
+  resolveExceptionRateLimiterConfig,
+  consumeBucketedRateLimit,
 }
 
 export {
@@ -107,6 +166,38 @@ export {
   formatQueue,
   applyOffsets,
   sortUnloadRequests,
+  DEFAULT_BLOCKED_UA_STRS,
+  isBlockedUA,
+  includes,
+  trim,
+  stripLeadingDollar,
+  isDistinctIdStringLike,
+  getPersonPropertiesHash,
+  clampToRange,
+  getRemoteConfigBool,
+  getRemoteConfigNumber,
+  isValidSampleRate,
+  isNumber,
+  isEmptyObject,
+  isEmptyString,
+  isPositiveNumber,
+  isPrimitive,
+  isBuiltin,
+  isYesLike,
+  isNoLike,
+  isKnownUnsafeEditableEvent,
+  isKnownUnsafeEditableEventProperty,
+  knownUnsafeEditableEvent,
+  knownUnsafeEditableEventProperty,
+  yesLikeValues,
+  noLikeValues,
+  sanitizeString,
+  removeTrailingSlash,
+  stripUrlHash,
+  DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+  DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE,
+  resolveExceptionRateLimiterConfig,
+  consumeBucketedRateLimit,
 }
 
 export default kernel

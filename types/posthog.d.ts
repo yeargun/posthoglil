@@ -146,6 +146,74 @@ export function applyOffsets(
 ): Array<Record<string, unknown>>
 export function sortUnloadRequests<T extends { url: string }>(requests: T[]): T[]
 
+export const DEFAULT_BLOCKED_UA_STRS: string[]
+export function isBlockedUA(ua: string | undefined, customBlockedUserAgents?: string[]): boolean
+
+export function includes(str: string, needle: string): boolean
+export function includes<T>(arr: T[], needle: T): boolean
+export function trim(str: string): string
+export function stripLeadingDollar(s: string): string
+export function isDistinctIdStringLike(value: string): boolean
+export function getPersonPropertiesHash(
+  distinct_id: string,
+  userPropertiesToSet?: { [key: string]: JsonType },
+  userPropertiesToSetOnce?: { [key: string]: JsonType },
+): string
+
+export function clampToRange(
+  value: unknown,
+  min: number,
+  max: number,
+  logger: { warn: (...args: unknown[]) => void },
+  fallbackValue?: number,
+): number
+export function getRemoteConfigBool(
+  field: boolean | { [key: string]: JsonType } | undefined,
+  key: string,
+  defaultValue?: boolean,
+): boolean
+export function getRemoteConfigNumber(
+  field: boolean | { [key: string]: JsonType } | undefined,
+  key: string,
+): number | undefined
+export function isValidSampleRate(value: unknown): value is number
+
+export function isNumber(x: unknown): x is number
+export function isEmptyObject(x: unknown): boolean
+export function isEmptyString(x: unknown): boolean
+export function isPositiveNumber(value: unknown): value is number
+export function isPrimitive(value: unknown): boolean
+export function isBuiltin(candidate: unknown, className: string): boolean
+export function isYesLike(val: string | boolean | number): boolean
+export function isNoLike(val: string | boolean | number): boolean
+export function isKnownUnsafeEditableEvent(x: unknown): boolean
+export function isKnownUnsafeEditableEventProperty(x: unknown): boolean
+export const knownUnsafeEditableEvent: readonly string[]
+export const knownUnsafeEditableEventProperty: readonly string[]
+export const yesLikeValues: Array<string | boolean | number>
+export const noLikeValues: Array<string | boolean | number>
+
+export function sanitizeString(value: string): string
+export function removeTrailingSlash(url: string | undefined): string | undefined
+export function stripUrlHash(url: string | undefined): string | undefined
+
+export const DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE: number
+export const DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE: number
+export function resolveExceptionRateLimiterConfig(config?: {
+  exceptionRateLimiterRefillRate?: number
+  exceptionRateLimiterBucketSize?: number
+  __exceptionRateLimiterRefillRate?: number
+  __exceptionRateLimiterBucketSize?: number
+}): { refillRate: number; bucketSize: number }
+export function consumeBucketedRateLimit(
+  buckets: Record<string, { tokens: number; lastAccess: number }>,
+  key: string | number,
+  now: number,
+  refillRate: number,
+  bucketSize: number,
+  refillInterval: number,
+): boolean
+
 declare const kernel: {
   uuidv7: typeof uuidv7
   uuidv4: typeof uuidv4
@@ -181,6 +249,38 @@ declare const kernel: {
   formatQueue: typeof formatQueue
   applyOffsets: typeof applyOffsets
   sortUnloadRequests: typeof sortUnloadRequests
+  DEFAULT_BLOCKED_UA_STRS: typeof DEFAULT_BLOCKED_UA_STRS
+  isBlockedUA: typeof isBlockedUA
+  includes: typeof includes
+  trim: typeof trim
+  stripLeadingDollar: typeof stripLeadingDollar
+  isDistinctIdStringLike: typeof isDistinctIdStringLike
+  getPersonPropertiesHash: typeof getPersonPropertiesHash
+  clampToRange: typeof clampToRange
+  getRemoteConfigBool: typeof getRemoteConfigBool
+  getRemoteConfigNumber: typeof getRemoteConfigNumber
+  isValidSampleRate: typeof isValidSampleRate
+  isNumber: typeof isNumber
+  isEmptyObject: typeof isEmptyObject
+  isEmptyString: typeof isEmptyString
+  isPositiveNumber: typeof isPositiveNumber
+  isPrimitive: typeof isPrimitive
+  isBuiltin: typeof isBuiltin
+  isYesLike: typeof isYesLike
+  isNoLike: typeof isNoLike
+  isKnownUnsafeEditableEvent: typeof isKnownUnsafeEditableEvent
+  isKnownUnsafeEditableEventProperty: typeof isKnownUnsafeEditableEventProperty
+  knownUnsafeEditableEvent: typeof knownUnsafeEditableEvent
+  knownUnsafeEditableEventProperty: typeof knownUnsafeEditableEventProperty
+  yesLikeValues: typeof yesLikeValues
+  noLikeValues: typeof noLikeValues
+  sanitizeString: typeof sanitizeString
+  removeTrailingSlash: typeof removeTrailingSlash
+  stripUrlHash: typeof stripUrlHash
+  DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE: typeof DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE
+  DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE: typeof DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE
+  resolveExceptionRateLimiterConfig: typeof resolveExceptionRateLimiterConfig
+  consumeBucketedRateLimit: typeof consumeBucketedRateLimit
 }
 
 export default kernel

@@ -5,8 +5,8 @@ import {
   random,
   rangeError,
   syntaxError,
-  trunc,
-  typeError
+  toStr,
+  trunc
 } from "./host.lil";
 
 string digits = "0123456789abcdef";
@@ -18,11 +18,6 @@ Regex re36 = new Regex("^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})
 Regex re38 = new Regex("^\\{([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})\\}$", "i");
 Regex re45 = new Regex("^urn:uuid:([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$", "i");
 
-int byteAt(number value, number divisor) {
-  number q = (value / divisor).floor();
-  return (q - (q / 256.0).floor() * 256.0).toInt();
-}
-
 number nextUint32Num() {
   return trunc(random() * 65536.0) * 65536.0 + trunc(random() * 65536.0);
 }
@@ -30,9 +25,9 @@ number nextUint32Num() {
 string bytesToString(Uint8Array bytes) {
   string text = "";
   int i = 0;
-  while (i < 16) {
+  while (i < bytes.length) {
     int b = bytes[i];
-    text = text + digits.charAt(b >>> 4) + digits.charAt(b & 15);
+    text = text + digits[b >>> 4] + digits[b & 15];
     if (i == 3 || i == 5 || i == 7 || i == 9) {
       text = text + "-";
     }
@@ -41,25 +36,14 @@ string bytesToString(Uint8Array bytes) {
   return text;
 }
 
-string bytesToHex(Uint8Array bytes) {
-  string text = "";
-  int i = 0;
-  while (i < 16) {
-    int b = bytes[i];
-    text = text + digits.charAt(b >>> 4) + digits.charAt(b & 15);
-    i = i + 1;
-  }
-  return text;
-}
-
 Uint8Array fieldsToBytes(number unixTsMs, int randA, int randBHi, int randBLo) {
   Uint8Array bytes = new Uint8Array(16);
-  bytes[0] = byteAt(unixTsMs, 1099511627776.0);
-  bytes[1] = byteAt(unixTsMs, 4294967296.0);
-  bytes[2] = byteAt(unixTsMs, 16777216.0);
-  bytes[3] = byteAt(unixTsMs, 65536.0);
-  bytes[4] = byteAt(unixTsMs, 256.0);
-  bytes[5] = byteAt(unixTsMs, 1.0);
+  bytes[0] = (unixTsMs / 1099511627776.0).toInt();
+  bytes[1] = (unixTsMs / 4294967296.0).toInt();
+  bytes[2] = (unixTsMs / 16777216.0).toInt();
+  bytes[3] = (unixTsMs / 65536.0).toInt();
+  bytes[4] = (unixTsMs / 256.0).toInt();
+  bytes[5] = unixTsMs.toInt();
   bytes[6] = 112 | (randA >>> 8);
   bytes[7] = randA;
   bytes[8] = 128 | (randBHi >>> 24);
@@ -75,16 +59,16 @@ Uint8Array fieldsToBytes(number unixTsMs, int randA, int randBHi, int randBLo) {
 
 void writeHexChunk(Uint8Array bytes, int offset, string hex) {
   number n = parseIntHex(hex);
-  bytes[offset] = byteAt(n, 16777216.0);
-  bytes[offset + 1] = byteAt(n, 65536.0);
-  bytes[offset + 2] = byteAt(n, 256.0);
-  bytes[offset + 3] = byteAt(n, 1.0);
+  bytes[offset] = (n / 16777216.0).toInt();
+  bytes[offset + 1] = (n / 65536.0).toInt();
+  bytes[offset + 2] = (n / 256.0).toInt();
+  bytes[offset + 3] = n.toInt();
 }
 
 Uint8Array hexToBytes(string hex) {
   Uint8Array bytes = new Uint8Array(16);
   int i = 0;
-  while (i < 16) {
+  while (i < bytes.length) {
     writeHexChunk(bytes, i, hex.slice(i * 2, i * 2 + 8));
     i = i + 4;
   }
@@ -92,7 +76,7 @@ Uint8Array hexToBytes(string hex) {
 }
 
 string joinGroups(JsValue cap) {
-  return JS.string(cap[1]) + JS.string(cap[2]) + JS.string(cap[3]) + JS.string(cap[4]) + JS.string(cap[5]);
+  return toStr(JS.invoke(JS.invoke(cap, "slice", 1, 6), "join", ""));
 }
 
 number genTimestamp = 0.0;
@@ -139,7 +123,7 @@ string generateOrResetCore(number unixTsMs, number rollbackAllowance) {
 string generateV4() {
   Uint8Array bytes = new Uint8Array(16);
   int i = 0;
-  while (i < 16) {
+  while (i < bytes.length) {
     bytes[i] = (random() * 256.0).toInt();
     i = i + 1;
   }

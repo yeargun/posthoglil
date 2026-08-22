@@ -1,0 +1,17 @@
+import { isStr } from "./host.lil";
+
+Regex trailingSlashes = new Regex("/+$", "");
+
+export JsValue removeTrailingSlash(JsValue url) {
+  if (!isStr(url)) {
+    return url;
+  }
+  return JS.invoke(url, "replace", trailingSlashes, "");
+}
+
+export JsValue stripUrlHash(JsValue url) {
+  if (!url.truthy()) {
+    return url;
+  }
+  return JS.invoke(url, "split", "#")[0];
+}

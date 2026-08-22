@@ -1,0 +1,109 @@
+import { isArr, isUndef, len, toStr } from "./host.lil";
+
+string[] blockedUserAgents = [
+  "amazonbot",
+  "amazonproductbot",
+  "app.hypefactors.com",
+  "applebot",
+  "archive.org_bot",
+  "awariobot",
+  "backlinksextendedbot",
+  "baiduspider",
+  "bingbot",
+  "bingpreview",
+  "chrome-lighthouse",
+  "dataforseobot",
+  "deepscan",
+  "duckduckbot",
+  "facebookexternal",
+  "facebookcatalog",
+  "http://yandex.com/bots",
+  "hubspot",
+  "ia_archiver",
+  "leikibot",
+  "linkedinbot",
+  "meta-externalagent",
+  "mj12bot",
+  "msnbot",
+  "nessus",
+  "petalbot",
+  "pinterest",
+  "prerender",
+  "rogerbot",
+  "screaming frog",
+  "sebot-wa",
+  "sitebulb",
+  "slackbot",
+  "slurp",
+  "trendictionbot",
+  "turnitin",
+  "twitterbot",
+  "vercel-screenshot",
+  "vercelbot",
+  "yahoo! slurp",
+  "yandexbot",
+  "zoombot",
+  "bot.htm",
+  "bot.php",
+  "(bot;",
+  "bot/",
+  "crawler",
+  "ahrefsbot",
+  "ahrefssiteaudit",
+  "semrushbot",
+  "siteauditbot",
+  "splitsignalbot",
+  "gptbot",
+  "oai-searchbot",
+  "chatgpt-user",
+  "perplexitybot",
+  "better uptime bot",
+  "sentryuptimebot",
+  "uptimerobot",
+  "headlesschrome",
+  "cypress",
+  "google-hoteladsverifier",
+  "adsbot-google",
+  "apis-google",
+  "duplexweb-google",
+  "feedfetcher-google",
+  "google favicon",
+  "google web preview",
+  "google-read-aloud",
+  "googlebot",
+  "googleother",
+  "google-cloudvertexbot",
+  "googleweblight",
+  "mediapartners-google",
+  "storebot-google",
+  "google-inspectiontool",
+  "bytespider"
+];
+
+export JsValue DEFAULT_BLOCKED_UA_STRS = blockedUserAgents;
+
+bool listBlocksUa(string uaLower, JsValue list) {
+  int n = len(list);
+  int i = 0;
+  while (i < n) {
+    if (uaLower.indexOf(toStr(list[i]).toLowerCase()) != -1) {
+      return true;
+    }
+    i = i + 1;
+  }
+  return false;
+}
+
+export bool isBlockedUA(JsValue ua, JsValue customBlockedUserAgents = JS.undefined()) {
+  if (!ua.truthy()) {
+    return false;
+  }
+  string uaLower = toStr(ua).toLowerCase();
+  if (listBlocksUa(uaLower, blockedUserAgents)) {
+    return true;
+  }
+  if (isUndef(customBlockedUserAgents) || !isArr(customBlockedUserAgents)) {
+    return false;
+  }
+  return listBlocksUa(uaLower, customBlockedUserAgents);
+}

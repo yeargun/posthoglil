@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="@itslil/posthog-js is a subset of posthog-js 1.418.10: UUID, flags, cookies, routing, rate limit, and queue batching. Size is versus that same official kernel, then Vite 8 Oxc, Terser, and esbuild — not the published PostHog IIFE."
+      content="@itslil/posthog-js is a subset of posthog-js 1.418.10: UUID, flags, cookies, routing, rate limits, queue, bot detection, and portable helpers. Size is versus that same official kernel, then Vite 8 Oxc, Terser, and esbuild — not the published PostHog IIFE."
     />
     <meta name="theme-color" content="#f54e00" />
     <title>itslil/posthog-js — selected posthog-js 1.418.10 modules through LilScript</title>
@@ -34,13 +34,14 @@
           <h1>Capture<br /><em>kernel.</em></h1>
           <p class="lede">
             This is not PostHog and not the published <code>posthog-js</code> browser bundle.
-            It is six algorithms from <code>posthog-js@1.418.10</code> — UUID, feature-flag
-            utils, cookie identity, request routing, a token bucket, and queue batching —
-            rewritten in LilScript. Autocapture, session replay, surveys, the client class,
-            and network transport are absent. Every number on this page compares that same
-            official kernel, then Vite 8 Oxc, Terser, and esbuild, with the settings named
-            on each row. The npm file is the Brotli-scored compile. gzip and raw each have
-            their own compile.
+            It is thirteen modules from <code>posthog-js@1.418.10</code> — UUID, feature-flag
+            utils, cookie identity, request routing, token and bucketed rate limits, queue
+            batching, bot detection, and the portable string / number / type / JSON / URL
+            helpers — rewritten in LilScript. Autocapture, session replay, surveys, the
+            client class, and network transport are absent. Every number on this page
+            compares that same official kernel, then Vite 8 Oxc, Terser, and esbuild, with
+            the settings named on each row. The npm file is the Brotli-scored compile.
+            gzip and raw each have their own compile.
           </p>
           <div class="install-row">
             <code>npm install @itslil/posthog-js</code>
@@ -78,7 +79,9 @@
         <div>
           uuidv7 <span>✦</span> uuidv4 <span>✦</span> feature flags <span>✦</span> cookies
           <span>✦</span> consent <span>✦</span> request router <span>✦</span> token bucket
-          <span>✦</span> queue batching
+          <span>✦</span> queue batching <span>✦</span> bot detection <span>✦</span> strings
+          <span>✦</span> numbers <span>✦</span> types <span>✦</span> sanitize
+          <span>✦</span> url <span>✦</span> bucketed limiter
         </div>
       </section>
 
@@ -143,6 +146,48 @@
                 <td>flush clamp, format, offsets, unload sort</td>
                 <td>sendBeacon, timers, transport</td>
               </tr>
+              <tr>
+                <th scope="row">Bot</th>
+                <td>packages/core/src/utils/bot-detection.ts</td>
+                <td>DEFAULT_BLOCKED_UA_STRS, isBlockedUA</td>
+                <td>navigator / UA-CH isLikelyBot</td>
+              </tr>
+              <tr>
+                <th scope="row">Strings</th>
+                <td>packages/core/src/utils/string-utils.ts</td>
+                <td>includes, trim, strip $, person hash</td>
+                <td>safeJsonStringify</td>
+              </tr>
+              <tr>
+                <th scope="row">Numbers</th>
+                <td>packages/core/src/utils/number-utils.ts</td>
+                <td>clamp, remote-config, sample rate</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <th scope="row">Types</th>
+                <td>packages/core/src/utils/type-utils.ts</td>
+                <td>empty/primitive/builtin, yes/no-like, unsafe events</td>
+                <td>DOM FormData / File / Event</td>
+              </tr>
+              <tr>
+                <th scope="row">JSON</th>
+                <td>packages/core/src/utils/json-utils.ts</td>
+                <td>sanitizeString</td>
+                <td>toJsonSafeValue</td>
+              </tr>
+              <tr>
+                <th scope="row">URL</th>
+                <td>packages/core/src/utils/index.ts</td>
+                <td>removeTrailingSlash, stripUrlHash</td>
+                <td>retries, timestamps</td>
+              </tr>
+              <tr>
+                <th scope="row">Bucketed limiter</th>
+                <td>packages/core/src/utils/bucketed-rate-limiter.ts</td>
+                <td>config resolve, consume</td>
+                <td>class wrapper, logger callback</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -157,8 +202,8 @@
           </div>
           <p>
             Left is a JSON request. Right is UUID, cookie, flags, routing, rate-limit,
-            and queue output from <code>@itslil/posthog-js</code> or the official
-            <code>posthog-js@1.418.10</code> kernel — the same cut used for size.
+            queue, bot, and helper output from <code>@itslil/posthog-js</code> or the
+            official <code>posthog-js@1.418.10</code> kernel — the same cut used for size.
           </p>
         </div>
         <div class="playground">
@@ -279,7 +324,7 @@
             <p>
               <strong>Why this surface.</strong> The published <code>posthog-js</code> IIFE
               still contains autocapture, replay, surveys, and the client class. Putting
-              that file on one side and six algorithms on the other is not a comparison.
+              that file on one side and this kernel on the other is not a comparison.
               The fair fight is the 1.418.10 kernel in <code>official/</code>, then the
               same Oxc, Terser, and esbuild work the JS ecosystem actually ships. Closed
               LilScript is the other honest comparison: public JS keys mangle.

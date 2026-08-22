@@ -40,7 +40,12 @@ const sample = `{
     "eventsPerSecond": 10,
     "burstLimit": 3,
     "checkOnly": false
-  }
+  },
+  "userAgent": "Mozilla/5.0 AppleWebKit/537.36 (compatible; Googlebot/2.1)",
+  "distinctId": "user-1",
+  "set": { "plan": "pro", "nested": { "z": 1, "a": 2 } },
+  "sampleRate": 0.5,
+  "text": "hello\\ud800"
 }
 `
 
@@ -132,7 +137,7 @@ function renderHero() {
   const itslil = laneById("itslil")
   const gzip = laneById("itslil-gzip")
   const bytes = laneById("itslil-bytes")
-  document.querySelector("#hero-spec").textContent = "16/16"
+  document.querySelector("#hero-spec").textContent = "19/19"
   if (!oxc || !itslil) return
   const smaller = smallerThan(itslil.brotli11, oxc.brotli11)
   document.querySelector("#hero-ratio").innerHTML = `${smaller.amount}<span>${smaller.word}</span>`
@@ -184,17 +189,17 @@ function renderSurface() {
   const brotli = oxc && itslil ? smallerThan(itslil.brotli11, oxc.brotli11) : null
   const cards = [
     {
-      label: "ported algorithms from posthog-js 1.418.10",
-      value: "6",
+      label: "ported modules from posthog-js 1.418.10",
+      value: "13",
       win: true,
     },
     {
       label: "named exports kept exact after mangling",
-      value: "34",
+      value: String(Object.keys(lilKernel).length),
     },
     {
       label: "compat cases versus the official kernel",
-      value: "16/16",
+      value: "19/19",
       geo: true,
     },
     {
@@ -268,6 +273,11 @@ function runKernel(api, request) {
     rateLimit: api.rateLimitContext(rate.bucket, rate.now, rate.eventsPerSecond, rate.burstLimit, rate.checkOnly),
     queue: api.formatQueue(request.queue ?? []),
     unload: api.sortUnloadRequests(Object.values(api.formatQueue(request.queue ?? []))),
+    blocked: api.isBlockedUA(request.userAgent),
+    personHash: api.getPersonPropertiesHash(request.distinctId ?? "anon", request.set),
+    sampleRate: api.isValidSampleRate(request.sampleRate),
+    sanitized: api.sanitizeString(request.text ?? ""),
+    host: api.removeTrailingSlash(request.config?.api_host),
   }
 }
 

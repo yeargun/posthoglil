@@ -29,7 +29,7 @@ const artifacts = [
   {
     id: "kernel",
     name: "Official kernel",
-    note: "posthog-js@1.418.10 UUID, flags, cookie, router, rate-limit, and queue algorithms — esbuild bundle, no minify",
+    note: "posthog-js@1.418.10 UUID, flags, cookie, router, rate-limit, queue, bot, string, number, type, JSON, URL, and bucketed-limiter algorithms — esbuild bundle, no minify",
     sourcePath: officialPath,
   },
   {
@@ -139,7 +139,7 @@ const report = {
   package: "@itslil/posthog-js",
   codec: "lilscript-codec gzip-9 / brotli-11",
   comparison:
-    "Same capture kernel on every official row: posthog-js@1.418.10 UUID, feature-flag utils, cookie identity, request router, token-bucket rate limit, and queue batching. Then Vite 8 Oxc, Terser, and esbuild with the settings named on each row. LilScript ships three compiles — cost_model raw, gzip, and brotli — because the search scores a different artifact for each codec. The npm file is the Brotli compile. The published posthog-js browser bundle is not a lane.",
+    "Same capture kernel on every official row: posthog-js@1.418.10 UUID, feature-flag utils, cookie identity, request router, token-bucket rate limit, queue batching, bot detection, string/number/type helpers, JSON sanitize, URL trim, and the bucketed exception limiter. Then Vite 8 Oxc, Terser, and esbuild with the settings named on each row. LilScript ships three compiles — cost_model raw, gzip, and brotli — because the search scores a different artifact for each codec. The npm file is the Brotli compile. The published posthog-js browser bundle is not a lane.",
   matched: {
     raw: rawBuild?.raw ?? null,
     gzip9: gzipBuild?.gzip9 ?? null,

@@ -31,6 +31,39 @@ import {
 } from "./router.lil";
 import { rateLimitContext } from "./rate-limit.lil";
 import { applyOffsets, clampFlushInterval, formatQueue, sortUnloadRequests } from "./queue.lil";
+import { DEFAULT_BLOCKED_UA_STRS, isBlockedUA } from "./bot.lil";
+import {
+  getPersonPropertiesHash,
+  includes,
+  isDistinctIdStringLike,
+  stripLeadingDollar,
+  trim
+} from "./string.lil";
+import { clampToRange, getRemoteConfigBool, getRemoteConfigNumber, isValidSampleRate } from "./number.lil";
+import {
+  isBuiltin,
+  isEmptyObject,
+  isEmptyString,
+  isKnownUnsafeEditableEvent,
+  isKnownUnsafeEditableEventProperty,
+  isNoLike,
+  isNumber,
+  isPositiveNumber,
+  isPrimitive,
+  isYesLike,
+  knownUnsafeEditableEvent,
+  knownUnsafeEditableEventProperty,
+  noLikeValues,
+  yesLikeValues
+} from "./types.lil";
+import { sanitizeString } from "./json.lil";
+import { removeTrailingSlash, stripUrlHash } from "./url.lil";
+import {
+  DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE,
+  DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+  consumeBucketedRateLimit,
+  resolveExceptionRateLimiterConfig
+} from "./bucketed.lil";
 
 export {
   uuidv7,
@@ -66,7 +99,39 @@ export {
   clampFlushInterval,
   formatQueue,
   applyOffsets,
-  sortUnloadRequests
+  sortUnloadRequests,
+  DEFAULT_BLOCKED_UA_STRS,
+  isBlockedUA,
+  includes,
+  trim,
+  stripLeadingDollar,
+  isDistinctIdStringLike,
+  getPersonPropertiesHash,
+  clampToRange,
+  getRemoteConfigBool,
+  getRemoteConfigNumber,
+  isValidSampleRate,
+  isNumber,
+  isEmptyObject,
+  isEmptyString,
+  isPositiveNumber,
+  isPrimitive,
+  isBuiltin,
+  isYesLike,
+  isNoLike,
+  isKnownUnsafeEditableEvent,
+  isKnownUnsafeEditableEventProperty,
+  knownUnsafeEditableEvent,
+  knownUnsafeEditableEventProperty,
+  yesLikeValues,
+  noLikeValues,
+  sanitizeString,
+  removeTrailingSlash,
+  stripUrlHash,
+  DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+  DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE,
+  resolveExceptionRateLimiterConfig,
+  consumeBucketedRateLimit
 };
 
 JsValue kernel() {
@@ -105,6 +170,38 @@ JsValue kernel() {
   api["formatQueue"] = formatQueue;
   api["applyOffsets"] = applyOffsets;
   api["sortUnloadRequests"] = sortUnloadRequests;
+  api["DEFAULT_BLOCKED_UA_STRS"] = DEFAULT_BLOCKED_UA_STRS;
+  api["isBlockedUA"] = isBlockedUA;
+  api["includes"] = includes;
+  api["trim"] = trim;
+  api["stripLeadingDollar"] = stripLeadingDollar;
+  api["isDistinctIdStringLike"] = isDistinctIdStringLike;
+  api["getPersonPropertiesHash"] = getPersonPropertiesHash;
+  api["clampToRange"] = clampToRange;
+  api["getRemoteConfigBool"] = getRemoteConfigBool;
+  api["getRemoteConfigNumber"] = getRemoteConfigNumber;
+  api["isValidSampleRate"] = isValidSampleRate;
+  api["isNumber"] = isNumber;
+  api["isEmptyObject"] = isEmptyObject;
+  api["isEmptyString"] = isEmptyString;
+  api["isPositiveNumber"] = isPositiveNumber;
+  api["isPrimitive"] = isPrimitive;
+  api["isBuiltin"] = isBuiltin;
+  api["isYesLike"] = isYesLike;
+  api["isNoLike"] = isNoLike;
+  api["isKnownUnsafeEditableEvent"] = isKnownUnsafeEditableEvent;
+  api["isKnownUnsafeEditableEventProperty"] = isKnownUnsafeEditableEventProperty;
+  api["knownUnsafeEditableEvent"] = knownUnsafeEditableEvent;
+  api["knownUnsafeEditableEventProperty"] = knownUnsafeEditableEventProperty;
+  api["yesLikeValues"] = yesLikeValues;
+  api["noLikeValues"] = noLikeValues;
+  api["sanitizeString"] = sanitizeString;
+  api["removeTrailingSlash"] = removeTrailingSlash;
+  api["stripUrlHash"] = stripUrlHash;
+  api["DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE"] = DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE;
+  api["DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE"] = DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE;
+  api["resolveExceptionRateLimiterConfig"] = resolveExceptionRateLimiterConfig;
+  api["consumeBucketedRateLimit"] = consumeBucketedRateLimit;
   return api;
 }
 

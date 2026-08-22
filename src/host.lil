@@ -115,6 +115,22 @@ export number maxNum(number left, number right) {
   return JS.number(JS.invoke(Math, "max", left, right));
 }
 
+export number minNum(number left, number right) {
+  return JS.number(JS.invoke(Math, "min", left, right));
+}
+
+export number floorNum(number value) {
+  return JS.number(JS.invoke(Math, "floor", value));
+}
+
+export string objectTag(JsValue value) {
+  return JS.string(JS.invoke(Object["prototype"]["toString"], "call", value));
+}
+
+export JsValue asObject(JsValue value) {
+  return JS.call(Object, JS.undefined(), value);
+}
+
 export bool isInteger(number value) {
   return JS.invoke(Number, "isInteger", value).truthy();
 }
