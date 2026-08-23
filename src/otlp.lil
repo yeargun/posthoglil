@@ -1,0 +1,477 @@
+import {
+  asObject,
+  hasKey,
+  isArr,
+  isBool,
+  isFiniteNum,
+  isNullish,
+  isNum,
+  isStr,
+  isUndef,
+  jsonStringify,
+  len,
+  nowMs,
+  objectKeys,
+  toNum,
+  toStr,
+  undef
+} from "./host.lil";
+import { sanitizeString } from "./json.lil";
+import {
+  explicitString,
+  instanceOfValue,
+  isBooleanValue
+} from "./error-host.lil";
+
+string circularValue = "[Circular]";
+string truncatedValue = "[Truncated]";
+string unserializableValue = "[Unserializable]";
+string functionValue = "[Function]";
+int maxDepth = 20;
+int maxItems = 1000;
+int maxNodes = 10000;
+number int64RangeLimit = 9223372036854775808.0;
+
+JsValue makeSeverityMap() {
+  JsValue map = JS.object();
+  string[] names = ["trace", "debug", "info", "warn", "error", "fatal"];
+  string[] texts = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"];
+  int[] numbers = [1, 5, 9, 13, 17, 21];
+  int i = 0;
+  while (i < names.length) {
+    JsValue entry = JS.object();
+    entry["text"] = texts[i];
+    entry["number"] = numbers[i];
+    map[names[i]] = entry;
+    i = i + 1;
+  }
+  return map;
+}
+
+JsValue severityMap = makeSeverityMap();
+
+JsValue severityFor(JsValue level) {
+  JsValue entry = severityMap[level];
+  if (!entry.truthy()) {
+    entry = severityMap["info"];
+  }
+  return entry;
+}
+
+export JsValue getOtlpSeverityText(JsValue level) {
+  return severityFor(level)["text"];
+}
+
+export JsValue getOtlpSeverityNumber(JsValue level) {
+  return severityFor(level)["number"];
+}
+
+JsValue newState() {
+  JsValue state = JS.object();
+  state["ancestors"] = JS.construct(WeakSet);
+  state["remainingNodes"] = maxNodes;
+  return state;
+}
+
+void logDebug(JsValue logger, string message) {
+  if (!isNullish(logger)) {
+    JS.invoke(logger, "debug", message);
+  }
+}
+
+JsValue stringAny(JsValue value) {
+  JsValue out = JS.object();
+  out["stringValue"] = value;
+  return out;
+}
+
+JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) {
+  if (JS.number(state["remainingNodes"]) <= 0.0) {
+    return stringAny(truncatedValue);
+  }
+  state["remainingNodes"] = JS.number(state["remainingNodes"]) - 1.0;
+
+  if (isBooleanValue(value)) {
+    JsValue out = JS.object();
+    out["boolValue"] = value;
+    return out;
+  }
+  if (JS.typeOf(value) == "number") {
+    number numeric = toNum(value);
+    if (!isFiniteNum(numeric)) {
+      return stringAny(explicitString(value));
+    }
+    if (JS.invoke(Number, "isInteger", value).truthy()) {
+      if (JS.invoke(Number, "isSafeInteger", value).truthy()) {
+        return JS.object("intValue", explicitString(value));
+      }
+      JsValue bigIntConstructor = globalThis["BigInt"];
+      if (isUndef(bigIntConstructor)) {
+        return stringAny(explicitString(value));
+      }
+      string decimal = toStr(JS.invoke(JS.call(bigIntConstructor, undef(), value), "toString"));
+      if (numeric >= int64RangeLimit || numeric < -int64RangeLimit) {
+        logDebug(logger, "Attribute " + decimal + " is outside the int64 range; encoding it as a string");
+        return stringAny(decimal);
+      }
+      return JS.object("intValue", decimal);
+    }
+    JsValue out = JS.object();
+    out["doubleValue"] = value;
+    return out;
+  }
+  if (JS.typeOf(value) == "string") {
+    return stringAny(sanitizeString(toStr(value)));
+  }
+  if (JS.typeOf(value) == "function") {
+    return stringAny(functionValue);
+  }
+  if (JS.typeOf(value) == "symbol") {
+    return stringAny(explicitString(value));
+  }
+  if (JS.typeOf(value) == "object" && !JS.strictEqual(value, null)) {
+    if (JS.invoke(state["ancestors"], "has", value).truthy()) {
+      return stringAny(circularValue);
+    }
+    if (depth >= maxDepth) {
+      return stringAny(truncatedValue);
+    }
+    if (instanceOfValue(value, Date)) {
+      JsValue time = JS.invoke(value, "getTime");
+      JsValue iso = undef();
+      if (JS.invoke(Number, "isFinite", time).truthy()) {
+        iso = JS.invoke(value, "toISOString");
+      } else {
+        iso = JS.call(String, undef(), value);
+      }
+      if (JS.typeOf(iso) == "string") {
+        return stringAny(sanitizeString(toStr(iso)));
+      }
+      return stringAny(explicitString(iso));
+    }
+    JS.invoke(state["ancestors"], "add", value);
+    try {
+      try {
+        JsValue toJSON = value["toJSON"];
+        if (JS.typeOf(toJSON) == "function") {
+          return encodeAnyValue(JS.call(toJSON, value), logger, state, depth + 1);
+        }
+      } catch {
+      }
+      if (isArr(value)) {
+        JsValue arrayValue = JS.object();
+        arrayValue["values"] = encodeArrayValues(value, logger, state, depth + 1);
+        JsValue out = JS.object();
+        out["arrayValue"] = arrayValue;
+        return out;
+      }
+      JsValue listValue = JS.object();
+      listValue["values"] = encodeKeyValueList(value, logger, state, depth + 1);
+      JsValue out = JS.object();
+      out["kvlistValue"] = listValue;
+      return out;
+    } finally {
+      JS.invoke(state["ancestors"], "delete", value);
+    }
+  }
+  return stringAny(sanitizeString(explicitString(value)));
+}
+
+JsValue encodeArrayValues(JsValue values, JsValue logger, JsValue state, int depth) {
+  JsValue result = JS.array();
+  int itemCount = len(values);
+  if (itemCount > maxItems) {
+    itemCount = maxItems;
+  }
+  int index = 0;
+  while (index < itemCount && JS.number(state["remainingNodes"]) > 0.0) {
+    int currentIndex = index;
+    index = index + 1;
+    try {
+      if (hasKey(values, currentIndex.toString())) {
+        JsValue element = values[currentIndex];
+        if (!isNullish(element)) {
+          JS.invoke(result, "push", encodeAnyValue(element, logger, state, depth));
+        }
+      }
+    } catch {
+      JS.invoke(result, "push", stringAny(unserializableValue));
+    }
+  }
+  if (len(values) > index) {
+    JS.invoke(result, "push", stringAny(truncatedValue));
+  }
+  return result;
+}
+
+bool propertyEnumerable(JsValue target, string key) {
+  return JS.invoke(Object["prototype"]["propertyIsEnumerable"], "call", target, key).truthy();
+}
+
+JsValue encodeKeyValueList(JsValue attrs, JsValue logger, JsValue state, int depth) {
+  JsValue result = JS.array();
+  for (string key in attrs) {
+    if (propertyEnumerable(attrs, key)) {
+      if (len(result) >= maxItems || JS.number(state["remainingNodes"]) <= 0.0) {
+        logDebug(logger, "Attributes truncated: the value exceeds the OTLP encoder budget");
+        break;
+      }
+      try {
+        JsValue value = attrs[key];
+        if (!isNullish(value)) {
+          JsValue entry = JS.object();
+          entry["key"] = sanitizeString(key);
+          entry["value"] = encodeAnyValue(value, logger, state, depth);
+          JS.invoke(result, "push", entry);
+        }
+      } catch {
+        JsValue entry = JS.object();
+        entry["key"] = sanitizeString(key);
+        entry["value"] = stringAny(unserializableValue);
+        JS.invoke(result, "push", entry);
+      }
+    }
+  }
+  return result;
+}
+
+export JsValue toOtlpAnyValue(JsValue value, JsValue logger = JS.undefined()) {
+  try {
+    return encodeAnyValue(value, logger, newState(), 0);
+  } catch {
+    return stringAny(unserializableValue);
+  }
+}
+
+export JsValue toOtlpKeyValueList(JsValue attrs, JsValue logger = JS.undefined()) {
+  try {
+    return encodeKeyValueList(attrs, logger, newState(), 0);
+  } catch {
+    return JS.array();
+  }
+}
+
+JsValue spreadOwn(JsValue target, JsValue source) {
+  if (isNullish(source)) {
+    return target;
+  }
+  JsValue boxed = asObject(source);
+  JsValue keys = JS.invoke(Reflect, "ownKeys", boxed);
+  int i = 0;
+  while (i < len(keys)) {
+    JsValue key = keys[i];
+    if (JS.invoke(Object["prototype"]["propertyIsEnumerable"], "call", boxed, key).truthy()) {
+      JsValue descriptor = JS.object();
+      descriptor["value"] = JS.invoke(Reflect, "get", boxed, key);
+      descriptor["enumerable"] = true;
+      descriptor["writable"] = true;
+      descriptor["configurable"] = true;
+      JS.invoke(Object, "defineProperty", target, key, descriptor);
+    }
+    i = i + 1;
+  }
+  return target;
+}
+
+void defineData(JsValue target, JsValue key, JsValue value) {
+  JsValue descriptor = JS.object();
+  descriptor["value"] = value;
+  descriptor["enumerable"] = true;
+  descriptor["writable"] = true;
+  descriptor["configurable"] = true;
+  JS.invoke(Object, "defineProperty", target, key, descriptor);
+}
+
+string encodeBody(JsValue body) {
+  try {
+    return sanitizeString(explicitString(body));
+  } catch {
+    return unserializableValue;
+  }
+}
+
+export JsValue buildOtlpLogRecord(JsValue options, JsValue sdkContext, JsValue logger = JS.undefined()) {
+  JsValue level = options["level"];
+  if (!level.truthy()) {
+    level = "info";
+  }
+  JsValue severity = severityFor(level);
+  string now = explicitString(nowMs()) + "000000";
+  JsValue autoAttributes = JS.object();
+  if (sdkContext["distinctId"].truthy()) autoAttributes["posthogDistinctId"] = sdkContext["distinctId"];
+  if (sdkContext["sessionId"].truthy()) autoAttributes["sessionId"] = sdkContext["sessionId"];
+  if (sdkContext["windowId"].truthy()) autoAttributes["window.id"] = sdkContext["windowId"];
+  if (!isNullish(sdkContext["sessionStartTimestamp"])) autoAttributes["sessionStartTimestamp"] = explicitString(sdkContext["sessionStartTimestamp"]);
+  if (!isNullish(sdkContext["lastActivityTimestamp"])) autoAttributes["lastActivityTimestamp"] = explicitString(sdkContext["lastActivityTimestamp"]);
+  if (sdkContext["currentUrl"].truthy()) autoAttributes["url.full"] = sdkContext["currentUrl"];
+  if (sdkContext["screenName"].truthy()) autoAttributes["screen.name"] = sdkContext["screenName"];
+  if (sdkContext["appState"].truthy()) autoAttributes["app.state"] = sdkContext["appState"];
+  if (sdkContext["activeFeatureFlags"].truthy() && len(sdkContext["activeFeatureFlags"]) > 0) {
+    autoAttributes["feature_flags"] = sdkContext["activeFeatureFlags"];
+  }
+  JsValue mergedAttributes = spreadOwn(JS.object(), autoAttributes);
+  JsValue userAttributes = options["attributes"];
+  if (userAttributes.truthy()) {
+    JsValue keys = JS.array();
+    try {
+      keys = objectKeys(userAttributes);
+    } catch {
+      keys = JS.array();
+    }
+    int i = 0;
+    while (i < len(keys)) {
+      JsValue key = keys[i];
+      JsValue value = undef();
+      try {
+        value = userAttributes[key];
+      } catch {
+        value = unserializableValue;
+      }
+      defineData(mergedAttributes, key, value);
+      i = i + 1;
+    }
+  }
+  JsValue logRecord = JS.object();
+  logRecord["timeUnixNano"] = now;
+  logRecord["observedTimeUnixNano"] = now;
+  logRecord["severityNumber"] = severity["number"];
+  logRecord["severityText"] = severity["text"];
+  logRecord["body"] = JS.object("stringValue", encodeBody(options["body"]));
+  logRecord["attributes"] = toOtlpKeyValueList(mergedAttributes, logger);
+  if (options["trace_id"].truthy()) logRecord["traceId"] = options["trace_id"];
+  if (options["span_id"].truthy()) logRecord["spanId"] = options["span_id"];
+  if (!isUndef(options["trace_flags"])) logRecord["flags"] = options["trace_flags"];
+  return logRecord;
+}
+
+export JsValue buildResourceAttributes(JsValue config, string sdkName, string sdkVersion) {
+  JsValue out = spreadOwn(JS.object(), config["resourceAttributes"]);
+  if (config["serviceName"].truthy()) out["service.name"] = config["serviceName"];
+  else out["service.name"] = "unknown_service";
+  if (config["environment"].truthy()) out["deployment.environment"] = config["environment"];
+  if (config["serviceVersion"].truthy()) out["service.version"] = config["serviceVersion"];
+  out["telemetry.sdk.name"] = sdkName;
+  out["telemetry.sdk.version"] = sdkVersion;
+  return out;
+}
+
+export JsValue buildOtlpLogsPayload(JsValue logRecords, JsValue resourceAttributes, string scopeName, string scopeVersion) {
+  JsValue scope = JS.object();
+  scope["name"] = scopeName;
+  scope["version"] = scopeVersion;
+  JsValue scopeLog = JS.object();
+  scopeLog["scope"] = scope;
+  scopeLog["logRecords"] = logRecords;
+  JsValue scopeLogs = JS.array();
+  JS.invoke(scopeLogs, "push", scopeLog);
+  JsValue resourceLog = JS.object();
+  resourceLog["resource"] = JS.object("attributes", toOtlpKeyValueList(resourceAttributes));
+  resourceLog["scopeLogs"] = scopeLogs;
+  JsValue resourceLogs = JS.array();
+  JS.invoke(resourceLogs, "push", resourceLog);
+  return JS.object("resourceLogs", resourceLogs);
+}
+
+int[] histogramBounds = [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000];
+export JsValue DEFAULT_HISTOGRAM_BOUNDS = histogramBounds;
+
+export string msToUnixNano(JsValue milliseconds) {
+  return explicitString(milliseconds) + "000000";
+}
+
+export string seriesKey(string type, string name, JsValue unit, JsValue attributes) {
+  string attrsKey = "";
+  if (attributes.truthy()) {
+    JsValue keys = objectKeys(attributes);
+    JS.invoke(keys, "sort");
+    JsValue pieces = JS.array();
+    int i = 0;
+    while (i < len(keys)) {
+      JsValue key = keys[i];
+      JsValue keyJson = jsonStringify(key);
+      JsValue valueJson = jsonStringify(attributes[key]);
+      JS.invoke(pieces, "push", toStr(keyJson) + ":" + toStr(valueJson));
+      i = i + 1;
+    }
+    attrsKey = toStr(JS.invoke(pieces, "join", ","));
+  }
+  if (isNullish(unit)) {
+    return type + "\u0000" + name + "\u0000\u0000" + attrsKey;
+  }
+  return type + "\u0000" + name + "\u0000" + toStr(unit) + "\u0000" + attrsKey;
+}
+
+export int bucketIndexFor(number value, JsValue bounds) {
+  int i = 0;
+  while (i < len(bounds)) {
+    if (value <= JS.number(bounds[i])) {
+      return i;
+    }
+    i = i + 1;
+  }
+  return len(bounds);
+}
+
+export JsValue buildMetricsResourceAttributes(JsValue config, string scopeName, string scopeVersion) {
+  JsValue out = spreadOwn(JS.object(), config["resourceAttributes"]);
+  if (config["serviceName"].truthy()) out["service.name"] = config["serviceName"];
+  else out["service.name"] = "unknown_service";
+  if (config["environment"].truthy()) out["deployment.environment"] = config["environment"];
+  if (config["serviceVersion"].truthy()) out["service.version"] = config["serviceVersion"];
+  out["telemetry.sdk.name"] = scopeName;
+  out["telemetry.sdk.version"] = scopeVersion;
+  return out;
+}
+
+export JsValue buildOtlpMetricsPayload(JsValue metrics, JsValue resourceAttributes, string scopeName, string scopeVersion) {
+  JsValue scope = JS.object();
+  scope["name"] = scopeName;
+  scope["version"] = scopeVersion;
+  JsValue scopeMetric = JS.object();
+  scopeMetric["scope"] = scope;
+  scopeMetric["metrics"] = metrics;
+  JsValue scopeMetrics = JS.array();
+  JS.invoke(scopeMetrics, "push", scopeMetric);
+  JsValue resourceMetric = JS.object();
+  resourceMetric["resource"] = JS.object("attributes", toOtlpKeyValueList(resourceAttributes));
+  resourceMetric["scopeMetrics"] = scopeMetrics;
+  JsValue resourceMetrics = JS.array();
+  JS.invoke(resourceMetrics, "push", resourceMetric);
+  return JS.object("resourceMetrics", resourceMetrics);
+}
+
+export JsValue resolveMetricsConfig(JsValue config) {
+  JsValue resourceAttributes = undef();
+  if (!isNullish(config)) {
+    resourceAttributes = config["resourceAttributes"];
+  }
+  JsValue out = JS.object();
+  string[] resourceKeys = ["service.name", "service.version", "deployment.environment"];
+  string[] outputKeys = ["serviceName", "serviceVersion", "environment"];
+  int i = 0;
+  while (i < resourceKeys.length) {
+    JsValue value = undef();
+    if (!isNullish(resourceAttributes)) {
+      value = resourceAttributes[resourceKeys[i]];
+    }
+    if (isNullish(value) && !isNullish(config)) {
+      value = config[outputKeys[i]];
+    }
+    out[outputKeys[i]] = value;
+    i = i + 1;
+  }
+  out["resourceAttributes"] = resourceAttributes;
+  if (!isNullish(config)) out["beforeSend"] = config["beforeSend"];
+  else out["beforeSend"] = undef();
+  JsValue flush = undef();
+  JsValue maxSeries = undef();
+  if (!isNullish(config)) {
+    flush = config["flushIntervalMs"];
+    maxSeries = config["maxSeriesPerFlush"];
+  }
+  if (isNullish(flush)) flush = 10000;
+  if (isNullish(maxSeries)) maxSeries = 1000;
+  out["flushIntervalMs"] = flush;
+  out["maxSeriesPerFlush"] = maxSeries;
+  return out;
+}

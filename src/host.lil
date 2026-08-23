@@ -8,8 +8,18 @@ extern JsValue Reflect;
 extern JsValue TypeError;
 extern JsValue RangeError;
 extern JsValue SyntaxError;
+extern JsValue Error;
+extern JsValue Map;
+extern JsValue Set;
+extern JsValue WeakSet;
+extern JsValue TextEncoder;
+extern JsValue String;
+extern JsValue Symbol;
+extern JsValue globalThis;
 extern JsValue parseInt;
 extern JsValue decodeURIComponent;
+extern JsValue decodeURI;
+extern JsValue encodeURIComponent;
 
 export JsValue undef() {
   return JS.undefined();
@@ -77,6 +87,10 @@ export JsValue copyObj(JsValue source) {
 
 export bool hasOwn(JsValue target, string key) {
   return JS.invoke(Object, "hasOwn", target, key).truthy();
+}
+
+export bool hasOwnValue(JsValue target, JsValue key) {
+  return JS.invoke(Object["prototype"]["hasOwnProperty"], "call", target, key).truthy();
 }
 
 export bool hasKey(JsValue target, string key) {

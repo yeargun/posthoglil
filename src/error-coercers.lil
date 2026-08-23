@@ -1,0 +1,470 @@
+import {
+  copyObj,
+  hasKey,
+  isNullish,
+  isStr,
+  isUndef,
+  len,
+  objectKeys,
+  toStr,
+  undef
+} from "./host.lil";
+import {
+  getPrototypeOf,
+  isBuiltinValue,
+  isEmptyStringValue,
+  isErrorEventValue,
+  isErrorValue,
+  isEventValue,
+  isPrimitiveValue,
+  isStringValue,
+  owns
+} from "./error-host.lil";
+
+Regex errorTypesPattern = new Regex("^(?:[Uu]ncaught (?:exception: )?)?(?:((?:Eval|Internal|Range|Reference|Syntax|Type|URI|)Error): )?(.*)$", "i");
+
+string[] severityLevels = ["fatal", "error", "warning", "log", "info", "debug"];
+
+export JsValue truncate(JsValue value, number max = 0.0) {
+  if (!isStr(value) || max == 0.0) {
+    return value;
+  }
+  string text = toStr(value);
+  if (text.length <= max) {
+    return text;
+  }
+  return toStr(JS.invoke(text, "slice", 0, max)) + "...";
+}
+
+export string extractExceptionKeysForMessage(JsValue error, int maxLength = 40) {
+  JsValue keys = objectKeys(error);
+  JS.invoke(keys, "sort");
+  if (len(keys) == 0) {
+    return "[object has no keys]";
+  }
+  int i = len(keys);
+  while (i > 0) {
+    string serialized = toStr(JS.invoke(JS.invoke(keys, "slice", 0, i), "join", ", "));
+    if (serialized.length <= maxLength) {
+      if (i == len(keys)) {
+        return serialized;
+      }
+      if (serialized.length <= maxLength) {
+        return serialized;
+      }
+      return serialized.slice(0, maxLength) + "...";
+    }
+    i = i - 1;
+  }
+  return "";
+}
+
+export class DOMExceptionCoercer {
+  bool match(JsValue error) {
+    return this.isDOMException(error) || this.isDOMError(error);
+  }
+
+  JsValue coerce(JsValue error, JsValue context) {
+    bool hasStack = isStringValue(error["stack"]);
+    JsValue out = JS.object();
+    out["type"] = this.getType(error);
+    out["value"] = this.getValue(error);
+    if (hasStack) {
+      out["stack"] = error["stack"];
+    } else {
+      out["stack"] = undef();
+    }
+    if (error["cause"].truthy()) {
+      out["cause"] = JS.invoke(context, "next", error["cause"]);
+    } else {
+      out["cause"] = undef();
+    }
+    out["synthetic"] = false;
+    return out;
+  }
+
+  string getType(JsValue candidate) {
+    if (this.isDOMError(candidate)) {
+      return "DOMError";
+    }
+    return "DOMException";
+  }
+
+  string getValue(JsValue error) {
+    JsValue name = error["name"];
+    if (!name.truthy()) {
+      if (this.isDOMError(error)) {
+        name = "DOMError";
+      } else {
+        name = "DOMException";
+      }
+    }
+    if (error["message"].truthy()) {
+      return toStr(name) + ": " + toStr(error["message"]);
+    }
+    return toStr(name);
+  }
+
+  bool isDOMException(JsValue error) {
+    return isBuiltinValue(error, "DOMException");
+  }
+
+  bool isDOMError(JsValue error) {
+    return isBuiltinValue(error, "DOMError");
+  }
+}
+
+export class ErrorCoercer {
+  bool match(JsValue error) {
+    return isErrorValue(error);
+  }
+
+  JsValue coerce(JsValue error, JsValue context) {
+    JsValue stack = this.getStack(error);
+    bool synthetic = isUndef(stack);
+    JsValue out = JS.object();
+    out["type"] = this.getType(error);
+    out["value"] = this.getMessage(error, context);
+    if (isUndef(stack)) {
+      JsValue syntheticException = context["syntheticException"];
+      if (!isNullish(syntheticException)) {
+        out["stack"] = syntheticException["stack"];
+      } else {
+        out["stack"] = undef();
+      }
+    } else {
+      out["stack"] = stack;
+    }
+    if (error["cause"].truthy()) {
+      out["cause"] = JS.invoke(context, "next", error["cause"]);
+    } else {
+      out["cause"] = undef();
+    }
+    out["synthetic"] = synthetic;
+    return out;
+  }
+
+  JsValue getType(JsValue error) {
+    if (error["name"].truthy()) {
+      return error["name"];
+    }
+    return error["constructor"]["name"];
+  }
+
+  string getMessage(JsValue error, JsValue context) {
+    JsValue message = error["message"];
+    if (
+      message["error"].truthy() &&
+      JS.typeOf(message["error"]["message"]) == "string"
+    ) {
+      return toStr(message["error"]["message"]);
+    }
+    return toStr(message);
+  }
+
+  JsValue getStack(JsValue error) {
+    if (error["stacktrace"].truthy()) {
+      return error["stacktrace"];
+    }
+    if (error["stack"].truthy()) {
+      return error["stack"];
+    }
+    return undef();
+  }
+}
+
+export class ErrorEventCoercer {
+  init() {}
+
+  bool match(JsValue error) {
+    if (!isErrorEventValue(error)) {
+      return false;
+    }
+    return !isNullish(error["error"]) || this.hasUsableMessage(error);
+  }
+
+  JsValue coerce(JsValue error, JsValue context) {
+    if (!isNullish(error["error"])) {
+      return JS.invoke(context, "apply", error["error"]);
+    }
+    JsValue exceptionLike = JS.invoke(context, "apply", error["message"]);
+    JsValue out = copyObj(exceptionLike);
+    JsValue locationStack = this.buildLocationStack(error);
+    if (isNullish(locationStack)) {
+      out["stack"] = exceptionLike["stack"];
+    } else {
+      out["stack"] = locationStack;
+    }
+    out["synthetic"] = true;
+    return out;
+  }
+
+  bool hasUsableMessage(JsValue error) {
+    return isStringValue(error["message"]) && len(error["message"]) > 0;
+  }
+
+  JsValue buildLocationStack(JsValue error) {
+    JsValue lineNumber = error["lineno"];
+    JsValue columnNumber = error["colno"];
+    if (isNullish(lineNumber)) {
+      lineNumber = 0;
+    }
+    if (isNullish(columnNumber)) {
+      columnNumber = 0;
+    }
+    if (!isStringValue(error["filename"]) || len(error["filename"]) == 0) {
+      return undef();
+    }
+    if (JS.strictEqual(lineNumber, 0)) {
+      return undef();
+    }
+    return "Error\n    at " + toStr(error["filename"]) + ":" + toStr(lineNumber) + ":" + toStr(columnNumber);
+  }
+}
+
+export class EventCoercer {
+  bool match(JsValue error) {
+    return isEventValue(error);
+  }
+
+  JsValue coerce(JsValue event, JsValue context) {
+    JsValue constructorName = event["constructor"]["name"];
+    JsValue out = JS.object();
+    out["type"] = constructorName;
+    out["value"] = toStr(constructorName) + " captured as exception with keys: " + extractExceptionKeysForMessage(event);
+    JsValue syntheticException = context["syntheticException"];
+    if (!isNullish(syntheticException)) {
+      out["stack"] = syntheticException["stack"];
+    } else {
+      out["stack"] = undef();
+    }
+    out["synthetic"] = true;
+    return out;
+  }
+}
+
+export class ObjectCoercer {
+  bool match(JsValue candidate) {
+    return JS.typeOf(candidate) == "object" && !JS.strictEqual(candidate, null);
+  }
+
+  JsValue coerce(JsValue candidate, JsValue context) {
+    JsValue errorProperty = this.getErrorPropertyFromObject(candidate);
+    if (errorProperty.truthy()) {
+      return JS.invoke(context, "apply", errorProperty);
+    }
+    JsValue out = JS.object();
+    out["type"] = this.getType(candidate);
+    out["value"] = this.getValue(candidate);
+    JsValue stack = this.getStack(candidate);
+    if (isNullish(stack)) {
+      JsValue syntheticException = context["syntheticException"];
+      if (!isNullish(syntheticException)) {
+        stack = syntheticException["stack"];
+      }
+    }
+    out["stack"] = stack;
+    if (this.isSeverityLevel(candidate["level"])) {
+      out["level"] = candidate["level"];
+    } else {
+      out["level"] = "error";
+    }
+    out["synthetic"] = true;
+    return out;
+  }
+
+  JsValue getType(JsValue error) {
+    if (isEventValue(error)) {
+      return error["constructor"]["name"];
+    }
+    JsValue name = undef();
+    if (hasKey(error, "name")) {
+      name = error["name"];
+    }
+    if (isStringValue(name) && !isEmptyStringValue(name)) {
+      return name;
+    }
+    return "Error";
+  }
+
+  string getValue(JsValue error) {
+    if (hasKey(error, "name") && JS.typeOf(error["name"]) == "string") {
+      string message = "'" + toStr(error["name"]) + "' captured as exception";
+      if (hasKey(error, "message") && JS.typeOf(error["message"]) == "string") {
+        message = message + " with message: '" + toStr(error["message"]) + "'";
+      }
+      return message;
+    }
+    if (hasKey(error, "message") && JS.typeOf(error["message"]) == "string") {
+      return toStr(error["message"]);
+    }
+    JsValue className = this.getObjectClassName(error);
+    string kind = "Object";
+    if (className.truthy() && !JS.strictEqual(className, "Object")) {
+      kind = "'" + toStr(className) + "'";
+    }
+    return kind + " captured as exception with keys: " + extractExceptionKeysForMessage(error);
+  }
+
+  bool isSeverityLevel(JsValue value) {
+    if (!isStringValue(value) || isEmptyStringValue(value)) {
+      return false;
+    }
+    return JS.number(JS.invoke(severityLevels, "indexOf", value)) >= 0.0;
+  }
+
+  JsValue getStack(JsValue candidate) {
+    try {
+      if (isStringValue(candidate["stacktrace"]) && len(candidate["stacktrace"]) > 0) {
+        return candidate["stacktrace"];
+      }
+      if (isStringValue(candidate["stack"]) && len(candidate["stack"]) > 0) {
+        return candidate["stack"];
+      }
+      return undef();
+    } catch {
+      return undef();
+    }
+  }
+
+  JsValue getErrorPropertyFromObject(JsValue object) {
+    for (string property in object) {
+      if (owns(object, property)) {
+        JsValue value = object[property];
+        if (isErrorValue(value)) {
+          return value;
+        }
+      }
+    }
+    return undef();
+  }
+
+  JsValue getObjectClassName(JsValue object) {
+    try {
+      JsValue prototype = getPrototypeOf(object);
+      if (prototype.truthy()) {
+        return prototype["constructor"]["name"];
+      }
+      return undef();
+    } catch {
+      return undef();
+    }
+  }
+}
+
+export class PrimitiveCoercer {
+  bool match(JsValue candidate) {
+    return isPrimitiveValue(candidate);
+  }
+
+  JsValue coerce(JsValue value, JsValue context) {
+    JsValue out = JS.object();
+    out["type"] = "Error";
+    out["value"] = "Primitive value captured as exception: " + toStr(value);
+    JsValue syntheticException = context["syntheticException"];
+    if (!isNullish(syntheticException)) {
+      out["stack"] = syntheticException["stack"];
+    } else {
+      out["stack"] = undef();
+    }
+    out["synthetic"] = true;
+    return out;
+  }
+}
+
+export class PromiseRejectionEventCoercer {
+  bool match(JsValue error) {
+    return isBuiltinValue(error, "PromiseRejectionEvent") || this.isCustomEventWrappingRejection(error);
+  }
+
+  bool isCustomEventWrappingRejection(JsValue error) {
+    if (!isEventValue(error)) {
+      return false;
+    }
+    try {
+      JsValue detail = error["detail"];
+      return !isNullish(detail) && JS.typeOf(detail) == "object" && hasKey(detail, "reason");
+    } catch {
+      return false;
+    }
+  }
+
+  JsValue coerce(JsValue error, JsValue context) {
+    JsValue reason = this.getUnhandledRejectionReason(error);
+    if (isPrimitiveValue(reason)) {
+      JsValue out = JS.object();
+      out["type"] = "UnhandledRejection";
+      out["value"] = "Non-Error promise rejection captured with value: " + toStr(reason);
+      JsValue syntheticException = context["syntheticException"];
+      if (!isNullish(syntheticException)) {
+        out["stack"] = syntheticException["stack"];
+      } else {
+        out["stack"] = undef();
+      }
+      out["synthetic"] = true;
+      return out;
+    }
+    return JS.invoke(context, "apply", reason);
+  }
+
+  JsValue getUnhandledRejectionReason(JsValue error) {
+    try {
+      if (hasKey(error, "reason")) {
+        return error["reason"];
+      }
+      if (
+        hasKey(error, "detail") &&
+        !isNullish(error["detail"]) &&
+        JS.typeOf(error["detail"]) == "object" &&
+        hasKey(error["detail"], "reason")
+      ) {
+        return error["detail"]["reason"];
+      }
+    } catch {
+    }
+    return error;
+  }
+}
+
+export class StringCoercer {
+  bool match(JsValue input) {
+    return JS.typeOf(input) == "string";
+  }
+
+  JsValue coerce(JsValue input, JsValue context) {
+    JsValue infos = this.getInfos(toStr(input));
+    JsValue out = JS.object();
+    if (isNullish(infos[0])) {
+      out["type"] = "Error";
+    } else {
+      out["type"] = infos[0];
+    }
+    if (isNullish(infos[1])) {
+      out["value"] = input;
+    } else {
+      out["value"] = infos[1];
+    }
+    JsValue syntheticException = context["syntheticException"];
+    if (!isNullish(syntheticException)) {
+      out["stack"] = syntheticException["stack"];
+    } else {
+      out["stack"] = undef();
+    }
+    out["synthetic"] = true;
+    return out;
+  }
+
+  JsValue getInfos(string candidate) {
+    JsValue type = "Error";
+    JsValue value = candidate;
+    JsValue groups = JS.invoke(candidate, "match", errorTypesPattern);
+    if (groups.truthy()) {
+      type = groups[1];
+      value = groups[2];
+    }
+    JsValue out = JS.array();
+    JS.invoke(out, "push", type);
+    JS.invoke(out, "push", value);
+    return out;
+  }
+}

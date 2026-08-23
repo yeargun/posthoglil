@@ -4,9 +4,10 @@
 **selected algorithms** from [`posthog-js@1.418.10`](https://github.com/PostHog/posthog-js).
 It is not affiliated with or endorsed by PostHog, Inc.
 
-This port is a capture kernel, not the published browser SDK. Autocapture,
-session replay, surveys, product tours, heatmaps, web vitals, the PostHog
-client class, network transport, and persistence adapters are absent.
+This port contains a capture kernel plus independent surveys, error-tracking,
+and pure OTLP helper subpaths; it is not the published browser SDK. Autocapture,
+session replay, product tours, heatmaps, web vitals, the PostHog client class,
+network transport, and persistence adapters are absent.
 
 The public algorithms derive from:
 

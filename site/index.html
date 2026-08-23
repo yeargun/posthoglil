@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="@itslil/posthog-js is a subset of posthog-js 1.418.10: UUID, flags, cookies, routing, rate limits, queue, bot detection, and portable helpers. Size is versus that same official kernel, then Vite 8 Oxc, Terser, and esbuild — not the published PostHog IIFE."
+      content="LilScript ports selected posthog-js 1.418.10 surfaces: the capture kernel plus independent surveys, error-tracking, and OTLP packs. Each size comparison uses the exact untouched official source graph."
     />
     <meta name="theme-color" content="#f54e00" />
     <title>itslil/posthog-js — selected posthog-js 1.418.10 modules through LilScript</title>
@@ -21,6 +21,7 @@
       </a>
       <nav aria-label="Main navigation">
         <a href="#surface">surface</a>
+        <a href="#packs">packs</a>
         <a href="#lab">playground</a>
         <a href="#evidence">size</a>
         <a href="https://github.com/yeargun/posthoglil">GitHub ↗</a>
@@ -37,8 +38,10 @@
             It is thirteen modules from <code>posthog-js@1.418.10</code> — UUID, feature-flag
             utils, cookie identity, request routing, token and bucketed rate limits, queue
             batching, bot detection, and the portable string / number / type / JSON / URL
-            helpers — rewritten in LilScript. Autocapture, session replay, surveys, the
-            client class, and network transport are absent. Every number on this page
+            helpers — rewritten in LilScript. Three independent subpaths now add surveys,
+            error tracking, and pure OTLP logs/metrics helpers without pulling them into
+            the root kernel. Autocapture, session replay, the client class, and network
+            transport remain absent. Every number on this page
             compares that same official kernel, then Vite 8 Oxc, Terser, and esbuild, with
             the settings named on each row. The headline is the direct Brotli-scored
             compiler artifact. The npm ESM adds its license banner and is reported
@@ -96,9 +99,10 @@
           </div>
           <p>
             The official side is extracted from <code>posthog-js@1.418.10</code> commit
-            <code>9b2a1b18</code> and lives in <code>official/</code>. LilScript implements
-            the same named functions. Compatibility tests assert the same outputs, including
-            UUID field bytes and cookie keys that official sets to <code>undefined</code>.
+            <code>9b2a1b18</code>. The legacy kernel fixture lives in <code>official/</code>;
+            the three pack baselines below bundle the untouched pinned git submodule directly.
+            LilScript implements the same named functions. Differential tests assert matching
+            outputs, object shapes, edge cases, and observable mutation.
           </p>
         </div>
         <div class="perf-cards" id="perf-cards"></div>
@@ -195,6 +199,38 @@
           </table>
         </div>
         <p class="perf-note" id="perf-note"></p>
+      </section>
+
+      <section class="packs shell" id="packs">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">The larger compression showcase</p>
+            <h2>Three exact<br />runtime packs.</h2>
+          </div>
+          <p>
+            These are separate package subpaths, not additions to the capture-kernel lane.
+            The official side is bundled straight from the read-only <code>posthog-js</code>
+            submodule at <code>9b2a1b18</code>. No upstream TypeScript or JavaScript is edited,
+            and no algorithm is replaced. Each LilScript artifact is differential-tested
+            against that exact original before it is measured.
+          </p>
+        </div>
+        <div class="pack-cards" id="pack-cards"></div>
+        <div class="table-wrap light pack-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Pack / pinned source</th>
+                <th>Exports / test groups / cost model</th>
+                <th>Raw · Oxc → LilScript</th>
+                <th>gzip-9 · Oxc → LilScript</th>
+                <th>Brotli-11 · Oxc → LilScript</th>
+              </tr>
+            </thead>
+            <tbody id="body-packs"></tbody>
+          </table>
+        </div>
+        <p class="perf-note" id="pack-note"></p>
       </section>
 
       <section class="lab shell" id="lab">
@@ -327,11 +363,13 @@
 
           <div class="method-note">
             <p>
-              <strong>Why this surface.</strong> The published <code>posthog-js</code> IIFE
+              <strong>Why the kernel stays separate.</strong> The published <code>posthog-js</code> IIFE
               still contains autocapture, replay, surveys, and the client class. Putting
               that file on one side and this kernel on the other is not a comparison.
               The fair fight is the 1.418.10 kernel in <code>official/</code>, then the
-              same Oxc, Terser, and esbuild work the JS ecosystem actually ships. Closed
+              same Oxc, Terser, and esbuild work the JS ecosystem actually ships. Surveys,
+              error tracking, and OTLP have their own receipts above, so their larger graphs
+              never distort this kernel table. Closed
               LilScript is the other honest comparison: public JS keys mangle.
               Losses stay on the page.
             </p>

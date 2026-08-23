@@ -16,9 +16,35 @@ describe("github pages artifact", () => {
       "results.json",
       "posthog.js",
       "posthog-official.js",
+      "surveys.js",
+      "error-tracking.js",
+      "otlp.js",
       ".nojekyll",
     ]) {
       assert.equal(existsSync(resolve(site, path)), true, path)
+    }
+  })
+
+  it("publishes independent exact-source pack measurements", () => {
+    const html = readFileSync(resolve(site, "index.html"), "utf8")
+    assert.match(html, /id="packs"/)
+    assert.match(html, /id="pack-cards"/)
+    assert.match(html, /id="body-packs"/)
+    assert.match(html, /untouched pinned git submodule/i)
+    assert.match(html, /No upstream TypeScript or JavaScript is edited/i)
+
+    const results = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
+    assert.equal(results.submoduleCommit, "9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb")
+    assert.deepEqual(results.packs.map((pack) => pack.id), ["surveys", "error-tracking", "otlp"])
+    for (const pack of results.packs) {
+      const baseline = pack.lanes.find((lane) => lane.baseline)
+      const primary = pack.lanes.find((lane) => lane.primary)
+      assert.equal(pack.exact, true)
+      assert.equal(typeof pack.exports, "number")
+      assert.equal(typeof pack.differentialGroups, "number")
+      assert.equal(typeof baseline.brotli11, "number")
+      assert.equal(typeof primary.brotli11, "number")
+      assert.equal(pack.ratios.brotli11, primary.brotli11 / baseline.brotli11)
     }
   })
 

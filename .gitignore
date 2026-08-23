@@ -11,3 +11,4 @@ dist/posthog.raw.js
 dist/posthog.closed.js
 dist/posthog.gzip.js
 dist/posthog.bytes.js
+dist/*.raw.js

@@ -1,0 +1,616 @@
+import {
+  copyObj,
+  hasKey,
+  isArr,
+  isFiniteNum,
+  isNullish,
+  isUndef,
+  jsonParse,
+  len,
+  objectAssign,
+  objectKeys,
+  toNum,
+  toStr,
+  typeError,
+  undef
+} from "./host.lil";
+import {
+  isNumberValue,
+  isObjectValue,
+  isStringValue,
+  safeJsonStringify
+} from "./error-host.lil";
+
+JsValue makeInternalFields() {
+  JsValue fields = JS.object();
+  fields["MESSAGE"] = "$message";
+  fields["TIMESTAMP"] = "$timestamp";
+  return fields;
+}
+
+JsValue makeDefaultStepsConfig() {
+  JsValue config = JS.object();
+  config["enabled"] = true;
+  config["max_bytes"] = 32768;
+  return config;
+}
+
+export JsValue EXCEPTION_STEP_INTERNAL_FIELDS = makeInternalFields();
+export JsValue DEFAULT_EXCEPTION_STEPS_CONFIG = makeDefaultStepsConfig();
+
+number normalizePositiveInteger(JsValue input, number fallback) {
+  if (!isNumberValue(input) || !isFiniteNum(toNum(input))) {
+    return fallback;
+  }
+  number normalized = JS.number(JS.invoke(Math, "floor", input));
+  if (normalized < 0.0) {
+    return fallback;
+  }
+  return normalized;
+}
+
+export JsValue resolveExceptionStepsConfig(JsValue config = JS.undefined()) {
+  if (!config.truthy()) {
+    return copyObj(DEFAULT_EXCEPTION_STEPS_CONFIG);
+  }
+  JsValue out = JS.object();
+  if (isNullish(config["enabled"])) {
+    out["enabled"] = DEFAULT_EXCEPTION_STEPS_CONFIG["enabled"];
+  } else {
+    out["enabled"] = config["enabled"];
+  }
+  out["max_bytes"] = normalizePositiveInteger(
+    config["max_bytes"],
+    JS.number(DEFAULT_EXCEPTION_STEPS_CONFIG["max_bytes"])
+  );
+  return out;
+}
+
+export JsValue stripReservedExceptionStepFields(JsValue properties = JS.undefined()) {
+  JsValue sanitizedProperties = JS.object();
+  JsValue droppedKeys = JS.array();
+  if (properties.truthy()) {
+    JsValue keys = objectKeys(properties);
+    int i = 0;
+    while (i < len(keys)) {
+      JsValue key = keys[i];
+      if (JS.strictEqual(key, "$message") || JS.strictEqual(key, "$timestamp")) {
+        JS.invoke(droppedKeys, "push", key);
+      } else {
+        sanitizedProperties[key] = properties[key];
+      }
+      i = i + 1;
+    }
+  }
+  JsValue out = JS.object();
+  out["sanitizedProperties"] = sanitizedProperties;
+  out["droppedKeys"] = droppedKeys;
+  return out;
+}
+
+JsValue normalizeAndSerializeStep(JsValue step) {
+  string json = "";
+  try {
+    json = safeJsonStringify(step);
+  } catch {
+    return undef();
+  }
+  try {
+    JsValue parsed = jsonParse(json);
+    if (!isObjectValue(parsed)) {
+      return undef();
+    }
+    JsValue message = parsed["$message"];
+    JsValue timestamp = parsed["$timestamp"];
+    if (!isStringValue(message) || toStr(message).trim().length == 0) {
+      return undef();
+    }
+    if (!isStringValue(timestamp) && !isNumberValue(timestamp)) {
+      return undef();
+    }
+    JsValue out = JS.object();
+    out["step"] = parsed;
+    out["json"] = json;
+    return out;
+  } catch {
+    return undef();
+  }
+}
+
+export number getUtf8ByteLength(string value) {
+  JsValue textEncoder = globalThis["TextEncoder"];
+  if (!isUndef(textEncoder)) {
+    JsValue encoder = JS.construct(textEncoder);
+    return len(JS.invoke(encoder, "encode", value));
+  }
+  string encoded = toStr(JS.call(encodeURIComponent, undef(), value));
+  int byteLength = 0;
+  int i = 0;
+  while (i < encoded.length) {
+    if (encoded[i] == "%") {
+      byteLength = byteLength + 1;
+      i = i + 2;
+    } else {
+      byteLength = byteLength + 1;
+    }
+    i = i + 1;
+  }
+  return byteLength;
+}
+
+JsValue runtimeConstructor(JsValue constructorValue, string name, int arity) {
+  JsValue nameDescriptor = JS.object();
+  nameDescriptor["value"] = name;
+  nameDescriptor["configurable"] = true;
+  JS.invoke(Object, "defineProperty", constructorValue, "name", nameDescriptor);
+  JsValue lengthDescriptor = JS.object();
+  lengthDescriptor["value"] = arity;
+  lengthDescriptor["configurable"] = true;
+  JS.invoke(Object, "defineProperty", constructorValue, "length", lengthDescriptor);
+  JsValue prototypeDescriptor = JS.object();
+  prototypeDescriptor["writable"] = false;
+  JS.invoke(Object, "defineProperty", constructorValue, "prototype", prototypeDescriptor);
+  return constructorValue;
+}
+
+void setFunctionLength(JsValue functionValue, int arity) {
+  JsValue descriptor = JS.object();
+  descriptor["value"] = arity;
+  descriptor["configurable"] = true;
+  JS.invoke(Object, "defineProperty", functionValue, "length", descriptor);
+}
+
+void runtimeMethod(JsValue constructorValue, string name, JsValue method) {
+  JsValue nameDescriptor = JS.object();
+  nameDescriptor["value"] = name;
+  nameDescriptor["configurable"] = true;
+  JS.invoke(Object, "defineProperty", method, "name", nameDescriptor);
+  JsValue descriptor = JS.object();
+  descriptor["value"] = method;
+  descriptor["writable"] = true;
+  descriptor["configurable"] = true;
+  JS.invoke(Object, "defineProperty", constructorValue["prototype"], name, descriptor);
+}
+
+void requireNew(JsValue self, JsValue constructorValue, string name) {
+  if (
+    isNullish(self) ||
+    !JS.invoke(constructorValue["prototype"], "isPrototypeOf", self).truthy()
+  ) {
+    throw typeError("Class constructor " + name + " cannot be invoked without 'new'");
+  }
+}
+
+JsValue stepsConstructor(JsValue self, JsValue args) {
+  self["_entries"] = JS.array();
+  self["_totalBytes"] = 0;
+  self["_config"] = resolveExceptionStepsConfig(args[0]);
+  return undef();
+}
+
+JsValue stepsTrim(JsValue self) {
+  while (
+    JS.number(self["_totalBytes"]) > JS.number(self["_config"]["max_bytes"]) &&
+    len(self["_entries"]) > 0
+  ) {
+    JsValue evicted = JS.invoke(self["_entries"], "shift");
+    if (evicted.truthy()) {
+      self["_totalBytes"] = JS.number(self["_totalBytes"]) - JS.number(evicted["bytes"]);
+    }
+  }
+  return undef();
+}
+
+JsValue stepsSetConfig(JsValue self, JsValue config) {
+  self["_config"] = resolveExceptionStepsConfig(config);
+  JS.invoke(self, "_trimToMaxBytes");
+  return undef();
+}
+
+JsValue stepsAdd(JsValue self, JsValue step) {
+  JsValue serialized = normalizeAndSerializeStep(step);
+  if (!serialized.truthy()) {
+    return undef();
+  }
+  number bytes = getUtf8ByteLength(toStr(serialized["json"]));
+  if (bytes > JS.number(self["_config"]["max_bytes"])) {
+    return undef();
+  }
+  JsValue entry = JS.object();
+  entry["step"] = serialized["step"];
+  entry["bytes"] = bytes;
+  JS.invoke(self["_entries"], "push", entry);
+  self["_totalBytes"] = JS.number(self["_totalBytes"]) + bytes;
+  JS.invoke(self, "_trimToMaxBytes");
+  return undef();
+}
+
+JsValue stepsGetAttachable(JsValue self) {
+  JsValue out = JS.array();
+  int i = 0;
+  while (i < len(self["_entries"])) {
+    JS.invoke(out, "push", self["_entries"][i]["step"]);
+    i = i + 1;
+  }
+  return out;
+}
+
+JsValue stepsClear(JsValue self) {
+  self["_entries"] = JS.array();
+  self["_totalBytes"] = 0;
+  return undef();
+}
+
+JsValue stepsSize(JsValue self) {
+  return len(self["_entries"]);
+}
+
+JsValue createExceptionStepsBuffer() {
+  JsValue constructorValue = undef();
+  func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
+    requireNew(self, constructorValue, "ExceptionStepsBuffer");
+    return stepsConstructor(self, args);
+  };
+  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ExceptionStepsBuffer", 1);
+  runtimeMethod(constructorValue, "setConfig", JS.method1(stepsSetConfig));
+  runtimeMethod(constructorValue, "add", JS.method1(stepsAdd));
+  runtimeMethod(constructorValue, "getAttachable", JS.method0(stepsGetAttachable));
+  runtimeMethod(constructorValue, "clear", JS.method0(stepsClear));
+  runtimeMethod(constructorValue, "size", JS.method0(stepsSize));
+  runtimeMethod(constructorValue, "_trimToMaxBytes", JS.method0(stepsTrim));
+  return constructorValue;
+}
+
+export JsValue ExceptionStepsBuffer = createExceptionStepsBuffer();
+
+JsValue cacheConstructor(JsValue self, JsValue args) {
+  self["_maxSize"] = args[0];
+  self["_cache"] = JS.construct(Map);
+  return undef();
+}
+
+JsValue cacheGet(JsValue self, JsValue key) {
+  JsValue value = JS.invoke(self["_cache"], "get", key);
+  if (isUndef(value)) {
+    return undef();
+  }
+  JS.invoke(self["_cache"], "delete", key);
+  JS.invoke(self["_cache"], "set", key, value);
+  return value;
+}
+
+JsValue cacheSet(JsValue self, JsValue key, JsValue value) {
+  JS.invoke(self["_cache"], "set", key, value);
+  return undef();
+}
+
+JsValue cacheReduce(JsValue self) {
+  while (JS.number(self["_cache"]["size"]) >= JS.number(self["_maxSize"])) {
+    JsValue iterator = JS.invoke(self["_cache"], "keys");
+    JsValue value = JS.invoke(iterator, "next")["value"];
+    if (value.truthy()) {
+      JS.invoke(self["_cache"], "delete", value);
+    }
+  }
+  return undef();
+}
+
+JsValue createReduceableCache() {
+  JsValue constructorValue = undef();
+  func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
+    requireNew(self, constructorValue, "ReduceableCache");
+    return cacheConstructor(self, args);
+  };
+  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ReduceableCache", 1);
+  runtimeMethod(constructorValue, "get", JS.method1(cacheGet));
+  runtimeMethod(constructorValue, "set", JS.method2(cacheSet));
+  runtimeMethod(constructorValue, "reduce", JS.method0(cacheReduce));
+  return constructorValue;
+}
+
+export JsValue ReduceableCache = createReduceableCache();
+
+JsValue parsedStackResults = JS.undefined();
+JsValue lastKeysCount = JS.undefined();
+JsValue cachedFilenameChunkIds = JS.undefined();
+
+JsValue getFilenameToChunkIdMap(JsValue stackParser) {
+  JsValue chunkIdMap = globalThis["_posthogChunkIds"];
+  if (!chunkIdMap.truthy()) {
+    return undef();
+  }
+  JsValue chunkIdKeys = objectKeys(chunkIdMap);
+  if (cachedFilenameChunkIds.truthy() && JS.strictEqual(len(chunkIdKeys), lastKeysCount)) {
+    return cachedFilenameChunkIds;
+  }
+  lastKeysCount = len(chunkIdKeys);
+  cachedFilenameChunkIds = JS.object();
+  int keyIndex = 0;
+  while (keyIndex < len(chunkIdKeys)) {
+    JsValue stackKey = chunkIdKeys[keyIndex];
+    if (!parsedStackResults.truthy()) {
+      parsedStackResults = JS.object();
+    }
+    JsValue result = parsedStackResults[stackKey];
+    if (result.truthy()) {
+      cachedFilenameChunkIds[result[0]] = result[1];
+    } else {
+      JsValue parsedStack = JS.call(stackParser, undef(), stackKey);
+      int frameIndex = len(parsedStack) - 1;
+      while (frameIndex >= 0) {
+        JsValue stackFrame = parsedStack[frameIndex];
+        JsValue filename = undef();
+        if (!isNullish(stackFrame)) {
+          filename = stackFrame["filename"];
+        }
+        JsValue chunkId = chunkIdMap[stackKey];
+        if (filename.truthy() && chunkId.truthy()) {
+          cachedFilenameChunkIds[filename] = chunkId;
+          JsValue pair = JS.array();
+          JS.invoke(pair, "push", filename);
+          JS.invoke(pair, "push", chunkId);
+          parsedStackResults[stackKey] = pair;
+          break;
+        }
+        frameIndex = frameIndex - 1;
+      }
+    }
+    keyIndex = keyIndex + 1;
+  }
+  return cachedFilenameChunkIds;
+}
+
+JsValue fallbackException(JsValue self, JsValue context) {
+  JsValue out = JS.object();
+  out["type"] = "Error";
+  out["value"] = "Unknown error";
+  JsValue syntheticException = context["syntheticException"];
+  if (!isNullish(syntheticException)) {
+    out["stack"] = syntheticException["stack"];
+  } else {
+    out["stack"] = undef();
+  }
+  out["synthetic"] = true;
+  return out;
+}
+
+JsValue builderApplyCoercers(JsValue self, JsValue input, JsValue context) {
+  JsValue coercers = self["coercers"];
+  int i = 0;
+  while (i < len(coercers)) {
+    JsValue adapter = coercers[i];
+    if (JS.invoke(adapter, "match", input).truthy()) {
+      return JS.invoke(adapter, "coerce", input, context);
+    }
+    i = i + 1;
+  }
+  return JS.invoke(self, "coerceFallback", context);
+}
+
+JsValue coerceAtDepth(JsValue builder, JsValue input, JsValue mechanism, JsValue hint, int depth) {
+  if (depth <= 4) {
+    JsValue context = JS.invoke(builder, "buildCoercingContext", mechanism, hint, depth);
+    return JS.invoke(builder, "applyCoercers", input, context);
+  }
+  return undef();
+}
+
+JsValue builderBuildCoercingContext(JsValue self, JsValue mechanism, JsValue hint, JsValue depthValue) {
+  int depth = 0;
+  if (!isUndef(depthValue)) {
+    depth = JS.number(depthValue).toInt();
+  }
+  JsValue context = copyObj(hint);
+  if (depth == 0) {
+    context["syntheticException"] = hint["syntheticException"];
+  } else {
+    context["syntheticException"] = undef();
+  }
+  context["mechanism"] = mechanism;
+  func(JsValue, JsValue)->JsValue applyCallback = (JsValue ignored, JsValue input) => {
+    return coerceAtDepth(self, input, mechanism, hint, depth);
+  };
+  func(JsValue, JsValue)->JsValue nextCallback = (JsValue ignored, JsValue input) => {
+    return coerceAtDepth(self, input, mechanism, hint, depth + 1);
+  };
+  context["apply"] = JS.method1(applyCallback);
+  context["next"] = JS.method1(nextCallback);
+  return context;
+}
+
+JsValue builderApplyChunkIds(JsValue self, JsValue frames, JsValue chunkIdMap) {
+  int i = 0;
+  while (i < len(frames)) {
+    JsValue frame = frames[i];
+    if (frame["filename"].truthy() && !isNullish(chunkIdMap)) {
+      frame["chunk_id"] = chunkIdMap[frame["filename"]];
+    }
+    i = i + 1;
+  }
+  return frames;
+}
+
+JsValue builderParseStacktrace(JsValue self, JsValue error, JsValue context) {
+  JsValue cause = undef();
+  if (!isNullish(error["cause"])) {
+    cause = JS.invoke(self, "parseStacktrace", error["cause"], context);
+  }
+  JsValue stack = undef();
+  if (!isNullish(error["stack"]) && !JS.strictEqual(error["stack"], "")) {
+    if (error["synthetic"].truthy()) {
+      stack = JS.call(
+        self["stackParser"],
+        undef(),
+        error["stack"],
+        context["skipFirstLines"]
+      );
+    } else {
+      stack = JS.call(self["stackParser"], undef(), error["stack"], 0);
+    }
+    stack = builderApplyChunkIds(self, stack, context["chunkIdMap"]);
+  }
+  JsValue out = copyObj(error);
+  out["cause"] = cause;
+  out["stack"] = stack;
+  return out;
+}
+
+JsValue builderConvertList(JsValue self, JsValue exceptionWithStack, JsValue mechanism) {
+  JsValue currentException = JS.object();
+  currentException["type"] = exceptionWithStack["type"];
+  currentException["value"] = exceptionWithStack["value"];
+  JsValue outputMechanism = JS.object();
+  if (isNullish(mechanism["type"])) {
+    outputMechanism["type"] = "generic";
+  } else {
+    outputMechanism["type"] = mechanism["type"];
+  }
+  if (isNullish(mechanism["handled"])) {
+    outputMechanism["handled"] = true;
+  } else {
+    outputMechanism["handled"] = mechanism["handled"];
+  }
+  if (isNullish(exceptionWithStack["synthetic"])) {
+    outputMechanism["synthetic"] = false;
+  } else {
+    outputMechanism["synthetic"] = exceptionWithStack["synthetic"];
+  }
+  currentException["mechanism"] = outputMechanism;
+  if (exceptionWithStack["stack"].truthy()) {
+    JsValue stacktrace = JS.object();
+    stacktrace["type"] = "raw";
+    stacktrace["frames"] = exceptionWithStack["stack"];
+    currentException["stacktrace"] = stacktrace;
+  }
+  JsValue exceptionList = JS.array();
+  JS.invoke(exceptionList, "push", currentException);
+  if (!isNullish(exceptionWithStack["cause"])) {
+    JsValue causeMechanism = copyObj(mechanism);
+    causeMechanism["handled"] = true;
+    JsValue causes = JS.invoke(self, "convertToExceptionList", exceptionWithStack["cause"], causeMechanism);
+    int i = 0;
+    while (i < len(causes)) {
+      JS.invoke(exceptionList, "push", causes[i]);
+      i = i + 1;
+    }
+  }
+  return exceptionList;
+}
+
+JsValue builderBuildParsingContext(JsValue self, JsValue hint) {
+  JsValue out = JS.object();
+  out["chunkIdMap"] = getFilenameToChunkIdMap(self["stackParser"]);
+  if (isNullish(hint["skipFirstLines"])) {
+    out["skipFirstLines"] = 1;
+  } else {
+    out["skipFirstLines"] = hint["skipFirstLines"];
+  }
+  return out;
+}
+
+JsValue builderBuildFromUnknown(JsValue self, JsValue input, JsValue hintValue) {
+  JsValue hint = hintValue;
+  if (isUndef(hint)) {
+    hint = JS.object();
+  }
+  JsValue providedMechanism = undef();
+  if (hint.truthy()) {
+    providedMechanism = hint["mechanism"];
+  }
+  JsValue mechanism = providedMechanism;
+  if (!mechanism.truthy()) {
+    mechanism = JS.object();
+    mechanism["handled"] = true;
+    mechanism["type"] = "generic";
+  }
+  JsValue coercingContext = JS.invoke(self, "buildCoercingContext", mechanism, hint, 0);
+  JsValue exceptionWithCause = JS.invoke(coercingContext, "apply", input);
+  JsValue parsingContext = JS.invoke(self, "buildParsingContext", hint);
+  JsValue exceptionWithStack = JS.invoke(self, "parseStacktrace", exceptionWithCause, parsingContext);
+  JsValue exceptionList = JS.invoke(self, "convertToExceptionList", exceptionWithStack, mechanism);
+  JsValue out = JS.object();
+  out["$exception_list"] = exceptionList;
+  out["$exception_level"] = "error";
+  return out;
+}
+
+async JsValue builderApplyModifiersAsync(JsValue self, JsValue frames) {
+  JsValue newFrames = frames;
+  int i = 0;
+  while (i < len(self["modifiers"])) {
+    JsValue result = JS.call(self["modifiers"][i], undef(), newFrames);
+    newFrames = await Task.resolve(result);
+    i = i + 1;
+  }
+  return newFrames;
+}
+
+JsValue builderApplyModifiers(JsValue self, JsValue frames) {
+  return builderApplyModifiersAsync(self, frames);
+}
+
+async JsValue builderModifyFramesAsync(JsValue self, JsValue exceptionList) {
+  int i = 0;
+  while (i < len(exceptionList)) {
+    JsValue exception = exceptionList[i];
+    if (
+      exception["stacktrace"].truthy() &&
+      exception["stacktrace"]["frames"].truthy() &&
+      isArr(exception["stacktrace"]["frames"])
+    ) {
+      JsValue result = JS.invoke(self, "applyModifiers", exception["stacktrace"]["frames"]);
+      exception["stacktrace"]["frames"] = await Task.resolve(result);
+    }
+    i = i + 1;
+  }
+  return exceptionList;
+}
+
+JsValue builderModifyFrames(JsValue self, JsValue exceptionList) {
+  return builderModifyFramesAsync(self, exceptionList);
+}
+
+JsValue builderConstructor(JsValue self, JsValue args) {
+  self["coercers"] = args[0];
+  self["stackParser"] = args[1];
+  if (isUndef(args[2])) {
+    self["modifiers"] = JS.array();
+  } else {
+    self["modifiers"] = args[2];
+  }
+  return undef();
+}
+
+JsValue createErrorPropertiesBuilder() {
+  JsValue constructorValue = undef();
+  func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
+    requireNew(self, constructorValue, "ErrorPropertiesBuilder");
+    return builderConstructor(self, args);
+  };
+  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ErrorPropertiesBuilder", 2);
+  JsValue buildMethod = JS.method2(builderBuildFromUnknown);
+  setFunctionLength(buildMethod, 1);
+  runtimeMethod(constructorValue, "buildFromUnknown", buildMethod);
+  runtimeMethod(constructorValue, "modifyFrames", JS.method1(builderModifyFrames));
+  runtimeMethod(constructorValue, "coerceFallback", JS.method1(fallbackException));
+  runtimeMethod(constructorValue, "parseStacktrace", JS.method2(builderParseStacktrace));
+  runtimeMethod(constructorValue, "applyChunkIds", JS.method2(builderApplyChunkIds));
+  runtimeMethod(constructorValue, "applyCoercers", JS.method2(builderApplyCoercers));
+  runtimeMethod(constructorValue, "applyModifiers", JS.method1(builderApplyModifiers));
+  runtimeMethod(constructorValue, "convertToExceptionList", JS.method2(builderConvertList));
+  runtimeMethod(constructorValue, "buildParsingContext", JS.method1(builderBuildParsingContext));
+  JsValue buildContextMethod = JS.method3(builderBuildCoercingContext);
+  setFunctionLength(buildContextMethod, 2);
+  runtimeMethod(constructorValue, "buildCoercingContext", buildContextMethod);
+  return constructorValue;
+}
+
+export JsValue ErrorPropertiesBuilder = createErrorPropertiesBuilder();
+
+export JsValue getInjectedReleaseId() {
+  JsValue injected = globalThis["_posthogReleaseId"];
+  if (JS.typeOf(injected) == "string" && len(injected) > 0) {
+    return injected;
+  }
+  return undef();
+}

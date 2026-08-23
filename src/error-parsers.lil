@@ -1,0 +1,413 @@
+import {
+  copyObj,
+  isStr,
+  isUndef,
+  len,
+  objectKeys,
+  toStr,
+  undef
+} from "./host.lil";
+
+export string UNKNOWN_FUNCTION = "?";
+
+Regex chromeRegexNoFnName = new Regex("^\\s*at (\\S+?)(?::(\\d+))(?::(\\d+))\\s*$", "i");
+Regex chromeRegex = new Regex("^\\s*at (?:(.+?\\)(?: \\[.+\\])?|.*?) ?\\((?:address at )?)?(?:async )?((?:<anonymous>|[-a-z]+:|.*bundle|\\/)?.*?)(?::(\\d+))?(?::(\\d+))?\\)?\\s*$", "i");
+Regex chromeEvalRegex = new Regex("\\((\\S*)(?::(\\d+))(?::(\\d+))\\)");
+Regex geckoRegex = new Regex("^\\s*(.*?)(?:\\((.*?)\\))?(?:^|@)?((?:[-a-z]+)?:\\/.*?|\\[native code\\]|[^@]*(?:bundle|\\d+\\.js)|\\/[\\w\\-. \\/=]+)(?::(\\d+))?(?::(\\d+))?\\s*$", "i");
+Regex geckoEvalRegex = new Regex("(\\S+) line (\\d+)(?: > eval line \\d+)* > eval", "i");
+Regex webpackErrorRegex = new Regex("\\(error: (.*)\\)");
+Regex errorLineRegex = new Regex("\\S*Error: ");
+Regex nodeFilenameMatch = new Regex("^\\s*[-]{4,}$");
+Regex nodeFullMatch = new Regex("at (?:async )?(?:(.+?)\\s+\\()?(?:(.+):(\\d+):(\\d+)?|([^)]+))\\)?");
+Regex promiseCombinator = new Regex("^Promise\\.(?:all|any)$");
+Regex promiseIndex = new Regex("^index \\d+$");
+Regex windowsLeadingSlash = new Regex("\\/[A-Z]:");
+Regex windowsAbsolute = new Regex("^[A-Z]:");
+Regex urlProtocol = new Regex("^[a-zA-Z]([a-zA-Z0-9.\\-+])*:\\/\\/");
+Regex opera10Regex = new Regex(" line (\\d+).*script (?:in )?(\\S+)(?:: in function (\\S+))?$", "i");
+Regex opera11Regex = new Regex(" line (\\d+), column (\\d+)\\s*(?:in (?:<anonymous function: ([^>]+)>|([^)]+))\\(.*\\))? in (.*):\\s*$", "i");
+Regex winjsRegex = new Regex("^\\s*at (?:((?:\\[object object\\])?.+) )?\\(?((?:[-a-z]+):.*?):(\\d+)(?::(\\d+))?\\)?\\s*$", "i");
+
+JsValue createFrame(JsValue platform, JsValue filename, JsValue functionName, JsValue lineno, JsValue colno) {
+  JsValue frame = JS.object();
+  frame["platform"] = platform;
+  frame["filename"] = filename;
+  if (JS.strictEqual(functionName, "<anonymous>")) {
+    frame["function"] = UNKNOWN_FUNCTION;
+  } else {
+    frame["function"] = functionName;
+  }
+  bool masked = false;
+  if (isStr(filename)) {
+    masked = toStr(filename).startsWith("webkit-masked-url://");
+  }
+  frame["in_app"] = !masked && !JS.strictEqual(filename, "<anonymous>");
+  if (!isUndef(lineno)) {
+    frame["lineno"] = lineno;
+  }
+  if (!isUndef(colno)) {
+    frame["colno"] = colno;
+  }
+  return frame;
+}
+
+JsValue extractSafariExtensionDetails(JsValue functionName, JsValue filename) {
+  string functionText = toStr(functionName);
+  bool safariExtension = functionText.indexOf("safari-extension") != -1;
+  bool safariWebExtension = functionText.indexOf("safari-web-extension") != -1;
+  JsValue out = JS.array();
+  if (safariExtension || safariWebExtension) {
+    string parsedFunction = UNKNOWN_FUNCTION;
+    if (functionText.indexOf("@") != -1) {
+      parsedFunction = functionText.split("@")[0];
+    }
+    JS.invoke(out, "push", parsedFunction);
+    if (safariExtension) {
+      JS.invoke(out, "push", "safari-extension:" + toStr(filename));
+    } else {
+      JS.invoke(out, "push", "safari-web-extension:" + toStr(filename));
+    }
+  } else {
+    JS.invoke(out, "push", functionName);
+    JS.invoke(out, "push", filename);
+  }
+  return out;
+}
+
+JsValue chromeParserMethod(JsValue self, JsValue line, JsValue platform) {
+  JsValue noFnParts = JS.invoke(chromeRegexNoFnName, "exec", line);
+  if (noFnParts.truthy()) {
+    return createFrame(
+      platform,
+      noFnParts[1],
+      UNKNOWN_FUNCTION,
+      JS.number(noFnParts[2]),
+      JS.number(noFnParts[3])
+    );
+  }
+  JsValue parts = JS.invoke(chromeRegex, "exec", line);
+  if (parts.truthy()) {
+    if (parts[2].truthy() && toStr(parts[2]).indexOf("eval") == 0) {
+      JsValue subMatch = JS.invoke(chromeEvalRegex, "exec", parts[2]);
+      if (subMatch.truthy()) {
+        parts[2] = subMatch[1];
+        parts[3] = subMatch[2];
+        parts[4] = subMatch[3];
+      }
+    }
+    JsValue functionName = parts[1];
+    if (!functionName.truthy()) {
+      functionName = UNKNOWN_FUNCTION;
+    }
+    JsValue details = extractSafariExtensionDetails(functionName, parts[2]);
+    JsValue lineNumber = undef();
+    JsValue columnNumber = undef();
+    if (parts[3].truthy()) {
+      lineNumber = JS.number(parts[3]);
+    }
+    if (parts[4].truthy()) {
+      columnNumber = JS.number(parts[4]);
+    }
+    return createFrame(platform, details[1], details[0], lineNumber, columnNumber);
+  }
+  return undef();
+}
+
+export JsValue chromeStackLineParser = JS.method2(chromeParserMethod);
+
+JsValue geckoParserMethod(JsValue self, JsValue line, JsValue platform) {
+  JsValue parts = JS.invoke(geckoRegex, "exec", line);
+  if (parts.truthy()) {
+    if (parts[3].truthy() && toStr(parts[3]).indexOf(" > eval") > -1) {
+      JsValue subMatch = JS.invoke(geckoEvalRegex, "exec", parts[3]);
+      if (subMatch.truthy()) {
+        if (!parts[1].truthy()) {
+          parts[1] = "eval";
+        }
+        parts[3] = subMatch[1];
+        parts[4] = subMatch[2];
+        parts[5] = "";
+      }
+    }
+    JsValue filename = parts[3];
+    JsValue functionName = parts[1];
+    if (!functionName.truthy()) {
+      functionName = UNKNOWN_FUNCTION;
+    }
+    JsValue details = extractSafariExtensionDetails(functionName, filename);
+    JsValue lineNumber = undef();
+    JsValue columnNumber = undef();
+    if (parts[4].truthy()) {
+      lineNumber = JS.number(parts[4]);
+    }
+    if (parts[5].truthy()) {
+      columnNumber = JS.number(parts[5]);
+    }
+    return createFrame(platform, details[1], details[0], lineNumber, columnNumber);
+  }
+  return undef();
+}
+
+export JsValue geckoStackLineParser = JS.method2(geckoParserMethod);
+
+JsValue winjsParserMethod(JsValue self, JsValue line, JsValue platform) {
+  JsValue parts = JS.invoke(winjsRegex, "exec", line);
+  if (!parts.truthy()) {
+    return undef();
+  }
+  JsValue functionName = parts[1];
+  if (!functionName.truthy()) {
+    functionName = UNKNOWN_FUNCTION;
+  }
+  JsValue column = undef();
+  if (parts[4].truthy()) {
+    column = JS.number(parts[4]);
+  }
+  return createFrame(platform, parts[2], functionName, JS.number(parts[3]), column);
+}
+
+export JsValue winjsStackLineParser = JS.method2(winjsParserMethod);
+
+JsValue opera10ParserMethod(JsValue self, JsValue line, JsValue platform) {
+  JsValue parts = JS.invoke(opera10Regex, "exec", line);
+  if (!parts.truthy()) {
+    return undef();
+  }
+  JsValue functionName = parts[3];
+  if (!functionName.truthy()) {
+    functionName = UNKNOWN_FUNCTION;
+  }
+  return createFrame(platform, parts[2], functionName, JS.number(parts[1]), undef());
+}
+
+export JsValue opera10StackLineParser = JS.method2(opera10ParserMethod);
+
+JsValue opera11ParserMethod(JsValue self, JsValue line, JsValue platform) {
+  JsValue parts = JS.invoke(opera11Regex, "exec", line);
+  if (!parts.truthy()) {
+    return undef();
+  }
+  JsValue functionName = parts[3];
+  if (!functionName.truthy()) {
+    functionName = parts[4];
+  }
+  if (!functionName.truthy()) {
+    functionName = UNKNOWN_FUNCTION;
+  }
+  return createFrame(platform, parts[5], functionName, JS.number(parts[1]), JS.number(parts[2]));
+}
+
+export JsValue opera11StackLineParser = JS.method2(opera11ParserMethod);
+
+JsValue parseIntOrUndefined(JsValue input) {
+  JsValue parseInput = input;
+  if (!parseInput.truthy()) {
+    parseInput = "";
+  }
+  JsValue parsed = JS.call(parseInt, undef(), parseInput, 10);
+  if (parsed.truthy()) {
+    return parsed;
+  }
+  return undef();
+}
+
+bool filenameIsInApp(string filename, bool isNative = false) {
+  bool internal = isNative;
+  if (!internal && filename != "") {
+    internal =
+      !filename.startsWith("/") &&
+      !JS.invoke(windowsAbsolute, "test", filename).truthy() &&
+      !filename.startsWith(".") &&
+      !JS.invoke(urlProtocol, "test", filename).truthy();
+  }
+  return !internal && filename.indexOf("node_modules/") == -1;
+}
+
+JsValue nodeParserMethod(JsValue self, JsValue lineValue, JsValue platform) {
+  string line = toStr(lineValue);
+  JsValue lineMatch = JS.invoke(lineValue, "match", nodeFullMatch);
+  if (lineMatch.truthy()) {
+    JsValue objectName = undef();
+    JsValue method = undef();
+    JsValue functionName = undef();
+    JsValue typeName = undef();
+    JsValue methodName = undef();
+    if (lineMatch[1].truthy()) {
+      functionName = lineMatch[1];
+      string namedFunction = toStr(functionName);
+      int methodStart = namedFunction.lastIndexOf(".");
+      if (namedFunction[methodStart - 1] == ".") {
+        methodStart = methodStart - 1;
+      }
+      if (methodStart > 0) {
+        objectName = namedFunction.slice(0, methodStart);
+        method = namedFunction.slice(methodStart + 1);
+        int objectEnd = toStr(objectName).indexOf(".Module");
+        if (objectEnd > 0) {
+          functionName = namedFunction.slice(objectEnd + 1);
+          objectName = toStr(objectName).slice(0, objectEnd);
+        }
+      }
+      typeName = undef();
+    }
+    if (method.truthy()) {
+      typeName = objectName;
+      methodName = method;
+    }
+    if (JS.strictEqual(method, "<anonymous>")) {
+      methodName = undef();
+      functionName = undef();
+    }
+    if (isUndef(functionName)) {
+      if (!methodName.truthy()) {
+        methodName = UNKNOWN_FUNCTION;
+      }
+      if (typeName.truthy()) {
+        functionName = toStr(typeName) + "." + toStr(methodName);
+      } else {
+        functionName = methodName;
+      }
+    }
+
+    JsValue filename = lineMatch[2];
+    if (isStr(filename) && toStr(filename).startsWith("file://")) {
+      filename = toStr(filename).slice(7);
+    }
+    bool isNative = JS.strictEqual(lineMatch[5], "native");
+    if (isStr(filename) && JS.invoke(windowsLeadingSlash, "test", filename).truthy()) {
+      filename = toStr(filename).slice(1);
+    }
+    if (!filename.truthy() && lineMatch[5].truthy() && !isNative) {
+      filename = lineMatch[5];
+    }
+    JsValue promiseFilename = filename;
+    if (!promiseFilename.truthy()) {
+      promiseFilename = "";
+    }
+    if (
+      JS.invoke(promiseCombinator, "test", functionName).truthy() &&
+      JS.invoke(promiseIndex, "test", promiseFilename).truthy()
+    ) {
+      filename = "node:internal/promise";
+    }
+    JsValue frame = JS.object();
+    if (filename.truthy()) {
+      frame["filename"] = JS.call(decodeURI, undef(), filename);
+    } else {
+      frame["filename"] = undef();
+    }
+    frame["module"] = undef();
+    frame["function"] = functionName;
+    frame["lineno"] = parseIntOrUndefined(lineMatch[3]);
+    frame["colno"] = parseIntOrUndefined(lineMatch[4]);
+    string filenameForApp = "";
+    if (filename.truthy()) {
+      filenameForApp = toStr(filename);
+    }
+    frame["in_app"] = filenameIsInApp(filenameForApp, isNative);
+    frame["platform"] = platform;
+    return frame;
+  }
+  if (JS.invoke(lineValue, "match", nodeFilenameMatch).truthy()) {
+    JsValue frame = JS.object();
+    frame["filename"] = lineValue;
+    frame["platform"] = platform;
+    return frame;
+  }
+  return undef();
+}
+
+export JsValue nodeStackLineParser = JS.method2(nodeParserMethod);
+
+JsValue getLastStackFrame(JsValue frames) {
+  JsValue last = frames[len(frames) - 1];
+  if (last.truthy()) {
+    return last;
+  }
+  return JS.object();
+}
+
+export JsValue reverseAndStripFrames(JsValue stack) {
+  if (len(stack) == 0) {
+    return JS.array();
+  }
+  JsValue localStack = JS.invoke(Array, "from", stack);
+  JS.invoke(localStack, "reverse");
+  JsValue limited = JS.invoke(localStack, "slice", 0, 50);
+  JsValue out = JS.array();
+  JsValue last = getLastStackFrame(localStack);
+  int i = 0;
+  while (i < len(limited)) {
+    JsValue frame = copyObj(limited[i]);
+    if (!frame["filename"].truthy()) {
+      frame["filename"] = last["filename"];
+    }
+    if (!frame["function"].truthy()) {
+      frame["function"] = UNKNOWN_FUNCTION;
+    }
+    JS.invoke(out, "push", frame);
+    i = i + 1;
+  }
+  return out;
+}
+
+JsValue buildStackParser(JsValue platform, JsValue parsers) {
+  func(JsValue, JsValue, JsValue)->JsValue parser = (
+    JsValue self,
+    JsValue stack,
+    JsValue skipFirstLines
+  ) => {
+    int skip = 0;
+    if (!isUndef(skipFirstLines)) {
+      skip = JS.number(skipFirstLines).toInt();
+    }
+    JsValue frames = JS.array();
+    JsValue lines = JS.invoke(stack, "split", "\n");
+    int i = skip;
+    while (i < len(lines)) {
+      JsValue line = lines[i];
+      if (len(line) <= 1024) {
+        JsValue cleanedLine = line;
+        if (JS.invoke(webpackErrorRegex, "test", line).truthy()) {
+          cleanedLine = JS.invoke(line, "replace", webpackErrorRegex, "$1");
+        }
+        if (!JS.invoke(cleanedLine, "match", errorLineRegex).truthy()) {
+          int p = 0;
+          while (p < len(parsers)) {
+            JsValue frame = JS.call(parsers[p], undef(), cleanedLine, platform);
+            if (frame.truthy()) {
+              JS.invoke(frames, "push", frame);
+              break;
+            }
+            p = p + 1;
+          }
+          if (len(frames) >= 50) {
+            break;
+          }
+        }
+      }
+      i = i + 1;
+    }
+    return reverseAndStripFrames(frames);
+  };
+  return JS.method2(parser);
+}
+
+JsValue createStackParserRest(JsValue args) {
+  JsValue all = JS.invoke(Array, "from", args);
+  return buildStackParser(all[0], JS.invoke(all, "slice", 1));
+}
+
+JsValue createStackParserValue = JS.staticRest(createStackParserRest);
+JsValue createStackParserLength = JS.object();
+createStackParserLength["value"] = 1;
+createStackParserLength["configurable"] = true;
+JS.invoke(Object, "defineProperty", createStackParserValue, "length", createStackParserLength);
+export JsValue createStackParser = createStackParserValue;
+
+export JsValue createDefaultStackParser() {
+  JsValue parsers = JS.array();
+  JS.invoke(parsers, "push", chromeStackLineParser);
+  JS.invoke(parsers, "push", geckoStackLineParser);
+  return buildStackParser("web:javascript", parsers);
+}

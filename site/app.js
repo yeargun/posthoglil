@@ -244,6 +244,63 @@ function renderSurface() {
     "Same capture kernel on every official row. The published posthog-js browser bundle is not a lane."
 }
 
+function renderPacks() {
+  const packs = data.packs ?? []
+  const cards = document.querySelector("#pack-cards")
+  const body = document.querySelector("#body-packs")
+  if (!cards || !body) return
+  if (packs.length === 0) {
+    cards.innerHTML = '<article class="pack-card"><p>Production measurements pending.</p></article>'
+    body.innerHTML = ""
+    return
+  }
+
+  cards.innerHTML = packs
+    .map((pack) => {
+      const baseline = pack.lanes.find((lane) => lane.baseline)
+      const primary = pack.lanes.find((lane) => lane.primary)
+      const packaged = pack.lanes.find((lane) => lane.id === "package")
+      const verdict = smallerThan(primary.brotli11, baseline.brotli11)
+      return `
+        <article class="pack-card ${verdict.state}">
+          <div class="pack-kicker"><span>${pack.exports} exports</span><span>${pack.differentialGroups}/${pack.differentialGroups} groups</span><span>cost ${pack.costModel}</span></div>
+          <h3>${pack.name}</h3>
+          <strong>${verdict.amount}<small>${verdict.word} Brotli</small></strong>
+          <p>${formatter.format(baseline.brotli11)} B Oxc → ${formatter.format(primary.brotli11)} B LilScript</p>
+          <code>import { … } from "${pack.subpath}"</code>
+          <span class="pack-package">Packaged ESM: ${formatter.format(packaged.brotli11)} B Brotli-11</span>
+        </article>`
+    })
+    .join("")
+
+  body.innerHTML = packs
+    .map((pack) => {
+      const baseline = pack.lanes.find((lane) => lane.baseline)
+      const primary = pack.lanes.find((lane) => lane.primary)
+      const raw = smallerThan(primary.raw, baseline.raw)
+      const gzip = smallerThan(primary.gzip9, baseline.gzip9)
+      const brotli = smallerThan(primary.brotli11, baseline.brotli11)
+      const metric = (left, right, verdict) =>
+        `<span>${formatter.format(left)} → ${formatter.format(right)} B</span><strong class="${verdict.state}">${verdict.text}</strong>`
+      return `
+        <tr>
+          <th scope="row"><span>${pack.name}</span><code>${pack.source}</code></th>
+          <td>${pack.exports} / ${pack.differentialGroups}/${pack.differentialGroups} / ${pack.costModel}</td>
+          <td>${metric(baseline.raw, primary.raw, raw)}</td>
+          <td>${metric(baseline.gzip9, primary.gzip9, gzip)}</td>
+          <td>${metric(baseline.brotli11, primary.brotli11, brotli)}</td>
+        </tr>`
+    })
+    .join("")
+
+  const note = document.querySelector("#pack-note")
+  if (note) {
+    note.textContent =
+      data.packComparison ??
+      "Each pack is compared independently with its untouched official PostHog source graph."
+  }
+}
+
 function bindCopy() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-copy]")
@@ -338,6 +395,7 @@ function bindPlayground() {
 
 renderHero()
 renderSurface()
+renderPacks()
 renderSize()
 bindCopy()
 bindProgress()

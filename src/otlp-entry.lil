@@ -1,0 +1,33 @@
+import {
+  DEFAULT_HISTOGRAM_BOUNDS,
+  bucketIndexFor,
+  buildMetricsResourceAttributes,
+  buildOtlpLogRecord,
+  buildOtlpLogsPayload,
+  buildOtlpMetricsPayload,
+  buildResourceAttributes,
+  getOtlpSeverityNumber,
+  getOtlpSeverityText,
+  msToUnixNano,
+  resolveMetricsConfig,
+  seriesKey,
+  toOtlpAnyValue,
+  toOtlpKeyValueList
+} from "./otlp.lil";
+
+export {
+  DEFAULT_HISTOGRAM_BOUNDS,
+  bucketIndexFor,
+  buildMetricsResourceAttributes,
+  buildOtlpLogRecord,
+  buildOtlpLogsPayload,
+  buildOtlpMetricsPayload,
+  buildResourceAttributes,
+  getOtlpSeverityNumber,
+  getOtlpSeverityText,
+  msToUnixNano,
+  resolveMetricsConfig,
+  seriesKey,
+  toOtlpAnyValue,
+  toOtlpKeyValueList
+};

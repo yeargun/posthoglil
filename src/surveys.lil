@@ -1,0 +1,472 @@
+import {
+  copyObj,
+  hasKey,
+  isArr,
+  isNullish,
+  isObj,
+  isStr,
+  isUndef,
+  len,
+  objectAssign,
+  objectKeys,
+  toStr,
+  undef
+} from "./host.lil";
+
+export string SURVEY_LANGUAGE_PROPERTY = "$survey_language";
+
+string[] appearanceFields = [
+  "thankYouMessageHeader",
+  "thankYouMessageDescription",
+  "thankYouMessageCloseButtonText",
+  "introScreenHeader",
+  "introScreenDescription",
+  "introScreenButtonText",
+  "submitButtonText",
+  "backButtonText"
+];
+
+JsValue nullishFallback(JsValue value, JsValue fallback) {
+  if (isNullish(value)) {
+    return fallback;
+  }
+  return value;
+}
+
+export JsValue getValidationError(string value, JsValue rules, JsValue optional) {
+  string trimmed = value.trim();
+  if (!optional.truthy() && trimmed == "") {
+    return "This field is required";
+  }
+  if (trimmed == "") {
+    return false;
+  }
+  if (rules.truthy() && len(rules) > 0) {
+    int i = 0;
+    while (i < len(rules)) {
+      JsValue rule = rules[i];
+      JsValue ruleValue = rule["value"];
+      if (JS.strictEqual(rule["type"], "min_length")) {
+        if (!isUndef(ruleValue) && trimmed.length < JS.number(ruleValue)) {
+          return nullishFallback(
+            rule["errorMessage"],
+            "Please enter at least " + toStr(ruleValue) + " characters"
+          );
+        }
+      } else if (JS.strictEqual(rule["type"], "max_length")) {
+        if (!isUndef(ruleValue) && trimmed.length > JS.number(ruleValue)) {
+          return nullishFallback(
+            rule["errorMessage"],
+            "Please enter no more than " + toStr(ruleValue) + " characters"
+          );
+        }
+      }
+      i = i + 1;
+    }
+  }
+  return false;
+}
+
+export JsValue getLengthFromRules(JsValue rules, JsValue type) {
+  if (!rules.truthy()) {
+    return undef();
+  }
+  int i = 0;
+  while (i < len(rules)) {
+    JsValue rule = rules[i];
+    if (JS.strictEqual(rule["type"], type)) {
+      return rule["value"];
+    }
+    i = i + 1;
+  }
+  return undef();
+}
+
+export JsValue getRequirementsHint(JsValue minLength, JsValue maxLength) {
+  JsValue effectiveMin = minLength;
+  if (JS.strictEqual(minLength, 1)) {
+    effectiveMin = undef();
+  }
+  if (effectiveMin.truthy() && maxLength.truthy()) {
+    return "Enter " + toStr(effectiveMin) + "-" + toStr(maxLength) + " characters";
+  }
+  if (effectiveMin.truthy()) {
+    string plural = "characters";
+    if (JS.strictEqual(effectiveMin, 1)) {
+      plural = "character";
+    }
+    return "Enter at least " + toStr(effectiveMin) + " " + plural;
+  }
+  if (maxLength.truthy()) {
+    string plural = "characters";
+    if (JS.strictEqual(maxLength, 1)) {
+      plural = "character";
+    }
+    return "Maximum " + toStr(maxLength) + " " + plural;
+  }
+  return undef();
+}
+
+export string getSurveyResponseKey(JsValue questionId) {
+  return "$survey_response_" + toStr(questionId);
+}
+
+export string getSurveyOldResponseKey(JsValue originalQuestionIndex) {
+  if (JS.strictEqual(originalQuestionIndex, 0)) {
+    return "$survey_response";
+  }
+  return "$survey_response_" + toStr(originalQuestionIndex);
+}
+
+JsValue spreadArray(JsValue source) {
+  JsValue out = JS.array();
+  int i = 0;
+  while (i < len(source)) {
+    JS.invoke(out, "push", source[i]);
+    i = i + 1;
+  }
+  return out;
+}
+
+export JsValue getSurveyResponseValue(JsValue responses, JsValue questionId = JS.undefined()) {
+  if (!questionId.truthy()) {
+    return null;
+  }
+  JsValue response = responses["$survey_response_" + toStr(questionId)];
+  if (isArr(response)) {
+    return spreadArray(response);
+  }
+  return response;
+}
+
+export JsValue buildSurveyResponseProperties(JsValue responses = JS.undefined(), JsValue survey = JS.undefined()) {
+  if (isUndef(responses)) {
+    responses = JS.object();
+  }
+  JsValue oldFormatResponses = JS.object();
+  JsValue questions = survey["questions"];
+  int i = 0;
+  while (i < len(questions)) {
+    JsValue question = questions[i];
+    JsValue originalQuestionIndex = question["originalQuestionIndex"];
+    if (!isUndef(originalQuestionIndex)) {
+      string oldResponseKey = getSurveyOldResponseKey(originalQuestionIndex);
+      JsValue response = getSurveyResponseValue(responses, question["id"]);
+      if (!isUndef(response)) {
+        oldFormatResponses[oldResponseKey] = response;
+      }
+    }
+    i = i + 1;
+  }
+
+  JsValue surveyQuestions = JS.array();
+  i = 0;
+  while (i < len(questions)) {
+    JsValue question = questions[i];
+    JsValue item = JS.object();
+    item["id"] = question["id"];
+    item["question"] = question["question"];
+    item["response"] = getSurveyResponseValue(responses, question["id"]);
+    JS.invoke(surveyQuestions, "push", item);
+    i = i + 1;
+  }
+  JsValue out = JS.object();
+  out["$survey_questions"] = surveyQuestions;
+  objectAssign(out, responses);
+  objectAssign(out, oldFormatResponses);
+  return out;
+}
+
+export bool surveyHasResponses(JsValue responses = JS.undefined()) {
+  if (isUndef(responses)) {
+    responses = JS.object();
+  }
+  JsValue keys = objectKeys(responses);
+  int i = 0;
+  while (i < len(keys)) {
+    if (!isNullish(responses[keys[i]])) {
+      return true;
+    }
+    i = i + 1;
+  }
+  return false;
+}
+
+export string getSurveyInteractionProperty(JsValue survey, string action) {
+  string surveyProperty = "$survey_" + action + "/" + toStr(survey["id"]);
+  JsValue iteration = survey["current_iteration"];
+  if (iteration.truthy() && JS.number(iteration) > 0.0) {
+    surveyProperty = surveyProperty + "/" + toStr(iteration);
+  }
+  return surveyProperty;
+}
+
+JsValue getTrimmedLanguage(JsValue value) {
+  if (isStr(value)) {
+    string trimmed = toStr(value).trim();
+    if (trimmed != "") {
+      return trimmed;
+    }
+  }
+  return null;
+}
+
+export JsValue getLanguageFromStoredPersonProperties(JsValue storedPersonProperties) {
+  if (!storedPersonProperties.truthy() || !isObj(storedPersonProperties) || !hasKey(storedPersonProperties, "language")) {
+    return null;
+  }
+  return getTrimmedLanguage(storedPersonProperties["language"]);
+}
+
+void logMessage(JsValue logger, string level, string message) {
+  if (!isNullish(logger)) {
+    JS.invoke(logger, level, message);
+  }
+}
+
+export JsValue detectSurveyLanguage(JsValue options, JsValue logger = JS.undefined()) {
+  JsValue explicitLanguage = getTrimmedLanguage(options["overrideLanguage"]);
+  if (explicitLanguage.truthy()) {
+    logMessage(logger, "info", "Using override display language: " + toStr(explicitLanguage));
+    return explicitLanguage;
+  }
+  JsValue personLanguage = getLanguageFromStoredPersonProperties(options["storedPersonProperties"]);
+  if (personLanguage.truthy()) {
+    logMessage(logger, "info", "Using person property language: " + toStr(personLanguage));
+    return personLanguage;
+  }
+  JsValue detectedLocale = getTrimmedLanguage(options["locale"]);
+  if (detectedLocale.truthy()) {
+    logMessage(logger, "info", "Using detected locale: " + toStr(detectedLocale));
+    return detectedLocale;
+  }
+  logMessage(logger, "info", "No user language detected");
+  return null;
+}
+
+export string normalizeLanguageCode(string languageCode) {
+  return languageCode.toLowerCase();
+}
+
+export string getBaseLanguage(string languageCode) {
+  return languageCode.split("-")[0];
+}
+
+export JsValue findBestTranslationMatch(JsValue translations, string targetLanguage, JsValue logger = JS.undefined()) {
+  if (!translations.truthy() || targetLanguage == "") {
+    return null;
+  }
+  string normalizedTarget = normalizeLanguageCode(targetLanguage);
+  JsValue keys = objectKeys(translations);
+  int i = 0;
+  while (i < len(keys)) {
+    string key = toStr(keys[i]);
+    if (normalizeLanguageCode(key) == normalizedTarget) {
+      logMessage(logger, "debug", "Found exact translation match: " + key);
+      return key;
+    }
+    i = i + 1;
+  }
+  if (normalizedTarget.indexOf("-") >= 0) {
+    string baseLanguage = getBaseLanguage(normalizedTarget);
+    i = 0;
+    while (i < len(keys)) {
+      string key = toStr(keys[i]);
+      if (normalizeLanguageCode(key) == baseLanguage) {
+        logMessage(logger, "debug", "Found base language translation match: " + key + " (from " + targetLanguage + ")");
+        return key;
+      }
+      i = i + 1;
+    }
+  }
+  return null;
+}
+
+bool hasAppearanceTranslation(JsValue translation) {
+  int i = 0;
+  while (i < appearanceFields.length) {
+    if (!isUndef(translation[appearanceFields[i]])) {
+      return true;
+    }
+    i = i + 1;
+  }
+  return false;
+}
+
+JsValue mergeQuestionTranslation(JsValue question, string targetLanguage, JsValue logger) {
+  JsValue translationKey = findBestTranslationMatch(question["translations"], targetLanguage, logger);
+  JsValue result = JS.object();
+  if (!translationKey.truthy()) {
+    result["question"] = question;
+    result["matchedKey"] = null;
+    result["hasChanges"] = false;
+    return result;
+  }
+  JsValue questionTranslation = question["translations"][translationKey];
+  if (!questionTranslation.truthy()) {
+    result["question"] = question;
+    result["matchedKey"] = null;
+    result["hasChanges"] = false;
+    return result;
+  }
+
+  JsValue translated = copyObj(question);
+  bool hasChanges = false;
+  string[] directFields = ["question", "description", "buttonText"];
+  int i = 0;
+  while (i < directFields.length) {
+    string field = directFields[i];
+    if (!isUndef(questionTranslation[field])) {
+      translated[field] = questionTranslation[field];
+      hasChanges = true;
+    }
+    i = i + 1;
+  }
+  string[] guardedFields = ["link", "lowerBoundLabel", "upperBoundLabel"];
+  i = 0;
+  while (i < guardedFields.length) {
+    string field = guardedFields[i];
+    if (hasKey(translated, field) && !isUndef(questionTranslation[field])) {
+      translated[field] = questionTranslation[field];
+      hasChanges = true;
+    }
+    i = i + 1;
+  }
+  if (hasKey(translated, "choices") && isArr(questionTranslation["choices"])) {
+    translated["choices"] = questionTranslation["choices"];
+    hasChanges = true;
+  }
+  if (hasChanges) {
+    result["question"] = translated;
+    result["matchedKey"] = translationKey;
+  } else {
+    result["question"] = question;
+    result["matchedKey"] = null;
+  }
+  result["hasChanges"] = hasChanges;
+  return result;
+}
+
+export JsValue applySurveyTranslation(JsValue survey, string targetLanguage, JsValue logger = JS.undefined()) {
+  JsValue translationKey = findBestTranslationMatch(survey["translations"], targetLanguage, logger);
+  JsValue translated = copyObj(survey);
+  bool hasTranslation = false;
+
+  if (translationKey.truthy()) {
+    JsValue translation = survey["translations"][translationKey];
+    if (translation.truthy()) {
+      logMessage(logger, "info", "Applying survey-level translation for language: " + toStr(translationKey));
+      if (!isUndef(translation["name"])) {
+        translated["name"] = translation["name"];
+        hasTranslation = true;
+      }
+      if (translated["appearance"].truthy()) {
+        JsValue appearance = copyObj(translated["appearance"]);
+        int fieldIndex = 0;
+        while (fieldIndex < appearanceFields.length) {
+          string field = appearanceFields[fieldIndex];
+          if (!isUndef(translation[field])) {
+            appearance[field] = translation[field];
+            hasTranslation = true;
+          }
+          fieldIndex = fieldIndex + 1;
+        }
+        translated["appearance"] = appearance;
+      } else if (hasAppearanceTranslation(translation)) {
+        hasTranslation = true;
+      }
+    }
+  }
+
+  JsValue translatedResults = JS.array();
+  JsValue translatedQuestions = JS.array();
+  JsValue questions = survey["questions"];
+  bool anyQuestionTranslated = false;
+  int i = 0;
+  while (i < len(questions)) {
+    JsValue merged = mergeQuestionTranslation(questions[i], targetLanguage, logger);
+    JS.invoke(translatedResults, "push", merged);
+    JS.invoke(translatedQuestions, "push", merged["question"]);
+    if (merged["hasChanges"].truthy()) {
+      anyQuestionTranslated = true;
+    }
+    i = i + 1;
+  }
+
+  JsValue questionMatchedKey = null;
+  if (!translationKey.truthy()) {
+    i = 0;
+    while (i < len(translatedResults)) {
+      if (translatedResults[i]["matchedKey"].truthy()) {
+        questionMatchedKey = translatedResults[i]["matchedKey"];
+        break;
+      }
+      i = i + 1;
+    }
+  }
+  if (anyQuestionTranslated) {
+    translated["questions"] = translatedQuestions;
+    hasTranslation = true;
+    logMessage(logger, "info", "Applied question-level translations for language: " + targetLanguage);
+  }
+  JsValue out = JS.object();
+  out["survey"] = translated;
+  if (hasTranslation) {
+    if (translationKey.truthy()) {
+      out["matchedKey"] = translationKey;
+    } else {
+      out["matchedKey"] = questionMatchedKey;
+    }
+  } else {
+    out["matchedKey"] = null;
+  }
+  return out;
+}
+
+export bool doesSurveyActivateByEvent(JsValue survey) {
+  JsValue conditions = survey["conditions"];
+  if (isNullish(conditions)) {
+    return false;
+  }
+  JsValue events = conditions["events"];
+  if (isNullish(events)) {
+    return false;
+  }
+  JsValue values = events["values"];
+  return !isNullish(values) && len(values) > 0;
+}
+
+export bool canSurveyActivateRepeatedly(JsValue survey) {
+  JsValue conditions = survey["conditions"];
+  bool repeatEvent = false;
+  if (!isNullish(conditions)) {
+    JsValue events = conditions["events"];
+    if (!isNullish(events)) {
+      repeatEvent = doesSurveyActivateByEvent(survey) && events["repeatedActivation"].truthy();
+    }
+  }
+  return repeatEvent || JS.strictEqual(survey["schedule"], "always");
+}
+
+export bool isSurveyIterationBased(JsValue survey) {
+  if (JS.strictEqual(survey["schedule"], "recurring")) {
+    return true;
+  }
+  JsValue iteration = survey["current_iteration"];
+  if (isNullish(iteration)) {
+    iteration = 0;
+  }
+  return JS.number(iteration) > 0.0;
+}
+
+export bool isSurveyKeyForSurvey(string key, string surveyId) {
+  return key == surveyId || key.startsWith(surveyId + "_");
+}
+
+export string getSurveyIterationKey(JsValue survey) {
+  JsValue iteration = survey["current_iteration"];
+  if (iteration.truthy() && JS.number(iteration) > 0.0) {
+    return toStr(survey["id"]) + "_" + toStr(iteration);
+  }
+  return toStr(survey["id"]);
+}

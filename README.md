@@ -1,8 +1,8 @@
 # @itslil/posthog-js
 
-This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It is a **capture kernel** from `posthog-js@1.418.10` — UUID, feature-flag utils, cookie identity, request routing, token and bucketed rate limits, queue batching, bot detection, and the portable string / number / type / JSON / URL helpers — rewritten in [LilScript](https://github.com/yeargun/lilscript).
+This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It ports selected `posthog-js@1.418.10` surfaces to [LilScript](https://github.com/yeargun/lilscript): the original capture kernel plus independent surveys, error-tracking, and pure OTLP logs/metrics package lanes.
 
-It is not affiliated with PostHog. Autocapture, session replay, surveys, product tours, heatmaps, web vitals, the `PostHog` client, network transport, and persistence adapters are absent.
+It is not affiliated with PostHog. Autocapture, session replay, product tours, heatmaps, web vitals, the `PostHog` client, network transport, and persistence adapters are absent. The three new lanes are separate subpath exports and are not silently folded into the root kernel comparison.
 
 **Site:** [yeargun.github.io/posthoglil](https://yeargun.github.io/posthoglil/)
 
@@ -27,19 +27,45 @@ const flags = normalizeFlagsResponse(response)
 const url = endpointFor({ api_host: "https://us.i.posthog.com" }, "api", "/e/")
 ```
 
+The independent packs use their own import paths:
+
+```js
+import { applySurveyTranslation } from "@itslil/posthog-js/surveys"
+import { ErrorPropertiesBuilder, createDefaultStackParser } from "@itslil/posthog-js/error-tracking"
+import { buildOtlpLogRecord, buildOtlpMetricsPayload } from "@itslil/posthog-js/otlp"
+```
+
+## Independent pack results
+
+The official baselines are bundled directly from the untouched `vendor/posthog-js` git submodule at commit `9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb`. The submodule is read-only for this work: no original PostHog TypeScript or JavaScript is edited, copied into a rewritten baseline, or post-processed before bundling.
+
+Each pack is measured separately against Vite 8 Oxc with mangling enabled. The figures below are direct compiler artifacts without package banners.
+
+| Pack | Exact runtime surface | Official Oxc raw / gzip-9 / Brotli-11 | LilScript raw / gzip-9 / Brotli-11 | Result vs Oxc |
+| --- | --- | ---: | ---: | --- |
+| Surveys | 21 exports · 6/6 differential groups | 6,244 / 2,515 / 2,251 | **5,302 / 2,068 / 1,765** | **15.1% / 17.8% / 21.6% smaller** |
+| Error tracking | 26 exports · 5/5 differential groups | **14,662 / 5,700 / 5,224** | 18,835 / 6,808 / 6,200 | 28.5% / 19.4% / 18.7% larger |
+| OTLP logs + metrics | 14 exports · 6/6 differential groups | 6,915 / **2,790 / 2,563** | **6,826** / 2,844 / 2,594 | **1.3% smaller raw**; 1.9% / 1.2% larger compressed |
+
+Surveys is the larger win the leaf-utility kernel did not expose: **486 Brotli bytes (21.6%) smaller than Oxc**, and 301 bytes (14.6%) smaller than three-pass Terser. Its packaged ESM is 1,854 Brotli bytes, still 17.6% below the metadata-free Oxc baseline.
+
+The losses remain visible. Error tracking and OTLP use the verified `cost_model = raw`, `candidate_search = off` compiler artifacts. Aggressive Brotli-scored candidates were rejected because the production differential/syntax gate caught invalid output; they are neither published nor measured. Surveys uses its verified `cost_model = brotli` production artifact. None of the LilScript rows is post-minified.
+
+The committed differential suites cover survey translation and activation semantics; every error coercer, recursive causes, exception-step byte budgets, class shapes, async frame modifiers, and browser/Node parser families; and OTLP integer boundaries, sparse/circular/deep graphs, `toJSON`, throwing getters, resource precedence, and log/metrics envelopes.
+
 ## What is compared
 
-Every size number is the **same surface**: official `posthog-js@1.418.10` sources extracted into `official/`, bundled with esbuild, then run through:
+Within every row group, both sides expose the **same surface**. The root kernel uses the pinned fixtures in `official/`; surveys, error tracking, and OTLP bundle the pinned original git submodule directly. Each official source graph is bundled with esbuild and then run through:
 
 - Vite 8 Oxc minify, mangling on and off
 - Terser, 3-pass mangling on and off, and 1-pass mangling on
 - esbuild minify, `target: esnext` and `target: es2018`
 
-`@itslil/posthog-js` is the LilScript compiler's own ESM: not bundled and not post-minified. The package wrapper adds the license banner after compilation.
+The LilScript rows are the compiler's own ESM: not bundled and not post-minified. Package wrappers add a license banner after compilation and are reported separately.
 
 The published npm `posthog-js` IIFE still contains the client, autocapture, and replay. It is not a lane. Comparing this port to that file would be a different product against a subset.
 
-LilScript scores a different artifact for each `javascript.cost_model`. Official Oxc / Terser / esbuild rows are one file measured three ways. Compiler-to-minifier comparisons use the direct JavaScript artifacts without package metadata on either side. The npm ESM adds a 91-byte raw license banner and is reported separately.
+Official Oxc / Terser / esbuild rows are one file measured three ways. Compiler-to-minifier comparisons use direct JavaScript artifacts without package metadata on either side. The root npm ESM adds a 91-byte raw license banner and is reported separately.
 
 - **Direct compiler output** (`[mangle] extern_fields = true`). Public names stay readable.
 - **Packaged ESM**. The verified Brotli artifact plus its license banner.
@@ -79,6 +105,8 @@ If LilScript is larger on a codec, that row stays. Losses are part of the compar
 
 ## What is ported
 
+The root export remains the capture kernel below. The three larger surfaces live at `./surveys`, `./error-tracking`, and `./otlp` so their bytes never distort this table or its existing measurements.
+
 | Module | Official source | Kept | Left out |
 | --- | --- | --- | --- |
 | UUID | `packages/core/src/vendor/uuidv7.ts` | `uuidv7`, `uuidv4`, `parseUuid`, `uuidFromFieldsV7`, `uuidToHex` | — |
@@ -99,8 +127,11 @@ Compatibility tests compare LilScript output to the official kernel, not to the 
 
 ```sh
 npm test
+npm run test:packs
 npm run build
+npm run build:packs
 npm run measure
+npm run measure:packs
 npm run build:site
 ```
 

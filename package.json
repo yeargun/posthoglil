@@ -1,7 +1,7 @@
 {
   "name": "@itslil/posthog-js",
   "version": "1.418.10",
-  "description": "Selected posthog-js 1.418.10 web-SDK modules rewritten in LilScript. UUID, flags, cookies, routing, rate limits, queue, bot detection, and portable helpers — not the full SDK.",
+  "description": "Selected posthog-js 1.418.10 surfaces rewritten in LilScript: a capture kernel plus surveys, error-tracking, and pure OTLP helper subpaths — not the full SDK.",
   "keywords": [
     "posthog",
     "analytics",
@@ -33,15 +33,33 @@
       "require": "./dist/posthog.cjs",
       "default": "./dist/posthog.esm.js"
     },
+    "./surveys": {
+      "types": "./dist/surveys.d.ts",
+      "import": "./dist/surveys.esm.js",
+      "require": "./dist/surveys.cjs",
+      "default": "./dist/surveys.esm.js"
+    },
+    "./error-tracking": {
+      "types": "./dist/error-tracking.d.ts",
+      "import": "./dist/error-tracking.esm.js",
+      "require": "./dist/error-tracking.cjs",
+      "default": "./dist/error-tracking.esm.js"
+    },
+    "./otlp": {
+      "types": "./dist/otlp.d.ts",
+      "import": "./dist/otlp.esm.js",
+      "require": "./dist/otlp.cjs",
+      "default": "./dist/otlp.esm.js"
+    },
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
   "files": [
     "src",
-    "dist/posthog.esm.js",
-    "dist/posthog.cjs",
+    "dist/*.esm.js",
+    "dist/*.cjs",
     "dist/posthog.umd.js",
-    "dist/posthog.d.ts",
+    "dist/*.d.ts",
     "LICENSE",
     "NOTICE.md",
     "README.md"
@@ -53,9 +71,17 @@
   "scripts": {
     "build": "node scripts/build.mjs --compile",
     "build:dev": "node scripts/build.mjs --dev",
+    "build:packs": "node scripts/build-packs.mjs --compile",
+    "build:packs:dev": "node scripts/build-packs.mjs --dev",
     "build:site": "node scripts/build-site.mjs",
     "test": "node --test test/compat.test.mjs test/api.test.mjs",
+    "test:packs": "npm run build:packs:dev && node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs",
+    "test:packs:release": "POSTHOGLIL_SURVEYS_ARTIFACT=dist/surveys.raw.js POSTHOGLIL_ERROR_TRACKING_ARTIFACT=dist/error-tracking.raw.js POSTHOGLIL_OTLP_ARTIFACT=dist/otlp.raw.js node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs",
+    "test:packs:package": "node --test test/packs.api.test.mjs",
+    "test:all": "npm test && npm run test:packs:release && npm run test:packs:package",
     "measure": "node scripts/measure.mjs",
+    "measure:packs": "node scripts/measure-packs.mjs && node scripts/write-results.mjs --packs-only",
+    "write:results": "node scripts/write-results.mjs",
     "check:site": "npm run build:site && node --test test/site.test.mjs"
   },
   "devDependencies": {
