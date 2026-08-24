@@ -152,7 +152,6 @@ tbody td:last-child strong { color: var(--acid); }
 .method-note strong { color: white; }
 .method-note a { color: var(--acid); font: 500 11px "DM Mono", monospace; white-space: nowrap; }
 .perf-note { margin-top: 22px; color: var(--muted); font: 500 12px/1.6 "DM Mono", monospace; }
-.pack-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 44px; }
 .pack-card { display: flex; min-width: 0; flex-direction: column; padding: 24px; border: 2px solid var(--ink); background: #fff; box-shadow: 8px 8px 0 var(--ink); }
 .pack-card.win { background: var(--acid); }
 .pack-card.loss { background: #f4e8cf; }
@@ -163,12 +162,19 @@ tbody td:last-child strong { color: var(--acid); }
 .pack-card p { margin: 18px 0; font: 700 13px "DM Mono", monospace; }
 .pack-card code { overflow: hidden; padding: 12px; border: 1px solid var(--ink); background: #fff8; font: 500 10px "DM Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .pack-package { margin-top: 12px; color: var(--muted); font: 500 10px "DM Mono", monospace; }
-.pack-table th:first-child span, .pack-table th:first-child code { display: block; }
-.pack-table th:first-child code { margin-top: 5px; color: var(--muted); font: 500 10px "DM Mono", monospace; }
-.pack-table td:not(:first-child) span, .pack-table td:not(:first-child) strong { display: block; white-space: nowrap; }
-.pack-table td:not(:first-child) strong { margin-top: 4px; color: var(--muted); font: 700 10px "DM Mono", monospace; }
-.pack-table td:not(:first-child) strong.win { color: #1f6b2a; }
-.pack-table td:not(:first-child) strong.loss { color: #9b321e; }
+.pack-tabs { display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding: 0 8px 10px 0; }
+.pack-tabs button { flex: 0 0 auto; border: 1px solid var(--ink); border-radius: 999px; background: transparent; padding: 11px 16px; cursor: pointer; font: 700 11px "DM Mono", monospace; }
+.pack-tabs button[aria-selected="true"] { background: var(--ink); color: #fff; box-shadow: 4px 4px 0 var(--acid); }
+.pack-tabs button:focus-visible { outline: 3px solid var(--acid); outline-offset: 3px; }
+.pack-panel { margin-bottom: 40px; }
+.pack-panel:focus-visible { outline: 3px solid var(--acid); outline-offset: 6px; }
+.pack-summary { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(320px, 1.2fr); gap: 28px; align-items: stretch; margin-bottom: 40px; }
+.pack-contract { display: grid; align-content: center; grid-template-columns: max-content 1fr; gap: 16px 24px; border: 1px solid var(--ink); padding: 28px; background: #fff8; }
+.pack-contract span { color: var(--muted); font: 500 10px "DM Mono", monospace; text-transform: uppercase; }
+.pack-contract code { overflow-wrap: anywhere; font: 500 11px/1.5 "DM Mono", monospace; }
+.pack-contract strong { font-size: 14px; line-height: 1.5; }
+.pack-primary-row { background: #f54e0018; }
+.pack-primary-row th { color: var(--purple); }
 
 .closing { padding-block: 130px; text-align: center; }
 .closing h2 { font-size: clamp(60px, 8.5vw, 112px); }
@@ -182,7 +188,7 @@ footer.shell { display: flex; justify-content: space-between; gap: 20px; padding
   .play-grid { grid-template-columns: 1fr; min-height: 720px; }
   .play-grid textarea { border-right: 0; border-bottom: 1px solid var(--ink); min-height: 280px; }
   .perf-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .pack-cards { grid-template-columns: 1fr; }
+  .pack-summary { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
@@ -194,7 +200,6 @@ footer.shell { display: flex; justify-content: space-between; gap: 20px; padding
   .score-main { padding: 27px; }
   .score-grid strong { font-size: 23px; }
   .lab, .evidence, .performance, .packs { padding-block: 82px; }
-  .pack-cards { grid-template-columns: 1fr; }
   .section-heading { margin-bottom: 38px; }
   .method-note { grid-template-columns: 1fr; }
   footer.shell { flex-direction: column; }

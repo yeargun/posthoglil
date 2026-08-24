@@ -19,6 +19,8 @@ describe("github pages artifact", () => {
       "surveys.js",
       "error-tracking.js",
       "otlp.js",
+      "autocapture.js",
+      "replay-core.js",
       ".nojekyll",
     ]) {
       assert.equal(existsSync(resolve(site, path)), true, path)
@@ -28,14 +30,21 @@ describe("github pages artifact", () => {
   it("publishes independent exact-source pack measurements", () => {
     const html = readFileSync(resolve(site, "index.html"), "utf8")
     assert.match(html, /id="packs"/)
-    assert.match(html, /id="pack-cards"/)
-    assert.match(html, /id="body-packs"/)
+    assert.match(html, /id="pack-tabs" role="tablist"/)
+    assert.match(html, /id="pack-panel" role="tabpanel"/)
+    assert.match(html, /id="body-pack-lanes"/)
     assert.match(html, /untouched pinned git submodule/i)
     assert.match(html, /No upstream TypeScript or JavaScript is edited/i)
 
     const results = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
     assert.equal(results.submoduleCommit, "9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb")
-    assert.deepEqual(results.packs.map((pack) => pack.id), ["surveys", "error-tracking", "otlp"])
+    assert.deepEqual(results.packs.map((pack) => pack.id), [
+      "autocapture",
+      "replay-core",
+      "surveys",
+      "error-tracking",
+      "otlp",
+    ])
     for (const pack of results.packs) {
       const baseline = pack.lanes.find((lane) => lane.baseline)
       const primary = pack.lanes.find((lane) => lane.primary)
@@ -46,6 +55,18 @@ describe("github pages artifact", () => {
       assert.equal(typeof primary.brotli11, "number")
       assert.equal(pack.ratios.brotli11, primary.brotli11 / baseline.brotli11)
     }
+  })
+
+  it("switches module-specific benchmark receipts with accessible tabs", () => {
+    const html = readFileSync(resolve(site, "index.html"), "utf8")
+    const app = readFileSync(resolve(site, "app.js"), "utf8")
+    assert.match(html, /Pick a module/i)
+    assert.match(app, /role="tab"/)
+    assert.match(app, /aria-selected/)
+    assert.match(app, /ArrowLeft/)
+    assert.match(app, /ArrowRight/)
+    assert.match(app, /searchParams\.set\("pack"/)
+    assert.match(app, /pack\.lanes/)
   })
 
   it("exposes the published package name and fair minify lanes", () => {

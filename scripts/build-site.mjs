@@ -36,7 +36,7 @@ await rm(output, { recursive: true, force: true })
 await mkdir(output, { recursive: true })
 await cp(join(root, "site"), output, { recursive: true })
 await cp(join(root, "dist", "posthog.esm.js"), join(output, "posthog.js"))
-for (const pack of ["surveys", "error-tracking", "otlp"]) {
+for (const pack of ["surveys", "error-tracking", "otlp", "autocapture", "replay-core"]) {
   const source = join(root, "dist", `${pack}.esm.js`)
   if (existsSync(source)) await cp(source, join(output, `${pack}.js`))
 }

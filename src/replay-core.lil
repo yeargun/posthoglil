@@ -1,0 +1,430 @@
+import {
+  copyObj,
+  hasOwnValue,
+  isArr,
+  isBool,
+  isFn,
+  isNullish,
+  isNum,
+  isObj,
+  isStr,
+  isUndef,
+  jsonParse,
+  jsonStringify,
+  len,
+  objectAssign,
+  objectKeys,
+  toNum,
+  toStr,
+  undef
+} from "./host.lil";
+import { shouldCaptureValue } from "./autocapture-utils.lil";
+
+export int MAX_PAYLOAD_SIZE_BYTES = 1000000;
+export int FULL_SNAPSHOT_EVENT_TYPE = 2;
+export int META_EVENT_TYPE = 4;
+export int INCREMENTAL_SNAPSHOT_EVENT_TYPE = 3;
+export int PLUGIN_EVENT_TYPE = 6;
+export int MUTATION_SOURCE_TYPE = 0;
+export int MAX_MESSAGE_SIZE = 5000000;
+export number SEVEN_MEGABYTES = 6606028.8;
+export string CONSOLE_LOG_PLUGIN_NAME = "rrweb/console@1";
+export string replacementImageURI = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNOCAwSDE2TDAgMTZWOEw4IDBaIiBmaWxsPSIjMkQyRDJEIi8+CjxwYXRoIGQ9Ik0xNiA4VjE2SDhMMTYgOFoiIGZpbGw9IiMyRDJEMkQiLz4KPC9zdmc+Cg==";
+
+string loggerPrefix = "[SessionRecording]";
+string redacted = "redacted";
+string[] headerDenyList = [
+  "authorization", "x-forwarded-for", "authorization", "cookie", "set-cookie",
+  "x-api-key", "x-real-ip", "remote-addr", "forwarded", "proxy-authorization",
+  "x-csrf-token", "x-csrftoken", "x-xsrf-token"
+];
+string[] headerDenySubstrings = [
+  "auth", "token", "secret", "session", "api-key", "apikey", "api_key",
+  "credential", "password", "passwd", "cookie", "csrf", "xsrf"
+];
+string[] payloadContentDenyList = [
+  "password", "secret", "passwd", "api_key", "apikey", "auth", "credentials",
+  "mysql_pwd", "privatekey", "private_key", "token"
+];
+string[] posthogPathsToIgnore = ["/s/", "/e/", "/i/"];
+JsValue initialMaskFallbackRequests = JS.construct(WeakSet);
+Regex dataUri = new Regex("data:([\\w/\\-.]+);(\\w+),([^)\"]*)", "gim");
+
+string explicitString(JsValue value) {
+  return JS.string(JS.call(String, undef(), value));
+}
+
+int byteLength(string value) {
+  JsValue parts = JS.array();
+  JS.invoke(parts, "push", value);
+  JsValue blob = JS.construct(Blob, parts);
+  return JS.number(blob["size"]).toInt();
+}
+
+export int effectivePayloadLimitBytes(JsValue options) {
+  JsValue configured = options["payloadSizeLimitBytes"];
+  if (isNullish(configured)) return MAX_PAYLOAD_SIZE_BYTES;
+  int value = JS.number(configured).toInt();
+  if (value < MAX_PAYLOAD_SIZE_BYTES) return value;
+  return MAX_PAYLOAD_SIZE_BYTES;
+}
+
+JsValue identityRequest(JsValue ignored, JsValue data) {
+  return data;
+}
+
+JsValue makeDefaultNetworkOptions() {
+  JsValue options = JS.object();
+  options["initiatorTypes"] = [
+    "audio", "beacon", "body", "css", "early-hint", "embed", "fetch", "frame",
+    "iframe", "icon", "image", "img", "input", "link", "navigation", "object",
+    "ping", "script", "track", "video", "xmlhttprequest"
+  ];
+  options["maskRequestFn"] = JS.method1(identityRequest);
+  options["recordHeaders"] = false;
+  options["recordBody"] = false;
+  options["recordInitialRequests"] = false;
+  options["recordPerformance"] = false;
+  options["performanceEntryTypeToObserve"] = ["first-input", "navigation", "paint", "resource"];
+  options["payloadSizeLimitBytes"] = MAX_PAYLOAD_SIZE_BYTES;
+  options["payloadHostDenyList"] = [
+    ".lr-ingest.io", ".ingest.sentry.io", ".clarity.ms", "google-analytics.com",
+    "analytics.google.com", "nr-data.net", "datadoghq.com", "datadoghq.eu",
+    "ddog-gov.com", "segment.io", "rudderstack.com", "amplitude.com",
+    "mixpanel.com", "hotjar.com", "hotjar.io", "fullstory.com"
+  ];
+  options["streamNetworkBody"] = false;
+  return options;
+}
+
+export JsValue defaultNetworkOptions = makeDefaultNetworkOptions();
+
+bool deniedHeader(string header) {
+  string lower = header.toLowerCase();
+  if (JS.invoke(headerDenyList, "includes", lower).truthy()) return true;
+  int i = 0;
+  while (i < headerDenySubstrings.length) {
+    if (lower.includes(headerDenySubstrings[i])) return true;
+    i = i + 1;
+  }
+  return false;
+}
+
+void redactHeaders(JsValue headers) {
+  if (isNullish(headers)) return;
+  JsValue keys = objectKeys(headers);
+  int i = 0;
+  while (i < len(keys)) {
+    string key = toStr(keys[i]);
+    if (deniedHeader(key)) headers[key] = redacted;
+    i = i + 1;
+  }
+}
+
+JsValue convertToUrl(string url) {
+  JsValue documentValue = globalThis["document"];
+  if (isUndef(documentValue) || isNullish(documentValue)) return null;
+  JsValue anchor = JS.invoke(documentValue, "createElement", "a");
+  if (isUndef(anchor)) return null;
+  anchor["href"] = url;
+  return anchor;
+}
+
+JsValue removePosthogRequest(JsValue data, string apiHost, JsValue endpointCheck) {
+  if (isFn(endpointCheck) && JS.call(endpointCheck, undef(), data["name"]).truthy()) return undef();
+  JsValue url = convertToUrl(toStr(data["name"]));
+  string replaceValue = apiHost;
+  if (apiHost.indexOf("http") == 0) {
+    JsValue host = convertToUrl(apiHost);
+    if (!isNullish(host) && host["pathname"].truthy()) replaceValue = toStr(host["pathname"]);
+    else replaceValue = "";
+  }
+  if (replaceValue == "/") replaceValue = "";
+  if (!isNullish(url) && url["pathname"].truthy()) {
+    string pathname = toStr(url["pathname"]);
+    if (replaceValue != "") {
+      int replaceIndex = pathname.indexOf(replaceValue);
+      if (replaceIndex >= 0) pathname = pathname.slice(0, replaceIndex) + pathname.slice(replaceIndex + replaceValue.length);
+    }
+    int i = 0;
+    while (i < posthogPathsToIgnore.length) {
+      if (pathname.indexOf(posthogPathsToIgnore[i]) == 0) return undef();
+      i = i + 1;
+    }
+  }
+  return data;
+}
+
+JsValue enforcePayload(JsValue payload, JsValue headers, int limit, string description) {
+  if (isNullish(payload)) return payload;
+  number contentLength = 0.0;
+  JsValue rawLength = undef();
+  if (!isNullish(headers)) rawLength = headers["content-length"];
+  if (rawLength.truthy()) {
+    if (isStr(rawLength)) contentLength = JS.number(JS.call(parseInt, undef(), rawLength));
+    else contentLength = JS.number(rawLength);
+  } else {
+    contentLength = byteLength(toStr(payload));
+  }
+  if (contentLength > limit) return loggerPrefix + " " + description + " body too large to record (" + contentLength.toInt().toString() + " bytes)";
+  return payload;
+}
+
+JsValue cleanRequest(JsValue data, string apiHost, JsValue endpointCheck, int limit) {
+  redactHeaders(data["requestHeaders"]);
+  redactHeaders(data["responseHeaders"]);
+  data = removePosthogRequest(data, apiHost, endpointCheck);
+  if (isUndef(data)) return undef();
+  if (data["requestBody"].truthy()) data["requestBody"] = enforcePayload(data["requestBody"], data["requestHeaders"], limit, "Request");
+  if (data["responseBody"].truthy()) data["responseBody"] = enforcePayload(data["responseBody"], data["responseHeaders"], limit, "Response");
+  return data;
+}
+
+JsValue scrubPayload(JsValue payload, string label) {
+  if (isNullish(payload)) return payload;
+  string scrubbed = toStr(payload);
+  if (!shouldCaptureValue(scrubbed, false)) scrubbed = loggerPrefix + " " + label + " body " + redacted;
+  int i = 0;
+  while (i < payloadContentDenyList.length) {
+    string blocked = payloadContentDenyList[i];
+    if (scrubbed.length > 0 && scrubbed.indexOf(blocked) != -1) {
+      scrubbed = loggerPrefix + " " + label + " body " + redacted + " as might contain: " + blocked;
+    }
+    i = i + 1;
+  }
+  return scrubbed;
+}
+
+JsValue scrubRequest(JsValue data) {
+  if (isUndef(data)) return undef();
+  data["requestBody"] = scrubPayload(data["requestBody"], "Request");
+  data["responseBody"] = scrubPayload(data["responseBody"], "Response");
+  return data;
+}
+
+JsValue requiredInitialRequest(JsValue data) {
+  JsValue required = JS.object();
+  required["name"] = "";
+  required["entryType"] = data["entryType"];
+  required["startTime"] = data["startTime"];
+  required["duration"] = data["duration"];
+  required["endTime"] = data["endTime"];
+  required["timeOrigin"] = data["timeOrigin"];
+  required["timestamp"] = data["timestamp"];
+  required["isInitial"] = true;
+  return required;
+}
+
+export bool isInitialMaskFallback(JsValue request) {
+  return request.truthy() && JS.invoke(initialMaskFallbackRequests, "has", request).truthy();
+}
+
+export JsValue buildNetworkRequestOptions(JsValue instanceConfig, JsValue remoteOptions, JsValue endpointCheck = JS.undefined()) {
+  JsValue config = JS.object();
+  config["payloadSizeLimitBytes"] = defaultNetworkOptions["payloadSizeLimitBytes"];
+  config["performanceEntryTypeToObserve"] = JS.invoke(defaultNetworkOptions["performanceEntryTypeToObserve"], "slice");
+  JsValue deny = JS.array();
+  JsValue remoteDeny = remoteOptions["payloadHostDenyList"];
+  int i = 0;
+  if (remoteDeny.truthy()) {
+    while (i < len(remoteDeny)) {
+      JS.invoke(deny, "push", remoteDeny[i]);
+      i = i + 1;
+    }
+  }
+  i = 0;
+  while (i < len(defaultNetworkOptions["payloadHostDenyList"])) {
+    JS.invoke(deny, "push", defaultNetworkOptions["payloadHostDenyList"][i]);
+    i = i + 1;
+  }
+  config["payloadHostDenyList"] = deny;
+  JsValue session = instanceConfig["session_recording"];
+  int limit = effectivePayloadLimitBytes(config);
+  string apiHost = toStr(instanceConfig["api_host"]);
+
+  if (isFn(session["maskNetworkRequestFn"])) {
+    func(JsValue, JsValue)->JsValue deprecatedAdapter = (JsValue ignored, JsValue data) => {
+      JsValue argument = JS.object();
+      argument["url"] = data["name"];
+      JsValue cleanedUrl = JS.call(session["maskNetworkRequestFn"], session, argument);
+      if (isNullish(cleanedUrl) && data["isInitial"].truthy()) return cleanedUrl;
+      JsValue copied = copyObj(data);
+      copied["name"] = undef();
+      if (!isNullish(cleanedUrl)) copied["name"] = cleanedUrl["url"];
+      return copied;
+    };
+    session["maskCapturedNetworkRequestFn"] = JS.method1(deprecatedAdapter);
+  }
+
+  if (isFn(session["maskCapturedNetworkRequestFn"])) {
+    func(JsValue, JsValue)->JsValue customMask = (JsValue ignored, JsValue data) => {
+      JsValue cleaned = cleanRequest(data, apiHost, endpointCheck, limit);
+      if (isUndef(cleaned)) return undef();
+      JsValue required = undef();
+      if (cleaned["isInitial"].truthy()) required = requiredInitialRequest(cleaned);
+      JsValue masked = JS.call(session["maskCapturedNetworkRequestFn"], session, cleaned);
+      if (isNullish(masked) && !isUndef(required)) {
+        JS.invoke(initialMaskFallbackRequests, "add", required);
+        return required;
+      }
+      if (isNullish(masked)) return undef();
+      return masked;
+    };
+    config["maskRequestFn"] = JS.method1(customMask);
+  } else {
+    func(JsValue, JsValue)->JsValue defaultMask = (JsValue ignored, JsValue data) => {
+      return scrubRequest(cleanRequest(data, apiHost, endpointCheck, limit));
+    };
+    config["maskRequestFn"] = JS.method1(defaultMask);
+  }
+
+  JsValue result = copyObj(defaultNetworkOptions);
+  objectAssign(result, config);
+  result["recordHeaders"] = remoteOptions["recordHeaders"];
+  if (JS.strictEqual(session["recordHeaders"], false)) result["recordHeaders"] = false;
+  result["recordBody"] = remoteOptions["recordBody"];
+  if (JS.strictEqual(session["recordBody"], false)) result["recordBody"] = false;
+  result["recordPerformance"] = remoteOptions["recordPerformance"];
+  if (JS.strictEqual(instanceConfig["capture_performance"], false)) result["recordPerformance"] = false;
+  result["recordInitialRequests"] = result["recordPerformance"];
+  result["streamNetworkBody"] = JS.strictEqual(session["streamNetworkBody"], true);
+  return result;
+}
+
+export JsValue circularReferenceReplacer() {
+  JsValue ancestors = JS.array();
+  func(JsValue, JsValue, JsValue)->JsValue replacer = (JsValue self, JsValue key, JsValue value) => {
+    if (isObj(value) || isArr(value)) {
+      while (len(ancestors) > 0 && !JS.strictEqual(ancestors[len(ancestors) - 1], self)) JS.invoke(ancestors, "pop");
+      if (JS.invoke(ancestors, "includes", value).truthy()) return "[Circular]";
+      JS.invoke(ancestors, "push", value);
+    }
+    return value;
+  };
+  return JS.method2(replacer);
+}
+
+export int estimateSize(JsValue value) {
+  JsValue serialized = JS.invoke(JSON, "stringify", value, circularReferenceReplacer());
+  if (!serialized.truthy()) return 0;
+  return byteLength(toStr(serialized));
+}
+
+export int estimateCompressedEventSize(JsValue value) {
+  if (JS.strictEqual(value, null)) return 4;
+  if (isUndef(value)) return 0;
+  string kind = JS.typeOf(value);
+  if (kind == "string") return len(value) + 2;
+  if (kind == "number") return explicitString(value).length;
+  if (kind == "boolean") {
+    if (value.truthy()) return 4;
+    return 5;
+  }
+  if (kind != "object") return 0;
+  if (isArr(value)) {
+    int size = 2;
+    int i = 0;
+    while (i < len(value)) {
+      if (i > 0) size = size + 1;
+      JsValue element = value[i];
+      if (isUndef(element) || JS.strictEqual(element, null)) size = size + 4;
+      else size = size + estimateCompressedEventSize(element);
+      i = i + 1;
+    }
+    return size;
+  }
+  int size = 2;
+  bool first = true;
+  for (string key in value) {
+    if (hasOwnValue(value, key)) {
+      JsValue item = value[key];
+      if (!isUndef(item)) {
+        if (!first) size = size + 1;
+        first = false;
+        size = size + key.length + 3 + estimateCompressedEventSize(item);
+      }
+    }
+  }
+  return size;
+}
+
+export JsValue ensureMaxMessageSize(JsValue data) {
+  string serialized = toStr(jsonStringify(data));
+  int size = byteLength(serialized);
+  if (size > MAX_MESSAGE_SIZE) {
+    string original = serialized;
+    dataUri.lastIndex = 0;
+    JsValue matched = JS.regexExec(dataUri, original);
+    while (!isNullish(matched)) {
+      string replacement = "";
+      string mime = toStr(matched[1]).toLowerCase().slice(0, 6);
+      if (mime == "image/") replacement = replacementImageURI;
+      serialized = toStr(JS.invoke(serialized, "replace", matched[0], replacement));
+      matched = JS.regexExec(dataUri, original);
+    }
+    if (serialized != original) size = byteLength(serialized);
+  }
+  JsValue result = JS.object();
+  result["event"] = jsonParse(serialized);
+  result["size"] = size;
+  return result;
+}
+
+export JsValue truncateLargeConsoleLogs(JsValue event) {
+  if (!event.truthy() || !isObj(event) || !JS.strictEqual(event["type"], PLUGIN_EVENT_TYPE)) return event;
+  if (!isObj(event["data"]) || !JS.strictEqual(event["data"]["plugin"], CONSOLE_LOG_PLUGIN_NAME)) return event;
+  JsValue payload = event["data"]["payload"]["payload"];
+  if (len(payload) > 10) {
+    payload = JS.invoke(payload, "slice", 0, 10);
+    JS.invoke(payload, "push", "...[truncated]");
+  }
+  JsValue updated = JS.array();
+  int i = 0;
+  while (i < len(payload)) {
+    JsValue item = payload[i];
+    if (item.truthy() && len(item) > 2000) JS.invoke(updated, "push", toStr(item).slice(0, 2000) + "...[truncated]");
+    else JS.invoke(updated, "push", item);
+    i = i + 1;
+  }
+  event["data"]["payload"]["payload"] = updated;
+  return event;
+}
+
+int sumSizes(JsValue sizes) {
+  int total = 0;
+  int i = 0;
+  while (i < len(sizes)) {
+    total = total + JS.number(sizes[i]).toInt();
+    i = i + 1;
+  }
+  return total;
+}
+
+JsValue splitBufferInto(JsValue buffer, number limit, JsValue output) {
+  if (toNum(buffer["size"]) >= limit && len(buffer["data"]) > 1) {
+    int half = JS.number(JS.invoke(Math, "floor", len(buffer["data"]) / 2.0)).toInt();
+    JsValue firstSizes = JS.invoke(buffer["sizes"], "slice", 0, half);
+    JsValue secondSizes = JS.invoke(buffer["sizes"], "slice", half);
+    JsValue first = JS.object();
+    first["size"] = sumSizes(firstSizes);
+    first["data"] = JS.invoke(buffer["data"], "slice", 0, half);
+    first["sizes"] = firstSizes;
+    first["sessionId"] = buffer["sessionId"];
+    first["windowId"] = buffer["windowId"];
+    JsValue second = JS.object();
+    second["size"] = sumSizes(secondSizes);
+    second["data"] = JS.invoke(buffer["data"], "slice", half);
+    second["sizes"] = secondSizes;
+    second["sessionId"] = buffer["sessionId"];
+    second["windowId"] = buffer["windowId"];
+    splitBufferInto(first, SEVEN_MEGABYTES, output);
+    splitBufferInto(second, SEVEN_MEGABYTES, output);
+  } else {
+    JS.invoke(output, "push", buffer);
+  }
+  return output;
+}
+
+export JsValue splitBuffer(JsValue buffer, number sizeLimit = 6606028.8) {
+  return splitBufferInto(buffer, sizeLimit, JS.array());
+}

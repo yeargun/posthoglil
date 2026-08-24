@@ -4,8 +4,10 @@ import { fileURLToPath } from "node:url"
 import { measureFile } from "./codec.mjs"
 import { minifyLanes } from "./minify-lanes.mjs"
 import {
+  bundleOfficialAutocapture,
   bundleOfficialErrorTracking,
   bundleOfficialOtlp,
+  bundleOfficialReplayCore,
   bundleOfficialSurveys,
 } from "./official-bundle.mjs"
 
@@ -14,6 +16,26 @@ const temp = join(root, ".tmp", "pack-lanes")
 const reportDir = join(root, "reports")
 
 const packs = [
+  {
+    id: "autocapture",
+    name: "Autocapture utilities",
+    subpath: "@itslil/posthog-js/autocapture",
+    source: "packages/browser-common/src/utils/autocapture-utils.ts",
+    groups: 5,
+    exports: 21,
+    costModel: "brotli",
+    bundle: bundleOfficialAutocapture,
+  },
+  {
+    id: "replay-core",
+    name: "Session replay core",
+    subpath: "@itslil/posthog-js/replay-core",
+    source: "browser replay external/config.ts + sessionrecording-utils.ts",
+    groups: 6,
+    exports: 20,
+    costModel: "brotli",
+    bundle: bundleOfficialReplayCore,
+  },
   {
     id: "surveys",
     name: "Surveys",
@@ -141,7 +163,7 @@ const report = {
   submoduleCommit: "9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb",
   codec: "lilscript-codec gzip-9 / brotli-11",
   comparison:
-    "Each pack is measured independently. The official side is bundled directly from the untouched pinned posthog-js git submodule, then minified with the named Oxc, Terser, or esbuild settings. LilScript is the exact corresponding runtime surface and is not post-minified. Surveys uses its verified Brotli-scored production artifact; error tracking and OTLP use verified raw-scored artifacts because the aggressive Brotli optimizer outputs failed differential or syntax validation. No pack is combined with the capture kernel or the published PostHog browser bundle.",
+    "Each pack is measured independently. The official side is bundled directly from the untouched pinned posthog-js git submodule, then minified with the named Oxc, Terser, or esbuild settings. LilScript is the exact corresponding runtime surface and is not post-minified. Surveys, autocapture, and replay core use verified Brotli-scored production artifacts; error tracking and OTLP retain verified raw-scored artifacts because their aggressive Brotli outputs failed differential or syntax validation. No pack is combined with the capture kernel or the published PostHog browser bundle.",
   packs: measuredPacks,
 }
 

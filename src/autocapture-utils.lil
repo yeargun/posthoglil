@@ -1,0 +1,580 @@
+import {
+  hasKey,
+  isArr,
+  isBool,
+  isFn,
+  isNullish,
+  isObj,
+  isStr,
+  isUndef,
+  len,
+  objectKeys,
+  toStr,
+  undef
+} from "./host.lil";
+
+export int MAX_DOM_ANCESTOR_DEPTH = 1000;
+export string[] autocaptureCompatibleElements = [
+  "a", "button", "form", "input", "select", "textarea", "label"
+];
+string[] defaultAutocaptureIgnoreList = [".ph-no-autocapture", "[data-ph-no-autocapture]"];
+string[] defaultContentIgnoreList = ["next", "previous", "prev", ">", "<"];
+export string[] DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS = [
+  "next", "previous", "prev", ">", "<", "+", "-", "−", "–"
+];
+string[] defaultDeadClickIgnoreList = [".ph-no-deadclick", ".ph-no-capture"];
+string[] defaultRageClickIgnoreList = [".ph-no-rageclick", ".ph-no-capture"];
+string[] textSelectionInputTypes = ["", "text", "search", "email", "password", "url", "tel", "number"];
+int maxContentIgnorelistEntries = 10;
+
+Regex whitespace = new Regex("\\s+", "");
+Regex whitespaceChunks = new Regex("(\\s+)", "");
+Regex newlines = new Regex("[\\r\\n]", "g");
+Regex spaces = new Regex("[ ]+", "g");
+Regex alphanumeric = new Regex("[a-z0-9]", "i");
+Regex sensitiveName = new Regex("^cc|cardnum|ccnum|creditcard|csc|cvc|cvv|exp|pass|pwd|routing|seccode|securitycode|securitynum|socialsec|socsec|ssn", "i");
+Regex nonAlphanumeric = new Regex("[^a-zA-Z0-9]", "g");
+Regex quote = new Regex("\"", "g");
+Regex escapedQuote = new Regex("\"|\\\\\"", "g");
+Regex coreCreditCard = new Regex("^(?:(4[0-9]{12}(?:[0-9]{3})?)|(5[1-5][0-9]{14})|(6(?:011|5[0-9]{2})[0-9]{12})|(3[47][0-9]{13})|(3(?:0[0-5]|[68][0-9])[0-9]{11})|((?:2131|1800|35[0-9]{3})[0-9]{11}))$", "");
+Regex networkCreditCard = new Regex("(^|[^0-9A-Za-z_])([0-9][0-9 -]*[0-9])(?=$|[^0-9A-Za-z_])", "g");
+Regex stripCardSeparators = new Regex("[- ]", "g");
+Regex socialSecurity = new Regex("^(\\d{3}-?\\d{2}-?\\d{4})$", "");
+Regex networkSocialSecurity = new Regex("(^|[^0-9])((?!000|666)[0-9]{3}-?(?!00)[0-9]{2}-?(?!0000)[0-9]{4})(?=$|([^0-9]))", "g");
+Regex identifierCharacter = new Regex("[0-9A-Za-z_]", "");
+
+bool isElementNode(JsValue node) {
+  return node.truthy() && JS.strictEqual(node["nodeType"], 1);
+}
+
+bool isTextNode(JsValue node) {
+  return node.truthy() && JS.strictEqual(node["nodeType"], 3);
+}
+
+bool isTag(JsValue element, string tag) {
+  return element.truthy() && element["tagName"].truthy() && toStr(element["tagName"]).toLowerCase() == tag.toLowerCase();
+}
+
+bool isShadowRoot(JsValue node) {
+  return node.truthy() && JS.strictEqual(node["nodeType"], 11) && isElementNode(node["host"]);
+}
+
+bool arrayIncludes(JsValue values, JsValue value) {
+  return JS.invoke(values, "includes", value).truthy();
+}
+
+bool matchesSelector(JsValue element, string selector) {
+  JsValue matcher = element["matches"];
+  if (!isFn(matcher)) matcher = element["matchesSelector"];
+  if (!isFn(matcher)) matcher = element["msMatchesSelector"];
+  if (!isFn(matcher)) matcher = element["mozMatchesSelector"];
+  if (!isFn(matcher)) matcher = element["webkitMatchesSelector"];
+  if (!isFn(matcher)) matcher = element["oMatchesSelector"];
+  if (!isFn(matcher)) return false;
+  try {
+    return JS.call(matcher, element, selector).truthy();
+  } catch {
+    return false;
+  }
+}
+
+bool selectorsMatch(JsValue elements, JsValue selectors) {
+  if (isUndef(selectors)) return true;
+  int i = 0;
+  while (i < len(elements)) {
+    int j = 0;
+    while (j < len(selectors)) {
+      if (matchesSelector(elements[i], toStr(selectors[j]))) return true;
+      j = j + 1;
+    }
+    i = i + 1;
+  }
+  return false;
+}
+
+bool cannotCheck(JsValue element) {
+  return !element.truthy() || isTag(element, "html") || !isElementNode(element);
+}
+
+JsValue browserWindow() {
+  if (JS.typeOf(globalThis["window"]) == "undefined") return undef();
+  return globalThis["window"];
+}
+
+export JsValue splitClassString(string value) {
+  if (value == "") return JS.array();
+  return JS.invoke(value.trim(), "split", whitespace);
+}
+
+export JsValue getClassNames(JsValue element) {
+  JsValue classValue = element["className"];
+  string className = "";
+  if (isStr(classValue)) {
+    className = toStr(classValue);
+  } else if (isObj(classValue)) {
+    if (classValue.truthy() && hasKey(classValue, "baseVal")) {
+      className = toStr(classValue["baseVal"]);
+    } else {
+      JsValue attribute = JS.invoke(element, "getAttribute", "class");
+      if (attribute.truthy()) className = toStr(attribute);
+    }
+  }
+  return splitClassString(className);
+}
+
+export bool shouldCaptureValue(JsValue input, bool anchorRegexes = true) {
+  if (isNullish(input)) return false;
+  if (!isStr(input)) return true;
+  string value = toStr(input).trim();
+  bool card = false;
+  if (anchorRegexes) {
+    card = coreCreditCard.test(value.replace(stripCardSeparators, ""));
+  } else {
+    networkCreditCard.lastIndex = 0;
+    JsValue matchValue = JS.regexExec(networkCreditCard, value);
+    while (!isNullish(matchValue)) {
+      string matched = toStr(matchValue[2]);
+      if (matched != "") {
+        string candidate = matched.replace(stripCardSeparators, "");
+        int start = 0;
+        int[] lengths = [16, 15, 14, 13];
+        while (start < candidate.length) {
+          int i = 0;
+          while (i < lengths.length) {
+            int end = start + lengths[i];
+            if (end <= candidate.length) {
+              string possible = candidate.slice(start, end);
+              if (coreCreditCard.test(possible) && passesLuhn(possible)) return false;
+            }
+            i = i + 1;
+          }
+          start = start + 1;
+        }
+      }
+      matchValue = JS.regexExec(networkCreditCard, value);
+    }
+  }
+  if (card) return false;
+  if (anchorRegexes) return !socialSecurity.test(value);
+  networkSocialSecurity.lastIndex = 0;
+  JsValue ssn = JS.regexExec(networkSocialSecurity, value);
+  while (!isNullish(ssn)) {
+    string before = toStr(ssn[1]);
+    string after = toStr(ssn[3]);
+    if (!(before != "" && after != "" && identifierCharacter.test(before) && identifierCharacter.test(after))) {
+      return false;
+    }
+    ssn = JS.regexExec(networkSocialSecurity, value);
+  }
+  return true;
+}
+
+bool passesLuhn(string value) {
+  int sum = 0;
+  bool shouldDouble = false;
+  int i = value.length - 1;
+  while (i >= 0) {
+    int digit = value.charCodeAt(i) - 48;
+    if (shouldDouble) {
+      digit = digit * 2;
+      if (digit > 9) digit = digit - 9;
+    }
+    sum = sum + digit;
+    shouldDouble = !shouldDouble;
+    i = i - 1;
+  }
+  return sum % 10 == 0;
+}
+
+export JsValue makeSafeText(JsValue input) {
+  if (isNullish(input)) return null;
+  string value = toStr(input).trim();
+  JsValue pieces = JS.invoke(value, "split", whitespaceChunks);
+  string safe = "";
+  int i = 0;
+  while (i < len(pieces)) {
+    string piece = toStr(pieces[i]);
+    if (shouldCaptureValue(piece)) safe = safe + piece;
+    i = i + 1;
+  }
+  return safe.replace(newlines, " ").replace(spaces, " ").slice(0, 255);
+}
+
+export bool shouldCaptureElement(JsValue element) {
+  JsValue seen = JS.construct(Set);
+  int depth = 0;
+  JsValue current = element;
+  while (current["parentNode"].truthy() && !isTag(current, "body")) {
+    if (depth >= MAX_DOM_ANCESTOR_DEPTH || JS.invoke(seen, "has", current).truthy()) return false;
+    depth = depth + 1;
+    JS.invoke(seen, "add", current);
+    JsValue classes = getClassNames(current);
+    if (arrayIncludes(classes, "ph-sensitive") || arrayIncludes(classes, "ph-no-capture")) return false;
+    current = current["parentNode"];
+  }
+  if (arrayIncludes(getClassNames(element), "ph-include")) return true;
+  JsValue typeValue = element["type"];
+  if (isStr(typeValue)) {
+    string type = toStr(typeValue).toLowerCase();
+    if (type == "hidden" || type == "password") return false;
+  }
+  JsValue rawName = element["id"];
+  if (element["name"].truthy()) rawName = element["name"];
+  if (isStr(rawName) && sensitiveName.test(toStr(rawName).replace(nonAlphanumeric, ""))) return false;
+  return true;
+}
+
+export bool isSensitiveElement(JsValue element) {
+  if (isTag(element, "input")) {
+    string type = toStr(element["type"]);
+    if (type != "button" && type != "checkbox" && type != "submit" && type != "reset") return true;
+  }
+  if (isTag(element, "select") || isTag(element, "textarea")) return true;
+  return JS.strictEqual(JS.invoke(element, "getAttribute", "contenteditable"), "true");
+}
+
+export string getSafeText(JsValue element) {
+  string text = "";
+  JsValue children = element["childNodes"];
+  if (shouldCaptureElement(element) && !isSensitiveElement(element) && children.truthy() && len(children) > 0) {
+    int i = 0;
+    while (i < len(children)) {
+      JsValue child = children[i];
+      if (isTextNode(child) && child["textContent"].truthy()) {
+        JsValue safe = makeSafeText(child["textContent"]);
+        if (!isNullish(safe)) text = text + toStr(safe);
+      }
+      i = i + 1;
+    }
+  }
+  return text.trim();
+}
+
+export JsValue getEventTarget(JsValue event) {
+  if (isUndef(event["target"])) {
+    if (event["srcElement"].truthy()) return event["srcElement"];
+    return null;
+  }
+  JsValue target = event["target"];
+  if (target.truthy() && target["shadowRoot"].truthy()) {
+    JsValue path = JS.invoke(event, "composedPath");
+    if (path[0].truthy()) return path[0];
+    return null;
+  }
+  if (target.truthy()) return target;
+  return null;
+}
+
+export JsValue getParentElement(JsValue element) {
+  JsValue parent = element["parentNode"];
+  if (!parent.truthy() || !isElementNode(parent)) return false;
+  return parent;
+}
+
+JsValue elementTree(JsValue element, bool captureAny) {
+  JsValue result = JS.object();
+  JsValue list = JS.array();
+  result["parentIsUsefulElement"] = false;
+  result["targetElementList"] = list;
+  JsValue win = browserWindow();
+  if (isUndef(win) || cannotCheck(element)) return result;
+  bool useful = false;
+  JS.invoke(list, "push", element);
+  JsValue current = element;
+  while (current["parentNode"].truthy() && !isTag(current, "body")) {
+    if (isShadowRoot(current["parentNode"])) {
+      JsValue host = current["parentNode"]["host"];
+      JS.invoke(list, "push", host);
+      current = host;
+    } else {
+      JsValue parent = getParentElement(current);
+      if (!parent.truthy()) break;
+      if (captureAny || arrayIncludes(autocaptureCompatibleElements, toStr(parent["tagName"]).toLowerCase())) {
+        useful = true;
+      } else {
+        try {
+          JsValue style = JS.invoke(win, "getComputedStyle", parent);
+          if (style.truthy() && JS.strictEqual(JS.invoke(style, "getPropertyValue", "cursor"), "pointer")) useful = true;
+        } catch {
+        }
+      }
+      JS.invoke(list, "push", parent);
+      current = parent;
+    }
+  }
+  result["parentIsUsefulElement"] = useful;
+  return result;
+}
+
+bool contentKeyword(string text, string keyword) {
+  if (alphanumeric.test(keyword)) return text.includes(keyword);
+  return text == keyword;
+}
+
+bool ignoreByContent(JsValue config, JsValue elements) {
+  if (JS.strictEqual(config, false) || isUndef(config)) return false;
+  JsValue keywords = config;
+  if (JS.strictEqual(config, true)) keywords = defaultContentIgnoreList;
+  else if (!isArr(config) || len(config) > maxContentIgnorelistEntries) return false;
+  int i = 0;
+  while (i < len(elements)) {
+    string text = getSafeText(elements[i]).toLowerCase();
+    JsValue aria = JS.invoke(elements[i], "getAttribute", "aria-label");
+    string label = "";
+    if (aria.truthy()) label = toStr(aria).toLowerCase().trim();
+    int j = 0;
+    while (j < len(keywords)) {
+      string keyword = toStr(keywords[j]).toLowerCase();
+      if (contentKeyword(text, keyword) || contentKeyword(label, keyword)) return true;
+      j = j + 1;
+    }
+    i = i + 1;
+  }
+  return false;
+}
+
+export bool shouldCaptureDeadClick(JsValue element, JsValue config) {
+  if (isUndef(browserWindow()) || cannotCheck(element)) return false;
+  JsValue selectors = undef();
+  if (isBool(config)) selectors = defaultDeadClickIgnoreList;
+  else if (!isNullish(config)) selectors = config["css_selector_ignorelist"];
+  if (isUndef(selectors)) selectors = defaultDeadClickIgnoreList;
+  return !selectorsMatch(elementTree(element, false)["targetElementList"], selectors);
+}
+
+export bool isTextSelectionTarget(JsValue element) {
+  bool result = false;
+  if (element.truthy()) {
+    if (isElementNode(element)) {
+      if (isTag(element, "textarea")) {
+        result = true;
+      } else if (isTag(element, "input")) {
+        JsValue type = JS.invoke(element, "getAttribute", "type");
+        string value = "";
+        if (type.truthy()) value = toStr(type).toLowerCase();
+        result = arrayIncludes(textSelectionInputTypes, value);
+      } else if (element["isContentEditable"].truthy()) {
+        result = true;
+      } else {
+        JsValue contentEditable = JS.invoke(element, "getAttribute", "contenteditable");
+        if (JS.strictEqual(contentEditable, "true")) result = true;
+        if (JS.strictEqual(contentEditable, "")) result = true;
+      }
+    }
+  }
+  return result;
+}
+
+export bool shouldCaptureRageclick(JsValue element, JsValue config) {
+  if (isUndef(browserWindow()) || cannotCheck(element)) return false;
+  JsValue selectors = undef();
+  JsValue content = undef();
+  bool ignoreSelection = false;
+  if (isBool(config)) {
+    if (config.truthy()) selectors = defaultRageClickIgnoreList;
+    else selectors = false;
+  } else if (!isNullish(config)) {
+    selectors = config["css_selector_ignorelist"];
+    if (isUndef(selectors)) selectors = defaultRageClickIgnoreList;
+    content = config["content_ignorelist"];
+    ignoreSelection = config["ignore_text_selection"].truthy();
+  }
+  if (isBool(selectors)) {
+    if (!selectors.truthy()) return false;
+  }
+  if (ignoreSelection && isTextSelectionTarget(element)) return false;
+  JsValue elements = elementTree(element, false)["targetElementList"];
+  if (ignoreByContent(content, elements)) return false;
+  return !selectorsMatch(elements, selectors);
+}
+
+export bool shouldSkipDeadClick(JsValue element) {
+  if (isUndef(browserWindow()) || cannotCheck(element)) return false;
+  JsValue elements = elementTree(element, false)["targetElementList"];
+  int i = 0;
+  while (i < len(elements)) {
+    if (isTag(elements[i], "a")) return true;
+    i = i + 1;
+  }
+  return false;
+}
+
+string targetingUrl(JsValue instance) {
+  JsValue win = browserWindow();
+  if (isUndef(win) || !win["location"]["href"].truthy()) return "";
+  string fallback = toStr(win["location"]["href"]);
+  JsValue instanceConfig = undef();
+  if (!isNullish(instance)) instanceConfig = instance["config"];
+  JsValue override = undef();
+  if (!isNullish(instanceConfig)) override = instanceConfig["get_current_url"];
+  if (!isFn(override)) return fallback;
+  try {
+    JsValue result = JS.call(override, instanceConfig, fallback);
+    if (isStr(result) && result.truthy()) return toStr(result);
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+bool urlsMatch(JsValue urls, JsValue instance) {
+  string url = targetingUrl(instance);
+  if (url == "" || !urls.truthy()) return false;
+  int i = 0;
+  while (i < len(urls)) {
+    if (JS.invoke(url, "match", urls[i]).truthy()) return true;
+    i = i + 1;
+  }
+  return false;
+}
+
+bool treePassesAllowlist(JsValue elements, JsValue config) {
+  JsValue allowlist = config["element_allowlist"];
+  if (isUndef(allowlist)) return true;
+  int i = 0;
+  while (i < len(elements)) {
+    int j = 0;
+    string tag = toStr(elements[i]["tagName"]).toLowerCase();
+    while (j < len(allowlist)) {
+      if (tag == toStr(allowlist[j])) return true;
+      j = j + 1;
+    }
+    i = i + 1;
+  }
+  return false;
+}
+
+bool allowedEvent(string type, JsValue allowed, string[] fallback) {
+  JsValue list = allowed;
+  if (isUndef(allowed)) list = fallback;
+  int index = JS.number(JS.invoke(list, "indexOf", type)).toInt();
+  return index >= 0;
+}
+
+export bool shouldCaptureDomEvent(
+  JsValue element,
+  JsValue event,
+  JsValue config = JS.undefined(),
+  bool captureAny = false,
+  JsValue allowed = JS.undefined(),
+  JsValue instance = JS.undefined()
+) {
+  JsValue win = browserWindow();
+  if (isUndef(win) || cannotCheck(element)) return false;
+  if (isNullish(config)) config = JS.object();
+  if (config["url_allowlist"].truthy() && !urlsMatch(config["url_allowlist"], instance)) return false;
+  if (config["url_ignorelist"].truthy() && urlsMatch(config["url_ignorelist"], instance)) return false;
+  JsValue eventAllowlist = config["dom_event_allowlist"];
+  if (eventAllowlist.truthy() && !arrayIncludes(eventAllowlist, event["type"])) return false;
+  JsValue tree = elementTree(element, captureAny);
+  JsValue elements = tree["targetElementList"];
+  if (!treePassesAllowlist(elements, config)) return false;
+  if (!selectorsMatch(elements, config["css_selector_allowlist"])) return false;
+  JsValue ignored = config["css_selector_ignorelist"];
+  if (isUndef(ignored)) ignored = defaultAutocaptureIgnoreList;
+  if (selectorsMatch(elements, ignored)) return false;
+  try {
+    JsValue style = JS.invoke(win, "getComputedStyle", element);
+    if (style.truthy() && JS.strictEqual(JS.invoke(style, "getPropertyValue", "cursor"), "pointer") && JS.strictEqual(event["type"], "click")) return true;
+  } catch {
+  }
+  string tag = toStr(element["tagName"]).toLowerCase();
+  string type = toStr(event["type"]);
+  if (tag == "html") return false;
+  if (tag == "form") return allowedEvent(type, allowed, ["submit"]);
+  if (tag == "input" || tag == "select" || tag == "textarea") return allowedEvent(type, allowed, ["change", "click"]);
+  if (tree["parentIsUsefulElement"].truthy()) return allowedEvent(type, allowed, ["click"]);
+  return allowedEvent(type, allowed, ["click"]) && (arrayIncludes(autocaptureCompatibleElements, tag) || JS.strictEqual(JS.invoke(element, "getAttribute", "contenteditable"), "true"));
+}
+
+export bool isAngularStyleAttr(string attributeName) {
+  return attributeName.slice(0, 10) == "_ngcontent" || attributeName.slice(0, 7) == "_nghost";
+}
+
+export string getNestedSpanText(JsValue target) {
+  string text = "";
+  JsValue children = target["childNodes"];
+  if (target.truthy() && children.truthy()) {
+    int i = 0;
+    while (i < len(children)) {
+      JsValue child = children[i];
+      if (child.truthy() && isTag(child, "span")) {
+        try {
+          string spanText = getSafeText(child);
+          text = (text + " " + spanText).trim();
+          if (child["childNodes"].truthy() && len(child["childNodes"]) > 0) text = (text + " " + getNestedSpanText(child)).trim();
+        } catch {
+        }
+      }
+      i = i + 1;
+    }
+  }
+  return text;
+}
+
+export string getDirectAndNestedSpanText(JsValue target) {
+  string text = (getSafeText(target) + " " + getNestedSpanText(target)).trim();
+  if (shouldCaptureValue(text)) return text;
+  return "";
+}
+
+string escapeQuotes(string input) {
+  return input.replace(escapedQuote, "\\\"");
+}
+
+string explicitString(JsValue value) {
+  return JS.string(JS.call(String, undef(), value));
+}
+
+JsValue extractAttrClass(JsValue element) {
+  JsValue classes = element["attr__class"];
+  if (!classes.truthy()) return undef();
+  if (isArr(classes)) return classes;
+  return splitClassString(toStr(classes));
+}
+
+export string getElementsChainString(JsValue elements) {
+  string output = "";
+  int i = 0;
+  while (i < len(elements)) {
+    JsValue source = elements[i];
+    if (i > 0) output = output + ";";
+    JsValue tagValue = source["tag_name"];
+    if (tagValue.truthy()) output = output + toStr(tagValue);
+    JsValue classes = extractAttrClass(source);
+    if (!isUndef(classes)) {
+      JS.invoke(classes, "sort");
+      int c = 0;
+      while (c < len(classes)) {
+        output = output + "." + toStr(classes[c]).replace(quote, "");
+        c = c + 1;
+      }
+    }
+    JsValue attributes = JS.object();
+    if (source["$el_text"].truthy()) attributes["text"] = toStr(source["$el_text"]).slice(0, 400);
+    attributes["nth-child"] = source["nth_child"];
+    if (isNullish(source["nth_child"])) attributes["nth-child"] = 0;
+    attributes["nth-of-type"] = source["nth_of_type"];
+    if (isNullish(source["nth_of_type"])) attributes["nth-of-type"] = 0;
+    if (source["attr__href"].truthy()) attributes["href"] = toStr(source["attr__href"]).slice(0, 2048);
+    if (source["attr__id"].truthy()) attributes["attr_id"] = source["attr__id"];
+    JsValue keys = objectKeys(source);
+    int k = 0;
+    while (k < len(keys)) {
+      string key = toStr(keys[k]);
+      if (key.indexOf("attr__") == 0) attributes[key] = source[key];
+      k = k + 1;
+    }
+    JsValue attributeKeys = objectKeys(attributes);
+    JS.invoke(attributeKeys, "sort");
+    output = output + ":";
+    k = 0;
+    while (k < len(attributeKeys)) {
+      string key = toStr(attributeKeys[k]);
+      output = output + escapeQuotes(key) + "=\"" + escapeQuotes(explicitString(attributes[key])) + "\"";
+      k = k + 1;
+    }
+    i = i + 1;
+  }
+  return output;
+}

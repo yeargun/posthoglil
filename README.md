@@ -1,8 +1,8 @@
 # @itslil/posthog-js
 
-This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It ports selected `posthog-js@1.418.10` surfaces to [LilScript](https://github.com/yeargun/lilscript): the original capture kernel plus independent surveys, error-tracking, and pure OTLP logs/metrics package lanes.
+This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It ports selected `posthog-js@1.418.10` surfaces to [LilScript](https://github.com/yeargun/lilscript): the original capture kernel plus five independent package lanes, including the complete autocapture utility module and a two-module session-replay core.
 
-It is not affiliated with PostHog. Autocapture, session replay, product tours, heatmaps, web vitals, the `PostHog` client, network transport, and persistence adapters are absent. The three new lanes are separate subpath exports and are not silently folded into the root kernel comparison.
+It is not affiliated with PostHog. The `PostHog` client, active replay recorder, product tours, heatmaps, web vitals, network transport, and persistence adapters are absent. The five lanes are separate subpath exports and are never folded into the root kernel comparison.
 
 **Site:** [yeargun.github.io/posthoglil](https://yeargun.github.io/posthoglil/)
 
@@ -33,6 +33,8 @@ The independent packs use their own import paths:
 import { applySurveyTranslation } from "@itslil/posthog-js/surveys"
 import { ErrorPropertiesBuilder, createDefaultStackParser } from "@itslil/posthog-js/error-tracking"
 import { buildOtlpLogRecord, buildOtlpMetricsPayload } from "@itslil/posthog-js/otlp"
+import { getElementsChainString, shouldCaptureValue } from "@itslil/posthog-js/autocapture"
+import { buildNetworkRequestOptions, splitBuffer } from "@itslil/posthog-js/replay-core"
 ```
 
 ## Independent pack results
@@ -43,19 +45,21 @@ Each pack is measured separately against Vite 8 Oxc with mangling enabled. The f
 
 | Pack | Exact runtime surface | Official Oxc raw / gzip-9 / Brotli-11 | LilScript raw / gzip-9 / Brotli-11 | Result vs Oxc |
 | --- | --- | ---: | ---: | --- |
+| Autocapture utilities | 21 exports · 5/5 differential groups | 11,070 / 4,640 / 4,215 | **8,644 / 3,400 / 3,065** | **21.9% / 26.7% / 27.3% smaller** |
+| Session replay core | 20 exports · 6/6 differential groups | 10,264 / 4,639 / 4,258 | **8,497 / 3,804 / 3,432** | **17.2% / 18.0% / 19.4% smaller** |
 | Surveys | 21 exports · 6/6 differential groups | 6,244 / 2,515 / 2,251 | **5,302 / 2,068 / 1,765** | **15.1% / 17.8% / 21.6% smaller** |
 | Error tracking | 26 exports · 5/5 differential groups | **14,662 / 5,700 / 5,224** | 18,835 / 6,808 / 6,200 | 28.5% / 19.4% / 18.7% larger |
 | OTLP logs + metrics | 14 exports · 6/6 differential groups | 6,915 / **2,790 / 2,563** | **6,826** / 2,844 / 2,594 | **1.3% smaller raw**; 1.9% / 1.2% larger compressed |
 
-Surveys is the larger win the leaf-utility kernel did not expose: **486 Brotli bytes (21.6%) smaller than Oxc**, and 301 bytes (14.6%) smaller than three-pass Terser. Its packaged ESM is 1,854 Brotli bytes, still 17.6% below the metadata-free Oxc baseline.
+Autocapture is the larger reusable win the leaf-utility kernel did not expose: **1,150 Brotli bytes (27.3%) smaller than Oxc**, and 900 bytes (22.7%) smaller than three-pass Terser. Its packaged ESM is 3,159 Brotli bytes, still 25.1% below the metadata-free Oxc baseline. The replay network/buffer core is **826 Brotli bytes (19.4%) smaller than Oxc**; surveys remains 21.6% smaller.
 
-The losses remain visible. Error tracking and OTLP use the verified `cost_model = raw`, `candidate_search = off` compiler artifacts. Aggressive Brotli-scored candidates were rejected because the production differential/syntax gate caught invalid output; they are neither published nor measured. Surveys uses its verified `cost_model = brotli` production artifact. None of the LilScript rows is post-minified.
+The losses remain visible. Error tracking and OTLP use the verified `cost_model = raw`, `candidate_search = off` compiler artifacts. Aggressive Brotli-scored candidates were rejected because the production differential/syntax gate caught invalid output; they are neither published nor measured. Autocapture, replay core, and surveys use their verified `cost_model = brotli` production artifacts. None of the LilScript rows is post-minified.
 
-The committed differential suites cover survey translation and activation semantics; every error coercer, recursive causes, exception-step byte budgets, class shapes, async frame modifiers, and browser/Node parser families; and OTLP integer boundaries, sparse/circular/deep graphs, `toJSON`, throwing getters, resource precedence, and log/metrics envelopes.
+The committed differential suites cover autocapture DOM/event decisions, sensitive values, text normalization, and elements-chain serialization; replay network redaction, callback fallbacks, circular sizing, data-URI replacement, console truncation, and recursive buffer splitting; survey translation and activation semantics; every error coercer, recursive causes, exception-step byte budgets, class shapes, async frame modifiers, and browser/Node parser families; and OTLP integer boundaries, sparse/circular/deep graphs, `toJSON`, throwing getters, resource precedence, and log/metrics envelopes.
 
 ## What is compared
 
-Within every row group, both sides expose the **same surface**. The root kernel uses the pinned fixtures in `official/`; surveys, error tracking, and OTLP bundle the pinned original git submodule directly. Each official source graph is bundled with esbuild and then run through:
+Within every row group, both sides expose the **same surface**. The root kernel uses the pinned fixtures in `official/`; all five packs bundle the pinned original git submodule directly. Each official source graph is bundled with esbuild and then run through:
 
 - Vite 8 Oxc minify, mangling on and off
 - Terser, 3-pass mangling on and off, and 1-pass mangling on
@@ -105,7 +109,7 @@ If LilScript is larger on a codec, that row stays. Losses are part of the compar
 
 ## What is ported
 
-The root export remains the capture kernel below. The three larger surfaces live at `./surveys`, `./error-tracking`, and `./otlp` so their bytes never distort this table or its existing measurements.
+The root export remains the capture kernel below. The five independent surfaces live at `./autocapture`, `./replay-core`, `./surveys`, `./error-tracking`, and `./otlp` so their bytes never distort this table or its existing measurements.
 
 | Module | Official source | Kept | Left out |
 | --- | --- | --- | --- |

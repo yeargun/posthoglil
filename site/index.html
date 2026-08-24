@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="LilScript ports selected posthog-js 1.418.10 surfaces: the capture kernel plus independent surveys, error-tracking, and OTLP packs. Each size comparison uses the exact untouched official source graph."
+      content="LilScript ports selected posthog-js 1.418.10 surfaces: the capture kernel plus tabbed surveys, error-tracking, OTLP, autocapture, and session-replay benchmarks."
     />
     <meta name="theme-color" content="#f54e00" />
     <title>itslil/posthog-js — selected posthog-js 1.418.10 modules through LilScript</title>
@@ -38,10 +38,11 @@
             It is thirteen modules from <code>posthog-js@1.418.10</code> — UUID, feature-flag
             utils, cookie identity, request routing, token and bucketed rate limits, queue
             batching, bot detection, and the portable string / number / type / JSON / URL
-            helpers — rewritten in LilScript. Three independent subpaths now add surveys,
-            error tracking, and pure OTLP logs/metrics helpers without pulling them into
-            the root kernel. Autocapture, session replay, the client class, and network
-            transport remain absent. Every number on this page
+            helpers — rewritten in LilScript. Five independent subpaths add surveys,
+            error tracking, pure OTLP helpers, the complete autocapture utility module,
+            and a session-replay network / buffer core without pulling them into the root
+            kernel. The client class, active recorder, and network transport remain absent
+            from the root package. Every number on this page
             compares that same official kernel, then Vite 8 Oxc, Terser, and esbuild, with
             the settings named on each row. The headline is the direct Brotli-scored
             compiler artifact. The npm ESM adds its license banner and is reported
@@ -100,7 +101,7 @@
           <p>
             The official side is extracted from <code>posthog-js@1.418.10</code> commit
             <code>9b2a1b18</code>. The legacy kernel fixture lives in <code>official/</code>;
-            the three pack baselines below bundle the untouched pinned git submodule directly.
+            the five pack baselines below bundle the untouched pinned git submodule directly.
             LilScript implements the same named functions. Differential tests assert matching
             outputs, object shapes, edge cases, and observable mutation.
           </p>
@@ -205,32 +206,39 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">The larger compression showcase</p>
-            <h2>Three exact<br />runtime packs.</h2>
+            <h2>Pick a module.<br />See its receipts.</h2>
           </div>
           <p>
             These are separate package subpaths, not additions to the capture-kernel lane.
             The official side is bundled straight from the read-only <code>posthog-js</code>
             submodule at <code>9b2a1b18</code>. No upstream TypeScript or JavaScript is edited,
             and no algorithm is replaced. Each LilScript artifact is differential-tested
-            against that exact original before it is measured.
+            against that exact original before it is measured. Use the tabs to switch the
+            full raw, gzip, and Brotli lane table; the URL keeps the selected module.
           </p>
         </div>
-        <div class="pack-cards" id="pack-cards"></div>
-        <div class="table-wrap light pack-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Pack / pinned source</th>
-                <th>Exports / test groups / cost model</th>
-                <th>Raw · Oxc → LilScript</th>
-                <th>gzip-9 · Oxc → LilScript</th>
-                <th>Brotli-11 · Oxc → LilScript</th>
-              </tr>
-            </thead>
-            <tbody id="body-packs"></tbody>
-          </table>
+        <div class="pack-tabs" id="pack-tabs" role="tablist" aria-label="Benchmark module"></div>
+        <div class="pack-panel" id="pack-panel" role="tabpanel" tabindex="0" aria-live="polite">
+          <div class="pack-summary">
+            <article class="pack-card" id="pack-card"></article>
+            <div class="pack-contract" id="pack-contract"></div>
+          </div>
+          <div class="table-wrap light pack-table" id="pack-lanes">
+            <table>
+              <thead>
+                <tr>
+                  <th>Selected module lane</th>
+                  <th>Raw</th>
+                  <th>gzip-9</th>
+                  <th>Brotli-11</th>
+                  <th>vs Oxc · Brotli</th>
+                </tr>
+              </thead>
+              <tbody id="body-pack-lanes"></tbody>
+            </table>
+          </div>
+          <p class="perf-note" id="pack-note"></p>
         </div>
-        <p class="perf-note" id="pack-note"></p>
       </section>
 
       <section class="lab shell" id="lab">
@@ -368,8 +376,8 @@
               that file on one side and this kernel on the other is not a comparison.
               The fair fight is the 1.418.10 kernel in <code>official/</code>, then the
               same Oxc, Terser, and esbuild work the JS ecosystem actually ships. Surveys,
-              error tracking, and OTLP have their own receipts above, so their larger graphs
-              never distort this kernel table. Closed
+              error tracking, OTLP, autocapture, and replay core have their own tabbed receipts
+              above, so their larger graphs never distort this kernel table. Closed
               LilScript is the other honest comparison: public JS keys mangle.
               Losses stay on the page.
             </p>

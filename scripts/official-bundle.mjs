@@ -34,6 +34,41 @@ async function bundle(input, root) {
   return code
 }
 
+function browserWorkspacePlugin(root) {
+  const vendor = join(root, "vendor", "posthog-js", "packages")
+  return {
+    name: "posthog-workspace-source",
+    setup(build) {
+      build.onResolve({ filter: /^@posthog\/browser-common(?:\/.*)?$/ }, (args) => {
+        if (args.path === "@posthog/browser-common") {
+          return { path: join(vendor, "browser-common", "src", "index.ts") }
+        }
+        return {
+          path: join(
+            vendor,
+            "browser-common",
+            "src",
+            `${args.path.slice("@posthog/browser-common/".length)}.ts`,
+          ),
+        }
+      })
+      build.onResolve({ filter: /^@posthog\/core$/ }, () => ({
+        // Browser modules in these benchmark lanes import only the utility
+        // surface. Resolving the public barrel would also pull unrelated core
+        // side effects into an otherwise tree-shakeable source benchmark.
+        path: join(vendor, "core", "src", "utils", "index.ts"),
+      }))
+      build.onResolve({ filter: /^@posthog\/types$/ }, () => ({
+        path: join(vendor, "types", "src", "index.ts"),
+      }))
+    },
+  }
+}
+
+async function bundleBrowser(input, root) {
+  return bundle({ ...input, plugins: [browserWorkspacePlugin(root)] }, root)
+}
+
 export async function bundleOfficialSurveys(root = defaultRoot) {
   return bundleOfficialEntry(
     join(root, "vendor", "posthog-js", "packages", "core", "src", "surveys", "index.ts"),
@@ -75,6 +110,34 @@ export async function bundleOfficialOtlp(root = defaultRoot) {
         loader: "ts",
         resolveDir: root,
         sourcefile: "posthog-otlp-benchmark-entry.ts",
+      },
+    },
+    root,
+  )
+}
+
+export async function bundleOfficialAutocapture(root = defaultRoot) {
+  return bundleBrowser(
+    {
+      entryPoints: [
+        join(root, "vendor", "posthog-js", "packages", "browser-common", "src", "utils", "autocapture-utils.ts"),
+      ],
+    },
+    root,
+  )
+}
+
+export async function bundleOfficialReplayCore(root = defaultRoot) {
+  return bundleBrowser(
+    {
+      stdin: {
+        contents: `
+          export * from "./vendor/posthog-js/packages/browser/src/extensions/replay/external/config.ts"
+          export * from "./vendor/posthog-js/packages/browser/src/extensions/replay/external/sessionrecording-utils.ts"
+        `,
+        loader: "ts",
+        resolveDir: root,
+        sourcefile: "posthog-replay-core-benchmark-entry.ts",
       },
     },
     root,

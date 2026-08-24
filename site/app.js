@@ -55,7 +55,7 @@ function percentAgainst(value, baseline, better, worse) {
   }
   const change = (baseline - value) / baseline
   const magnitude = Math.abs(change * 100)
-  const digits = magnitude < 10 ? 1 : 0
+  const digits = 1
   const word = change > 0 ? better : worse
   return {
     text: `${magnitude.toFixed(digits)}% ${word}`,
@@ -246,52 +246,88 @@ function renderSurface() {
 
 function renderPacks() {
   const packs = data.packs ?? []
-  const cards = document.querySelector("#pack-cards")
-  const body = document.querySelector("#body-packs")
-  if (!cards || !body) return
+  const tabs = document.querySelector("#pack-tabs")
+  const card = document.querySelector("#pack-card")
+  const contract = document.querySelector("#pack-contract")
+  const panel = document.querySelector("#pack-panel")
+  const body = document.querySelector("#body-pack-lanes")
+  if (!tabs || !card || !contract || !panel || !body) return
   if (packs.length === 0) {
-    cards.innerHTML = '<article class="pack-card"><p>Production measurements pending.</p></article>'
+    tabs.innerHTML = ""
+    card.innerHTML = "<p>Production measurements pending.</p>"
+    contract.innerHTML = ""
     body.innerHTML = ""
     return
   }
 
-  cards.innerHTML = packs
-    .map((pack) => {
-      const baseline = pack.lanes.find((lane) => lane.baseline)
-      const primary = pack.lanes.find((lane) => lane.primary)
-      const packaged = pack.lanes.find((lane) => lane.id === "package")
-      const verdict = smallerThan(primary.brotli11, baseline.brotli11)
-      return `
-        <article class="pack-card ${verdict.state}">
-          <div class="pack-kicker"><span>${pack.exports} exports</span><span>${pack.differentialGroups}/${pack.differentialGroups} groups</span><span>cost ${pack.costModel}</span></div>
-          <h3>${pack.name}</h3>
-          <strong>${verdict.amount}<small>${verdict.word} Brotli</small></strong>
-          <p>${formatter.format(baseline.brotli11)} B Oxc → ${formatter.format(primary.brotli11)} B LilScript</p>
-          <code>import { … } from "${pack.subpath}"</code>
-          <span class="pack-package">Packaged ESM: ${formatter.format(packaged.brotli11)} B Brotli-11</span>
-        </article>`
-    })
+  const requested = new URLSearchParams(window.location.search).get("pack")
+  let selected = packs.some((pack) => pack.id === requested)
+    ? requested
+    : packs.some((pack) => pack.id === "autocapture")
+      ? "autocapture"
+      : packs[0].id
+
+  tabs.innerHTML = packs
+    .map(
+      (pack) =>
+        `<button type="button" role="tab" id="pack-tab-${pack.id}" aria-controls="pack-panel" aria-selected="false" tabindex="-1" data-pack="${pack.id}">${pack.name}</button>`,
+    )
     .join("")
 
-  body.innerHTML = packs
-    .map((pack) => {
-      const baseline = pack.lanes.find((lane) => lane.baseline)
-      const primary = pack.lanes.find((lane) => lane.primary)
-      const raw = smallerThan(primary.raw, baseline.raw)
-      const gzip = smallerThan(primary.gzip9, baseline.gzip9)
-      const brotli = smallerThan(primary.brotli11, baseline.brotli11)
-      const metric = (left, right, verdict) =>
-        `<span>${formatter.format(left)} → ${formatter.format(right)} B</span><strong class="${verdict.state}">${verdict.text}</strong>`
-      return `
-        <tr>
-          <th scope="row"><span>${pack.name}</span><code>${pack.source}</code></th>
-          <td>${pack.exports} / ${pack.differentialGroups}/${pack.differentialGroups} / ${pack.costModel}</td>
-          <td>${metric(baseline.raw, primary.raw, raw)}</td>
-          <td>${metric(baseline.gzip9, primary.gzip9, gzip)}</td>
-          <td>${metric(baseline.brotli11, primary.brotli11, brotli)}</td>
-        </tr>`
-    })
-    .join("")
+  const show = (id, updateUrl = true) => {
+    const pack = packs.find((candidate) => candidate.id === id) ?? packs[0]
+    selected = pack.id
+    const baseline = pack.lanes.find((lane) => lane.baseline)
+    const primary = pack.lanes.find((lane) => lane.primary)
+    const packaged = pack.lanes.find((lane) => lane.id === "package")
+    const verdict = smallerThan(primary.brotli11, baseline.brotli11)
+    for (const tab of tabs.querySelectorAll("[role=tab]")) {
+      const active = tab.dataset.pack === pack.id
+      tab.setAttribute("aria-selected", String(active))
+      tab.tabIndex = active ? 0 : -1
+    }
+    panel.setAttribute("aria-labelledby", `pack-tab-${pack.id}`)
+    card.className = `pack-card ${verdict.state}`
+    card.innerHTML = `
+      <div class="pack-kicker"><span>${pack.exports} exports</span><span>${pack.differentialGroups}/${pack.differentialGroups} groups</span><span>cost ${pack.costModel}</span></div>
+      <h3>${pack.name}</h3>
+      <strong>${verdict.amount}<small>${verdict.word} Brotli</small></strong>
+      <p>${formatter.format(baseline.brotli11)} B Oxc → ${formatter.format(primary.brotli11)} B LilScript</p>
+      <code>import { … } from "${pack.subpath}"</code>
+      <span class="pack-package">Packaged ESM: ${formatter.format(packaged.brotli11)} B Brotli-11</span>`
+    contract.innerHTML = `<span>Pinned source graph</span><code>${pack.source}</code><span>Contract</span><strong>${pack.exports} runtime exports · ${pack.differentialGroups}/${pack.differentialGroups} differential groups</strong>`
+    body.innerHTML = pack.lanes
+      .map((lane) => {
+        const laneVerdict = smallerThan(lane.brotli11, baseline.brotli11)
+        const rowClass = lane.primary ? ' class="pack-primary-row"' : ""
+        return `<tr${rowClass}><th scope="row">${lane.name}</th><td>${formatter.format(lane.raw)}</td><td>${formatter.format(lane.gzip9)}</td><td>${formatter.format(lane.brotli11)}</td><td class="verdict ${laneVerdict.state}"><strong>${laneVerdict.text}</strong></td></tr>`
+      })
+      .join("")
+    if (updateUrl) {
+      const url = new URL(window.location.href)
+      url.searchParams.set("pack", pack.id)
+      history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
+    }
+  }
+
+  tabs.addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-pack]")
+    if (tab) show(tab.dataset.pack)
+  })
+  tabs.addEventListener("keydown", (event) => {
+    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"]
+    if (!keys.includes(event.key)) return
+    event.preventDefault()
+    const index = packs.findIndex((pack) => pack.id === selected)
+    const next = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? packs.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + packs.length) % packs.length
+    show(packs[next].id)
+    tabs.querySelector(`[data-pack="${packs[next].id}"]`).focus()
+  })
+  show(selected, false)
 
   const note = document.querySelector("#pack-note")
   if (note) {

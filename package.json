@@ -1,10 +1,12 @@
 {
   "name": "@itslil/posthog-js",
   "version": "1.418.10",
-  "description": "Selected posthog-js 1.418.10 surfaces rewritten in LilScript: a capture kernel plus surveys, error-tracking, and pure OTLP helper subpaths — not the full SDK.",
+  "description": "Selected posthog-js 1.418.10 surfaces rewritten in LilScript: a capture kernel plus surveys, error-tracking, OTLP, autocapture, and replay-core subpaths — not the full SDK.",
   "keywords": [
     "posthog",
     "analytics",
+    "autocapture",
+    "session-replay",
     "feature-flags",
     "lilscript",
     "itslil"
@@ -51,6 +53,18 @@
       "require": "./dist/otlp.cjs",
       "default": "./dist/otlp.esm.js"
     },
+    "./autocapture": {
+      "types": "./dist/autocapture.d.ts",
+      "import": "./dist/autocapture.esm.js",
+      "require": "./dist/autocapture.cjs",
+      "default": "./dist/autocapture.esm.js"
+    },
+    "./replay-core": {
+      "types": "./dist/replay-core.d.ts",
+      "import": "./dist/replay-core.esm.js",
+      "require": "./dist/replay-core.cjs",
+      "default": "./dist/replay-core.esm.js"
+    },
     "./dist/*": "./dist/*",
     "./package.json": "./package.json"
   },
@@ -75,9 +89,9 @@
     "build:packs:dev": "node scripts/build-packs.mjs --dev",
     "build:site": "node scripts/build-site.mjs",
     "test": "node --test test/compat.test.mjs test/api.test.mjs",
-    "test:packs": "npm run build:packs:dev && node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs",
-    "test:packs:raw": "POSTHOGLIL_SURVEYS_ARTIFACT=dist/surveys.raw.js POSTHOGLIL_ERROR_TRACKING_ARTIFACT=dist/error-tracking.raw.js POSTHOGLIL_OTLP_ARTIFACT=dist/otlp.raw.js node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs",
-    "test:packs:release": "POSTHOGLIL_SURVEYS_ARTIFACT=dist/surveys.esm.js POSTHOGLIL_ERROR_TRACKING_ARTIFACT=dist/error-tracking.esm.js POSTHOGLIL_OTLP_ARTIFACT=dist/otlp.esm.js node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs",
+    "test:packs": "npm run build:packs:dev && node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs test/autocapture.compat.test.mjs test/replay-core.compat.test.mjs",
+    "test:packs:raw": "POSTHOGLIL_SURVEYS_ARTIFACT=dist/surveys.raw.js POSTHOGLIL_ERROR_TRACKING_ARTIFACT=dist/error-tracking.raw.js POSTHOGLIL_OTLP_ARTIFACT=dist/otlp.raw.js POSTHOGLIL_AUTOCAPTURE_ARTIFACT=dist/autocapture.raw.js POSTHOGLIL_REPLAY_CORE_ARTIFACT=dist/replay-core.raw.js node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs test/autocapture.compat.test.mjs test/replay-core.compat.test.mjs",
+    "test:packs:release": "POSTHOGLIL_SURVEYS_ARTIFACT=dist/surveys.esm.js POSTHOGLIL_ERROR_TRACKING_ARTIFACT=dist/error-tracking.esm.js POSTHOGLIL_OTLP_ARTIFACT=dist/otlp.esm.js POSTHOGLIL_AUTOCAPTURE_ARTIFACT=dist/autocapture.esm.js POSTHOGLIL_REPLAY_CORE_ARTIFACT=dist/replay-core.esm.js node --test test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs test/autocapture.compat.test.mjs test/replay-core.compat.test.mjs",
     "test:packs:package": "node --test test/packs.api.test.mjs",
     "test:all": "npm test && npm run test:packs:release && npm run test:packs:package",
     "measure": "node scripts/measure.mjs",

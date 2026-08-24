@@ -5,9 +5,9 @@
 It is not affiliated with or endorsed by PostHog, Inc.
 
 This port contains a capture kernel plus independent surveys, error-tracking,
-and pure OTLP helper subpaths; it is not the published browser SDK. Autocapture,
-session replay, product tours, heatmaps, web vitals, the PostHog client class,
-network transport, and persistence adapters are absent.
+pure OTLP, autocapture utilities, and replay-core subpaths; it is not the published
+browser SDK. The active session recorder, product tours, heatmaps, web vitals,
+the PostHog client class, network transport, and persistence adapters are absent.
 
 The public algorithms derive from:
 

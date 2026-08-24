@@ -13,6 +13,7 @@ extern JsValue Map;
 extern JsValue Set;
 extern JsValue WeakSet;
 extern JsValue TextEncoder;
+extern JsValue Blob;
 extern JsValue String;
 extern JsValue Symbol;
 extern JsValue globalThis;

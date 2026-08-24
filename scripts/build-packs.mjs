@@ -43,6 +43,22 @@ const packs = [
     releaseConfig: "lilscript.packs-safe.toml",
     costModel: "raw",
   },
+  {
+    id: "autocapture",
+    entry: "autocapture-entry.lil",
+    types: "autocapture.d.ts",
+    label: "@posthog/browser-common autocapture utilities",
+    releaseConfig: "lilscript.toml",
+    costModel: "brotli",
+  },
+  {
+    id: "replay-core",
+    entry: "replay-core-entry.lil",
+    types: "replay-core.d.ts",
+    label: "PostHog browser replay network + buffer core",
+    releaseConfig: "lilscript.toml",
+    costModel: "brotli",
+  },
 ]
 
 function compilerPath() {
