@@ -63,7 +63,7 @@ const packs = [
     source: "packages/core/src/logs/logs-utils.ts + metrics helpers/config",
     groups: 6,
     exports: 14,
-    costModel: "raw",
+    costModel: "brotli",
     bundle: bundleOfficialOtlp,
   },
 ]
@@ -163,7 +163,7 @@ const report = {
   submoduleCommit: "9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb",
   codec: "lilscript-codec gzip-9 / brotli-11",
   comparison:
-    "Each pack is measured independently. The official side is bundled directly from the untouched pinned posthog-js git submodule, then minified with the named Oxc, Terser, or esbuild settings. LilScript is the exact corresponding runtime surface and is not post-minified. Surveys, autocapture, and replay core use verified Brotli-scored production artifacts; error tracking and OTLP retain verified raw-scored artifacts because their aggressive Brotli outputs failed differential or syntax validation. No pack is combined with the capture kernel or the published PostHog browser bundle.",
+    "Each pack is measured independently. The official side is bundled directly from the untouched pinned posthog-js git submodule, then minified with the named Oxc, Terser, or esbuild settings. LilScript is the exact corresponding runtime surface and is not post-minified. Surveys, OTLP, autocapture, and replay core use verified Brotli-scored production artifacts; error tracking uses its verified release artifact. No pack is combined with the capture kernel or the published PostHog browser bundle.",
   packs: measuredPacks,
 }
 

@@ -69,6 +69,14 @@ JsValue makeConstructor(string name) {
   return constructorValue;
 }
 
+JsValue finishConstructor(JsValue constructorValue, string name) {
+  setFunctionName(constructorValue, name);
+  JsValue prototypeDescriptor = JS.object();
+  prototypeDescriptor["writable"] = false;
+  JS.invoke(Object, "defineProperty", constructorValue, "prototype", prototypeDescriptor);
+  return constructorValue;
+}
+
 JsValue optionalSyntheticStack(JsValue context) {
   JsValue syntheticException = context["syntheticException"];
   if (!isNullish(syntheticException)) {
@@ -133,14 +141,18 @@ JsValue domCoerce(JsValue self, JsValue error, JsValue context) {
 }
 
 JsValue createDOMExceptionCoercer() {
-  JsValue constructorValue = makeConstructor("DOMExceptionCoercer");
-  defineMethod(constructorValue, "match", JS.method1(domMatch));
-  defineMethod(constructorValue, "coerce", JS.method2(domCoerce));
-  defineMethod(constructorValue, "getType", JS.method1(domGetType));
-  defineMethod(constructorValue, "getValue", JS.method1(domGetValue));
-  defineMethod(constructorValue, "isDOMException", JS.method1(domIsException));
-  defineMethod(constructorValue, "isDOMError", JS.method1(domIsError));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "DOMExceptionCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(domMatch);
+  constructorValue["prototype"]["coerce"] = JS.method2(domCoerce);
+  constructorValue["prototype"]["getType"] = JS.method1(domGetType);
+  constructorValue["prototype"]["getValue"] = JS.method1(domGetValue);
+  constructorValue["prototype"]["isDOMException"] = JS.method1(domIsException);
+  constructorValue["prototype"]["isDOMError"] = JS.method1(domIsError);
+  return finishConstructor(constructorValue, "DOMExceptionCoercer");
 }
 
 export JsValue DOMExceptionCoercer = createDOMExceptionCoercer();
@@ -195,13 +207,17 @@ JsValue errorCoerce(JsValue self, JsValue error, JsValue context) {
 }
 
 JsValue createErrorCoercer() {
-  JsValue constructorValue = makeConstructor("ErrorCoercer");
-  defineMethod(constructorValue, "match", JS.method1(errorMatch));
-  defineMethod(constructorValue, "coerce", JS.method2(errorCoerce));
-  defineMethod(constructorValue, "getType", JS.method1(errorGetType));
-  defineMethod(constructorValue, "getMessage", JS.method2(errorGetMessage));
-  defineMethod(constructorValue, "getStack", JS.method1(errorGetStack));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "ErrorCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(errorMatch);
+  constructorValue["prototype"]["coerce"] = JS.method2(errorCoerce);
+  constructorValue["prototype"]["getType"] = JS.method1(errorGetType);
+  constructorValue["prototype"]["getMessage"] = JS.method2(errorGetMessage);
+  constructorValue["prototype"]["getStack"] = JS.method1(errorGetStack);
+  return finishConstructor(constructorValue, "ErrorCoercer");
 }
 
 export JsValue ErrorCoercer = createErrorCoercer();
@@ -249,12 +265,16 @@ JsValue errorEventCoerce(JsValue self, JsValue error, JsValue context) {
 }
 
 JsValue createErrorEventCoercer() {
-  JsValue constructorValue = makeConstructor("ErrorEventCoercer");
-  defineMethod(constructorValue, "match", JS.method1(errorEventMatch));
-  defineMethod(constructorValue, "coerce", JS.method2(errorEventCoerce));
-  defineMethod(constructorValue, "_hasUsableMessage", JS.method1(errorEventHasUsableMessage));
-  defineMethod(constructorValue, "_buildLocationStack", JS.method1(errorEventBuildLocationStack));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "ErrorEventCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(errorEventMatch);
+  constructorValue["prototype"]["coerce"] = JS.method2(errorEventCoerce);
+  constructorValue["prototype"]["_hasUsableMessage"] = JS.method1(errorEventHasUsableMessage);
+  constructorValue["prototype"]["_buildLocationStack"] = JS.method1(errorEventBuildLocationStack);
+  return finishConstructor(constructorValue, "ErrorEventCoercer");
 }
 
 export JsValue ErrorEventCoercer = createErrorEventCoercer();
@@ -274,10 +294,14 @@ JsValue eventCoerce(JsValue self, JsValue event, JsValue context) {
 }
 
 JsValue createEventCoercer() {
-  JsValue constructorValue = makeConstructor("EventCoercer");
-  defineMethod(constructorValue, "match", JS.method1(eventMatch));
-  defineMethod(constructorValue, "coerce", JS.method2(eventCoerce));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "EventCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(eventMatch);
+  constructorValue["prototype"]["coerce"] = JS.method2(eventCoerce);
+  return finishConstructor(constructorValue, "EventCoercer");
 }
 
 export JsValue EventCoercer = createEventCoercer();
@@ -385,16 +409,20 @@ JsValue objectCoerce(JsValue self, JsValue candidate, JsValue context) {
 }
 
 JsValue createObjectCoercer() {
-  JsValue constructorValue = makeConstructor("ObjectCoercer");
-  defineMethod(constructorValue, "match", JS.method1(objectMatch));
-  defineMethod(constructorValue, "coerce", JS.method2(objectCoerce));
-  defineMethod(constructorValue, "getType", JS.method1(objectGetType));
-  defineMethod(constructorValue, "getValue", JS.method1(objectGetValue));
-  defineMethod(constructorValue, "isSeverityLevel", JS.method1(objectIsSeverityLevel));
-  defineMethod(constructorValue, "getStack", JS.method1(objectGetStack));
-  defineMethod(constructorValue, "getErrorPropertyFromObject", JS.method1(objectGetErrorProperty));
-  defineMethod(constructorValue, "getObjectClassName", JS.method1(objectGetClassName));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "ObjectCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(objectMatch);
+  constructorValue["prototype"]["coerce"] = JS.method2(objectCoerce);
+  constructorValue["prototype"]["getType"] = JS.method1(objectGetType);
+  constructorValue["prototype"]["getValue"] = JS.method1(objectGetValue);
+  constructorValue["prototype"]["isSeverityLevel"] = JS.method1(objectIsSeverityLevel);
+  constructorValue["prototype"]["getStack"] = JS.method1(objectGetStack);
+  constructorValue["prototype"]["getErrorPropertyFromObject"] = JS.method1(objectGetErrorProperty);
+  constructorValue["prototype"]["getObjectClassName"] = JS.method1(objectGetClassName);
+  return finishConstructor(constructorValue, "ObjectCoercer");
 }
 
 export JsValue ObjectCoercer = createObjectCoercer();
@@ -413,10 +441,14 @@ JsValue primitiveCoerce(JsValue self, JsValue value, JsValue context) {
 }
 
 JsValue createPrimitiveCoercer() {
-  JsValue constructorValue = makeConstructor("PrimitiveCoercer");
-  defineMethod(constructorValue, "match", JS.method1(primitiveMatch));
-  defineMethod(constructorValue, "coerce", JS.method2(primitiveCoerce));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "PrimitiveCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(primitiveMatch);
+  constructorValue["prototype"]["coerce"] = JS.method2(primitiveCoerce);
+  return finishConstructor(constructorValue, "PrimitiveCoercer");
 }
 
 export JsValue PrimitiveCoercer = createPrimitiveCoercer();
@@ -469,12 +501,16 @@ JsValue promiseCoerce(JsValue self, JsValue error, JsValue context) {
 }
 
 JsValue createPromiseRejectionEventCoercer() {
-  JsValue constructorValue = makeConstructor("PromiseRejectionEventCoercer");
-  defineMethod(constructorValue, "match", JS.method1(promiseMatch));
-  defineMethod(constructorValue, "isCustomEventWrappingRejection", JS.method1(promiseIsCustomEvent));
-  defineMethod(constructorValue, "coerce", JS.method2(promiseCoerce));
-  defineMethod(constructorValue, "getUnhandledRejectionReason", JS.method1(promiseGetReason));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "PromiseRejectionEventCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(promiseMatch);
+  constructorValue["prototype"]["isCustomEventWrappingRejection"] = JS.method1(promiseIsCustomEvent);
+  constructorValue["prototype"]["coerce"] = JS.method2(promiseCoerce);
+  constructorValue["prototype"]["getUnhandledRejectionReason"] = JS.method1(promiseGetReason);
+  return finishConstructor(constructorValue, "PromiseRejectionEventCoercer");
 }
 
 export JsValue PromiseRejectionEventCoercer = createPromiseRejectionEventCoercer();
@@ -516,11 +552,15 @@ JsValue stringCoerce(JsValue self, JsValue input, JsValue context) {
 }
 
 JsValue createStringCoercer() {
-  JsValue constructorValue = makeConstructor("StringCoercer");
-  defineMethod(constructorValue, "match", JS.method1(stringMatch));
-  defineMethod(constructorValue, "coerce", JS.method2(stringCoerce));
-  defineMethod(constructorValue, "getInfos", JS.method1(stringGetInfos));
-  return constructorValue;
+  JsValue constructorValue = undef();
+  constructorValue = JS.methodRest((JsValue self, JsValue args) => {
+    requireConstructorReceiver(self, constructorValue, "StringCoercer");
+    return self;
+  });
+  constructorValue["prototype"]["match"] = JS.method1(stringMatch);
+  constructorValue["prototype"]["coerce"] = JS.method2(stringCoerce);
+  constructorValue["prototype"]["getInfos"] = JS.method1(stringGetInfos);
+  return finishConstructor(constructorValue, "StringCoercer");
 }
 
 export JsValue StringCoercer = createStringCoercer();

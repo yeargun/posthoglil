@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="LilScript ports selected posthog-js 1.418.10 surfaces: the capture kernel plus tabbed surveys, error-tracking, OTLP, autocapture, and session-replay benchmarks."
+      content="Exact LilScript ports of selected posthog-js 1.418.10 web SDK modules, with tabbed Oxc, Terser, esbuild, raw, gzip, and Brotli receipts."
     />
     <meta name="theme-color" content="#f54e00" />
-    <title>itslil/posthog-js — selected posthog-js 1.418.10 modules through LilScript</title>
+    <title>itslil/posthog-js — smaller web SDK modules through LilScript</title>
     <link rel="stylesheet" href="./styles.css" />
     <script type="module" src="./app.js"></script>
   </head>
@@ -31,64 +31,58 @@
     <main id="top">
       <section class="hero shell">
         <div class="hero-copy">
-          <p class="eyebrow"><span class="live-dot"></span> posthog-js 1.418.10 · LilScript subset · @itslil/posthog-js</p>
-          <h1>Capture<br /><em>kernel.</em></h1>
+          <p class="eyebrow"><span class="live-dot"></span> posthog-js 1.418.10 · exact LilScript subpaths · @itslil/posthog-js</p>
+          <h1>Web SDK<br /><em>modules.</em></h1>
           <p class="lede">
-            This is not PostHog and not the published <code>posthog-js</code> browser bundle.
-            It is thirteen modules from <code>posthog-js@1.418.10</code> — UUID, feature-flag
-            utils, cookie identity, request routing, token and bucketed rate limits, queue
-            batching, bot detection, and the portable string / number / type / JSON / URL
-            helpers — rewritten in LilScript. Five independent subpaths add surveys,
-            error tracking, pure OTLP helpers, the complete autocapture utility module,
-            and a session-replay network / buffer core without pulling them into the root
-            kernel. The client class, active recorder, and network transport remain absent
-            from the root package. Every number on this page
-            compares that same official kernel, then Vite 8 Oxc, Terser, and esbuild, with
-            the settings named on each row. The headline is the direct Brotli-scored
-            compiler artifact. The npm ESM adds its license banner and is reported
-            separately; gzip and raw each have their own compile.
+            Complete autocapture utilities, a session-replay network and buffer core,
+            surveys, error tracking, and pure OTLP helpers from
+            <code>posthog-js@1.418.10</code>, each shipped as an independent LilScript
+            subpath. The headline is the largest verified win: the full autocapture utility
+            module against its untouched official source bundle minified by Vite 8 Oxc.
+            Pick a module below for its exact exports, compatibility suite, and every raw,
+            gzip, and Brotli receipt. The smaller capture kernel remains documented further
+            down; it is no longer the headline.
           </p>
           <div class="install-row">
             <code>npm install @itslil/posthog-js</code>
             <button class="copy" data-copy="npm install @itslil/posthog-js" type="button">copy</button>
           </div>
           <div class="hero-actions">
-            <a class="button primary" href="#evidence">Size receipts</a>
+            <a class="button primary" href="#packs">Module receipts</a>
             <a class="button secondary" href="https://github.com/yeargun/posthoglil">GitHub ↗</a>
           </div>
         </div>
 
         <div class="scoreboard" aria-label="Compression results">
           <div class="score-main">
-            <span class="score-label">Direct compiler output, Brotli-11, against the official kernel minified by Vite 8 Oxc</span>
+            <span class="score-label">Autocapture utilities · direct compiler output · Brotli-11 vs Vite 8 Oxc</span>
             <strong id="hero-ratio">—<span>smaller</span></strong>
             <p id="hero-bytes"></p>
           </div>
           <div class="score-grid">
-            <div><strong id="hero-shipped">—</strong><span>Brotli-scored compiler output vs Oxc</span></div>
-            <div><strong id="hero-package">—</strong><span>packaged ESM, including license banner</span></div>
-            <div><strong id="hero-gzip">—</strong><span>gzip-9, previous verified objective snapshot</span></div>
-            <div><strong id="hero-raw">—</strong><span>raw, previous verified objective snapshot</span></div>
-            <div><strong id="hero-spec">—</strong><span>compat tests vs official kernel</span></div>
+            <div><strong id="hero-shipped">—</strong><span>session replay core · Brotli-11 vs Oxc</span></div>
+            <div><strong id="hero-package">—</strong><span>surveys · Brotli-11 vs Oxc</span></div>
+            <div><strong id="hero-gzip">—</strong><span>large-module Brotli wins</span></div>
+            <div><strong id="hero-raw">—</strong><span>independent package subpaths</span></div>
+            <div><strong id="hero-spec">—</strong><span>differential groups vs official modules</span></div>
           </div>
           <p class="score-note">
-            Official rows are one kernel file, then Oxc, Terser, or esbuild, measured three ways.
-            LilScript searches a different artifact for each <code>cost_model</code>, so the gzip
-            and raw numbers come from those compiles. The npm ESM adds a 91-byte raw license
-            banner, so its packaged size is a separate row rather than compiler credit.
-            Brotli is still the headline. The published PostHog IIFE is not a lane.
-            If LilScript is larger, the scoreboard says so.
+            Each tab bundles one untouched module graph from the pinned PostHog git
+            submodule, then runs Oxc, Terser, and esbuild with the named settings.
+            LilScript is measured directly, without post-minification or package metadata.
+            The published PostHog browser bundle is not a lane, and losing rows remain
+            visible in the module tables.
           </p>
         </div>
       </section>
 
       <section class="ticker" aria-label="Ported modules">
         <div>
-          uuidv7 <span>✦</span> uuidv4 <span>✦</span> feature flags <span>✦</span> cookies
-          <span>✦</span> consent <span>✦</span> request router <span>✦</span> token bucket
-          <span>✦</span> queue batching <span>✦</span> bot detection <span>✦</span> strings
-          <span>✦</span> numbers <span>✦</span> types <span>✦</span> sanitize
-          <span>✦</span> url <span>✦</span> bucketed limiter
+          autocapture <span>✦</span> replay network <span>✦</span> replay buffer
+          <span>✦</span> surveys <span>✦</span> error coercion <span>✦</span> stack parsing
+          <span>✦</span> OTLP logs <span>✦</span> OTLP metrics <span>✦</span> exact exports
+          <span>✦</span> differential tests <span>✦</span> raw <span>✦</span> gzip
+          <span>✦</span> Brotli
         </div>
       </section>
 

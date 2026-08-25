@@ -1,0 +1,26 @@
+# Same as lilscript.deep.toml, plus a larger local-name reserve.
+#
+# `local_name_reserve` has a per-artifact optimum and no defensible default: a
+# sweep at this budget put the best value at 96 for error-tracking and 8 for
+# otlp, a 203-byte and a 50-byte Brotli spread. It is not a candidate-search
+# family -- adding one was measured and lost, because proposal work units are
+# the scarce resource and the extra breadth displaced deeper families
+# (error-tracking +75 Brotli). Until that budget question is settled, the value
+# is picked per pack from a sweep.
+[javascript]
+priority = "size-first"
+optimization_level = 15
+cost_model = "brotli"
+assume_pristine_builtins = true
+strip_console = true
+local_name_reserve = 48
+candidate_search = "always"
+candidate_proposal_limit = 1536
+terminal_codec_probe_limit = 1536
+
+[mangle]
+identifiers = true
+properties = true
+exports = false
+extern_fields = true
+pool_strings = true

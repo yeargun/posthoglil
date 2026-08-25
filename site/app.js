@@ -88,6 +88,15 @@ function laneById(id) {
   return data.size.find((lane) => lane.id === id)
 }
 
+function packResult(id) {
+  const pack = (data.packs ?? []).find((candidate) => candidate.id === id)
+  if (!pack) return null
+  const baseline = pack.lanes.find((lane) => lane.baseline)
+  const primary = pack.lanes.find((lane) => lane.primary)
+  if (!baseline || !primary) return null
+  return { pack, baseline, primary, verdict: smallerThan(primary.brotli11, baseline.brotli11) }
+}
+
 function barClass(id) {
   if (
     id === "itslil" ||
@@ -140,30 +149,23 @@ function matchedLibraryRow() {
 }
 
 function renderHero() {
-  const oxc = laneById("kernel-oxc-mangle")
-  const itslil = laneById("itslil")
-  const packaged = laneById("itslil-package")
-  const gzip = laneById("itslil-gzip")
-  const bytes = laneById("itslil-bytes")
-  document.querySelector("#hero-spec").textContent = "21/21"
-  if (!oxc || !itslil) return
-  const smaller = smallerThan(itslil.brotli11, oxc.brotli11)
-  document.querySelector("#hero-ratio").innerHTML = `${smaller.amount}<span>${smaller.word}</span>`
+  const autocapture = packResult("autocapture")
+  const replay = packResult("replay-core")
+  const surveys = packResult("surveys")
+  const showcase = [autocapture, replay, surveys].filter(Boolean)
+  const packs = data.packs ?? []
+  const differentialGroups = packs.reduce((total, pack) => total + pack.differentialGroups, 0)
+  document.querySelector("#hero-raw").textContent = String(packs.length)
+  document.querySelector("#hero-spec").textContent = `${differentialGroups}/${differentialGroups}`
+  document.querySelector("#hero-gzip").textContent =
+    `${showcase.filter((result) => result.verdict.state === "win").length}/${showcase.length}`
+  if (replay) document.querySelector("#hero-shipped").textContent = replay.verdict.text
+  if (surveys) document.querySelector("#hero-package").textContent = surveys.verdict.text
+  if (!autocapture) return
+  document.querySelector("#hero-ratio").innerHTML =
+    `${autocapture.verdict.amount}<span>${autocapture.verdict.word}</span>`
   document.querySelector("#hero-bytes").textContent =
-    `${formatter.format(oxc.brotli11)} B → ${formatter.format(itslil.brotli11)} B Brotli-11`
-  document.querySelector("#hero-shipped").textContent = smallerThan(itslil.brotli11, oxc.brotli11).text
-  if (packaged) {
-    document.querySelector("#hero-package").textContent = smallerThan(
-      packaged.brotli11,
-      oxc.brotli11,
-    ).text
-  }
-  if (gzip) {
-    document.querySelector("#hero-gzip").textContent = smallerThan(gzip.gzip9, oxc.gzip9).text
-  }
-  if (bytes) {
-    document.querySelector("#hero-raw").textContent = smallerThan(bytes.raw, oxc.raw).text
-  }
+    `${formatter.format(autocapture.baseline.brotli11)} B → ${formatter.format(autocapture.primary.brotli11)} B Brotli-11`
 }
 
 function renderSize() {

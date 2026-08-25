@@ -69,6 +69,18 @@ describe("github pages artifact", () => {
     assert.match(app, /pack\.lanes/)
   })
 
+  it("leads with the larger module wins instead of the narrow kernel result", () => {
+    const html = readFileSync(resolve(site, "index.html"), "utf8")
+    const app = readFileSync(resolve(site, "app.js"), "utf8")
+    assert.match(html, /Web SDK/i)
+    assert.match(html, /Autocapture utilities · direct compiler output/i)
+    assert.match(html, /The smaller capture kernel remains documented further down/i)
+    assert.doesNotMatch(html, /<h1>Capture/)
+    assert.match(app, /packResult\("autocapture"\)/)
+    assert.match(app, /packResult\("replay-core"\)/)
+    assert.match(app, /packResult\("surveys"\)/)
+  })
+
   it("exposes the published package name and fair minify lanes", () => {
     const html = readFileSync(resolve(site, "index.html"), "utf8")
     assert.match(html, /@itslil\/posthog-js/)
@@ -82,7 +94,7 @@ describe("github pages artifact", () => {
     assert.match(html, /Brotli-11/)
     assert.match(html, /gzip-9/)
     assert.match(html, /not the published/)
-    assert.match(html, /If LilScript is larger/)
+    assert.match(html, /losing rows remain/i)
     assert.doesNotMatch(html, /the full SDK is smaller/)
   })
 

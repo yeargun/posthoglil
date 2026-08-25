@@ -1,0 +1,21 @@
+# Same objective as lilscript.toml, but with the candidate beam actually able to
+# finish. `production` caps the proposal budget at 384 and then scales it by
+# artifact size, so an 18 KiB module gets 96 work units against ~38 beam
+# families and the search exhausts before it reaches the naming and class-shape
+# ones. Costs roughly 2x compile time and pays Brotli on every pack measured.
+[javascript]
+priority = "size-first"
+optimization_level = 15
+cost_model = "brotli"
+assume_pristine_builtins = true
+strip_console = true
+candidate_search = "always"
+candidate_proposal_limit = 1536
+terminal_codec_probe_limit = 1536
+
+[mangle]
+identifiers = true
+properties = true
+exports = false
+extern_fields = true
+pool_strings = true

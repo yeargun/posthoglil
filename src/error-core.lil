@@ -249,16 +249,17 @@ JsValue createExceptionStepsBuffer() {
   JsValue constructorValue = undef();
   func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
     requireNew(self, constructorValue, "ExceptionStepsBuffer");
-    return stepsConstructor(self, args);
+    stepsConstructor(self, args);
+    return self;
   };
-  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ExceptionStepsBuffer", 1);
-  runtimeMethod(constructorValue, "setConfig", JS.method1(stepsSetConfig));
-  runtimeMethod(constructorValue, "add", JS.method1(stepsAdd));
-  runtimeMethod(constructorValue, "getAttachable", JS.method0(stepsGetAttachable));
-  runtimeMethod(constructorValue, "clear", JS.method0(stepsClear));
-  runtimeMethod(constructorValue, "size", JS.method0(stepsSize));
-  runtimeMethod(constructorValue, "_trimToMaxBytes", JS.method0(stepsTrim));
-  return constructorValue;
+  constructorValue = JS.methodRest(constructorCallback);
+  constructorValue["prototype"]["setConfig"] = JS.method1(stepsSetConfig);
+  constructorValue["prototype"]["add"] = JS.method1(stepsAdd);
+  constructorValue["prototype"]["getAttachable"] = JS.method0(stepsGetAttachable);
+  constructorValue["prototype"]["clear"] = JS.method0(stepsClear);
+  constructorValue["prototype"]["size"] = JS.method0(stepsSize);
+  constructorValue["prototype"]["_trimToMaxBytes"] = JS.method0(stepsTrim);
+  return runtimeConstructor(constructorValue, "ExceptionStepsBuffer", 1);
 }
 
 export JsValue ExceptionStepsBuffer = createExceptionStepsBuffer();
@@ -299,13 +300,14 @@ JsValue createReduceableCache() {
   JsValue constructorValue = undef();
   func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
     requireNew(self, constructorValue, "ReduceableCache");
-    return cacheConstructor(self, args);
+    cacheConstructor(self, args);
+    return self;
   };
-  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ReduceableCache", 1);
-  runtimeMethod(constructorValue, "get", JS.method1(cacheGet));
-  runtimeMethod(constructorValue, "set", JS.method2(cacheSet));
-  runtimeMethod(constructorValue, "reduce", JS.method0(cacheReduce));
-  return constructorValue;
+  constructorValue = JS.methodRest(constructorCallback);
+  constructorValue["prototype"]["get"] = JS.method1(cacheGet);
+  constructorValue["prototype"]["set"] = JS.method2(cacheSet);
+  constructorValue["prototype"]["reduce"] = JS.method0(cacheReduce);
+  return runtimeConstructor(constructorValue, "ReduceableCache", 1);
 }
 
 export JsValue ReduceableCache = createReduceableCache();
@@ -585,24 +587,23 @@ JsValue createErrorPropertiesBuilder() {
   JsValue constructorValue = undef();
   func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
     requireNew(self, constructorValue, "ErrorPropertiesBuilder");
-    return builderConstructor(self, args);
+    builderConstructor(self, args);
+    return self;
   };
-  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ErrorPropertiesBuilder", 2);
-  JsValue buildMethod = JS.method2(builderBuildFromUnknown);
-  setFunctionLength(buildMethod, 1);
-  runtimeMethod(constructorValue, "buildFromUnknown", buildMethod);
-  runtimeMethod(constructorValue, "modifyFrames", JS.method1(builderModifyFrames));
-  runtimeMethod(constructorValue, "coerceFallback", JS.method1(fallbackException));
-  runtimeMethod(constructorValue, "parseStacktrace", JS.method2(builderParseStacktrace));
-  runtimeMethod(constructorValue, "applyChunkIds", JS.method2(builderApplyChunkIds));
-  runtimeMethod(constructorValue, "applyCoercers", JS.method2(builderApplyCoercers));
-  runtimeMethod(constructorValue, "applyModifiers", JS.method1(builderApplyModifiers));
-  runtimeMethod(constructorValue, "convertToExceptionList", JS.method2(builderConvertList));
-  runtimeMethod(constructorValue, "buildParsingContext", JS.method1(builderBuildParsingContext));
-  JsValue buildContextMethod = JS.method3(builderBuildCoercingContext);
-  setFunctionLength(buildContextMethod, 2);
-  runtimeMethod(constructorValue, "buildCoercingContext", buildContextMethod);
-  return constructorValue;
+  constructorValue = JS.methodRest(constructorCallback);
+  constructorValue["prototype"]["buildFromUnknown"] = JS.method2(builderBuildFromUnknown);
+  setFunctionLength(constructorValue["prototype"]["buildFromUnknown"], 1);
+  constructorValue["prototype"]["modifyFrames"] = JS.method1(builderModifyFrames);
+  constructorValue["prototype"]["coerceFallback"] = JS.method1(fallbackException);
+  constructorValue["prototype"]["parseStacktrace"] = JS.method2(builderParseStacktrace);
+  constructorValue["prototype"]["applyChunkIds"] = JS.method2(builderApplyChunkIds);
+  constructorValue["prototype"]["applyCoercers"] = JS.method2(builderApplyCoercers);
+  constructorValue["prototype"]["applyModifiers"] = JS.method1(builderApplyModifiers);
+  constructorValue["prototype"]["convertToExceptionList"] = JS.method2(builderConvertList);
+  constructorValue["prototype"]["buildParsingContext"] = JS.method1(builderBuildParsingContext);
+  constructorValue["prototype"]["buildCoercingContext"] = JS.method3(builderBuildCoercingContext);
+  setFunctionLength(constructorValue["prototype"]["buildCoercingContext"], 2);
+  return runtimeConstructor(constructorValue, "ErrorPropertiesBuilder", 2);
 }
 
 export JsValue ErrorPropertiesBuilder = createErrorPropertiesBuilder();
