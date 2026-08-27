@@ -104,9 +104,9 @@
     {
       "id": "itslil",
       "name": "LilScript compiler · cost_model brotli",
-      "raw": 16683,
-      "gzip9": 6381,
-      "brotli11": 5606,
+      "raw": 16585,
+      "gzip9": 6479,
+      "brotli11": 5736,
       "note": "Direct compiler output, not post-minified and without package metadata. Verified by all 21 compatibility cases.",
       "primary": true,
       "baseline": false,
