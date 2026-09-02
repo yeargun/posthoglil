@@ -1,6 +1,6 @@
 {
   "name": "@itslil/posthog-js",
-  "version": "1.418.10",
+  "version": "1.418.11",
   "description": "Selected posthog-js 1.418.10 surfaces rewritten in LilScript: a capture kernel plus surveys, error-tracking, OTLP, autocapture, and replay-core subpaths — not the full SDK.",
   "keywords": [
     "posthog",

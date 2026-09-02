@@ -5,7 +5,12 @@ cost_model = "brotli"
 assume_pristine_builtins = true
 strip_console = true
 local_name_reserve = 48
-candidate_search = "production"
+candidate_search = "always"
+# Beam width is not monotone: 12 gives 5668 brotli, 22-26 give 5621, and 32/48/64/96
+# all regress to 5720-5755. It selects which basin the terminal search lands in, so it
+# is tuned, not raised. 22, 24 and 26 all reach the same artifact, so 24 sits in the
+# middle of a stable plateau rather than on a spike.
+candidate_beam_width = 24
 
 [mangle]
 identifiers = true
