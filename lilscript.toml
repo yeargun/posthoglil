@@ -1,4 +1,7 @@
 [javascript]
+# 8.14 (measured on this port): arrow function expressions beat the
+# Brotli default of `function` here -- remarklil -109, posthoglil -59.
+function_spelling = "arrow"
 # 8.4 (measured, ten pool ports): the terminal's idiom-directed naming search
 # is a per-port win -- this port -92/-32/-19/-6 Brotli, rehypelil +209 -- so it is
 # declared here rather than defaulted on.
