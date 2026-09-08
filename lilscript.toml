@@ -1,4 +1,8 @@
 [javascript]
+# 8.4 (measured, ten pool ports): the terminal's idiom-directed naming search
+# is a per-port win -- this port -92/-32/-19/-6 Brotli, rehypelil +209 -- so it is
+# declared here rather than defaulted on.
+idiom_directed_naming = true
 priority = "size-first"
 optimization_level = 15
 cost_model = "brotli"
