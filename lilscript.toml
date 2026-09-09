@@ -15,6 +15,9 @@ candidate_search = "always"
 # is tuned, not raised. 22, 24 and 26 all reach the same artifact, so 24 sits in the
 # middle of a stable plateau rather than on a spike.
 candidate_beam_width = 24
+# 8.15 (measured on the shipped artifact): the terminal cleanup chain is worth
+# -6 Brotli here (5629 -> 5623 against Oxc's 5622), a dead heat with the bar.
+terminal_cleanup_chain = true
 
 [mangle]
 identifiers = true
