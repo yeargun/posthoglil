@@ -18,6 +18,11 @@ candidate_beam_width = 24
 # 8.15 (measured on the shipped artifact): the terminal cleanup chain is worth
 # -6 Brotli here (5629 -> 5623 against Oxc's 5622), a dead heat with the bar.
 terminal_cleanup_chain = true
+# 8.20 (measured on the shipped artifact): the candidate byte budget is another
+# basin dial, not a depth dial -- 1 MiB (the default) 5623, 4 MiB 5662, 16 MiB
+# 5606, 64 MiB 5649. At 16 MiB this port passes Oxc's 5622. The same bump is
+# neutral on six of the other nine and costs remarklil 619, so it is declared here.
+candidate_byte_budget = 16777216
 
 [mangle]
 identifiers = true
