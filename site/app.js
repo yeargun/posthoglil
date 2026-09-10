@@ -141,10 +141,10 @@ function matchedLibraryRow() {
 
 function renderHero() {
   const oxc = laneById("kernel-oxc-mangle")
-  const itslil = laneById("itslil")
-  const packaged = laneById("itslil-package")
-  const gzip = laneById("itslil-gzip")
-  const bytes = laneById("itslil-bytes")
+  const itslil = laneById("itslil-package")
+  const packaged = laneById("itslil")
+  const gzip = itslil
+  const bytes = itslil
   document.querySelector("#hero-spec").textContent = "21/21"
   if (!oxc || !itslil) return
   const smaller = smallerThan(itslil.brotli11, oxc.brotli11)

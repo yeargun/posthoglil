@@ -82,7 +82,7 @@ describe("github pages artifact", () => {
     assert.match(html, /Brotli-11/)
     assert.match(html, /gzip-9/)
     assert.match(html, /not the published/)
-    assert.match(html, /If LilScript is larger/)
+    assert.match(html, /All three headline sizes measure the same files/)
     assert.doesNotMatch(html, /the full SDK is smaller/)
   })
 

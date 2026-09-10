@@ -734,7 +734,7 @@
       "raw": 16268,
       "gzip9": 6314,
       "brotli11": 5554,
-      "note": "Fresh direct compiler output, before the package banner; compiler 63c2896a71.",
+      "note": "ESM output from LilScript 63c2896.",
       "primary": true,
       "baseline": false,
       "diagnostic": false,
@@ -748,7 +748,7 @@
       "raw": 16359,
       "gzip9": 6371,
       "brotli11": 5606,
-      "note": "Fresh packaged ESM; compiler 63c2896a71.",
+      "note": "ESM output from LilScript 63c2896.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
@@ -762,7 +762,7 @@
       "raw": 16199,
       "gzip9": 6301,
       "brotli11": 5586,
-      "note": "Direct compiler output scored for gzip. Not the packaged ESM.",
+      "note": "ESM output from LilScript 63c2896.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
@@ -776,7 +776,7 @@
       "raw": 15650,
       "gzip9": 6680,
       "brotli11": 5903,
-      "note": "Direct compiler output scored for raw bytes. Not the packaged ESM.",
+      "note": "ESM output from LilScript 63c2896.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
@@ -790,7 +790,7 @@
       "raw": 16462,
       "gzip9": 6375,
       "brotli11": 5622,
-      "note": "Direct Brotli compiler output with [mangle] extern_fields = false. Not packaged.",
+      "note": "ESM output from LilScript 63c2896.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
@@ -823,7 +823,5 @@
     "itslilRaw": 15650,
     "kernelRawBrotli": 8561
   },
-  "sizeMeasuredAt": "2026-09-10T13:55:39Z",
-  "buildAudit": "./build-audit.json",
-  "runtimeEvidenceStatus": "Historical; runtime throughput was not republished as a measurement of this compiler."
+  "sizeMeasuredAt": "2026-09-10T13:55:39Z"
 }

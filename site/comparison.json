@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-09-10T13:55:39Z",
+  "name": "posthoglil",
+  "compiler": {
+    "commit": "63c2896a71e60cbcca7870fe979f9d6ecaff3452",
+    "sha256": "2319462ef7d858c8e2a5a767260aa4f80d325e0045afa0cc86cc122d1299b059",
+    "profile": "release",
+    "dirty": false
+  },
+  "upstream": {
+    "package": "posthog-js",
+    "version": "1.418.10"
+  },
+  "scope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
+  "compatibility": "Repository checks pass.",
+  "tests": {
+    "pass": 21,
+    "total": 21
+  },
+  "buildComplete": true,
+  "machine": {
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "logicalCpus": 16,
+    "memoryBytes": 33648435200,
+    "os": "Ubuntu 24.04.4 LTS",
+    "node": "v22.23.2",
+    "rayonThreads": 16,
+    "provider": "Azure",
+    "instanceClass": "Standard_D16als_v7"
+  },
+  "build": {
+    "compilerSeconds": 20.284015655517578,
+    "packageSeconds": 55.0084818480002,
+    "originalSeconds": 0.08405857599999998,
+    "packageScope": "node scripts/build.mjs --compile --force; 4 successful compiler invocations plus package generation.",
+    "originalScope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
+    "protocol": "Same shared worker for both lanes; one fresh LilScript package build; median of three sequential upstream ESM builds (PlayCanvas records one native reference build). Outside compiler jobs were observed in the pool, so contention is not excluded. Dependencies, tests and compression measurement are outside these build times."
+  },
+  "esm": {
+    "lilscript": {
+      "raw": 16359,
+      "gzip9": 6371,
+      "brotli11": 5606,
+      "sha256": "e3b95f5d7710853a37817534297486a7d469c3dea5642ffbfdbdc1efea4904c4",
+      "file": "./esm-comparison/lilscript.js"
+    },
+    "original": {
+      "raw": 16344,
+      "gzip9": 6238,
+      "brotli11": 5639,
+      "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98",
+      "file": "./esm-comparison/original.js"
+    }
+  }
+}
