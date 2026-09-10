@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "name": "posthoglil",
+  "measuredAt": "2026-09-10T13:55:39Z",
+  "status": "verified",
+  "buildPassed": true,
+  "summary": "The fresh artifact was checked against the repository test command.",
+  "sourceCommit": "673f757a7a25247d2238198132149cc30ecd5a80",
+  "previousPublicCommit": "5392877626ebe47b38744472f28a5957ba6a9882",
+  "compiler": {
+    "commit": "63c2896a71e60cbcca7870fe979f9d6ecaff3452",
+    "sha256": "2319462ef7d858c8e2a5a767260aa4f80d325e0045afa0cc86cc122d1299b059",
+    "profile": "release",
+    "dirty": false
+  },
+  "machine": {
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "logicalCpus": 16,
+    "affinityCpus": 16,
+    "memoryBytes": 33648435200,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.17.0-1022-azure",
+    "architecture": "x86_64",
+    "node": "v22.23.2",
+    "rayonThreads": 16,
+    "provider": "Azure",
+    "instanceClass": "Standard_D16als_v7",
+    "parallelPortBuildsOnMachine": 1,
+    "loadAtStart": [
+      0.18701171875,
+      0.04736328125,
+      0.01513671875
+    ],
+    "loadAtEnd": [
+      9.08837890625,
+      2.55419921875,
+      0.87451171875
+    ],
+    "concurrencyNote": "The audit scheduled one port per worker, but this is a shared pool. Outside compiler jobs were observed during the run; timings are contextual wall times, not controlled speedup benchmarks."
+  },
+  "upstream": {
+    "name": "posthoglil",
+    "package": "posthog-js",
+    "pinned": "1.418.10",
+    "latest": "1.429.2",
+    "source": "https://www.npmjs.com/package/posthog-js"
+  },
+  "comparisonScope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK Sizes use canonical zlib 1.3.1 gzip-9 and Google Brotli 1.1.0 quality 11.",
+  "sizes": {
+    "previous": {
+      "id": "itslil-package",
+      "name": "@itslil/posthog-js \u00b7 packaged ESM",
+      "raw": 16572,
+      "gzip9": 6387,
+      "brotli11": 5621,
+      "note": "The same Brotli-scored output with the package license banner added.",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
+    },
+    "current": {
+      "path": "dist/posthog.esm.js",
+      "raw": 16359,
+      "gzip9": 6371,
+      "brotli11": 5606,
+      "sha256": "e3b95f5d7710853a37817534297486a7d469c3dea5642ffbfdbdc1efea4904c4"
+    },
+    "upstream": {
+      "path": ".page-audit/upstream/official.esm.js",
+      "raw": 16344,
+      "gzip9": 6238,
+      "brotli11": 5639,
+      "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
+    }
+  },
+  "officialArtifacts": [
+    {
+      "path": ".page-audit/upstream/official.terser-nomangle.js",
+      "raw": 23299,
+      "gzip9": 7115,
+      "brotli11": 6456,
+      "sha256": "b01c2811cbaf81d673803a014ef927e17806ff54b03698c28054421bd0dd2af2"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-nomangle.js",
+      "raw": 22035,
+      "gzip9": 6955,
+      "brotli11": 6322,
+      "sha256": "3d07a8dbb23e4c7ca596931a8c4bfeb08235b5b245b2a16c3545f3b548605157"
+    },
+    {
+      "path": ".page-audit/upstream/official.esm.js",
+      "raw": 16344,
+      "gzip9": 6238,
+      "brotli11": 5639,
+      "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
+    },
+    {
+      "path": ".page-audit/upstream/official.unminified.js",
+      "raw": 35193,
+      "gzip9": 9732,
+      "brotli11": 8561,
+      "sha256": "08efdf436547476aae40b4e8fa236622413e443154eaa01afc4b0ff77d5677be"
+    },
+    {
+      "path": ".page-audit/upstream/official.esbuild.js",
+      "raw": 16551,
+      "gzip9": 6355,
+      "brotli11": 5775,
+      "sha256": "34b3eb157bc386440bb06e2c99923a6f332877951626556ba9007a7e3b3ed7d4"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-mangle.js",
+      "raw": 16124,
+      "gzip9": 6198,
+      "brotli11": 5639,
+      "sha256": "e42c30f420c8391dd0dd90f774e73783757c5d9d45b6d3bdc890d9df23bd466e"
+    }
+  ],
+  "candidateArtifacts": [
+    {
+      "path": "dist/posthog.umd.js",
+      "raw": 18506,
+      "gzip9": 6858,
+      "brotli11": 6096,
+      "sha256": "ea177a99b4ca190d0201ea0eba2d25c759ac7172d3efa74910d67a503545073b"
+    },
+    {
+      "path": "dist/posthog.cjs",
+      "raw": 18434,
+      "gzip9": 6832,
+      "brotli11": 6047,
+      "sha256": "83f64f1ed3dae1461149f64c7d31083648942b8ddf8909954d82700c1866ce45"
+    },
+    {
+      "path": "dist/posthog.closed.js",
+      "raw": 16462,
+      "gzip9": 6375,
+      "brotli11": 5622,
+      "sha256": "e9ae38561a827183618ed23bc0649cd3aa72b37f23ed733c28fc9d6b1dcca71f"
+    },
+    {
+      "path": "dist/posthog.gzip.js",
+      "raw": 16199,
+      "gzip9": 6301,
+      "brotli11": 5586,
+      "sha256": "c1aec7c91110b2b4c164df89fd5110fce0a0f7271d429e559f4bc8702470f957"
+    },
+    {
+      "path": "dist/posthog.raw.js",
+      "raw": 16268,
+      "gzip9": 6314,
+      "brotli11": 5554,
+      "sha256": "e16ec519f5638d30a7eab78bbe54d1ced91c55e62db4c4927abe4d40650c5aba"
+    },
+    {
+      "path": "dist/posthog.esm.js",
+      "raw": 16359,
+      "gzip9": 6371,
+      "brotli11": 5606,
+      "sha256": "e3b95f5d7710853a37817534297486a7d469c3dea5642ffbfdbdc1efea4904c4"
+    },
+    {
+      "path": "dist/posthog.bytes.js",
+      "raw": 15650,
+      "gzip9": 6680,
+      "brotli11": 5903,
+      "sha256": "dd755a510dd00d9cb803c796bbf6105d626396b2f05a994a584d75b41556e1b3"
+    },
+    {
+      "path": ".page-audit/upstream/official.esbuild.js",
+      "raw": 16551,
+      "gzip9": 6355,
+      "brotli11": 5775,
+      "sha256": "34b3eb157bc386440bb06e2c99923a6f332877951626556ba9007a7e3b3ed7d4"
+    },
+    {
+      "path": ".page-audit/upstream/official.terser-nomangle.js",
+      "raw": 23299,
+      "gzip9": 7115,
+      "brotli11": 6456,
+      "sha256": "b01c2811cbaf81d673803a014ef927e17806ff54b03698c28054421bd0dd2af2"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-mangle.js",
+      "raw": 16124,
+      "gzip9": 6198,
+      "brotli11": 5639,
+      "sha256": "e42c30f420c8391dd0dd90f774e73783757c5d9d45b6d3bdc890d9df23bd466e"
+    },
+    {
+      "path": ".page-audit/upstream/official.unminified.js",
+      "raw": 35193,
+      "gzip9": 9732,
+      "brotli11": 8561,
+      "sha256": "08efdf436547476aae40b4e8fa236622413e443154eaa01afc4b0ff77d5677be"
+    },
+    {
+      "path": ".page-audit/upstream/official.esm.js",
+      "raw": 16344,
+      "gzip9": 6238,
+      "brotli11": 5639,
+      "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-nomangle.js",
+      "raw": 22035,
+      "gzip9": 6955,
+      "brotli11": 6322,
+      "sha256": "3d07a8dbb23e4c7ca596931a8c4bfeb08235b5b245b2a16c3545f3b548605157"
+    }
+  ],
+  "timing": {
+    "primaryCompilerSeconds": 20.284015655517578,
+    "primaryScope": "One real compiler process, including code generation and codec-guided search; excludes subsequent package wrapping.",
+    "packageSeconds": 55.0084818480002,
+    "packageScope": "node scripts/build.mjs --compile --force; 4 successful compiler invocations plus package generation.",
+    "upstreamSeconds": 0.08405857599999998,
+    "upstreamScope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
+    "protocol": "Same shared worker for both lanes; one fresh LilScript package build; median of three sequential upstream ESM builds (PlayCanvas records one native reference build). Outside compiler jobs were observed in the pool, so contention is not excluded. Dependencies, tests and compression measurement are outside these build times.",
+    "upstreamSamples": [
+      {
+        "bundleSeconds": 0.014579464000000002,
+        "wallSeconds": 0.141812099
+      },
+      {
+        "bundleSeconds": 0.0050428540000000055,
+        "wallSeconds": 0.08405857599999998
+      },
+      {
+        "bundleSeconds": 0.003787134999999978,
+        "wallSeconds": 0.06948483699999997
+      }
+    ]
+  },
+  "behavior": {
+    "command": "node --test test/compat.test.mjs test/api.test.mjs",
+    "summary": "Repository test command passed (exit 0). # tests 21 \u00b7 # pass 21 \u00b7 # fail 0",
+    "before": {
+      "exitCode": 0,
+      "failures": [],
+      "logSha256": "eedb123cc784927fff77a60ae19bcc23ce87d89327a47b73166679b0f9afc215"
+    },
+    "after": {
+      "exitCode": 0,
+      "failures": [],
+      "tail": "TAP version 13\n# Subtest: @itslil/posthog-js JS library API\n    # Subtest: keeps every public kernel name exact in the compiler output\n    ok 1 - keeps every public kernel name exact in the compiler output\n      ---\n      duration_ms: 1.55889\n      type: 'test'\n      ...\n    # Subtest: exposes the same named surface as default\n    ok 2 - exposes the same named surface as default\n      ---\n      duration_ms: 1.163719\n      type: 'test'\n      ...\n    1..2\nok 1 - @itslil/posthog-js JS library API\n  ---\n  duration_ms: 3.321853\n  type: 'suite'\n  ...\n# Subtest: uuid\n    # Subtest: parses the official hyphenated, hex, brace, and urn forms\n    ok 1 - parses the official hyphenated, hex, brace, and urn forms\n      ---\n      duration_ms: 0.978682\n      type: 'test'\n      ...\n    # Subtest: matches official fromFieldsV7\n    ok 2 - matches official fromFieldsV7\n      ---\n      duration_ms: 0.152207\n      type: 'test'\n      ...\n    # Subtest: generates version-7 and version-4 strings\n    ok 3 - generates version-7 and version-4 strings\n      ---\n      duration_ms: 0.260249\n      type: 'test'\n      ...\n    1..3\nok 2 - uuid\n  ---\n  duration_ms: 1.926989\n  type: 'suite'\n  ...\n# Subtest: feature flags\n    # Subtest: normalizes v2 flags the same way\n    ok 1 - normalizes v2 flags the same way\n      ---\n      duration_ms: 0.680938\n      type: 'test'\n      ...\n    # Subtest: normalizes v1 flags the same way\n    ok 2 - normalizes v1 flags the same way\n      ---\n      duration_ms: 0.821698\n      type: 'test'\n      ...\n    # Subtest: minimizes $feature_flag_called properties from the same allowlist\n    ok 3 - minimizes $feature_flag_called properties from the same allowlist\n      ---\n      duration_ms: 0.188792\n      type: 'test'\n      ...\n    1..3\nok 3 - feature flags\n  ---\n  duration_ms: 1.818227\n  type: 'suite'\n  ...\n# Subtest: cookies and consent\n    # Subtest: sanitizes cookie names\n    ok 1 - sanitizes cookie names\n      ---\n      duration_ms: 0.221481\n      type: 'test'\n      ...\n    # Subtest: parses official cookie fixtures\n    ok 2 - parses official cookie fixtures\n      ---\n      duration_ms: 0.250585\n      type: 'test'\n      ...\n    # Subtest: roundtrips serialize \u2192 parse as anonymous\n    ok 3 - roundtrips serialize \u2192 parse as anonymous\n      ---\n      duration_ms: 0.155002\n      type: 'test'\n      ...\n    # Subtest: reads cookies from a header store\n    ok 4 - reads cookies from a header store\n      ---\n      duration_ms: 0.3009\n      type: 'test'\n      ...\n    # Subtest: matches consent cookie names and opt-out\n    ok 5 - matches consent cookie names and opt-out\n      ---\n      duration_ms: 0.157365\n      type: 'test'\n      ...\n    1..5\nok 4 - cookies and consent\n  ---\n  duration_ms: 1.290138\n  type: 'suite'\n  ...\n# Subtest: router, rate limit, queue\n    # Subtest: routes US, EU, custom, and app hosts\n    ok 1 - routes US, EU, custom, and app hosts\n      ---\n      duration_ms: 0.453838\n      type: 'test'\n      ...\n    # Subtest: matches the token-bucket updates\n    ok 2 - matches the token-bucket updates\n      ---\n      duration_ms: 0.198307\n      type: 'test'\n      ...\n    # Subtest: batches, offsets, and sorts unload requests\n    ok 3 - batches, offsets, and sorts unload requests\n      ---\n      duration_ms: 0.237936\n      type: 'test'\n      ...\n    1..3\nok 5 - router, rate limit, queue\n  ---\n  duration_ms: 0.954837\n  type: 'suite'\n  ...\n# Subtest: bot detection\n    # Subtest: matches the default blocked UA list and lookups\n    ok 1 - matches the default blocked UA list and lookups\n      ---\n      duration_ms: 0.256694\n      type: 'test'\n      ...\n    1..1\nok 6 - bot detection\n  ---\n  duration_ms: 0.294731\n  type: 'suite'\n  ...\n# Subtest: strings, numbers, types, json, url\n    # Subtest: matches string helpers and person-property hashes\n    ok 1 - matches string helpers and person-property hashes\n      ---\n      duration_ms: 0.258577\n      type: 'test'\n      ...\n    # Subtest: matches clamp, remote config, and sample-rate checks\n    ok 2 - matches clamp, remote config, and sample-rate checks\n      ---\n      duration_ms: 0.29501\n      type: 'test'\n      ...\n    # Subtest: matches portable type, json, and url helpers\n    ok 3 - matches portable type, json, and url helpers\n      ---\n      duration_ms: 0.364475\n      type: 'test'\n      ...\n    1..3\nok 7 - strings, numbers, types, json, url\n  ---\n  duration_ms: 0.983729\n  type: 'suite'\n  ...\n# Subtest: bucketed rate limiter\n    # Subtest: resolves config and consumes tokens the same way\n    ok 1 - resolves config and consumes tokens the same way\n      ---\n      duration_ms: 0.260559\n      type: 'test'\n      ...\n    1..1\nok 8 - bucketed rate limiter\n  ---\n  duration_ms: 0.297074\n  type: 'suite'\n  ...\n1..8\n# tests 21\n# suites 8\n# pass 21\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 76.745606\n",
+      "logSha256": "89219217dadb932ccb206857f1fad0f85e0c44ddffaa32b1689c327e08aa9184"
+    }
+  },
+  "findings": [
+    "5 committed port changes were absent from GitHub at the start of the audit.",
+    "Published-to-fresh Brotli drift: -15 bytes (-0.27%). This includes port source/config changes and compiler changes.",
+    "The root checkout compiler (54e1948) rejects config field terminal_cleanup_chain; today's migration/target-tree compiler is required.",
+    "Upstream version gap: pinned 1.418.10; npm latest was 1.429.2 at the audit. No compatibility upgrade is implied."
+  ],
+  "primaryArtifact": "dist/posthog.esm.js",
+  "beforePage": {
+    "url": "https://yeargun.github.io/posthoglil/",
+    "status": 200,
+    "sha256": "f8dab18526a8853dc62bc6aa66a394b143c59184518b44473899cd774158d1d7",
+    "lastModified": "Wed, 02 Sep 2026 15:25:34 GMT"
+  },
+  "codecSha256": "9257fd055728895c11b9c4b0d882895d7d11bb3dd3495f560123879ca2bc3cd6",
+  "publicationArtifacts": [
+    {
+      "path": "dist/posthog.umd.js",
+      "sha256": "ea177a99b4ca190d0201ea0eba2d25c759ac7172d3efa74910d67a503545073b"
+    },
+    {
+      "path": "dist/posthog.cjs",
+      "sha256": "83f64f1ed3dae1461149f64c7d31083648942b8ddf8909954d82700c1866ce45"
+    },
+    {
+      "path": "dist/posthog.esm.js",
+      "sha256": "e3b95f5d7710853a37817534297486a7d469c3dea5642ffbfdbdc1efea4904c4"
+    }
+  ],
+  "publicationPolicy": "Promote freshly tested distribution",
+  "publicationBase": "673f757a7a25247d2238198132149cc30ecd5a80",
+  "publicationSourceFingerprint": "c9eb7fe0fb006c2062b33678195778dd7b6d42fa88ca5b142d3f8e7a084608d9"
+}

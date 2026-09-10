@@ -43,3 +43,6 @@ for (const pack of ["surveys", "error-tracking", "otlp", "autocapture", "replay-
 await writeFile(join(output, "posthog-official.js"), await bundleOfficialKernel(root))
 await writeFile(join(output, ".nojekyll"), "")
 console.log(`Built GitHub Pages site at ${output}`)
+
+// Refuse publication if source or served artifacts drift from this measurement.
+await import("./build-audit.mjs").then(({writeAudit}) => writeAudit({root, output}));

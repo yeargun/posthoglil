@@ -1,5 +1,9 @@
 # @itslil/posthog-js
 
+<!-- current-build-audit -->
+**Build audit, 2026-09-10:** [verified; compiler, machine, build times, version gaps and behavior checks](https://yeargun.github.io/posthoglil/#build-audit). The [JSON receipt](site/build-audit.json) records the current comparison; older benchmark prose retains its original scope.
+
+
 This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It ports selected `posthog-js@1.418.10` surfaces to [LilScript](https://github.com/yeargun/lilscript): the original capture kernel plus five independent package lanes, including the complete autocapture utility module and a two-module session-replay core.
 
 It is not affiliated with PostHog. The `PostHog` client, active replay recorder, product tours, heatmaps, web vitals, network transport, and persistence adapters are absent. The five lanes are separate subpath exports and are never folded into the root kernel comparison.
