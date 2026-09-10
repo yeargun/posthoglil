@@ -1,0 +1,43 @@
+{
+  "source": {
+    "repository": "https://github.com/PostHog/posthog-js.git",
+    "commit": "3508c05bf4c70e99c4029c0638e00dd0d7949ec0",
+    "package": "posthog-js",
+    "version": "1.418.10",
+    "directory": "packages/browser"
+  },
+  "portSource": {
+    "commit": "673f757a7a25247d2238198132149cc30ecd5a80"
+  },
+  "compilerCommit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+  "install": [
+    "corepack",
+    "pnpm",
+    "install",
+    "--frozen-lockfile",
+    "--ignore-scripts",
+    "--filter",
+    "posthog-js..."
+  ],
+  "setup": [],
+  "build": [
+    "corepack",
+    "pnpm",
+    "exec",
+    "turbo",
+    "run",
+    "build",
+    "--filter=posthog-js...",
+    "--force"
+  ],
+  "clean": [
+    "packages/browser/lib",
+    "packages/browser/dist"
+  ],
+  "entry": "packages/browser/lib/src/posthog.js",
+  "defaultExport": false,
+  "external": [],
+  "esmScope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
+  "lilscriptBuild": "node scripts/build.mjs --compile --force",
+  "test": "node --test test/compat.test.mjs test/api.test.mjs"
+}

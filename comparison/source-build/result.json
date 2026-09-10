@@ -1,0 +1,886 @@
+{
+  "schemaVersion": 1,
+  "name": "posthoglil",
+  "startedAt": "2026-09-10T20:23:51Z",
+  "machine": {
+    "provider": "Azure",
+    "instanceClass": "Standard_D16als_v7",
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "logicalCpus": 16,
+    "memoryBytes": 33648435200,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.17.0-1022-azure",
+    "node": "v24.11.1",
+    "rayonThreads": 8,
+    "loadAtStart": [
+      0.6640625,
+      2.34130859375,
+      2.37451171875
+    ],
+    "loadAtEnd": [
+      2.70458984375,
+      2.55419921875,
+      2.72216796875
+    ]
+  },
+  "compiler": {
+    "commit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+    "sha256": "0616048498eb9eb2e4bd75b39e8e6a083733ada647e16108edfee30ad183beeb"
+  },
+  "source": {
+    "repository": "https://github.com/PostHog/posthog-js.git",
+    "commit": "3508c05bf4c70e99c4029c0638e00dd0d7949ec0",
+    "package": "posthog-js",
+    "version": "1.418.10",
+    "directory": "packages/browser"
+  },
+  "portSource": {
+    "commit": "673f757a7a25247d2238198132149cc30ecd5a80",
+    "snapshot": "/tmp/lilscript-page-refresh-20260910/current/posthoglil"
+  },
+  "steps": {
+    "original-install": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "install",
+        "--frozen-lockfile",
+        "--ignore-scripts",
+        "--filter",
+        "posthog-js..."
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 78.59281580900006,
+      "cpuSeconds": 47.830489,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-install.log",
+      "logSha256": "02e2870765bdb1dfe91f2a77e97dc5b782d62e8265ed2b58298f17db5c113f2c",
+      "tail": "Scope: 13 of 42 workspace projects\n? Verifying lockfile against supply-chain policies (3688 entries)...\nLockfile is up to date, resolution step is skipped\nProgress: resolved 1, reused 0, downloaded 0, added 0\n.                                        |    +1823 ++++++++++++++++++++++++++++\nProgress: resolved 1823, reused 0, downloaded 255, added 0\nProgress: resolved 1823, reused 0, downloaded 509, added 0\nProgress: resolved 1823, reused 0, downloaded 581, added 0\nProgress: resolved 1823, reused 0, downloaded 737, added 0\nProgress: resolved 1823, reused 0, downloaded 970, added 14\nProgress: resolved 1823, reused 0, downloaded 1103, added 26\nProgress: resolved 1823, reused 0, downloaded 1296, added 46\nProgress: resolved 1823, reused 0, downloaded 1323, added 50\nProgress: resolved 1823, reused 0, downloaded 1354, added 52\nProgress: resolved 1823, reused 0, downloaded 1397, added 56\nProgress: resolved 1823, reused 0, downloaded 1458, added 62\nProgress: resolved 1823, reused 0, downloaded 1479, added 64\nProgress: resolved 1823, reused 0, downloaded 1540, added 68\nProgress: resolved 1823, reused 0, downloaded 1627, added 76\nProgress: resolved 1823, reused 0, downloaded 1650, added 80\nProgress: resolved 1823, reused 0, downloaded 1733, added 86\nProgress: resolved 1823, reused 0, downloaded 1754, added 319\nProgress: resolved 1823, reused 0, downloaded 1757, added 732\n[WARN] Request took 14147ms: https://registry.npmjs.org/@typescript-eslint%2Ftype-utils\n[WARN] Request took 14269ms: https://registry.npmjs.org/@typescript-eslint%2Futils\n[WARN] Request took 14344ms: https://registry.npmjs.org/@typescript-eslint%2Ftypes\n[WARN] Request took 14320ms: https://registry.npmjs.org/@typescript-eslint%2Fvisitor-keys\nProgress: resolved 1823, reused 0, downloaded 1757, added 1342\n[WARN] Request took 19625ms: https://registry.npmjs.org/@typescript-eslint%2Fscope-manager\n[WARN] Request took 16053ms: https://registry.npmjs.org/@types%2Fnode\nProgress: resolved 1823, reused 0, downloaded 1757, added 1772\n[WARN] Request took 11724ms: https://registry.npmjs.org/date-fns\n[WARN] Request took 25710ms: https://registry.npmjs.org/@typescript-eslint%2Fparser\n[WARN] Request took 24769ms: https://registry.npmjs.org/@typescript-eslint%2Ftypescript-estree\nProgress: resolved 1823, reused 0, downloaded 1757, added 1821\n[WARN] Request took 25033ms: https://registry.npmjs.org/@typescript-eslint%2Feslint-plugin\n\u2713 Lockfile passes supply-chain policies (3688 entries in 58.3s)\nProgress: resolved 1823, reused 0, downloaded 1757, added 1822\nProgress: resolved 1823, reused 0, downloaded 1757, added 1823, done\nDone in 1m 17.9s using pnpm v11.7.0\n"
+    },
+    "lilscript-install": {
+      "command": [
+        "npm",
+        "ci",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "cwd": "port",
+      "wallSeconds": 1.2656907099999444,
+      "cpuSeconds": 0.7597389999999979,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-install.log",
+      "logSha256": "459cb85f724ab3ff7ed8f9a4e232396b7a6bbbdc68cb31934723301ca198e0b4",
+      "tail": "\nadded 30 packages in 1s\n"
+    },
+    "original-build-1": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=posthog-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 186.00121822200026,
+      "cpuSeconds": 316.456771,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-1.log",
+      "logSha256": "67b6e30a66c35bfa505703e8605af0f50b008d3088ab4308bbbc0223459bb06d",
+      "tail": "onType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m42ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    3m5.507s \n\n"
+    },
+    "lilscript-build-1": {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 40.63686424400021,
+      "cpuSeconds": 146.56531,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-1.log",
+      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+          ],
+          "startedAt": 1789072097.5344808,
+          "wallSeconds": 16.52358865737915,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+          ],
+          "startedAt": 1789072114.0823529,
+          "wallSeconds": 9.265848636627197,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
+          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+          ],
+          "startedAt": 1789072123.3720124,
+          "wallSeconds": 7.143406867980957,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+          ],
+          "startedAt": 1789072130.5392628,
+          "wallSeconds": 7.515974283218384,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+        }
+      ]
+    },
+    "lilscript-build-2": {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 40.685474051000256,
+      "cpuSeconds": 146.88111500000008,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-2.log",
+      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+          ],
+          "startedAt": 1789072138.1777527,
+          "wallSeconds": 16.529772996902466,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+          ],
+          "startedAt": 1789072154.731452,
+          "wallSeconds": 9.30361795425415,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
+          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+          ],
+          "startedAt": 1789072164.0588686,
+          "wallSeconds": 7.152541637420654,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+          ],
+          "startedAt": 1789072171.2348087,
+          "wallSeconds": 7.5269293785095215,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+        }
+      ]
+    },
+    "original-build-2": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=posthog-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 169.0167915449997,
+      "cpuSeconds": 283.15308,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-2.log",
+      "logSha256": "3ec1f11f03879e29f42ec1f5d10ceb6597eca0ff59173adb80f3ac63055f0925",
+      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m45ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m58ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m48.497s \n\n"
+    },
+    "original-build-3": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=posthog-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 170.4987566750001,
+      "cpuSeconds": 286.6412529999999,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-3.log",
+      "logSha256": "7e5694f3bf11e127b7c6f9b7ac1aad8aace6af6abe48cc76ea15ec9311caa914",
+      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m34ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m49.992s \n\n"
+    },
+    "lilscript-build-3": {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 40.686588218,
+      "cpuSeconds": 147.09975000000009,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-3.log",
+      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+          ],
+          "startedAt": 1789072518.4157894,
+          "wallSeconds": 16.526140689849854,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+          ],
+          "startedAt": 1789072534.9662898,
+          "wallSeconds": 9.33491063117981,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
+          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+          ],
+          "startedAt": 1789072544.3247736,
+          "wallSeconds": 7.140847682952881,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+          ],
+          "startedAt": 1789072551.4895318,
+          "wallSeconds": 7.5003039836883545,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+        }
+      ]
+    },
+    "original-esm": {
+      "command": [
+        "node",
+        "/home/lilfarm/source-perf-20260910/tools/source-esm.mjs",
+        "/home/lilfarm/source-perf-20260910",
+        "posthoglil"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 0.5146899319997829,
+      "cpuSeconds": 0.8390099999998881,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-esm.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tail": ""
+    },
+    "lilscript-tests": {
+      "command": [
+        "bash",
+        "-c",
+        "node --test test/compat.test.mjs test/api.test.mjs"
+      ],
+      "cwd": "port",
+      "wallSeconds": 0.11381571800029633,
+      "cpuSeconds": 0.19203399999997828,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-tests.log",
+      "logSha256": "0746f3044dbe29bec35d9c463a4d1fd8176cc86fc0e72c28a85351e05d289319",
+      "tail": "\u25b6 @itslil/posthog-js JS library API\n  \u2714 keeps every public kernel name exact in the compiler output (0.833711ms)\n  \u2714 exposes the same named surface as default (1.515564ms)\n\u2714 @itslil/posthog-js JS library API (2.841184ms)\n\u25b6 uuid\n  \u2714 parses the official hyphenated, hex, brace, and urn forms (0.9529ms)\n  \u2714 matches official fromFieldsV7 (0.168663ms)\n  \u2714 generates version-7 and version-4 strings (0.292829ms)\n\u2714 uuid (1.897147ms)\n\u25b6 feature flags\n  \u2714 normalizes v2 flags the same way (0.961753ms)\n  \u2714 normalizes v1 flags the same way (0.203866ms)\n  \u2714 minimizes $feature_flag_called properties from the same allowlist (0.151698ms)\n\u2714 feature flags (1.443476ms)\n\u25b6 cookies and consent\n  \u2714 sanitizes cookie names (0.203967ms)\n  \u2714 parses official cookie fixtures (0.203886ms)\n  \u2714 roundtrips serialize \u2192 parse as anonymous (0.124306ms)\n  \u2714 reads cookies from a header store (0.249565ms)\n  \u2714 matches consent cookie names and opt-out (0.159339ms)\n\u2714 cookies and consent (1.11299ms)\n\u25b6 router, rate limit, queue\n  \u2714 routes US, EU, custom, and app hosts (0.434432ms)\n  \u2714 matches the token-bucket updates (0.166991ms)\n  \u2714 batches, offsets, and sorts unload requests (0.222163ms)\n\u2714 router, rate limit, queue (0.906501ms)\n\u25b6 bot detection\n  \u2714 matches the default blocked UA list and lookups (0.27331ms)\n\u2714 bot detection (0.327542ms)\n\u25b6 strings, numbers, types, json, url\n  \u2714 matches string helpers and person-property hashes (0.254683ms)\n  \u2714 matches clamp, remote config, and sample-rate checks (0.261021ms)\n  \u2714 matches portable type, json, and url helpers (0.323826ms)\n\u2714 strings, numbers, types, json, url (0.908684ms)\n\u25b6 bucketed rate limiter\n  \u2714 resolves config and consumes tokens the same way (0.197707ms)\n\u2714 bucketed rate limiter (0.234772ms)\n\u2139 tests 21\n\u2139 suites 8\n\u2139 pass 21\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 83.443519\n"
+    }
+  },
+  "nativeBuilds": [
+    {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=posthog-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 186.00121822200026,
+      "cpuSeconds": 316.456771,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-1.log",
+      "logSha256": "67b6e30a66c35bfa505703e8605af0f50b008d3088ab4308bbbc0223459bb06d",
+      "tail": "onType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m42ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    3m5.507s \n\n"
+    },
+    {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=posthog-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 169.0167915449997,
+      "cpuSeconds": 283.15308,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-2.log",
+      "logSha256": "3ec1f11f03879e29f42ec1f5d10ceb6597eca0ff59173adb80f3ac63055f0925",
+      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m45ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m58ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m48.497s \n\n"
+    },
+    {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=posthog-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 170.4987566750001,
+      "cpuSeconds": 286.6412529999999,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-3.log",
+      "logSha256": "7e5694f3bf11e127b7c6f9b7ac1aad8aace6af6abe48cc76ea15ec9311caa914",
+      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m34ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m49.992s \n\n"
+    }
+  ],
+  "lilscriptBuilds": [
+    {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 40.63686424400021,
+      "cpuSeconds": 146.56531,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-1.log",
+      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+          ],
+          "startedAt": 1789072097.5344808,
+          "wallSeconds": 16.52358865737915,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+          ],
+          "startedAt": 1789072114.0823529,
+          "wallSeconds": 9.265848636627197,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
+          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+          ],
+          "startedAt": 1789072123.3720124,
+          "wallSeconds": 7.143406867980957,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+          ],
+          "startedAt": 1789072130.5392628,
+          "wallSeconds": 7.515974283218384,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+        }
+      ]
+    },
+    {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 40.685474051000256,
+      "cpuSeconds": 146.88111500000008,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-2.log",
+      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+          ],
+          "startedAt": 1789072138.1777527,
+          "wallSeconds": 16.529772996902466,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+          ],
+          "startedAt": 1789072154.731452,
+          "wallSeconds": 9.30361795425415,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
+          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+          ],
+          "startedAt": 1789072164.0588686,
+          "wallSeconds": 7.152541637420654,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+          ],
+          "startedAt": 1789072171.2348087,
+          "wallSeconds": 7.5269293785095215,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+        }
+      ]
+    },
+    {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 40.686588218,
+      "cpuSeconds": 147.09975000000009,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-3.log",
+      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+          ],
+          "startedAt": 1789072518.4157894,
+          "wallSeconds": 16.526140689849854,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+          ],
+          "startedAt": 1789072534.9662898,
+          "wallSeconds": 9.33491063117981,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
+          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+          ],
+          "startedAt": 1789072544.3247736,
+          "wallSeconds": 7.140847682952881,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "-o",
+            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+          ],
+          "startedAt": 1789072551.4895318,
+          "wallSeconds": 7.5003039836883545,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+        }
+      ]
+    }
+  ],
+  "protocol": {
+    "repetitions": 3,
+    "cleanOutputs": true,
+    "dependencyInstallationTimedSeparately": true,
+    "sourceArchives": "Pinned Git checkouts; original repository package build commands, followed by production ESM assembly.",
+    "workerUse": "Both implementations use the same machine and Node version. This shared build pool also runs unrelated jobs; timings are contextual wall times, with CPU time recorded separately."
+  },
+  "esm": {
+    "source": {
+      "repository": "https://github.com/PostHog/posthog-js.git",
+      "commit": "3508c05bf4c70e99c4029c0638e00dd0d7949ec0",
+      "package": "posthog-js",
+      "version": "1.418.10",
+      "directory": "packages/browser"
+    },
+    "entry": "packages/browser/lib/src/posthog.js",
+    "scope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
+    "external": [],
+    "samples": [
+      {
+        "bundleSeconds": 0.009698234,
+        "wallSeconds": 0.10506338700000001
+      },
+      {
+        "bundleSeconds": 0.004686189000000013,
+        "wallSeconds": 0.06448149
+      },
+      {
+        "bundleSeconds": 0.00437115399999999,
+        "wallSeconds": 0.05691247100000001
+      }
+    ],
+    "medianSeconds": 0.06448149,
+    "toolchain": {
+      "esbuild": "0.28.1",
+      "terser": "5.51.2"
+    },
+    "artifacts": [
+      {
+        "path": "original.esm.js",
+        "raw": 16344,
+        "gzip9": 6238,
+        "brotli11": 5639,
+        "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
+      },
+      {
+        "path": "original.unminified.js",
+        "raw": 35538,
+        "gzip9": 9751,
+        "brotli11": 8533,
+        "sha256": "2360751b5c5c916b0c0b0af56604e0351ab0c32b7eaee56266547ec574cb44e8"
+      },
+      {
+        "path": "original.terser-nomangle.js",
+        "raw": 23299,
+        "gzip9": 7115,
+        "brotli11": 6456,
+        "sha256": "b01c2811cbaf81d673803a014ef927e17806ff54b03698c28054421bd0dd2af2"
+      },
+      {
+        "path": "original.esbuild.js",
+        "raw": 16551,
+        "gzip9": 6355,
+        "brotli11": 5775,
+        "sha256": "34b3eb157bc386440bb06e2c99923a6f332877951626556ba9007a7e3b3ed7d4"
+      },
+      {
+        "path": "original.oxc-mangle.js",
+        "raw": 16124,
+        "gzip9": 6198,
+        "brotli11": 5639,
+        "sha256": "e42c30f420c8391dd0dd90f774e73783757c5d9d45b6d3bdc890d9df23bd466e"
+      },
+      {
+        "path": "original.oxc-nomangle.js",
+        "raw": 22035,
+        "gzip9": 6955,
+        "brotli11": 6322,
+        "sha256": "3d07a8dbb23e4c7ca596931a8c4bfeb08235b5b245b2a16c3545f3b548605157"
+      }
+    ],
+    "inputs": [
+      "../../ports/posthoglil/official/uuidv7.ts",
+      "../../ports/posthoglil/official/feature-flags.ts",
+      "../../ports/posthoglil/official/helpers.ts",
+      "../../ports/posthoglil/official/cookie.ts",
+      "../../ports/posthoglil/official/router.ts",
+      "../../ports/posthoglil/official/rate-limit.ts",
+      "../../ports/posthoglil/official/queue.ts",
+      "../../ports/posthoglil/official/bot-detection.ts",
+      "../../ports/posthoglil/official/string-utils.ts",
+      "../../ports/posthoglil/official/type-utils.ts",
+      "../../ports/posthoglil/official/number-utils.ts",
+      "../../ports/posthoglil/official/json-utils.ts",
+      "../../ports/posthoglil/official/url.ts",
+      "../../ports/posthoglil/official/bucketed-rate-limit.ts",
+      "../../ports/posthoglil/official/entry.ts"
+    ]
+  },
+  "lilscriptArtifacts": [
+    {
+      "path": "dist/posthog.umd.js",
+      "raw": 18502,
+      "gzip9": 6855,
+      "brotli11": 6099,
+      "sha256": "40a05bae54f8378ac92955d195c4b5903bf6af98c2783393969a4495b67de344"
+    },
+    {
+      "path": "dist/posthog.cjs",
+      "raw": 18430,
+      "gzip9": 6828,
+      "brotli11": 6040,
+      "sha256": "ebe8da86bfaa7ba78884c18589e0405dc60cf3b843a28866f8c47e44e1faa2f0"
+    },
+    {
+      "path": "dist/posthog.closed.js",
+      "raw": 16458,
+      "gzip9": 6374,
+      "brotli11": 5637,
+      "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+    },
+    {
+      "path": "dist/posthog.gzip.js",
+      "raw": 16195,
+      "gzip9": 6299,
+      "brotli11": 5629,
+      "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+    },
+    {
+      "path": "dist/posthog.raw.js",
+      "raw": 16264,
+      "gzip9": 6313,
+      "brotli11": 5533,
+      "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+    },
+    {
+      "path": "dist/posthog.esm.js",
+      "raw": 16355,
+      "gzip9": 6369,
+      "brotli11": 5618,
+      "sha256": "0698716353065fbab13ded2c558b0a73a91663c53e65eb2165e1e8bf64c7ac8d"
+    },
+    {
+      "path": "dist/posthog.bytes.js",
+      "raw": 15646,
+      "gzip9": 6676,
+      "brotli11": 5892,
+      "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+    }
+  ],
+  "nativeBuildsSummary": {
+    "samples": 3,
+    "successful": 3,
+    "medianSeconds": 170.4987566750001,
+    "minimumSeconds": 169.0167915449997,
+    "maximumSeconds": 186.00121822200026
+  },
+  "lilscriptBuildsSummary": {
+    "samples": 3,
+    "successful": 3,
+    "medianSeconds": 40.685474051000256,
+    "minimumSeconds": 40.63686424400021,
+    "maximumSeconds": 40.686588218
+  },
+  "status": "complete",
+  "finishedAt": "2026-09-10T20:35:59Z",
+  "workerIp": "10.1.0.20"
+}

@@ -1,0 +1,92 @@
+{
+  "source": {
+    "repository": "https://github.com/PostHog/posthog-js.git",
+    "commit": "3508c05bf4c70e99c4029c0638e00dd0d7949ec0",
+    "package": "posthog-js",
+    "version": "1.418.10",
+    "directory": "packages/browser"
+  },
+  "entry": "packages/browser/lib/src/posthog.js",
+  "scope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
+  "external": [],
+  "samples": [
+    {
+      "bundleSeconds": 0.009698234,
+      "wallSeconds": 0.10506338700000001
+    },
+    {
+      "bundleSeconds": 0.004686189000000013,
+      "wallSeconds": 0.06448149
+    },
+    {
+      "bundleSeconds": 0.00437115399999999,
+      "wallSeconds": 0.05691247100000001
+    }
+  ],
+  "medianSeconds": 0.06448149,
+  "toolchain": {
+    "esbuild": "0.28.1",
+    "terser": "5.51.2"
+  },
+  "artifacts": [
+    {
+      "path": "original.esm.js",
+      "raw": 16344,
+      "gzip9": 6238,
+      "brotli11": 5639,
+      "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
+    },
+    {
+      "path": "original.unminified.js",
+      "raw": 35538,
+      "gzip9": 9751,
+      "brotli11": 8533,
+      "sha256": "2360751b5c5c916b0c0b0af56604e0351ab0c32b7eaee56266547ec574cb44e8"
+    },
+    {
+      "path": "original.terser-nomangle.js",
+      "raw": 23299,
+      "gzip9": 7115,
+      "brotli11": 6456,
+      "sha256": "b01c2811cbaf81d673803a014ef927e17806ff54b03698c28054421bd0dd2af2"
+    },
+    {
+      "path": "original.esbuild.js",
+      "raw": 16551,
+      "gzip9": 6355,
+      "brotli11": 5775,
+      "sha256": "34b3eb157bc386440bb06e2c99923a6f332877951626556ba9007a7e3b3ed7d4"
+    },
+    {
+      "path": "original.oxc-mangle.js",
+      "raw": 16124,
+      "gzip9": 6198,
+      "brotli11": 5639,
+      "sha256": "e42c30f420c8391dd0dd90f774e73783757c5d9d45b6d3bdc890d9df23bd466e"
+    },
+    {
+      "path": "original.oxc-nomangle.js",
+      "raw": 22035,
+      "gzip9": 6955,
+      "brotli11": 6322,
+      "sha256": "3d07a8dbb23e4c7ca596931a8c4bfeb08235b5b245b2a16c3545f3b548605157"
+    }
+  ],
+  "inputs": [
+    "../../ports/posthoglil/official/uuidv7.ts",
+    "../../ports/posthoglil/official/feature-flags.ts",
+    "../../ports/posthoglil/official/helpers.ts",
+    "../../ports/posthoglil/official/cookie.ts",
+    "../../ports/posthoglil/official/router.ts",
+    "../../ports/posthoglil/official/rate-limit.ts",
+    "../../ports/posthoglil/official/queue.ts",
+    "../../ports/posthoglil/official/bot-detection.ts",
+    "../../ports/posthoglil/official/string-utils.ts",
+    "../../ports/posthoglil/official/type-utils.ts",
+    "../../ports/posthoglil/official/number-utils.ts",
+    "../../ports/posthoglil/official/json-utils.ts",
+    "../../ports/posthoglil/official/url.ts",
+    "../../ports/posthoglil/official/bucketed-rate-limit.ts",
+    "../../ports/posthoglil/official/entry.ts"
+  ]
+}

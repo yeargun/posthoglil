@@ -647,16 +647,16 @@
     {
       "id": "kernel",
       "name": "Official kernel",
-      "raw": 35193,
-      "gzip9": 9732,
-      "brotli11": 8561,
+      "raw": 35538,
+      "gzip9": 9751,
+      "brotli11": 8533,
       "note": "posthog-js@1.418.10 UUID, flags, cookie, router, rate-limit, queue, bot, string, number, type, JSON, URL, and bucketed-limiter algorithms \u2014 esbuild bundle, no minify",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
       "costModel": null,
-      "measuredAt": "2026-09-10T13:55:39Z",
-      "artifactSha256": "08efdf436547476aae40b4e8fa236622413e443154eaa01afc4b0ff77d5677be"
+      "measuredAt": "2026-09-10T20:35:59Z",
+      "artifactSha256": "2360751b5c5c916b0c0b0af56604e0351ab0c32b7eaee56266547ec574cb44e8"
     },
     {
       "id": "kernel-oxc-mangle",
@@ -669,7 +669,7 @@
       "baseline": true,
       "diagnostic": false,
       "costModel": null,
-      "measuredAt": "2026-09-10T13:55:39Z",
+      "measuredAt": "2026-09-10T20:35:59Z",
       "artifactSha256": "e42c30f420c8391dd0dd90f774e73783757c5d9d45b6d3bdc890d9df23bd466e"
     },
     {
@@ -683,7 +683,7 @@
       "baseline": false,
       "diagnostic": false,
       "costModel": null,
-      "measuredAt": "2026-09-10T13:55:39Z",
+      "measuredAt": "2026-09-10T20:35:59Z",
       "artifactSha256": "3d07a8dbb23e4c7ca596931a8c4bfeb08235b5b245b2a16c3545f3b548605157"
     },
     {
@@ -697,7 +697,7 @@
       "baseline": false,
       "diagnostic": false,
       "costModel": null,
-      "measuredAt": "2026-09-10T13:55:39Z",
+      "measuredAt": "2026-09-10T20:35:59Z",
       "artifactSha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
     },
     {
@@ -711,7 +711,7 @@
       "baseline": false,
       "diagnostic": false,
       "costModel": null,
-      "measuredAt": "2026-09-10T13:55:39Z",
+      "measuredAt": "2026-09-10T20:35:59Z",
       "artifactSha256": "b01c2811cbaf81d673803a014ef927e17806ff54b03698c28054421bd0dd2af2"
     },
     {
@@ -725,103 +725,103 @@
       "baseline": false,
       "diagnostic": false,
       "costModel": null,
-      "measuredAt": "2026-09-10T13:55:39Z",
+      "measuredAt": "2026-09-10T20:35:59Z",
       "artifactSha256": "34b3eb157bc386440bb06e2c99923a6f332877951626556ba9007a7e3b3ed7d4"
     },
     {
       "id": "itslil",
       "name": "LilScript compiler \u00b7 cost_model brotli",
-      "raw": 16268,
-      "gzip9": 6314,
-      "brotli11": 5554,
-      "note": "ESM output from LilScript 63c2896.",
+      "raw": 16264,
+      "gzip9": 6313,
+      "brotli11": 5533,
+      "note": "ESM output from LilScript 4dc4e33.",
       "primary": true,
       "baseline": false,
       "diagnostic": false,
       "costModel": "brotli",
-      "measuredAt": "2026-09-10T13:55:39Z",
-      "artifactSha256": "e16ec519f5638d30a7eab78bbe54d1ced91c55e62db4c4927abe4d40650c5aba"
+      "measuredAt": "2026-09-10T20:35:59Z",
+      "artifactSha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
     },
     {
       "id": "itslil-package",
       "name": "@itslil/posthog-js \u00b7 packaged ESM",
-      "raw": 16359,
-      "gzip9": 6371,
-      "brotli11": 5606,
-      "note": "ESM output from LilScript 63c2896.",
+      "raw": 16355,
+      "gzip9": 6369,
+      "brotli11": 5618,
+      "note": "ESM output from LilScript 4dc4e33.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
       "costModel": null,
-      "measuredAt": "2026-09-10T13:55:39Z",
-      "artifactSha256": "e3b95f5d7710853a37817534297486a7d469c3dea5642ffbfdbdc1efea4904c4"
+      "measuredAt": "2026-09-10T20:35:59Z",
+      "artifactSha256": "0698716353065fbab13ded2c558b0a73a91663c53e65eb2165e1e8bf64c7ac8d"
     },
     {
       "id": "itslil-gzip",
       "name": "LilScript compiler \u00b7 cost_model gzip",
-      "raw": 16199,
-      "gzip9": 6301,
-      "brotli11": 5586,
-      "note": "ESM output from LilScript 63c2896.",
+      "raw": 16195,
+      "gzip9": 6299,
+      "brotli11": 5629,
+      "note": "ESM output from LilScript 4dc4e33.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
       "costModel": "gzip",
-      "measuredAt": "2026-09-10T13:55:39Z",
-      "artifactSha256": "c1aec7c91110b2b4c164df89fd5110fce0a0f7271d429e559f4bc8702470f957"
+      "measuredAt": "2026-09-10T20:35:59Z",
+      "artifactSha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
     },
     {
       "id": "itslil-bytes",
       "name": "LilScript compiler \u00b7 cost_model raw",
-      "raw": 15650,
-      "gzip9": 6680,
-      "brotli11": 5903,
-      "note": "ESM output from LilScript 63c2896.",
+      "raw": 15646,
+      "gzip9": 6676,
+      "brotli11": 5892,
+      "note": "ESM output from LilScript 4dc4e33.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
       "costModel": "raw",
-      "measuredAt": "2026-09-10T13:55:39Z",
-      "artifactSha256": "dd755a510dd00d9cb803c796bbf6105d626396b2f05a994a584d75b41556e1b3"
+      "measuredAt": "2026-09-10T20:35:59Z",
+      "artifactSha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
     },
     {
       "id": "itslil-closed",
       "name": "LilScript compiler \u00b7 closed fields",
-      "raw": 16462,
-      "gzip9": 6375,
-      "brotli11": 5622,
-      "note": "ESM output from LilScript 63c2896.",
+      "raw": 16458,
+      "gzip9": 6374,
+      "brotli11": 5637,
+      "note": "ESM output from LilScript 4dc4e33.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
       "costModel": "brotli",
-      "measuredAt": "2026-09-10T13:55:39Z",
-      "artifactSha256": "e9ae38561a827183618ed23bc0649cd3aa72b37f23ed733c28fc9d6b1dcca71f"
+      "measuredAt": "2026-09-10T20:35:59Z",
+      "artifactSha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
     }
   ],
   "matched": {
-    "raw": 15650,
-    "gzip9": 6301,
-    "brotli11": 5554,
+    "raw": 16355,
+    "gzip9": 6369,
+    "brotli11": 5618,
     "vsOxc": {
-      "raw": 0.9706028280823616,
-      "gzip9": 1.0166182639561148,
-      "brotli11": 0.9849264053910268
+      "raw": 0.9703547506822129,
+      "gzip9": 1.0162955792191029,
+      "brotli11": 0.9812023408405746
     }
   },
   "hero": {
-    "brotliRatio": 0.9849264053910268,
+    "brotliRatio": 0.9962759354495478,
     "officialBrotli": 5639,
-    "itslilBrotli": 5554,
-    "packageBrotli": 5606,
+    "itslilBrotli": 5618,
+    "packageBrotli": 5618,
     "packageRaw": 16359,
-    "gzipRatio": 1.0166182639561148,
+    "gzipRatio": 1.0275895450145207,
     "officialGzip": 6198,
-    "itslilGzip": 6301,
-    "rawRatio": 0.9706028280823616,
+    "itslilGzip": 6369,
+    "rawRatio": 1.0143264698585959,
     "officialRaw": 16124,
-    "itslilRaw": 15650,
+    "itslilRaw": 16355,
     "kernelRawBrotli": 8561
   },
-  "sizeMeasuredAt": "2026-09-10T13:55:39Z"
+  "sizeMeasuredAt": "2026-09-10T20:35:59Z"
 }

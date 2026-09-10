@@ -282,12 +282,38 @@
   "publicationSourceFingerprint": "c9eb7fe0fb006c2062b33678195778dd7b6d42fa88ca5b142d3f8e7a084608d9",
   "comparisonArtifacts": [
     {
-      "path": "site/esm-comparison/lilscript.js",
-      "sha256": "e3b95f5d7710853a37817534297486a7d469c3dea5642ffbfdbdc1efea4904c4"
-    },
-    {
       "path": "site/esm-comparison/original.js",
       "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
+    },
+    {
+      "path": "site/esm-comparison/lilscript.js",
+      "sha256": "0698716353065fbab13ded2c558b0a73a91663c53e65eb2165e1e8bf64c7ac8d"
+    },
+    {
+      "path": "site/source-build.json",
+      "sha256": "46f38ca54c527de527047101b3390519762adff7a79c4b47c99b866e8a5a3992"
+    },
+    {
+      "path": "site/comparison.json",
+      "sha256": "88edd2caf92355d8a285cf8d605fd2b49023ad48b739b7dfb93ab9bd25c2a50d"
     }
-  ]
+  ],
+  "sourceBuildReceipt": "comparison/source-build/result.json",
+  "currentMeasurement": {
+    "compiler": {
+      "commit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+      "sha256": "0616048498eb9eb2e4bd75b39e8e6a083733ada647e16108edfee30ad183beeb"
+    },
+    "source": {
+      "commit": "673f757a7a25247d2238198132149cc30ecd5a80"
+    },
+    "upstream": {
+      "repository": "https://github.com/PostHog/posthog-js.git",
+      "commit": "3508c05bf4c70e99c4029c0638e00dd0d7949ec0",
+      "package": "posthog-js",
+      "version": "1.418.10",
+      "directory": "packages/browser"
+    },
+    "compatibility": "Runtime checks: 21/21 pass."
+  }
 }

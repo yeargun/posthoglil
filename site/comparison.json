@@ -1,48 +1,66 @@
 {
-  "schemaVersion": 1,
-  "measuredAt": "2026-09-10T13:55:39Z",
+  "schemaVersion": 2,
+  "measuredAt": "2026-09-10T20:35:59Z",
   "name": "posthoglil",
   "compiler": {
-    "commit": "63c2896a71e60cbcca7870fe979f9d6ecaff3452",
-    "sha256": "2319462ef7d858c8e2a5a767260aa4f80d325e0045afa0cc86cc122d1299b059",
-    "profile": "release",
-    "dirty": false
+    "commit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+    "sha256": "0616048498eb9eb2e4bd75b39e8e6a083733ada647e16108edfee30ad183beeb"
   },
   "upstream": {
     "package": "posthog-js",
-    "version": "1.418.10"
+    "version": "1.418.10",
+    "repository": "https://github.com/PostHog/posthog-js.git",
+    "commit": "3508c05bf4c70e99c4029c0638e00dd0d7949ec0"
   },
-  "scope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
-  "compatibility": "Repository checks pass.",
+  "scope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK. Original ESM assembled from the pinned Git source build.",
+  "compatibility": "Runtime checks: 21/21 pass.",
   "tests": {
     "pass": 21,
     "total": 21
   },
   "buildComplete": true,
   "machine": {
+    "provider": "Azure",
+    "instanceClass": "Standard_D16als_v7",
     "cpu": "AMD EPYC 9V45 96-Core Processor",
     "logicalCpus": 16,
     "memoryBytes": 33648435200,
     "os": "Ubuntu 24.04.4 LTS",
-    "node": "v22.23.2",
-    "rayonThreads": 16,
-    "provider": "Azure",
-    "instanceClass": "Standard_D16als_v7"
+    "kernel": "6.17.0-1022-azure",
+    "node": "v24.11.1",
+    "rayonThreads": 8,
+    "loadAtStart": [
+      0.6640625,
+      2.34130859375,
+      2.37451171875
+    ],
+    "loadAtEnd": [
+      2.70458984375,
+      2.55419921875,
+      2.72216796875
+    ]
   },
   "build": {
-    "compilerSeconds": 20.284015655517578,
-    "packageSeconds": 55.0084818480002,
-    "originalSeconds": 0.08405857599999998,
-    "packageScope": "node scripts/build.mjs --compile --force; 4 successful compiler invocations plus package generation.",
-    "originalScope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
-    "protocol": "Same shared worker for both lanes; one fresh LilScript package build; median of three sequential upstream ESM builds (PlayCanvas records one native reference build). Outside compiler jobs were observed in the pool, so contention is not excluded. Dependencies, tests and compression measurement are outside these build times."
+    "compilerSeconds": null,
+    "packageSeconds": 40.685474051000256,
+    "originalSeconds": 170.4987566750001,
+    "originalEsmSeconds": 0.06448149,
+    "packageScope": "node scripts/build.mjs --compile --force",
+    "originalScope": "corepack pnpm exec turbo run build --filter=posthog-js... --force",
+    "protocol": {
+      "repetitions": 3,
+      "cleanOutputs": true,
+      "dependencyInstallationTimedSeparately": true,
+      "sourceArchives": "Pinned Git checkouts; original repository package build commands, followed by production ESM assembly.",
+      "workerUse": "Both implementations use the same machine and Node version. This shared build pool also runs unrelated jobs; timings are contextual wall times, with CPU time recorded separately."
+    }
   },
   "esm": {
     "lilscript": {
-      "raw": 16359,
-      "gzip9": 6371,
-      "brotli11": 5606,
-      "sha256": "e3b95f5d7710853a37817534297486a7d469c3dea5642ffbfdbdc1efea4904c4",
+      "raw": 16355,
+      "gzip9": 6369,
+      "brotli11": 5618,
+      "sha256": "0698716353065fbab13ded2c558b0a73a91663c53e65eb2165e1e8bf64c7ac8d",
       "file": "./esm-comparison/lilscript.js"
     },
     "original": {
@@ -52,5 +70,119 @@
       "sha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98",
       "file": "./esm-comparison/original.js"
     }
+  },
+  "sourceBuild": {
+    "original": {
+      "complete": true,
+      "medianSeconds": 170.4987566750001,
+      "minimumSeconds": 169.0167915449997,
+      "maximumSeconds": 186.00121822200026,
+      "samples": [
+        {
+          "command": [
+            "corepack",
+            "pnpm",
+            "exec",
+            "turbo",
+            "run",
+            "build",
+            "--filter=posthog-js...",
+            "--force"
+          ],
+          "wallSeconds": 186.00121822200026,
+          "cpuSeconds": 316.456771,
+          "exitCode": 0,
+          "timedOut": false,
+          "log": "original-build-1.log",
+          "logSha256": "67b6e30a66c35bfa505703e8605af0f50b008d3088ab4308bbbc0223459bb06d"
+        },
+        {
+          "command": [
+            "corepack",
+            "pnpm",
+            "exec",
+            "turbo",
+            "run",
+            "build",
+            "--filter=posthog-js...",
+            "--force"
+          ],
+          "wallSeconds": 169.0167915449997,
+          "cpuSeconds": 283.15308,
+          "exitCode": 0,
+          "timedOut": false,
+          "log": "original-build-2.log",
+          "logSha256": "3ec1f11f03879e29f42ec1f5d10ceb6597eca0ff59173adb80f3ac63055f0925"
+        },
+        {
+          "command": [
+            "corepack",
+            "pnpm",
+            "exec",
+            "turbo",
+            "run",
+            "build",
+            "--filter=posthog-js...",
+            "--force"
+          ],
+          "wallSeconds": 170.4987566750001,
+          "cpuSeconds": 286.6412529999999,
+          "exitCode": 0,
+          "timedOut": false,
+          "log": "original-build-3.log",
+          "logSha256": "7e5694f3bf11e127b7c6f9b7ac1aad8aace6af6abe48cc76ea15ec9311caa914"
+        }
+      ]
+    },
+    "lilscript": {
+      "complete": true,
+      "medianSeconds": 40.685474051000256,
+      "minimumSeconds": 40.63686424400021,
+      "maximumSeconds": 40.686588218,
+      "samples": [
+        {
+          "command": [
+            "bash",
+            "-c",
+            "node scripts/build.mjs --compile --force"
+          ],
+          "wallSeconds": 40.63686424400021,
+          "cpuSeconds": 146.56531,
+          "exitCode": 0,
+          "timedOut": false,
+          "log": "lilscript-build-1.log",
+          "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a"
+        },
+        {
+          "command": [
+            "bash",
+            "-c",
+            "node scripts/build.mjs --compile --force"
+          ],
+          "wallSeconds": 40.685474051000256,
+          "cpuSeconds": 146.88111500000008,
+          "exitCode": 0,
+          "timedOut": false,
+          "log": "lilscript-build-2.log",
+          "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a"
+        },
+        {
+          "command": [
+            "bash",
+            "-c",
+            "node scripts/build.mjs --compile --force"
+          ],
+          "wallSeconds": 40.686588218,
+          "cpuSeconds": 147.09975000000009,
+          "exitCode": 0,
+          "timedOut": false,
+          "log": "lilscript-build-3.log",
+          "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a"
+        }
+      ]
+    },
+    "scopeNote": "Original timing covers the complete PostHog SDK and its workspace builds; LilScript and the ESM byte comparison cover the selected kernel only.",
+    "cleanOutputs": true,
+    "installationExcluded": true
   }
 }
