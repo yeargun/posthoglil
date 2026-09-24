@@ -7,10 +7,11 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs"
-import { dirname, resolve } from "node:path"
+import { dirname, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
 import { build as esbuild } from "esbuild"
+import { logCompile } from "./compile-log.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const lilscriptRoot = process.env.LILSCRIPT_ROOT ?? resolve(root, "..", "lilscript")
@@ -32,16 +33,16 @@ const packs = [
     entry: "error-tracking-entry.lil",
     types: "error-tracking.d.ts",
     label: "@posthog/core/error-tracking",
-    releaseConfig: "lilscript.packs-safe.toml",
-    costModel: "raw",
+    releaseConfig: "lilscript.toml",
+    costModel: "brotli",
   },
   {
     id: "otlp",
     entry: "otlp-entry.lil",
     types: "otlp.d.ts",
     label: "PostHog pure OTLP logs + metrics helpers",
-    releaseConfig: "lilscript.packs-safe.toml",
-    costModel: "raw",
+    releaseConfig: "lilscript.toml",
+    costModel: "brotli",
   },
   {
     id: "autocapture",
@@ -94,6 +95,7 @@ function selectedPacks() {
 
 function compile(compiler, pack, config, output) {
   console.log(`compiling ${pack.id} with ${config}`)
+  const started = performance.now()
   const result = spawnSync(
     compiler,
     [
@@ -107,7 +109,9 @@ function compile(compiler, pack, config, output) {
     ],
     { cwd: root, stdio: "inherit" },
   )
+  const wallMs = performance.now() - started
   if (result.status !== 0) process.exit(result.status ?? 1)
+  logCompile({ entry: `src/${pack.entry}`, config, output: relative(root, output), wallMs })
 }
 
 async function packagePack(pack, rawPath) {

@@ -1,23 +1,15 @@
 [javascript]
-# 8.4 (measured, ten pool ports): the terminal's idiom-directed naming search
-# is a per-port win -- this port -92/-32/-19/-6 Brotli, rehypelil +209 -- so it is
-# declared here rather than defaulted on.
-idiom_directed_naming = true
 priority = "size-first"
 optimization_level = 15
 cost_model = "brotli"
 assume_pristine_builtins = true
 strip_console = true
-local_name_reserve = 48
 candidate_search = "always"
 # Beam width is not monotone: 12 gives 5668 brotli, 22-26 give 5621, and 32/48/64/96
 # all regress to 5720-5755. It selects which basin the terminal search lands in, so it
 # is tuned, not raised. 22, 24 and 26 all reach the same artifact, so 24 sits in the
 # middle of a stable plateau rather than on a spike.
 candidate_beam_width = 24
-# 8.15 (measured on the shipped artifact): the terminal cleanup chain is worth
-# -6 Brotli here (5629 -> 5623 against Oxc's 5622), a dead heat with the bar.
-terminal_cleanup_chain = true
 # 8.20 (measured on the shipped artifact): the candidate byte budget is another
 # basin dial, not a depth dial -- 1 MiB (the default) 5623, 4 MiB 5662, 16 MiB
 # 5606, 64 MiB 5649. At 16 MiB this port passes Oxc's 5622. The same bump is
@@ -27,6 +19,4 @@ candidate_byte_budget = 16777216
 [mangle]
 identifiers = true
 properties = true
-exports = false
-extern_fields = true
 pool_strings = true

@@ -97,6 +97,8 @@ describe("github pages artifact", () => {
     const packaged = results.size.find((lane) => lane.id === "itslil-package")
     const gzip = results.size.find((lane) => lane.id === "itslil-gzip")
     const bytes = results.size.find((lane) => lane.id === "itslil-bytes")
+    // The closed-fields lane is retired: the compiler renames no property, so
+    // `extern_fields = false` has no effect and the page says so.
     const closed = results.size.find((lane) => lane.id === "itslil-closed")
     const oxc = results.size.find((lane) => lane.id === "kernel-oxc-mangle")
     const terser = results.size.find((lane) => lane.id === "kernel-terser-mangle")
@@ -110,7 +112,8 @@ describe("github pages artifact", () => {
     assert.equal(typeof oxc.brotli11, "number")
     assert.equal(typeof terser.brotli11, "number")
     assert.equal(typeof esbuild.brotli11, "number")
-    assert.equal(typeof closed.brotli11, "number")
+    assert.equal(closed, undefined)
+    assert.match(html, /closed LilScript lane[\s\S]*retired/)
     assert.equal(results.hero.itslilBrotli, packaged.brotli11)
     assert.equal(results.hero.packageBrotli, packaged.brotli11)
     assert.equal(results.hero.itslilGzip, packaged.gzip9)
@@ -118,6 +121,43 @@ describe("github pages artifact", () => {
     assert.equal(results.matched.brotli11, packaged.brotli11)
     assert.equal(results.matched.gzip9, packaged.gzip9)
     assert.equal(results.matched.raw, packaged.raw)
+  })
+
+  it("shows the compiler run and its compile time", () => {
+    const html = readFileSync(resolve(site, "index.html"), "utf8")
+    const app = readFileSync(resolve(site, "app.js"), "utf8")
+    assert.match(html, /id="compiler"/)
+    assert.match(html, /Compile time/)
+    assert.match(html, /id="hero-compile"/)
+    assert.match(html, /id="body-compile"/)
+    assert.match(app, /compileWallMs/)
+    const { compiler } = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
+    assert.equal(typeof compiler.revision, "string")
+    assert.match(compiler.binarySha256, /^[0-9a-f]{64}$/)
+    assert.ok(compiler.compileWallMs.length >= 3)
+    for (const ms of compiler.compileWallMs) assert.equal(Number.isFinite(ms), true)
+    assert.ok(compiler.invocations.length > 0)
+    for (const invocation of compiler.invocations) {
+      assert.equal(invocation.wallMs.length, compiler.compileWallMs.length)
+    }
+  })
+
+  it("labels every delivered file that the compiler did not write", () => {
+    const html = readFileSync(resolve(site, "index.html"), "utf8")
+    assert.match(html, /id="body-delivered"/)
+    assert.match(html, /not compiler-written/)
+    const { delivered } = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
+    const files = delivered.map((entry) => entry.file)
+    for (const file of ["dist/posthog.esm.js", "dist/posthog.cjs", "dist/posthog.umd.js"]) {
+      assert.ok(files.includes(file), file)
+    }
+    for (const entry of delivered) {
+      assert.equal(typeof entry.brotli11, "number")
+      if (!entry.file.endsWith(".esm.js")) {
+        assert.equal(entry.compilerWritten, false, entry.file)
+        assert.match(entry.writtenBy, /post-processed by esbuild.*not compiler-written/, entry.file)
+      }
+    }
   })
 
   it("races the official kernel, not published posthog-js", () => {

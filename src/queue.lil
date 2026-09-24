@@ -14,17 +14,16 @@ import {
 number defaultFlush = 3000.0;
 
 export number clampFlushInterval(JsValue value) {
-  if (!isNum(value) || !isFiniteNum(toNum(value))) {
-    return defaultFlush;
+  if (value is float && isFiniteNum(value)) {
+    if (value > 5000.0) {
+      return 5000.0;
+    }
+    if (value < 250.0) {
+      return 250.0;
+    }
+    return value;
   }
-  number ms = toNum(value);
-  if (ms > 5000.0) {
-    return 5000.0;
-  }
-  if (ms < 250.0) {
-    return 250.0;
-  }
-  return ms;
+  return defaultFlush;
 }
 
 export JsValue formatQueue(JsValue items) {
@@ -58,8 +57,8 @@ export JsValue applyOffsets(JsValue data, number now) {
   while (i < n) {
     JsValue next = copyObj(data[i]);
     JsValue timestamp = next["timestamp"];
-    if (isNum(timestamp)) {
-      next["offset"] = absNum(toNum(timestamp) - now);
+    if (timestamp is float) {
+      next["offset"] = absNum(timestamp - now);
       deleteKey(next, "timestamp");
     }
     JS.invoke(out, "push", next);
@@ -75,7 +74,7 @@ export JsValue sortUnloadRequests(JsValue requests) {
   int i = 0;
   while (i < n) {
     JsValue req = requests[i];
-    if (toStr(req["url"]).indexOf("/e") == 0) {
+    if (JS.strictEqual(JS.invoke(req["url"], "indexOf", "/e"), 0)) {
       JS.invoke(events, "push", req);
     } else {
       JS.invoke(other, "push", req);

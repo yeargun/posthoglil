@@ -13,6 +13,10 @@ import {
   undef
 } from "./host.lil";
 
+extern JsValue globalThis;
+extern JsValue Set;
+extern JsValue String;
+
 export int MAX_DOM_ANCESTOR_DEPTH = 1000;
 export string[] autocaptureCompatibleElements = [
   "a", "button", "form", "input", "select", "textarea", "label"

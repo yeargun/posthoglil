@@ -10,7 +10,7 @@ import {
   undef
 } from "./host.lil";
 
-string[] campaignKeys = [
+export string[] MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES = [
   "utm_source",
   "utm_medium",
   "utm_campaign",
@@ -37,7 +37,7 @@ string[] campaignKeys = [
   "_kx"
 ];
 
-string[] flagCalledKeys = [
+export string[] MINIMAL_FLAG_CALLED_EVENT_PROPERTIES = [
   "$feature_flag",
   "$feature_flag_response",
   "$feature_flag_has_experiment",
@@ -54,7 +54,7 @@ string[] flagCalledKeys = [
   "$current_url",
   "$pathname",
   "$referring_domain",
-  ...campaignKeys,
+  ...MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES,
   "$session_id",
   "$window_id",
   "$lib",
@@ -63,8 +63,6 @@ string[] flagCalledKeys = [
   "$is_server"
 ];
 
-export JsValue MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES = campaignKeys;
-export JsValue MINIMAL_FLAG_CALLED_EVENT_PROPERTIES = flagCalledKeys;
 
 JsValue empty() {
   return JS.object();
@@ -221,31 +219,14 @@ export JsValue createFlagsResponseFromFlagsAndPayloads(JsValue featureFlags, JsV
   JsValue flags = orEmpty(featureFlags);
   JsValue payloads = orEmpty(featureFlagPayloads);
   JsValue enabled = empty();
-  JsValue seen = empty();
-  JsValue flagKeys = objectKeys(flags);
-  JsValue payloadKeys = objectKeys(payloads);
+  JsValue keys = JS.invoke(objectKeys(flags), "concat", objectKeys(payloads));
   int i = 0;
-  int n = len(flagKeys);
+  int n = len(keys);
   while (i < n) {
-    JsValue key = flagKeys[i];
-    seen[key] = true;
+    JsValue key = keys[i];
     if (flags[key].truthy() || payloads[key].truthy()) {
       JsValue value = flags[key];
-      if (isUndef(value) || JS.isNullish(value)) {
-        enabled[key] = true;
-      } else {
-        enabled[key] = value;
-      }
-    }
-    i = i + 1;
-  }
-  i = 0;
-  n = len(payloadKeys);
-  while (i < n) {
-    JsValue key = payloadKeys[i];
-    if (!JS.in(key, seen) && (flags[key].truthy() || payloads[key].truthy())) {
-      JsValue value = flags[key];
-      if (isUndef(value) || JS.isNullish(value)) {
+      if (JS.isNullish(value)) {
         enabled[key] = true;
       } else {
         enabled[key] = value;
@@ -304,8 +285,8 @@ void copyIfPresent(JsValue source, JsValue target, JsValue key) {
 export JsValue minimizeFlagCalledEventProperties(JsValue properties, JsValue transportKeys) {
   JsValue out = empty();
   int i = 0;
-  while (i < flagCalledKeys.length) {
-    copyIfPresent(properties, out, flagCalledKeys[i]);
+  while (i < MINIMAL_FLAG_CALLED_EVENT_PROPERTIES.length) {
+    copyIfPresent(properties, out, MINIMAL_FLAG_CALLED_EVENT_PROPERTIES[i]);
     i = i + 1;
   }
   if (!isUndef(transportKeys) && !JS.isNullish(transportKeys)) {

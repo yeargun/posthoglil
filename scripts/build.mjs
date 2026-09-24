@@ -11,6 +11,7 @@ import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
 import { build as esbuild } from "esbuild"
+import { logCompile } from "./compile-log.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const lilscriptRoot = process.env.LILSCRIPT_ROOT ?? resolve(root, "..", "lilscript")
@@ -36,12 +37,15 @@ function compilerPath() {
 }
 
 function run(cmd, args) {
+  const started = performance.now()
   const result = spawnSync(cmd, args, { cwd: root, stdio: "inherit" })
+  const wallMs = performance.now() - started
   if (result.status !== 0) process.exit(result.status ?? 1)
+  return wallMs
 }
 
 function compileLil(compiler, configName, outputName) {
-  run(compiler, [
+  const wallMs = run(compiler, [
     resolve(root, "src", "entry.lil"),
     "--target",
     "js-module",
@@ -50,6 +54,7 @@ function compileLil(compiler, configName, outputName) {
     "-o",
     resolve(dist, outputName),
   ])
+  logCompile({ entry: "src/entry.lil", config: configName, output: `dist/${outputName}`, wallMs })
 }
 
 const compileAll = process.argv.includes("--compile")
@@ -66,7 +71,6 @@ if (compileDev) {
     throw new Error("LilScript compiler not found. Set LILSCRIPT_COMPILER or build lilscript.")
   }
   compileLil(compiler, "lilscript.toml", "posthog.raw.js")
-  compileLil(compiler, "lilscript.closed.toml", "posthog.closed.js")
   compileLil(compiler, "lilscript.gzip.toml", "posthog.gzip.js")
   compileLil(compiler, "lilscript.bytes.toml", "posthog.bytes.js")
 }

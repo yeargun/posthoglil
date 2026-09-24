@@ -31,8 +31,8 @@ export string apiHostFromConfig(string apiHost) {
 
 export string flagsApiHostFromConfig(JsValue config) {
   JsValue custom = config["flags_api_host"];
-  if (isStr(custom) && custom.truthy()) {
-    return trimSlash(toStr(custom));
+  if (custom.truthy() && custom is string) {
+    return trimSlash(custom);
   }
   return apiHostFromConfig(toStr(config["api_host"]));
 }
@@ -40,8 +40,8 @@ export string flagsApiHostFromConfig(JsValue config) {
 export string uiHostFromConfig(JsValue config) {
   JsValue custom = config["ui_host"];
   string host = "";
-  if (isStr(custom) && custom.truthy()) {
-    host = trimSlash(toStr(custom));
+  if (custom.truthy() && custom is string) {
+    host = trimSlash(custom);
   } else {
     host = replaceIngestion(apiHostFromConfig(toStr(config["api_host"])));
   }
@@ -82,8 +82,8 @@ export string endpointFor(JsValue config, string target, string path) {
   }
   if (target == "assets" && resolved.startsWith("/static/")) {
     JsValue override = config["asset_host"];
-    if (isStr(override) && override.truthy()) {
-      string host = trimSlash(toStr(override));
+    if (override.truthy() && override is string) {
+      string host = trimSlash(override);
       if (host != "") {
         return host + resolved;
       }

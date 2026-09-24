@@ -21,6 +21,12 @@ import {
   safeJsonStringify
 } from "./error-host.lil";
 
+extern JsValue Math;
+extern JsValue globalThis;
+extern JsValue encodeURIComponent;
+extern JsValue Object;
+extern JsValue Map;
+
 JsValue makeInternalFields() {
   JsValue fields = JS.object();
   fields["MESSAGE"] = "$message";

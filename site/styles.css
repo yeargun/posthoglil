@@ -220,3 +220,21 @@ footer.shell { display: flex; justify-content: space-between; gap: 20px; padding
 .verdict.win strong { color: #1f6b2a; }
 .verdict.loss strong { color: var(--muted); font-weight: 500; }
 .verdict.even strong { color: var(--muted); font-weight: 500; }
+
+/* Compile time, previous release, and delivered files (evidence section). */
+.compile-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-block: 18px 28px; }
+.compile-facts article { display: flex; min-width: 0; flex-direction: column; gap: 6px; padding: 18px; border: 1px solid #3a3228; }
+.compile-facts span { color: #cbb892; font: 500 10px "DM Mono", monospace; text-transform: uppercase; }
+.compile-facts strong { color: var(--acid); font-size: 26px; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.compile-facts small { color: #e8d7b0; font: 500 10px/1.5 "DM Mono", monospace; overflow-wrap: anywhere; }
+.written-by { min-width: 280px; text-align: left; white-space: normal; color: #e8d7b0; }
+tr.post-processed th, tr.post-processed .written-by { color: #cbb892; }
+tr.post-processed .written-by::before { content: "⚠ "; color: var(--acid); }
+
+@media (max-width: 900px) {
+  .compile-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .compile-facts { grid-template-columns: 1fr; }
+}

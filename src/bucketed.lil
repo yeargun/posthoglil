@@ -8,12 +8,12 @@ number readConfigNum(JsValue config, string key, string fallbackKey, number fall
     return fallback;
   }
   JsValue primary = config[key];
-  if (isNum(primary)) {
-    return toNum(primary);
+  if (primary is float) {
+    return primary;
   }
   JsValue legacy = config[fallbackKey];
-  if (isNum(legacy)) {
-    return toNum(legacy);
+  if (legacy is float) {
+    return legacy;
   }
   return fallback;
 }
@@ -55,9 +55,7 @@ export bool consumeBucketedRateLimit(
   string keyStr = toStr(key);
   JsValue bucket = buckets[keyStr];
   if (isUndef(bucket) || JS.isNullish(bucket)) {
-    bucket = JS.object();
-    bucket["tokens"] = bucketSize;
-    bucket["lastAccess"] = now;
+    bucket = JS.object("tokens", bucketSize, "lastAccess", now);
     buckets[keyStr] = bucket;
   } else {
     applyRefill(bucket, now, refillRate, bucketSize, refillInterval);

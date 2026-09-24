@@ -43,19 +43,19 @@ import { buildNetworkRequestOptions, splitBuffer } from "@itslil/posthog-js/repl
 
 The official baselines are bundled directly from the untouched `vendor/posthog-js` git submodule at commit `9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb`. The submodule is read-only for this work: no original PostHog TypeScript or JavaScript is edited, copied into a rewritten baseline, or post-processed before bundling.
 
-Each pack is measured separately against Vite 8 Oxc with mangling enabled. The figures below are direct compiler artifacts without package banners.
+Each pack is measured separately against Vite 8 Oxc with mangling enabled. The figures below are direct compiler artifacts without package banners, all built with the port's release configuration (`lilscript.toml`, `cost_model = brotli`).
 
 | Pack | Exact runtime surface | Official Oxc raw / gzip-9 / Brotli-11 | LilScript raw / gzip-9 / Brotli-11 | Result vs Oxc |
 | --- | --- | ---: | ---: | --- |
-| Autocapture utilities | 21 exports · 5/5 differential groups | 11,070 / 4,640 / 4,215 | **8,644 / 3,400 / 3,065** | **21.9% / 26.7% / 27.3% smaller** |
-| Session replay core | 20 exports · 6/6 differential groups | 10,264 / 4,639 / 4,258 | **8,497 / 3,804 / 3,432** | **17.2% / 18.0% / 19.4% smaller** |
-| Surveys | 21 exports · 6/6 differential groups | 6,244 / 2,515 / 2,251 | **5,302 / 2,068 / 1,765** | **15.1% / 17.8% / 21.6% smaller** |
-| Error tracking | 26 exports · 5/5 differential groups | **14,662 / 5,700 / 5,224** | 18,835 / 6,808 / 6,200 | 28.5% / 19.4% / 18.7% larger |
-| OTLP logs + metrics | 14 exports · 6/6 differential groups | 6,915 / **2,790 / 2,563** | **6,826** / 2,844 / 2,594 | **1.3% smaller raw**; 1.9% / 1.2% larger compressed |
+| Autocapture utilities | 21 exports · 5/5 differential groups | 11,070 / 4,640 / 4,215 | **9,440 / 3,465 / 3,136** | **14.7% / 25.3% / 25.6% smaller** |
+| Session replay core | 20 exports · 6/6 differential groups | 10,264 / 4,639 / 4,258 | **9,337 / 3,836 / 3,486** | **9.0% / 17.3% / 18.1% smaller** |
+| Surveys | 21 exports · 6/6 differential groups | 6,244 / 2,515 / 2,251 | **6,077 / 2,096 / 1,824** | **2.7% / 16.7% / 19.0% smaller** |
+| Error tracking | 26 exports · 5/5 differential groups | **14,662 / 5,700 / 5,224** | 19,051 / 6,399 / 5,811 | 29.9% / 12.3% / 11.2% larger |
+| OTLP logs + metrics | 14 exports · 6/6 differential groups | 6,915 / 2,790 / 2,563 | 6,915 / **2,479 / 2,256** | even raw; **11.1% / 12.0% smaller compressed** |
 
-Autocapture is the larger reusable win the leaf-utility kernel did not expose: **1,150 Brotli bytes (27.3%) smaller than Oxc**, and 900 bytes (22.7%) smaller than three-pass Terser. Its packaged ESM is 3,159 Brotli bytes, still 25.1% below the metadata-free Oxc baseline. The replay network/buffer core is **826 Brotli bytes (19.4%) smaller than Oxc**; surveys remains 21.6% smaller.
+Three-pass Terser is the strongest official Brotli lane on every pack. Against it, autocapture is 829 Brotli bytes smaller, replay core 521, surveys 242 and OTLP 170. Error tracking is 749 bytes larger. The losses stay visible.
 
-The losses remain visible. Error tracking and OTLP use the verified `cost_model = raw`, `candidate_search = off` compiler artifacts. Aggressive Brotli-scored candidates were rejected because the production differential/syntax gate caught invalid output; they are neither published nor measured. Autocapture, replay core, and surveys use their verified `cost_model = brotli` production artifacts. None of the LilScript rows is post-minified.
+Error tracking and OTLP used to ship `cost_model = raw` builds with the candidate search off, because the old compiler's Brotli-scored output failed their differential or syntax gates. The current compiler's Brotli builds pass both suites, so every pack now uses the release configuration: OTLP went from 2,852 to 2,256 Brotli bytes and now beats Oxc, and error tracking went from 6,496 to 5,811. None of the LilScript rows is post-minified.
 
 The committed differential suites cover autocapture DOM/event decisions, sensitive values, text normalization, and elements-chain serialization; replay network redaction, callback fallbacks, circular sizing, data-URI replacement, console truncation, and recursive buffer splitting; survey translation and activation semantics; every error coercer, recursive causes, exception-step byte budgets, class shapes, async frame modifiers, and browser/Node parser families; and OTLP integer boundaries, sparse/circular/deep graphs, `toJSON`, throwing getters, resource precedence, and log/metrics envelopes.
 
@@ -71,11 +71,9 @@ The LilScript rows are the compiler's own ESM: not bundled and not post-minified
 
 The published npm `posthog-js` IIFE still contains the client, autocapture, and replay. It is not a lane. Comparing this port to that file would be a different product against a subset.
 
-Official Oxc / Terser / esbuild rows are one file measured three ways. Compiler-to-minifier comparisons use direct JavaScript artifacts without package metadata on either side. The root npm ESM adds a 91-byte raw license banner and is reported separately.
+Official Oxc / Terser / esbuild rows are one file measured three ways. Compiler-to-minifier comparisons use direct JavaScript artifacts without package metadata on either side. The root npm ESM adds a 91-byte raw license banner and is reported separately. The kernel is compiled once per objective: `lilscript.toml` (Brotli), `lilscript.gzip.toml` and `lilscript.bytes.toml` (raw).
 
-- **Direct compiler output** (`[mangle] extern_fields = true`). Public names stay readable.
-- **Packaged ESM**. The verified Brotli artifact plus its license banner.
-- **Closed LilScript** (`lilscript.closed.toml`, `extern_fields = false`). Not published.
+The closed-fields lane (`lilscript.closed.toml`, `extern_fields = false`) is retired. This compiler renames no property, so that switch has no effect, and the lane would only have repeated the Brotli build.
 
 Measured with `lilscript-codec` gzip-9 / Brotli-11.
 
@@ -91,21 +89,44 @@ Pin: `posthog-js@1.418.10` commit `9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb`.
 | Official · Terser mangle on · 1 pass | 16,343 | 6,234 | 5,626 | — |
 | Official · esbuild minify esnext | 16,551 | 6,355 | 5,775 | — |
 | Official · esbuild minify es2018 | 17,213 | 6,598 | 5,943 | — |
-| **LilScript compiler · cost_model brotli** | **16,683** | **6,381** | **5,606** | **0.997× Brotli** |
-| `@itslil/posthog-js` · packaged ESM | 16,774 | 6,439 | 5,749 | 1.02× Brotli |
-| LilScript compiler · closed fields | 16,801 | 6,513 | 5,696 | 1.01× Brotli |
-| Previous verified gzip snapshot, packaged | 16,527 | 6,415 | 5,721 | 1.04× gzip |
-| Previous verified raw snapshot, packaged | 16,223 | 6,546 | 5,801 | 1.01× raw |
+| **LilScript compiler · cost_model brotli** | 17,531 | 5,984 | **5,370** | **0.955× Brotli** |
+| LilScript compiler · cost_model gzip | 17,531 | **5,984** | 5,370 | **0.966× gzip** |
+| LilScript compiler · cost_model raw | **15,651** | 6,300 | 5,554 | **0.971× raw** |
+| `@itslil/posthog-js` · packaged ESM | 17,622 | 6,039 | 5,419 | 0.964× Brotli |
 
-The current direct Brotli-scored compiler output is **16 bytes (0.3%) smaller than Oxc** and **20 bytes (0.4%) smaller than Terser**, with all **21 compatibility tests** passing. The packaged ESM remains 127 Brotli bytes above Oxc because it includes the license banner; that packaging cost is not credited to the compiler. Raw and gzip retain their previous verified snapshots because this update deliberately did not launch another exhaustive search.
+On each objective the kernel beats the strongest official lane, Oxc with mangling: **252 Brotli bytes (4.5%)**, **210 gzip bytes (3.4%)** and **472 raw bytes (2.9%)** smaller, with all **21 compatibility tests** passing. Three-pass Terser is 4 Brotli bytes behind Oxc. The packaged ESM, license banner included, is still 203 Brotli bytes below Oxc. The gzip-scored compile currently selects the same bytes as the Brotli-scored one.
 
-Oxc with mangling is the smallest official lane on every codec. Terser is 4 Brotli bytes behind Oxc.
+### Since the previous release
 
-### Why the PostHog win is narrow
+The previous release (dist committed 2026-09-02) was compiled by the old compiler route, which has since been deleted. This release is compiled by the one LilScript compiler at revision `aa2052f0`. The kernel sources were also rewritten: `CookieStore` became a closure, constant arrays became literals, `is` narrowing replaced `isStr()`/`toStr()`, export aliases went, `parseUuid` lost its byte round trip, and the flags response became one loop. That loop also fixes an inherited-key bug: a payload key named `constructor` used to be dropped.
+
+| Artifact | Codec | Previous release | This release |
+| --- | --- | ---: | ---: |
+| Kernel · Brotli-scored compile | Brotli-11 | 5,559 | **5,370** |
+| Kernel · gzip-scored compile | gzip-9 | 6,338 | **5,984** |
+| Kernel · raw-scored compile | raw | 15,894 | **15,651** |
+| Kernel · packaged ESM | Brotli-11 | 5,621 | **5,419** |
+| Autocapture pack | Brotli-11 | **3,097** | 3,136 |
+| Session replay core pack | Brotli-11 | **3,445** | 3,486 |
+| Surveys pack | Brotli-11 | **1,809** | 1,824 |
+| Error tracking pack (raw → Brotli objective) | Brotli-11 | 6,496 | **5,811** |
+| OTLP pack (raw → Brotli objective) | Brotli-11 | 2,852 | **2,256** |
+
+The three packs that were already Brotli-scored are 15–41 bytes larger than the old route made them. Their modules changed only by declaring the host globals each one uses (`extern JsValue Reflect;` and the like), which this compiler requires per module, and by the kernel rewrite of the shared `host.lil`.
+
+### Compiler and compile time
+
+Every compiled file comes from one compiler binary (SHA-256 `13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9`, revision `aa2052f0`). `node scripts/record-compiler-run.mjs --revision <commit>` runs the release build three times, refuses the run unless every sample compiles identical bytes, and records the wall time of each compiler process in `site/results.json`. The eight invocations (three kernel objectives, five packs) take about half a second together (523, 517 and 517 ms in the recorded run); the site lists every invocation.
+
+### Delivered files
+
+`dist/*.esm.js` is the compiler's output with a license comment prepended. `dist/*.cjs` and `dist/posthog.umd.js` are esbuild reprints of that ESM (CommonJS and IIFE wrappers, whitespace-minified): **post-processed by esbuild, not compiler-written**. They are listed as such on the site, and no size claim here uses them. The compiler writing those export conditions itself is tracked by LilScript's plan task M12.2.
+
+### Why the PostHog margin is narrow
 
 This kernel is mostly dense leaf utilities. Its public export names, protocol keys, PostHog field names, user-agent strings, and observable object shapes are fixed, leaving little structural scaffolding for LilScript to erase. Oxc and Terser already compress this kind of straight-line JavaScript close to the codec floor.
 
-LilScript's larger wins happen when types and closed-world knowledge let it remove objects, wrappers, branches, generic machinery, or whole dependency paths. Those opportunities are deliberately scarce in this like-for-like kernel. Here the remaining advantage comes from globally scored expression shapes and binding assignments, so a 16-byte Brotli win is small but expected rather than evidence of a missing 10–30% transformation.
+LilScript's larger wins happen when types and closed-world knowledge let it remove objects, wrappers, branches, generic machinery, or whole dependency paths. Those opportunities are deliberately scarce in this like-for-like kernel, so a margin of a few percent is expected rather than evidence of a missing 10–30% transformation.
 
 If LilScript is larger on a codec, that row stays. Losses are part of the comparison.
 
@@ -137,7 +158,9 @@ npm run test:packs
 npm run build
 npm run build:packs
 npm run measure
+npm run write:results
 npm run measure:packs
+node scripts/record-compiler-run.mjs --revision <lilscript commit>
 npm run build:site
 ```
 

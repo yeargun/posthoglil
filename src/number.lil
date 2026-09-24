@@ -1,6 +1,7 @@
 import { isBool, isFiniteNum, isNum, isStr, toNum, toStr, undef } from "./host.lil";
 import { isNumber } from "./types.lil";
 
+extern JsValue Number;
 export number clampToRange(
   JsValue value,
   number min,
@@ -40,13 +41,13 @@ export bool getRemoteConfigBool(JsValue field, string key, bool defaultValue = t
   if (JS.isNullish(field)) {
     return defaultValue;
   }
-  if (isBool(field)) {
-    return field.truthy();
+  if (field is bool) {
+    return field;
   }
   if (JS.typeOf(field) == "object") {
     JsValue value = field[key];
-    if (isBool(value)) {
-      return value.truthy();
+    if (value is bool) {
+      return value;
     }
     return defaultValue;
   }
@@ -58,11 +59,11 @@ export JsValue getRemoteConfigNumber(JsValue field, string key) {
     return undef();
   }
   JsValue value = field[key];
-  if (isNum(value) && isFiniteNum(toNum(value))) {
+  if (value is float && isFiniteNum(value)) {
     return value;
   }
-  if (isStr(value)) {
-    string trimmed = toStr(value).trim();
+  if (value is string) {
+    string trimmed = value.trim();
     if (trimmed == "") {
       return undef();
     }
@@ -75,9 +76,8 @@ export JsValue getRemoteConfigNumber(JsValue field, string key) {
 }
 
 export bool isValidSampleRate(JsValue value) {
-  if (!isNum(value)) {
-    return false;
+  if (value is float) {
+    return isFiniteNum(value) && value >= 0.0 && value <= 1.0;
   }
-  number n = toNum(value);
-  return isFiniteNum(n) && n >= 0.0 && n <= 1.0;
+  return false;
 }

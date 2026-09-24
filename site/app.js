@@ -97,7 +97,6 @@ function barClass(id) {
   ) {
     return "bar-lil"
   }
-  if (id === "itslil-closed") return "bar-closed"
   return "bar-official"
 }
 
@@ -164,6 +163,146 @@ function renderHero() {
   if (bytes) {
     document.querySelector("#hero-raw").textContent = smallerThan(bytes.raw, oxc.raw).text
   }
+  const compile = compileSummary()
+  if (compile) document.querySelector("#hero-compile").textContent = compile.headline
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character])
+}
+
+function median(values) {
+  const sorted = values.filter(Number.isFinite).sort((left, right) => left - right)
+  return sorted.length === 0 ? null : sorted[Math.floor(sorted.length / 2)]
+}
+
+function formatMs(ms) {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${formatter.format(Math.round(ms))} ms`
+}
+
+function compileSummary() {
+  const compiler = data.compiler
+  const samples = compiler?.compileWallMs ?? []
+  const middle = median(samples)
+  if (middle == null) return null
+  return {
+    headline: formatMs(middle),
+    detail: `median of ${samples.length} runs (${samples.map(formatMs).join(" · ")})`,
+  }
+}
+
+function renderCompiler() {
+  const compiler = data.compiler
+  const facts = document.querySelector("#compile-facts")
+  const body = document.querySelector("#body-compile")
+  if (!facts || !body) return
+  const summary = compileSummary()
+  if (!compiler || !summary) {
+    facts.innerHTML = "<article><span>Compile time</span><strong>not recorded</strong></article>"
+    body.innerHTML = ""
+    return
+  }
+  const revision = document.querySelector("#lede-revision")
+  if (revision) revision.textContent = compiler.revision
+  facts.innerHTML = [
+    ["Compile time", summary.headline, summary.detail],
+    ["Compiler revision", compiler.revision, `recorded ${compiler.date}`],
+    ["Compiler binary SHA-256", `${compiler.binarySha256.slice(0, 12)}…`, compiler.binarySha256],
+    ["Measured on", compiler.host, compiler.scope],
+  ]
+    .map(
+      ([label, value, detail]) =>
+        `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(detail)}</small></article>`,
+    )
+    .join("")
+  body.innerHTML = (compiler.invocations ?? [])
+    .map(
+      (invocation) => `
+    <tr>
+      <th scope="row">${escapeHtml(invocation.entry)}</th>
+      <td>${escapeHtml(invocation.config)}</td>
+      <td>${escapeHtml(invocation.output)}</td>
+      <td>${invocation.wallMs.map((ms) => formatter.format(ms)).join(" · ")}</td>
+    </tr>`,
+    )
+    .join("")
+}
+
+function changeCell(before, after) {
+  if (before == null || after == null) return '<td class="verdict even"><strong>—</strong></td>'
+  const delta = after - before
+  if (delta === 0) return '<td class="verdict even"><strong>no change</strong></td>'
+  const percent = Math.abs(delta / before) * 100
+  const word = delta < 0 ? "smaller" : "larger"
+  return `<td class="verdict ${delta < 0 ? "win" : "loss"}"><strong>${delta < 0 ? "−" : "+"}${formatter.format(Math.abs(delta))} B · ${percent.toFixed(1)}% ${word}</strong></td>`
+}
+
+function renderPrevious() {
+  const previous = data.previousRelease
+  const body = document.querySelector("#body-previous")
+  if (!body) return
+  if (!previous) {
+    body.innerHTML = ""
+    return
+  }
+  const lead = document.querySelector("#previous-lead")
+  if (lead && previous.label) {
+    lead.textContent = `${previous.label}. The bars are the same files; the sources were rewritten where the port could say more.`
+  }
+  const brotli = laneById("itslil")
+  const gzip = laneById("itslil-gzip")
+  const bytes = laneById("itslil-bytes")
+  const packaged = laneById("itslil-package")
+  const rows = [
+    ["Kernel · Brotli-scored compile", "Brotli-11", previous.kernel?.brotli11, brotli?.brotli11],
+    ["Kernel · gzip-scored compile", "gzip-9", previous.kernel?.gzip9, gzip?.gzip9],
+    ["Kernel · raw-scored compile", "raw", previous.kernel?.raw, bytes?.raw],
+    ["Kernel · packaged ESM", "Brotli-11", previous.kernel?.packageBrotli, packaged?.brotli11],
+    ...(data.packs ?? []).map((pack) => {
+      const before = previous.packs?.[pack.id]
+      const primary = pack.lanes.find((lane) => lane.primary)
+      const objective =
+        before && before.costModel !== pack.costModel
+          ? ` (cost_model ${before.costModel} → ${pack.costModel})`
+          : ""
+      return [`${pack.name} pack${objective}`, "Brotli-11", before?.brotli11, primary?.brotli11]
+    }),
+  ]
+  body.innerHTML = rows
+    .map(
+      ([name, codec, before, after]) => `
+    <tr>
+      <th scope="row">${escapeHtml(name)}</th>
+      <td>${codec}</td>
+      <td>${before == null ? "—" : formatter.format(before)}</td>
+      <td>${after == null ? "—" : formatter.format(after)}</td>
+      ${changeCell(before, after)}
+    </tr>`,
+    )
+    .join("")
+}
+
+function renderDelivered() {
+  const body = document.querySelector("#body-delivered")
+  if (!body) return
+  body.innerHTML = (data.delivered ?? [])
+    .map(
+      (file) => `
+    <tr${file.compilerWritten ? "" : ' class="post-processed"'}>
+      <th scope="row">${escapeHtml(file.file)}</th>
+      <td>${formatter.format(file.raw)}</td>
+      <td>${formatter.format(file.gzip9)}</td>
+      <td>${formatter.format(file.brotli11)}</td>
+      <td class="written-by">${escapeHtml(file.writtenBy)}</td>
+    </tr>`,
+    )
+    .join("")
 }
 
 function renderSize() {
@@ -172,7 +311,7 @@ function renderSize() {
   renderCodec(
     "brotli11",
     "itslil",
-    ["itslil-package", "itslil-closed"],
+    ["itslil-package"],
     "#bar-brotli",
     "#body-brotli",
   )
@@ -187,7 +326,6 @@ function renderSize() {
     laneById("itslil-package"),
     laneById("itslil-gzip"),
     laneById("itslil-bytes"),
-    laneById("itslil-closed"),
   ].filter(Boolean)
   document.querySelector("#body-matched").innerHTML = rows
     .map((lane) => {
@@ -433,6 +571,9 @@ renderHero()
 renderSurface()
 renderPacks()
 renderSize()
+renderCompiler()
+renderPrevious()
+renderDelivered()
 bindCopy()
 bindProgress()
 bindPlayground()

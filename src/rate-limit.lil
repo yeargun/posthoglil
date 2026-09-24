@@ -5,10 +5,10 @@ number readNum(JsValue bucket, string key, number fallback) {
     return fallback;
   }
   JsValue value = bucket[key];
-  if (!isNum(value)) {
-    return fallback;
+  if (value is float) {
+    return value;
   }
-  return toNum(value);
+  return fallback;
 }
 
 export JsValue rateLimitContext(JsValue bucket, number now, number eventsPerSecond, number burstLimit, bool checkOnly) {

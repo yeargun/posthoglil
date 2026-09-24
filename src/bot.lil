@@ -1,6 +1,6 @@
 import { isArr, isUndef, len, toStr } from "./host.lil";
 
-string[] blockedUserAgents = [
+export string[] DEFAULT_BLOCKED_UA_STRS = [
   "amazonbot",
   "amazonproductbot",
   "app.hypefactors.com",
@@ -80,7 +80,6 @@ string[] blockedUserAgents = [
   "bytespider"
 ];
 
-export JsValue DEFAULT_BLOCKED_UA_STRS = blockedUserAgents;
 
 bool listBlocksUa(string uaLower, JsValue list) {
   int n = len(list);
@@ -99,7 +98,7 @@ export bool isBlockedUA(JsValue ua, JsValue customBlockedUserAgents = JS.undefin
     return false;
   }
   string uaLower = toStr(ua).toLowerCase();
-  if (listBlocksUa(uaLower, blockedUserAgents)) {
+  if (listBlocksUa(uaLower, DEFAULT_BLOCKED_UA_STRS)) {
     return true;
   }
   if (isUndef(customBlockedUserAgents) || !isArr(customBlockedUserAgents)) {

@@ -85,7 +85,8 @@ describe("@itslil/posthog-js JS library API", () => {
   it("keeps every public kernel name exact in the compiler output", () => {
     const exports = source.match(/export\{[^}]+\}/)?.[0] ?? ""
     for (const name of names) {
-      assert.match(exports, new RegExp(` as ${name}[},]`), `export ${name}`)
+      // Exact either as `binding as name` or as a binding already named so.
+      assert.match(exports, new RegExp(`(?:[{,]| as )${name}[},]`), `export ${name}`)
     }
   })
 

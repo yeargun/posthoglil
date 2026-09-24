@@ -185,9 +185,8 @@ export bool isNoLike(JsValue value) {
   if (JS.strictEqual(value, 0)) {
     return true;
   }
-  if (!isStr(value)) {
-    return false;
+  if (value is string) {
+    return value == "false" || value == "0" || value == "no";
   }
-  string text = JS.string(value);
-  return text == "false" || text == "0" || text == "no";
+  return false;
 }

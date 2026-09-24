@@ -57,26 +57,8 @@ Uint8Array fieldsToBytes(number unixTsMs, int randA, int randBHi, int randBLo) {
   return bytes;
 }
 
-void writeHexChunk(Uint8Array bytes, int offset, string hex) {
-  number n = parseIntHex(hex);
-  bytes[offset] = (n / 16777216.0).toInt();
-  bytes[offset + 1] = (n / 65536.0).toInt();
-  bytes[offset + 2] = (n / 256.0).toInt();
-  bytes[offset + 3] = n.toInt();
-}
-
-Uint8Array hexToBytes(string hex) {
-  Uint8Array bytes = new Uint8Array(16);
-  int i = 0;
-  while (i < bytes.length) {
-    writeHexChunk(bytes, i, hex.slice(i * 2, i * 2 + 8));
-    i = i + 4;
-  }
-  return bytes;
-}
-
 string joinGroups(JsValue cap) {
-  return toStr(JS.invoke(JS.invoke(cap, "slice", 1, 6), "join", ""));
+  return toStr(JS.invoke(JS.invoke(cap, "slice", 1, 6), "join", "-"));
 }
 
 number genTimestamp = 0.0;
@@ -158,7 +140,7 @@ export string parseUuid(string uuid) {
   if (n == 32) {
     JsValue cap = re32.exec(uuid);
     if (cap.truthy()) {
-      hex = JS.string(cap[0]);
+      hex = uuid.slice(0, 8) + "-" + uuid.slice(8, 12) + "-" + uuid.slice(12, 16) + "-" + uuid.slice(16, 20) + "-" + uuid.slice(20);
     }
   } else if (n == 36) {
     JsValue cap = re36.exec(uuid);
@@ -179,7 +161,7 @@ export string parseUuid(string uuid) {
   if (hex == "") {
     throw syntaxError("could not parse UUID string");
   }
-  return bytesToString(hexToBytes(hex));
+  return hex.toLowerCase();
 }
 
 export string uuidToHex(string uuid) {

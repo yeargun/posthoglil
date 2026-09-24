@@ -24,6 +24,7 @@
         <a href="#packs">packs</a>
         <a href="#lab">playground</a>
         <a href="#evidence">size</a>
+        <a href="#compiler">compiler</a>
         <a href="https://github.com/yeargun/posthoglil">GitHub ↗</a>
       </nav>
     </header>
@@ -45,6 +46,8 @@
             from the root package. Every number on this page
             compares that same official kernel, then Vite 8 Oxc, Terser, and esbuild, with
             the settings named on each row. The headline covers the complete root ESM, including its license banner. Compiler variants are listed separately.
+            Every compiled file of the package comes from one LilScript compiler, revision
+            <code id="lede-revision">aa2052f0</code>; its compile time is on this page.
           </p>
           <div class="install-row">
             <code>npm install @itslil/posthog-js</code>
@@ -68,6 +71,7 @@
             <div><strong id="hero-gzip">—</strong><span>gzip-9 · package ESM</span></div>
             <div><strong id="hero-raw">—</strong><span>raw · package ESM</span></div>
             <div><strong id="hero-spec">—</strong><span>compat tests vs official kernel</span></div>
+            <div><strong id="hero-compile">—</strong><span>compile time, every compiled file of the package</span></div>
           </div>
           <p class="score-note">The root package ESM and matching original kernel ESM retain the same public API. All three headline sizes measure the same files. The independent subpath comparisons below state their own scope. Runtime checks: 21/21 pass.</p>
         </div>
@@ -278,7 +282,8 @@
               for that codec (<code>cost_model = raw | gzip | brotli</code>).
               The direct compiler artifacts exclude package metadata. The npm ESM
               wraps the Brotli compile with a license banner and has its own row.
-              Closed LilScript uses <code>extern_fields = false</code>.
+              The closed LilScript lane (<code>extern_fields = false</code>) is retired:
+              this compiler renames no property, so that switch has no effect.
             </p>
           </div>
 
@@ -358,6 +363,74 @@
             </div>
           </div>
 
+          <div class="codec-block" id="compiler">
+            <h3>Compile time</h3>
+            <p class="codec-lead" id="compile-lead">
+              Wall time of the compiler processes that write the package: the kernel's Brotli, gzip,
+              and raw compiles and the five packs. Three samples of the same build, with byte-identical output.
+            </p>
+            <div class="compile-facts" id="compile-facts"></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Compiler invocation</th>
+                    <th>Config</th>
+                    <th>Output</th>
+                    <th>Wall ms · 3 samples</th>
+                  </tr>
+                </thead>
+                <tbody id="body-compile"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="codec-block">
+            <h3>Since the previous release</h3>
+            <p class="codec-lead" id="previous-lead">
+              The previous release was compiled by the old compiler route, which has since been deleted.
+              The bars are the same files; the sources were rewritten where the port could say more.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Artifact</th>
+                    <th>Codec</th>
+                    <th>Previous release</th>
+                    <th>This release</th>
+                    <th>Change</th>
+                  </tr>
+                </thead>
+                <tbody id="body-previous"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="codec-block">
+            <h3>Delivered files</h3>
+            <p class="codec-lead">
+              Every JavaScript file the npm package ships, and what wrote it. The ESM files are compiler
+              output with a license comment prepended. The CommonJS files and the browser IIFE are esbuild
+              reprints of that ESM (whitespace-minified), so they are marked
+              <code>post-processed by esbuild, not compiler-written</code>. No size claim above uses them.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>File</th>
+                    <th>Raw</th>
+                    <th>gzip-9</th>
+                    <th>Brotli-11</th>
+                    <th>Written by</th>
+                  </tr>
+                </thead>
+                <tbody id="body-delivered"></tbody>
+              </table>
+            </div>
+          </div>
+
           <div class="method-note">
             <p>
               <strong>Why the kernel stays separate.</strong> The published <code>posthog-js</code> IIFE
@@ -366,8 +439,7 @@
               The fair fight is the 1.418.10 kernel in <code>official/</code>, then the
               same Oxc, Terser, and esbuild work the JS ecosystem actually ships. Surveys,
               error tracking, OTLP, autocapture, and replay core have their own tabbed receipts
-              above, so their larger graphs never distort this kernel table. Closed
-              LilScript is the other honest comparison: public JS keys mangle.
+              above, so their larger graphs never distort this kernel table.
               Losses stay on the page.
             </p>
             <a href="https://github.com/yeargun/posthoglil#what-is-compared">README ↗</a>

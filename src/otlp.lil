@@ -23,6 +23,14 @@ import {
   isBooleanValue
 } from "./error-host.lil";
 
+extern JsValue WeakSet;
+extern JsValue Number;
+extern JsValue globalThis;
+extern JsValue Date;
+extern JsValue String;
+extern JsValue Object;
+extern JsValue Reflect;
+
 string circularValue = "[Circular]";
 string truncatedValue = "[Truncated]";
 string unserializableValue = "[Unserializable]";

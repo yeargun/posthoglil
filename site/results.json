@@ -1,10 +1,10 @@
 {
   "pin": "posthog-js@1.418.10",
   "package": "@itslil/posthog-js",
-  "node": "v20.19.0",
+  "node": "v24.11.1",
   "codec": "lilscript-codec gzip-9 / brotli-11",
   "comparison": "Same capture kernel on every compiler row: posthog-js@1.418.10 UUID, feature-flag utils, cookie identity, request router, token-bucket rate limit, queue batching, bot detection, string/number/type helpers, JSON sanitize, URL trim, and the bucketed exception limiter. Then Vite 8 Oxc, Terser, and esbuild with the settings named on each row. LilScript emits separate raw-, gzip-, and Brotli-scored artifacts. Compiler comparisons exclude package metadata; the packaged ESM and its license banner are reported as a separate lane. The published posthog-js browser bundle is not a lane.",
-  "packComparison": "Each pack is measured independently. The official side is bundled directly from the untouched pinned posthog-js git submodule, then minified with the named Oxc, Terser, or esbuild settings. LilScript is the exact corresponding runtime surface and is not post-minified. Surveys, autocapture, and replay core use verified Brotli-scored production artifacts; error tracking and OTLP retain verified raw-scored artifacts because their aggressive Brotli outputs failed differential or syntax validation. No pack is combined with the capture kernel or the published PostHog browser bundle.",
+  "packComparison": "Each pack is measured independently. The official side is bundled directly from the untouched pinned posthog-js git submodule, then minified with the named Oxc, Terser, or esbuild settings. LilScript is the exact corresponding runtime surface and is not post-minified. Every pack is built with the port's release configuration (lilscript.toml, cost_model = brotli) and passes its differential suite. The ESM files are the compiler's output with a license banner; the CJS files are esbuild reprints of that ESM, not compiler-written, and are listed as such. No pack is combined with the capture kernel or the published PostHog browser bundle.",
   "submoduleCommit": "9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb",
   "packs": [
     {
@@ -17,14 +17,14 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 0.7806684733514002,
-        "gzip9": 0.74375,
-        "brotli11": 0.7347568208778174
+        "raw": 0.8527551942186089,
+        "gzip9": 0.7467672413793104,
+        "brotli11": 0.7440094899169633
       },
       "lanes": [
         {
           "id": "official",
-          "name": "Official source bundle \u00b7 no minify",
+          "name": "Official source bundle · no minify",
           "note": "esbuild bundles the untouched pinned packages/browser-common/src/utils/autocapture-utils.ts dependency graph without minification.",
           "baseline": false,
           "primary": false,
@@ -35,7 +35,7 @@
         },
         {
           "id": "official-oxc-mangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle on",
+          "name": "Official · Vite 8 Oxc mangle on",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle on.",
           "baseline": true,
           "primary": false,
@@ -46,7 +46,7 @@
         },
         {
           "id": "official-oxc-nomangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle off",
+          "name": "Official · Vite 8 Oxc mangle off",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle off.",
           "baseline": false,
           "primary": false,
@@ -57,8 +57,8 @@
         },
         {
           "id": "official-terser-mangle",
-          "name": "Official \u00b7 Terser mangle on \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 3 passes.",
+          "name": "Official · Terser mangle on · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle on · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -68,8 +68,8 @@
         },
         {
           "id": "official-terser-nomangle",
-          "name": "Official \u00b7 Terser mangle off \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle off \u00b7 3 passes.",
+          "name": "Official · Terser mangle off · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle off · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -79,8 +79,8 @@
         },
         {
           "id": "official-terser-passes-1",
-          "name": "Official \u00b7 Terser mangle on \u00b7 1 pass",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 1 pass.",
+          "name": "Official · Terser mangle on · 1 pass",
+          "note": "The untouched official source bundle minified by Terser mangle on · 1 pass.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -90,7 +90,7 @@
         },
         {
           "id": "official-esbuild-esnext",
-          "name": "Official \u00b7 esbuild minify esnext",
+          "name": "Official · esbuild minify esnext",
           "note": "The untouched official source bundle minified by esbuild minify esnext.",
           "baseline": false,
           "primary": false,
@@ -101,7 +101,7 @@
         },
         {
           "id": "official-esbuild-es2018",
-          "name": "Official \u00b7 esbuild minify es2018",
+          "name": "Official · esbuild minify es2018",
           "note": "The untouched official source bundle minified by esbuild minify es2018.",
           "baseline": false,
           "primary": false,
@@ -112,25 +112,25 @@
         },
         {
           "id": "lilscript",
-          "name": "LilScript compiler \u00b7 cost_model brotli",
+          "name": "LilScript compiler · cost_model brotli",
           "note": "Direct verified compiler output scored for brotli, not post-minified and without package metadata.",
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 8642,
-          "gzip9": 3451,
-          "brotli11": 3097
+          "raw": 9440,
+          "gzip9": 3465,
+          "brotli11": 3136
         },
         {
           "id": "package",
-          "name": "@itslil/posthog-js/autocapture \u00b7 packaged ESM",
+          "name": "@itslil/posthog-js/autocapture · packaged ESM",
           "note": "The same compiler output with the package license banner added.",
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 8792,
-          "gzip9": 3543,
-          "brotli11": 3178
+          "raw": 9590,
+          "gzip9": 3558,
+          "brotli11": 3216
         }
       ]
     },
@@ -144,14 +144,14 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 0.8164458300857366,
-        "gzip9": 0.8105195085147661,
-        "brotli11": 0.8090652888680131
+        "raw": 0.909684333593141,
+        "gzip9": 0.8269023496443199,
+        "brotli11": 0.818694222639737
       },
       "lanes": [
         {
           "id": "official",
-          "name": "Official source bundle \u00b7 no minify",
+          "name": "Official source bundle · no minify",
           "note": "esbuild bundles the untouched pinned browser replay external/config.ts + sessionrecording-utils.ts dependency graph without minification.",
           "baseline": false,
           "primary": false,
@@ -162,7 +162,7 @@
         },
         {
           "id": "official-oxc-mangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle on",
+          "name": "Official · Vite 8 Oxc mangle on",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle on.",
           "baseline": true,
           "primary": false,
@@ -173,7 +173,7 @@
         },
         {
           "id": "official-oxc-nomangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle off",
+          "name": "Official · Vite 8 Oxc mangle off",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle off.",
           "baseline": false,
           "primary": false,
@@ -184,8 +184,8 @@
         },
         {
           "id": "official-terser-mangle",
-          "name": "Official \u00b7 Terser mangle on \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 3 passes.",
+          "name": "Official · Terser mangle on · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle on · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -195,8 +195,8 @@
         },
         {
           "id": "official-terser-nomangle",
-          "name": "Official \u00b7 Terser mangle off \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle off \u00b7 3 passes.",
+          "name": "Official · Terser mangle off · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle off · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -206,8 +206,8 @@
         },
         {
           "id": "official-terser-passes-1",
-          "name": "Official \u00b7 Terser mangle on \u00b7 1 pass",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 1 pass.",
+          "name": "Official · Terser mangle on · 1 pass",
+          "note": "The untouched official source bundle minified by Terser mangle on · 1 pass.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -217,7 +217,7 @@
         },
         {
           "id": "official-esbuild-esnext",
-          "name": "Official \u00b7 esbuild minify esnext",
+          "name": "Official · esbuild minify esnext",
           "note": "The untouched official source bundle minified by esbuild minify esnext.",
           "baseline": false,
           "primary": false,
@@ -228,7 +228,7 @@
         },
         {
           "id": "official-esbuild-es2018",
-          "name": "Official \u00b7 esbuild minify es2018",
+          "name": "Official · esbuild minify es2018",
           "note": "The untouched official source bundle minified by esbuild minify es2018.",
           "baseline": false,
           "primary": false,
@@ -239,25 +239,25 @@
         },
         {
           "id": "lilscript",
-          "name": "LilScript compiler \u00b7 cost_model brotli",
+          "name": "LilScript compiler · cost_model brotli",
           "note": "Direct verified compiler output scored for brotli, not post-minified and without package metadata.",
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 8380,
-          "gzip9": 3760,
-          "brotli11": 3445
+          "raw": 9337,
+          "gzip9": 3836,
+          "brotli11": 3486
         },
         {
           "id": "package",
-          "name": "@itslil/posthog-js/replay-core \u00b7 packaged ESM",
+          "name": "@itslil/posthog-js/replay-core · packaged ESM",
           "note": "The same compiler output with the package license banner added.",
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 8529,
-          "gzip9": 3861,
-          "brotli11": 3547
+          "raw": 9486,
+          "gzip9": 3935,
+          "brotli11": 3576
         }
       ]
     },
@@ -271,14 +271,14 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 0.8651505445227419,
-        "gzip9": 0.8357852882703777,
-        "brotli11": 0.8036428254109285
+        "raw": 0.9732543241511852,
+        "gzip9": 0.8333996023856859,
+        "brotli11": 0.8103065304309196
       },
       "lanes": [
         {
           "id": "official",
-          "name": "Official source bundle \u00b7 no minify",
+          "name": "Official source bundle · no minify",
           "note": "esbuild bundles the untouched pinned packages/core/src/surveys/index.ts dependency graph without minification.",
           "baseline": false,
           "primary": false,
@@ -289,7 +289,7 @@
         },
         {
           "id": "official-oxc-mangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle on",
+          "name": "Official · Vite 8 Oxc mangle on",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle on.",
           "baseline": true,
           "primary": false,
@@ -300,7 +300,7 @@
         },
         {
           "id": "official-oxc-nomangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle off",
+          "name": "Official · Vite 8 Oxc mangle off",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle off.",
           "baseline": false,
           "primary": false,
@@ -311,8 +311,8 @@
         },
         {
           "id": "official-terser-mangle",
-          "name": "Official \u00b7 Terser mangle on \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 3 passes.",
+          "name": "Official · Terser mangle on · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle on · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -322,8 +322,8 @@
         },
         {
           "id": "official-terser-nomangle",
-          "name": "Official \u00b7 Terser mangle off \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle off \u00b7 3 passes.",
+          "name": "Official · Terser mangle off · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle off · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -333,8 +333,8 @@
         },
         {
           "id": "official-terser-passes-1",
-          "name": "Official \u00b7 Terser mangle on \u00b7 1 pass",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 1 pass.",
+          "name": "Official · Terser mangle on · 1 pass",
+          "note": "The untouched official source bundle minified by Terser mangle on · 1 pass.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -344,7 +344,7 @@
         },
         {
           "id": "official-esbuild-esnext",
-          "name": "Official \u00b7 esbuild minify esnext",
+          "name": "Official · esbuild minify esnext",
           "note": "The untouched official source bundle minified by esbuild minify esnext.",
           "baseline": false,
           "primary": false,
@@ -355,7 +355,7 @@
         },
         {
           "id": "official-esbuild-es2018",
-          "name": "Official \u00b7 esbuild minify es2018",
+          "name": "Official · esbuild minify es2018",
           "note": "The untouched official source bundle minified by esbuild minify es2018.",
           "baseline": false,
           "primary": false,
@@ -366,25 +366,25 @@
         },
         {
           "id": "lilscript",
-          "name": "LilScript compiler \u00b7 cost_model brotli",
+          "name": "LilScript compiler · cost_model brotli",
           "note": "Direct verified compiler output scored for brotli, not post-minified and without package metadata.",
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 5402,
-          "gzip9": 2102,
-          "brotli11": 1809
+          "raw": 6077,
+          "gzip9": 2096,
+          "brotli11": 1824
         },
         {
           "id": "package",
-          "name": "@itslil/posthog-js/surveys \u00b7 packaged ESM",
+          "name": "@itslil/posthog-js/surveys · packaged ESM",
           "note": "The same compiler output with the package license banner added.",
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 5524,
-          "gzip9": 2181,
-          "brotli11": 1893
+          "raw": 6199,
+          "gzip9": 2176,
+          "brotli11": 1895
         }
       ]
     },
@@ -396,16 +396,16 @@
       "exports": 26,
       "differentialGroups": 5,
       "exact": true,
-      "costModel": "raw",
+      "costModel": "brotli",
       "ratios": {
-        "raw": 1.3176237893875324,
-        "gzip9": 1.2528070175438597,
-        "brotli11": 1.2434915773353752
+        "raw": 1.2993452462147046,
+        "gzip9": 1.1226315789473684,
+        "brotli11": 1.112366003062787
       },
       "lanes": [
         {
           "id": "official",
-          "name": "Official source bundle \u00b7 no minify",
+          "name": "Official source bundle · no minify",
           "note": "esbuild bundles the untouched pinned packages/core/src/error-tracking/index.ts dependency graph without minification.",
           "baseline": false,
           "primary": false,
@@ -416,7 +416,7 @@
         },
         {
           "id": "official-oxc-mangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle on",
+          "name": "Official · Vite 8 Oxc mangle on",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle on.",
           "baseline": true,
           "primary": false,
@@ -427,7 +427,7 @@
         },
         {
           "id": "official-oxc-nomangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle off",
+          "name": "Official · Vite 8 Oxc mangle off",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle off.",
           "baseline": false,
           "primary": false,
@@ -438,8 +438,8 @@
         },
         {
           "id": "official-terser-mangle",
-          "name": "Official \u00b7 Terser mangle on \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 3 passes.",
+          "name": "Official · Terser mangle on · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle on · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -449,8 +449,8 @@
         },
         {
           "id": "official-terser-nomangle",
-          "name": "Official \u00b7 Terser mangle off \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle off \u00b7 3 passes.",
+          "name": "Official · Terser mangle off · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle off · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -460,8 +460,8 @@
         },
         {
           "id": "official-terser-passes-1",
-          "name": "Official \u00b7 Terser mangle on \u00b7 1 pass",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 1 pass.",
+          "name": "Official · Terser mangle on · 1 pass",
+          "note": "The untouched official source bundle minified by Terser mangle on · 1 pass.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -471,7 +471,7 @@
         },
         {
           "id": "official-esbuild-esnext",
-          "name": "Official \u00b7 esbuild minify esnext",
+          "name": "Official · esbuild minify esnext",
           "note": "The untouched official source bundle minified by esbuild minify esnext.",
           "baseline": false,
           "primary": false,
@@ -482,7 +482,7 @@
         },
         {
           "id": "official-esbuild-es2018",
-          "name": "Official \u00b7 esbuild minify es2018",
+          "name": "Official · esbuild minify es2018",
           "note": "The untouched official source bundle minified by esbuild minify es2018.",
           "baseline": false,
           "primary": false,
@@ -493,25 +493,25 @@
         },
         {
           "id": "lilscript",
-          "name": "LilScript compiler \u00b7 cost_model raw",
-          "note": "Direct verified compiler output scored for raw, not post-minified and without package metadata.",
+          "name": "LilScript compiler · cost_model brotli",
+          "note": "Direct verified compiler output scored for brotli, not post-minified and without package metadata.",
           "baseline": false,
           "primary": true,
-          "costModel": "raw",
-          "raw": 19319,
-          "gzip9": 7141,
-          "brotli11": 6496
+          "costModel": "brotli",
+          "raw": 19051,
+          "gzip9": 6399,
+          "brotli11": 5811
         },
         {
           "id": "package",
-          "name": "@itslil/posthog-js/error-tracking \u00b7 packaged ESM",
+          "name": "@itslil/posthog-js/error-tracking · packaged ESM",
           "note": "The same compiler output with the package license banner added.",
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 19455,
-          "gzip9": 7220,
-          "brotli11": 6569
+          "raw": 19187,
+          "gzip9": 6480,
+          "brotli11": 5864
         }
       ]
     },
@@ -523,16 +523,16 @@
       "exports": 14,
       "differentialGroups": 6,
       "exact": true,
-      "costModel": "raw",
+      "costModel": "brotli",
       "ratios": {
-        "raw": 1.083875632682574,
-        "gzip9": 1.1193548387096774,
-        "brotli11": 1.112758486149044
+        "raw": 1,
+        "gzip9": 0.8885304659498208,
+        "brotli11": 0.8802184939523995
       },
       "lanes": [
         {
           "id": "official",
-          "name": "Official source bundle \u00b7 no minify",
+          "name": "Official source bundle · no minify",
           "note": "esbuild bundles the untouched pinned packages/core/src/logs/logs-utils.ts + metrics helpers/config dependency graph without minification.",
           "baseline": false,
           "primary": false,
@@ -543,7 +543,7 @@
         },
         {
           "id": "official-oxc-mangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle on",
+          "name": "Official · Vite 8 Oxc mangle on",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle on.",
           "baseline": true,
           "primary": false,
@@ -554,7 +554,7 @@
         },
         {
           "id": "official-oxc-nomangle",
-          "name": "Official \u00b7 Vite 8 Oxc mangle off",
+          "name": "Official · Vite 8 Oxc mangle off",
           "note": "The untouched official source bundle minified by Vite 8 Oxc mangle off.",
           "baseline": false,
           "primary": false,
@@ -565,8 +565,8 @@
         },
         {
           "id": "official-terser-mangle",
-          "name": "Official \u00b7 Terser mangle on \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 3 passes.",
+          "name": "Official · Terser mangle on · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle on · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -576,8 +576,8 @@
         },
         {
           "id": "official-terser-nomangle",
-          "name": "Official \u00b7 Terser mangle off \u00b7 3 passes",
-          "note": "The untouched official source bundle minified by Terser mangle off \u00b7 3 passes.",
+          "name": "Official · Terser mangle off · 3 passes",
+          "note": "The untouched official source bundle minified by Terser mangle off · 3 passes.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -587,8 +587,8 @@
         },
         {
           "id": "official-terser-passes-1",
-          "name": "Official \u00b7 Terser mangle on \u00b7 1 pass",
-          "note": "The untouched official source bundle minified by Terser mangle on \u00b7 1 pass.",
+          "name": "Official · Terser mangle on · 1 pass",
+          "note": "The untouched official source bundle minified by Terser mangle on · 1 pass.",
           "baseline": false,
           "primary": false,
           "costModel": null,
@@ -598,7 +598,7 @@
         },
         {
           "id": "official-esbuild-esnext",
-          "name": "Official \u00b7 esbuild minify esnext",
+          "name": "Official · esbuild minify esnext",
           "note": "The untouched official source bundle minified by esbuild minify esnext.",
           "baseline": false,
           "primary": false,
@@ -609,7 +609,7 @@
         },
         {
           "id": "official-esbuild-es2018",
-          "name": "Official \u00b7 esbuild minify es2018",
+          "name": "Official · esbuild minify es2018",
           "note": "The untouched official source bundle minified by esbuild minify es2018.",
           "baseline": false,
           "primary": false,
@@ -620,25 +620,25 @@
         },
         {
           "id": "lilscript",
-          "name": "LilScript compiler \u00b7 cost_model raw",
-          "note": "Direct verified compiler output scored for raw, not post-minified and without package metadata.",
+          "name": "LilScript compiler · cost_model brotli",
+          "note": "Direct verified compiler output scored for brotli, not post-minified and without package metadata.",
           "baseline": false,
           "primary": true,
-          "costModel": "raw",
-          "raw": 7495,
-          "gzip9": 3123,
-          "brotli11": 2852
+          "costModel": "brotli",
+          "raw": 6915,
+          "gzip9": 2479,
+          "brotli11": 2256
         },
         {
           "id": "package",
-          "name": "@itslil/posthog-js/otlp \u00b7 packaged ESM",
+          "name": "@itslil/posthog-js/otlp · packaged ESM",
           "note": "The same compiler output with the package license banner added.",
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 7633,
-          "gzip9": 3219,
-          "brotli11": 2944
+          "raw": 7053,
+          "gzip9": 2576,
+          "brotli11": 2337
         }
       ]
     }
@@ -647,76 +647,78 @@
     {
       "id": "kernel",
       "name": "Official kernel",
-      "raw": 35538,
-      "gzip9": 9751,
-      "brotli11": 8533,
-      "note": "posthog-js@1.418.10 UUID, flags, cookie, router, rate-limit, queue, bot, string, number, type, JSON, URL, and bucketed-limiter algorithms \u2014 esbuild bundle, no minify",
+      "raw": 35193,
+      "gzip9": 9732,
+      "brotli11": 8561,
+      "note": "posthog-js@1.418.10 UUID, flags, cookie, router, rate-limit, queue, bot, string, number, type, JSON, URL, and bucketed-limiter algorithms — esbuild bundle, no minify",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": null,
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "2360751b5c5c916b0c0b0af56604e0351ab0c32b7eaee56266547ec574cb44e8"
+      "costModel": null
     },
     {
       "id": "kernel-oxc-mangle",
-      "name": "Official \u00b7 Vite 8 Oxc mangle on",
-      "raw": 16124,
-      "gzip9": 6198,
-      "brotli11": 5639,
+      "name": "Official · Vite 8 Oxc mangle on",
+      "raw": 16123,
+      "gzip9": 6194,
+      "brotli11": 5622,
       "note": "Vite 8 Oxc minify of the same official kernel, mangle: true",
       "primary": false,
       "baseline": true,
       "diagnostic": false,
-      "costModel": null,
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "e42c30f420c8391dd0dd90f774e73783757c5d9d45b6d3bdc890d9df23bd466e"
+      "costModel": null
     },
     {
       "id": "kernel-oxc-nomangle",
-      "name": "Official \u00b7 Vite 8 Oxc mangle off",
-      "raw": 22035,
-      "gzip9": 6955,
-      "brotli11": 6322,
+      "name": "Official · Vite 8 Oxc mangle off",
+      "raw": 22034,
+      "gzip9": 6951,
+      "brotli11": 6307,
       "note": "Vite 8 Oxc minify, mangle: false",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": null,
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "3d07a8dbb23e4c7ca596931a8c4bfeb08235b5b245b2a16c3545f3b548605157"
+      "costModel": null
     },
     {
       "id": "kernel-terser-mangle",
-      "name": "Official \u00b7 Terser mangle on \u00b7 3 passes",
-      "raw": 16344,
-      "gzip9": 6238,
-      "brotli11": 5639,
+      "name": "Official · Terser mangle on · 3 passes",
+      "raw": 16343,
+      "gzip9": 6234,
+      "brotli11": 5626,
       "note": "Terser compress passes=3, mangle: true",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": null,
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "201239f8f141ba9d937b9e84907680b2eeaa11b7f8169d9784bba37eed63eb98"
+      "costModel": null
     },
     {
       "id": "kernel-terser-nomangle",
-      "name": "Official \u00b7 Terser mangle off \u00b7 3 passes",
-      "raw": 23299,
-      "gzip9": 7115,
-      "brotli11": 6456,
+      "name": "Official · Terser mangle off · 3 passes",
+      "raw": 23298,
+      "gzip9": 7111,
+      "brotli11": 6428,
       "note": "Terser compress passes=3, mangle: false",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": null,
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "b01c2811cbaf81d673803a014ef927e17806ff54b03698c28054421bd0dd2af2"
+      "costModel": null
+    },
+    {
+      "id": "kernel-terser-passes-1",
+      "name": "Official · Terser mangle on · 1 pass",
+      "raw": 16343,
+      "gzip9": 6234,
+      "brotli11": 5626,
+      "note": "Terser compress passes=1, mangle: true",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
     },
     {
       "id": "kernel-esbuild-esnext",
-      "name": "Official \u00b7 esbuild minify esnext",
+      "name": "Official · esbuild minify esnext",
       "raw": 16551,
       "gzip9": 6355,
       "brotli11": 5775,
@@ -724,104 +726,346 @@
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": null,
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "34b3eb157bc386440bb06e2c99923a6f332877951626556ba9007a7e3b3ed7d4"
+      "costModel": null
+    },
+    {
+      "id": "kernel-esbuild-es2018",
+      "name": "Official · esbuild minify es2018",
+      "raw": 17213,
+      "gzip9": 6598,
+      "brotli11": 5943,
+      "note": "esbuild minify:true, target:es2018, format:esm",
+      "primary": false,
+      "baseline": false,
+      "diagnostic": false,
+      "costModel": null
     },
     {
       "id": "itslil",
-      "name": "LilScript compiler \u00b7 cost_model brotli",
-      "raw": 16264,
-      "gzip9": 6313,
-      "brotli11": 5533,
-      "note": "ESM output from LilScript 4dc4e33.",
+      "name": "LilScript compiler · cost_model brotli",
+      "raw": 17531,
+      "gzip9": 5984,
+      "brotli11": 5370,
+      "note": "Direct compiler output, not post-minified and without package metadata.",
       "primary": true,
       "baseline": false,
       "diagnostic": false,
-      "costModel": "brotli",
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+      "costModel": "brotli"
     },
     {
       "id": "itslil-package",
-      "name": "@itslil/posthog-js \u00b7 packaged ESM",
-      "raw": 16355,
-      "gzip9": 6369,
-      "brotli11": 5618,
-      "note": "ESM output from LilScript 4dc4e33.",
+      "name": "@itslil/posthog-js · packaged ESM",
+      "raw": 17622,
+      "gzip9": 6039,
+      "brotli11": 5419,
+      "note": "The same Brotli-scored output with the package license banner added.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": null,
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "0698716353065fbab13ded2c558b0a73a91663c53e65eb2165e1e8bf64c7ac8d"
+      "costModel": null
     },
     {
       "id": "itslil-gzip",
-      "name": "LilScript compiler \u00b7 cost_model gzip",
-      "raw": 16195,
-      "gzip9": 6299,
-      "brotli11": 5629,
-      "note": "ESM output from LilScript 4dc4e33.",
+      "name": "LilScript compiler · cost_model gzip",
+      "raw": 17531,
+      "gzip9": 5984,
+      "brotli11": 5370,
+      "note": "Direct compiler output scored for gzip. Not the packaged ESM.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": "gzip",
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+      "costModel": "gzip"
     },
     {
       "id": "itslil-bytes",
-      "name": "LilScript compiler \u00b7 cost_model raw",
-      "raw": 15646,
-      "gzip9": 6676,
-      "brotli11": 5892,
-      "note": "ESM output from LilScript 4dc4e33.",
+      "name": "LilScript compiler · cost_model raw",
+      "raw": 15651,
+      "gzip9": 6300,
+      "brotli11": 5554,
+      "note": "Direct compiler output scored for raw bytes. Not the packaged ESM.",
       "primary": false,
       "baseline": false,
       "diagnostic": false,
-      "costModel": "raw",
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
-    },
-    {
-      "id": "itslil-closed",
-      "name": "LilScript compiler \u00b7 closed fields",
-      "raw": 16458,
-      "gzip9": 6374,
-      "brotli11": 5637,
-      "note": "ESM output from LilScript 4dc4e33.",
-      "primary": false,
-      "baseline": false,
-      "diagnostic": false,
-      "costModel": "brotli",
-      "measuredAt": "2026-09-10T20:35:59Z",
-      "artifactSha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+      "costModel": "raw"
     }
   ],
   "matched": {
-    "raw": 16355,
-    "gzip9": 6369,
-    "brotli11": 5618,
+    "raw": 17622,
+    "gzip9": 6039,
+    "brotli11": 5419,
     "vsOxc": {
-      "raw": 0.9703547506822129,
-      "gzip9": 1.0162955792191029,
-      "brotli11": 0.9812023408405746
+      "raw": 1.0929727718166595,
+      "gzip9": 0.9749757830158218,
+      "brotli11": 0.963891853432942
     }
   },
   "hero": {
-    "brotliRatio": 0.9962759354495478,
-    "officialBrotli": 5639,
-    "itslilBrotli": 5618,
-    "packageBrotli": 5618,
-    "packageRaw": 16359,
-    "gzipRatio": 1.0275895450145207,
-    "officialGzip": 6198,
-    "itslilGzip": 6369,
-    "rawRatio": 1.0143264698585959,
-    "officialRaw": 16124,
-    "itslilRaw": 16355,
+    "brotliRatio": 0.963891853432942,
+    "officialBrotli": 5622,
+    "itslilBrotli": 5419,
+    "packageBrotli": 5419,
+    "packageRaw": 17622,
+    "gzipRatio": 0.9749757830158218,
+    "officialGzip": 6194,
+    "itslilGzip": 6039,
+    "rawRatio": 1.0929727718166595,
+    "officialRaw": 16123,
+    "itslilRaw": 17622,
     "kernelRawBrotli": 8561
   },
-  "sizeMeasuredAt": "2026-09-10T20:35:59Z"
+  "objectives": {
+    "brotli11": 5370,
+    "gzip9": 5984,
+    "raw": 15651
+  },
+  "delivered": [
+    {
+      "file": "dist/posthog.esm.js",
+      "writtenBy": "LilScript compiler output + license banner",
+      "compilerWritten": true,
+      "raw": 17622,
+      "gzip9": 6039,
+      "brotli11": 5419
+    },
+    {
+      "file": "dist/posthog.cjs",
+      "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
+      "compilerWritten": false,
+      "raw": 20259,
+      "gzip9": 6846,
+      "brotli11": 6192
+    },
+    {
+      "file": "dist/posthog.umd.js",
+      "writtenBy": "post-processed by esbuild (IIFE wrapper, whitespace-minified reprint), not compiler-written",
+      "compilerWritten": false,
+      "raw": 20331,
+      "gzip9": 6877,
+      "brotli11": 6216
+    },
+    {
+      "file": "dist/autocapture.esm.js",
+      "writtenBy": "LilScript compiler output + license banner",
+      "compilerWritten": true,
+      "raw": 9590,
+      "gzip9": 3558,
+      "brotli11": 3216
+    },
+    {
+      "file": "dist/autocapture.cjs",
+      "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
+      "compilerWritten": false,
+      "raw": 11430,
+      "gzip9": 4092,
+      "brotli11": 3702
+    },
+    {
+      "file": "dist/replay-core.esm.js",
+      "writtenBy": "LilScript compiler output + license banner",
+      "compilerWritten": true,
+      "raw": 9486,
+      "gzip9": 3935,
+      "brotli11": 3576
+    },
+    {
+      "file": "dist/replay-core.cjs",
+      "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
+      "compilerWritten": false,
+      "raw": 10748,
+      "gzip9": 4289,
+      "brotli11": 3884
+    },
+    {
+      "file": "dist/surveys.esm.js",
+      "writtenBy": "LilScript compiler output + license banner",
+      "compilerWritten": true,
+      "raw": 6199,
+      "gzip9": 2176,
+      "brotli11": 1895
+    },
+    {
+      "file": "dist/surveys.cjs",
+      "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
+      "compilerWritten": false,
+      "raw": 7786,
+      "gzip9": 2634,
+      "brotli11": 2323
+    },
+    {
+      "file": "dist/error-tracking.esm.js",
+      "writtenBy": "LilScript compiler output + license banner",
+      "compilerWritten": true,
+      "raw": 19187,
+      "gzip9": 6480,
+      "brotli11": 5864
+    },
+    {
+      "file": "dist/error-tracking.cjs",
+      "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
+      "compilerWritten": false,
+      "raw": 20845,
+      "gzip9": 6980,
+      "brotli11": 6325
+    },
+    {
+      "file": "dist/otlp.esm.js",
+      "writtenBy": "LilScript compiler output + license banner",
+      "compilerWritten": true,
+      "raw": 7053,
+      "gzip9": 2576,
+      "brotli11": 2337
+    },
+    {
+      "file": "dist/otlp.cjs",
+      "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
+      "compilerWritten": false,
+      "raw": 8274,
+      "gzip9": 2981,
+      "brotli11": 2719
+    }
+  ],
+  "compiler": {
+    "revision": "aa2052f0",
+    "binarySha256": "13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9",
+    "codecSha256": "125776830df72bbaf9704fee3c38bb0bf29bfc6bcceb5bc8707a0507a128d7b9",
+    "date": "2026-09-24",
+    "compileWallMs": [
+      523,
+      517,
+      517
+    ],
+    "scope": "sum of the 8 compiler invocations of npm run build and npm run build:packs, one process each; esbuild packaging not counted",
+    "host": "8 × AMD EPYC 7763 64-Core Processor, Node v24.11.1",
+    "invocations": [
+      {
+        "entry": "src/entry.lil",
+        "config": "lilscript.toml",
+        "output": "dist/posthog.raw.js",
+        "wallMs": [
+          102,
+          102,
+          103
+        ]
+      },
+      {
+        "entry": "src/entry.lil",
+        "config": "lilscript.gzip.toml",
+        "output": "dist/posthog.gzip.js",
+        "wallMs": [
+          34,
+          33,
+          34
+        ]
+      },
+      {
+        "entry": "src/entry.lil",
+        "config": "lilscript.bytes.toml",
+        "output": "dist/posthog.bytes.js",
+        "wallMs": [
+          36,
+          35,
+          35
+        ]
+      },
+      {
+        "entry": "src/surveys-entry.lil",
+        "config": "lilscript.toml",
+        "output": "dist/surveys.raw.js",
+        "wallMs": [
+          45,
+          42,
+          42
+        ]
+      },
+      {
+        "entry": "src/error-tracking-entry.lil",
+        "config": "lilscript.toml",
+        "output": "dist/error-tracking.raw.js",
+        "wallMs": [
+          135,
+          135,
+          135
+        ]
+      },
+      {
+        "entry": "src/otlp-entry.lil",
+        "config": "lilscript.toml",
+        "output": "dist/otlp.raw.js",
+        "wallMs": [
+          47,
+          46,
+          45
+        ]
+      },
+      {
+        "entry": "src/autocapture-entry.lil",
+        "config": "lilscript.toml",
+        "output": "dist/autocapture.raw.js",
+        "wallMs": [
+          61,
+          61,
+          60
+        ]
+      },
+      {
+        "entry": "src/replay-core-entry.lil",
+        "config": "lilscript.toml",
+        "output": "dist/replay-core.raw.js",
+        "wallMs": [
+          63,
+          63,
+          63
+        ]
+      }
+    ]
+  },
+  "previousRelease": {
+    "label": "Previous release: the deleted old compiler route, dist committed 2026-09-02 (5392877)",
+    "commit": "5392877",
+    "date": "2026-09-02",
+    "kernel": {
+      "brotli11": 5559,
+      "gzip9": 6338,
+      "raw": 15894,
+      "packageBrotli": 5621,
+      "packageRaw": 16572
+    },
+    "packs": {
+      "autocapture": {
+        "costModel": "brotli",
+        "raw": 8642,
+        "gzip9": 3451,
+        "brotli11": 3097,
+        "packageBrotli": 3178
+      },
+      "replay-core": {
+        "costModel": "brotli",
+        "raw": 8380,
+        "gzip9": 3760,
+        "brotli11": 3445,
+        "packageBrotli": 3547
+      },
+      "surveys": {
+        "costModel": "brotli",
+        "raw": 5402,
+        "gzip9": 2102,
+        "brotli11": 1809,
+        "packageBrotli": 1893
+      },
+      "error-tracking": {
+        "costModel": "raw",
+        "raw": 19319,
+        "gzip9": 7141,
+        "brotli11": 6496,
+        "packageBrotli": 6569
+      },
+      "otlp": {
+        "costModel": "raw",
+        "raw": 7495,
+        "gzip9": 3123,
+        "brotli11": 2852,
+        "packageBrotli": 2944
+      }
+    }
+  }
 }

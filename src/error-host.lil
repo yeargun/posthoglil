@@ -10,6 +10,14 @@ import {
   undef
 } from "./host.lil";
 
+extern JsValue Reflect;
+extern JsValue Symbol;
+extern JsValue Error;
+extern JsValue globalThis;
+extern JsValue String;
+extern JsValue Object;
+extern JsValue JSON;
+
 export bool isStringValue(JsValue value) {
   return objectTag(value) == "[object String]";
 }

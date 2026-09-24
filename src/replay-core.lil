@@ -20,6 +20,14 @@ import {
 } from "./host.lil";
 import { shouldCaptureValue } from "./autocapture-utils.lil";
 
+extern JsValue WeakSet;
+extern JsValue String;
+extern JsValue Blob;
+extern JsValue globalThis;
+extern JsValue parseInt;
+extern JsValue JSON;
+extern JsValue Math;
+
 export int MAX_PAYLOAD_SIZE_BYTES = 1000000;
 export int FULL_SNAPSHOT_EVENT_TYPE = 2;
 export int META_EVENT_TYPE = 4;

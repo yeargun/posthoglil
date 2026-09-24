@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { measureFile } from "./codec.mjs"
@@ -8,7 +8,6 @@ import { bundleOfficialKernel } from "./official-bundle.mjs"
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const lilPath = join(root, "dist/posthog.raw.js")
 const packagePath = join(root, "dist/posthog.esm.js")
-const closedPath = join(root, "dist/posthog.closed.js")
 const gzipPath = join(root, "dist/posthog.gzip.js")
 const bytesPath = join(root, "dist/posthog.bytes.js")
 const lanesDir = join(root, ".tmp", "lanes")
@@ -99,13 +98,6 @@ const artifacts = [
     sourcePath: bytesPath,
     costModel: "raw",
   },
-  {
-    id: "itslil-closed",
-    name: "LilScript compiler · closed fields",
-    note: "Direct Brotli compiler output with [mangle] extern_fields = false. Not packaged.",
-    sourcePath: closedPath,
-    costModel: "brotli",
-  },
 ]
 
 const measured = []
@@ -134,6 +126,31 @@ const brotliBuild = measured.find((lane) => lane.id === "itslil")
 const gzipBuild = measured.find((lane) => lane.id === "itslil-gzip")
 const rawBuild = measured.find((lane) => lane.id === "itslil-bytes")
 
+// Every file the package delivers, and who wrote it. The ESM files are the
+// compiler's output with a license comment prepended. The CJS and browser
+// (IIFE) files are esbuild reprints of that ESM: post-processed, not
+// compiler-written, until the compiler writes those export conditions itself.
+const kernelLabel = "LilScript compiler output + license banner"
+const esbuildCjs = "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written"
+const esbuildIife = "post-processed by esbuild (IIFE wrapper, whitespace-minified reprint), not compiler-written"
+const deliveredFiles = [
+  ["dist/posthog.esm.js", kernelLabel, true],
+  ["dist/posthog.cjs", esbuildCjs, false],
+  ["dist/posthog.umd.js", esbuildIife, false],
+  ...["autocapture", "replay-core", "surveys", "error-tracking", "otlp"].flatMap((pack) => [
+    [`dist/${pack}.esm.js`, kernelLabel, true],
+    [`dist/${pack}.cjs`, esbuildCjs, false],
+  ]),
+]
+const delivered = deliveredFiles
+  .filter(([file]) => existsSync(join(root, file)))
+  .map(([file, writtenBy, compilerWritten]) => ({
+    file,
+    writtenBy,
+    compilerWritten,
+    ...measureFile(join(root, file)),
+  }))
+
 const report = {
   generatedAt: new Date().toISOString(),
   node: process.version,
@@ -153,6 +170,7 @@ const report = {
     },
   },
   lanes: measured,
+  delivered,
 }
 
 mkdirSync(join(root, "reports"), { recursive: true })

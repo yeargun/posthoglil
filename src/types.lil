@@ -32,7 +32,7 @@ export bool isEmptyString(JsValue x) {
   if (!isStringValue(x)) {
     return false;
   }
-  return JS.string(x).trim().length == 0;
+  return JS.invoke(x, "trim").length == 0.0;
 }
 
 export bool isPositiveNumber(JsValue value) {
@@ -47,7 +47,7 @@ export bool isBuiltin(JsValue candidate, string className) {
   return objectTag(candidate) == "[object " + className + "]";
 }
 
-string[] unsafeEvents = [
+export string[] knownUnsafeEditableEvent = [
   "$snapshot",
   "$pageview",
   "$pageleave",
@@ -64,41 +64,19 @@ string[] unsafeEvents = [
   "$feature_flag_called"
 ];
 
-string[] unsafeEventProperties = ["token"];
+export string[] knownUnsafeEditableEventProperty = ["token"];
 
-export JsValue knownUnsafeEditableEvent = unsafeEvents;
-export JsValue knownUnsafeEditableEventProperty = unsafeEventProperties;
 
 export bool isKnownUnsafeEditableEvent(JsValue x) {
-  return includes(unsafeEvents, x);
+  return includes(knownUnsafeEditableEvent, x);
 }
 
 export bool isKnownUnsafeEditableEventProperty(JsValue x) {
-  return includes(unsafeEventProperties, x);
+  return includes(knownUnsafeEditableEventProperty, x);
 }
 
-JsValue makeYesLike() {
-  JsValue list = JS.array();
-  JS.invoke(list, "push", true);
-  JS.invoke(list, "push", "true");
-  JS.invoke(list, "push", 1);
-  JS.invoke(list, "push", "1");
-  JS.invoke(list, "push", "yes");
-  return list;
-}
-
-JsValue makeNoLike() {
-  JsValue list = JS.array();
-  JS.invoke(list, "push", false);
-  JS.invoke(list, "push", "false");
-  JS.invoke(list, "push", 0);
-  JS.invoke(list, "push", "0");
-  JS.invoke(list, "push", "no");
-  return list;
-}
-
-export JsValue yesLikeValues = makeYesLike();
-export JsValue noLikeValues = makeNoLike();
+export JsValue[] yesLikeValues = [true, "true", 1, "1", "yes"];
+export JsValue[] noLikeValues = [false, "false", 0, "0", "no"];
 
 export bool isYesLike(JsValue val) {
   return includes(yesLikeValues, val);

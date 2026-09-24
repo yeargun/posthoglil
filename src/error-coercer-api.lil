@@ -23,6 +23,8 @@ import {
 } from "./error-host.lil";
 import { extractExceptionKeysForMessage } from "./error-coercers.lil";
 
+extern JsValue Object;
+
 Regex errorTypesPatternApi = new Regex("^(?:[Uu]ncaught (?:exception: )?)?(?:((?:Eval|Internal|Range|Reference|Syntax|Type|URI|)Error): )?(.*)$", "i");
 string[] coercerSeverityLevels = ["fatal", "error", "warning", "log", "info", "debug"];
 

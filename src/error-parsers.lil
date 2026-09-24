@@ -8,6 +8,11 @@ import {
   undef
 } from "./host.lil";
 
+extern JsValue parseInt;
+extern JsValue decodeURI;
+extern JsValue Array;
+extern JsValue Object;
+
 export string UNKNOWN_FUNCTION = "?";
 
 Regex chromeRegexNoFnName = new Regex("^\\s*at (\\S+?)(?::(\\d+))(?::(\\d+))\\s*$", "i");

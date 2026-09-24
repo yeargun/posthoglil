@@ -17,14 +17,6 @@ Regex plusRe = new Regex("[+]", "g");
 Regex slashRe = new Regex("/", "g");
 Regex eqRe = new Regex("=", "g");
 
-JsValue cookieGet(JsValue self, JsValue name) {
-  JsValue cookies = self["c"];
-  string key = toStr(name);
-  if (!hasKey(cookies, key)) {
-    return undef();
-  }
-  return JS.object("value", cookies[key]);
-}
 
 export string getPostHogCookieName(string apiKey) {
   return "ph_" + apiKey.replace(plusRe, "PL").replace(slashRe, "SL").replace(eqRe, "EQ") + "_posthog";
@@ -32,10 +24,7 @@ export string getPostHogCookieName(string apiKey) {
 
 export string serializePostHogCookie(string anonymousId) {
   number now = nowMs();
-  JsValue sesid = JS.array();
-  JS.invoke(sesid, "push", now);
-  JS.invoke(sesid, "push", uuidv7());
-  JS.invoke(sesid, "push", now);
+  JsValue[] sesid = [now, uuidv7(), now];
   JsValue payload = JS.object();
   payload["distinct_id"] = anonymousId;
   payload["$device_id"] = anonymousId;
@@ -100,8 +89,12 @@ export JsValue cookieStoreFromHeader(string cookieHeader) {
     }
   }
   JsValue store = JS.object();
-  store["c"] = cookies;
-  store["get"] = JS.method1(cookieGet);
+  store["get"] = (JsValue name) => {
+    if (JS.in(name, cookies)) {
+      return JS.object("value", cookies[name]);
+    }
+    return undef();
+  };
   return store;
 }
 
@@ -133,12 +126,12 @@ export JsValue cookieStateToProperties(JsValue state) {
 export string getConsentCookieName(string apiKey, JsValue config) {
   if (!isUndef(config) && !JS.isNullish(config)) {
     JsValue named = config["consent_persistence_name"];
-    if (isStr(named) && named.truthy()) {
-      return toStr(named);
+    if (named.truthy() && named is string) {
+      return named;
     }
     JsValue prefix = config["opt_out_capturing_cookie_prefix"];
-    if (isStr(prefix) && prefix.truthy()) {
-      return toStr(prefix) + apiKey;
+    if (prefix.truthy() && prefix is string) {
+      return prefix + apiKey;
     }
   }
   return "__ph_opt_in_out_" + apiKey;
@@ -149,8 +142,5 @@ export bool isOptedOut(JsValue cookies, string apiKey, JsValue config) {
   if (!isUndef(cookie) && !JS.isNullish(cookie)) {
     return isNoLike(cookie["value"]);
   }
-  if (!isUndef(config) && !JS.isNullish(config) && config["opt_out_capturing_by_default"].truthy()) {
-    return true;
-  }
-  return false;
+  return !JS.isNullish(config) && config["opt_out_capturing_by_default"].truthy();
 }

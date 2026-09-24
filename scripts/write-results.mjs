@@ -24,6 +24,10 @@ if (process.argv.includes("--packs-only")) {
 }
 
 const sizes = JSON.parse(readFileSync(join(root, "reports", "sizes.json"), "utf8"))
+// Kept across rewrites: the compiler run (scripts/record-compiler-run.mjs) and
+// the previous release's numbers, which no measurement here can regenerate.
+const siteResultsPath = join(root, "site", "results.json")
+const previous = existsSync(siteResultsPath) ? JSON.parse(readFileSync(siteResultsPath, "utf8")) : {}
 
 const officialOxc =
   sizes.lanes.find((lane) => lane.id === "kernel-oxc-mangle") ??
@@ -55,22 +59,42 @@ const results = {
     diagnostic: lane.diagnostic,
     costModel: lane.costModel ?? null,
   })),
-  matched: sizes.matched ?? null,
+  // The headline is the complete root package ESM (license banner included)
+  // against the original kernel minified by Oxc: all three headline sizes
+  // measure that one file. The per-objective compiles are rows of their own.
+  matched: {
+    raw: itslilPackage?.raw ?? null,
+    gzip9: itslilPackage?.gzip9 ?? null,
+    brotli11: itslilPackage?.brotli11 ?? null,
+    vsOxc: {
+      raw: itslilPackage && officialOxc ? itslilPackage.raw / officialOxc.raw : null,
+      gzip9: itslilPackage && officialOxc ? itslilPackage.gzip9 / officialOxc.gzip9 : null,
+      brotli11: itslilPackage && officialOxc ? itslilPackage.brotli11 / officialOxc.brotli11 : null,
+    },
+  },
   hero: {
-    brotliRatio: itslil && officialOxc ? itslil.brotli11 / officialOxc.brotli11 : null,
+    brotliRatio: itslilPackage && officialOxc ? itslilPackage.brotli11 / officialOxc.brotli11 : null,
     officialBrotli: officialOxc?.brotli11 ?? null,
-    itslilBrotli: itslil?.brotli11 ?? null,
+    itslilBrotli: itslilPackage?.brotli11 ?? null,
     packageBrotli: itslilPackage?.brotli11 ?? null,
     packageRaw: itslilPackage?.raw ?? null,
-    gzipRatio: itslilGzip && officialOxc ? itslilGzip.gzip9 / officialOxc.gzip9 : null,
+    gzipRatio: itslilPackage && officialOxc ? itslilPackage.gzip9 / officialOxc.gzip9 : null,
     officialGzip: officialOxc?.gzip9 ?? null,
-    itslilGzip: itslilGzip?.gzip9 ?? null,
-    rawRatio: itslilBytes && officialOxc ? itslilBytes.raw / officialOxc.raw : null,
+    itslilGzip: itslilPackage?.gzip9 ?? null,
+    rawRatio: itslilPackage && officialOxc ? itslilPackage.raw / officialOxc.raw : null,
     officialRaw: officialOxc?.raw ?? null,
-    itslilRaw: itslilBytes?.raw ?? null,
+    itslilRaw: itslilPackage?.raw ?? null,
     kernelRawBrotli: kernelRaw?.brotli11 ?? null,
   },
+  objectives: {
+    brotli11: itslil?.brotli11 ?? null,
+    gzip9: itslilGzip?.gzip9 ?? null,
+    raw: itslilBytes?.raw ?? null,
+  },
+  delivered: sizes.delivered ?? [],
+  ...(previous.compiler ? { compiler: previous.compiler } : {}),
+  ...(previous.previousRelease ? { previousRelease: previous.previousRelease } : {}),
 }
 
-writeFileSync(join(root, "site", "results.json"), `${JSON.stringify(results, null, 2)}\n`)
+writeFileSync(siteResultsPath, `${JSON.stringify(results, null, 2)}\n`)
 console.log("wrote site/results.json")

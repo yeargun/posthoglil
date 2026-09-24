@@ -1,7 +1,7 @@
 import { isArr, jsonStringify, len, objectKeys, toStr, undef } from "./host.lil";
 
 export bool includes(JsValue haystack, JsValue needle) {
-  return JS.number(JS.invoke(haystack, "indexOf", needle)).toInt() != -1;
+  return !JS.strictEqual(JS.invoke(haystack, "indexOf", needle), -1);
 }
 
 export string trim(string str) {
@@ -11,7 +11,7 @@ export string trim(string str) {
 Regex leadingDollar = new Regex("^\\$", "");
 
 export string stripLeadingDollar(string s) {
-  return JS.string(JS.invoke(s, "replace", leadingDollar, ""));
+  return s.replace(leadingDollar, "");
 }
 
 export bool isDistinctIdStringLike(string value) {
@@ -39,7 +39,7 @@ JsValue deepSortKeys(JsValue value) {
   int n = len(keys);
   int i = 0;
   while (i < n) {
-    string key = toStr(keys[i]);
+    JsValue key = keys[i];
     acc[key] = deepSortKeys(value[key]);
     i = i + 1;
   }
