@@ -930,21 +930,25 @@
     "codecSha256": "125776830df72bbaf9704fee3c38bb0bf29bfc6bcceb5bc8707a0507a128d7b9",
     "date": "2026-09-24",
     "compileWallMs": [
-      523,
-      517,
-      517
+      828,
+      899,
+      998
     ],
     "scope": "sum of the 8 compiler invocations of npm run build and npm run build:packs, one process each; esbuild packaging not counted",
     "host": "8 × AMD EPYC 7763 64-Core Processor, Node v24.11.1",
+    "load": {
+      "atStart": 10.15,
+      "atEnd": 10.15
+    },
     "invocations": [
       {
         "entry": "src/entry.lil",
         "config": "lilscript.toml",
         "output": "dist/posthog.raw.js",
         "wallMs": [
-          102,
-          102,
-          103
+          123,
+          194,
+          178
         ]
       },
       {
@@ -952,9 +956,9 @@
         "config": "lilscript.gzip.toml",
         "output": "dist/posthog.gzip.js",
         "wallMs": [
-          34,
-          33,
-          34
+          56,
+          44,
+          133
         ]
       },
       {
@@ -962,9 +966,9 @@
         "config": "lilscript.bytes.toml",
         "output": "dist/posthog.bytes.js",
         "wallMs": [
-          36,
-          35,
-          35
+          75,
+          74,
+          60
         ]
       },
       {
@@ -972,9 +976,9 @@
         "config": "lilscript.toml",
         "output": "dist/surveys.raw.js",
         "wallMs": [
-          45,
-          42,
-          42
+          66,
+          71,
+          90
         ]
       },
       {
@@ -982,9 +986,9 @@
         "config": "lilscript.toml",
         "output": "dist/error-tracking.raw.js",
         "wallMs": [
-          135,
-          135,
-          135
+          235,
+          219,
+          222
         ]
       },
       {
@@ -992,9 +996,9 @@
         "config": "lilscript.toml",
         "output": "dist/otlp.raw.js",
         "wallMs": [
-          47,
-          46,
-          45
+          75,
+          77,
+          94
         ]
       },
       {
@@ -1002,9 +1006,9 @@
         "config": "lilscript.toml",
         "output": "dist/autocapture.raw.js",
         "wallMs": [
-          61,
-          61,
-          60
+          100,
+          106,
+          91
         ]
       },
       {
@@ -1012,23 +1016,23 @@
         "config": "lilscript.toml",
         "output": "dist/replay-core.raw.js",
         "wallMs": [
-          63,
-          63,
-          63
+          98,
+          114,
+          130
         ]
       }
     ]
   },
   "previousRelease": {
-    "label": "Previous release: the deleted old compiler route, dist committed 2026-09-02 (5392877)",
-    "commit": "5392877",
-    "date": "2026-09-02",
+    "label": "Previous release: the page and dist published 2026-09-10 (aa1ea81), compiled by the old compiler route",
+    "commit": "aa1ea81",
+    "date": "2026-09-10",
     "kernel": {
-      "brotli11": 5559,
-      "gzip9": 6338,
-      "raw": 15894,
-      "packageBrotli": 5621,
-      "packageRaw": 16572
+      "brotli11": 5533,
+      "gzip9": 6299,
+      "raw": 15646,
+      "packageBrotli": 5606,
+      "packageRaw": 16359
     },
     "packs": {
       "autocapture": {

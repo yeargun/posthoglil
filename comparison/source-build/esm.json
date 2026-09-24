@@ -11,22 +11,23 @@
   "external": [],
   "samples": [
     {
-      "bundleSeconds": 0.009698234,
-      "wallSeconds": 0.10506338700000001
+      "bundleSeconds": 0.13091876500000002,
+      "wallSeconds": 1.5116072139999999
     },
     {
-      "bundleSeconds": 0.004686189000000013,
-      "wallSeconds": 0.06448149
+      "bundleSeconds": 0.0503460869999999,
+      "wallSeconds": 0.8488158069999999
     },
     {
-      "bundleSeconds": 0.00437115399999999,
-      "wallSeconds": 0.05691247100000001
+      "bundleSeconds": 0.060888358000000156,
+      "wallSeconds": 0.8713866079999998
     }
   ],
-  "medianSeconds": 0.06448149,
+  "medianSeconds": 0.8713866079999998,
   "toolchain": {
     "esbuild": "0.28.1",
-    "terser": "5.51.2"
+    "terser": "5.51.2",
+    "vite": "8.2.1 (Oxc minify)"
   },
   "artifacts": [
     {

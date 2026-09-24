@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-import { cpus } from "node:os"
+import { cpus, loadavg } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -40,6 +40,7 @@ const compiled = [
 ]
 
 const log = join(root, "reports", "compile-times.jsonl")
+const loadAtStart = loadavg()
 const runs = []
 let reference = null
 for (let sample = 0; sample < samples; sample++) {
@@ -78,6 +79,8 @@ const block = {
   compileWallMs,
   scope: `sum of the ${invocations.length} compiler invocations of npm run build and npm run build:packs, one process each; esbuild packaging not counted`,
   host: `${cpus().length} × ${cpus()[0]?.model ?? "unknown CPU"}, Node ${process.version}`,
+  // One-minute load average: the host is shared, so wall time depends on it.
+  load: { atStart: Number(loadAtStart[0].toFixed(2)), atEnd: Number(loadavg()[0].toFixed(2)) },
   invocations,
 }
 

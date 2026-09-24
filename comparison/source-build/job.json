@@ -7,9 +7,9 @@
     "directory": "packages/browser"
   },
   "portSource": {
-    "commit": "673f757a7a25247d2238198132149cc30ecd5a80"
+    "commit": "e2c542f76615066a0ed7275dbc18902506040a09"
   },
-  "compilerCommit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+  "compilerCommit": "aa2052f081ca8184666ca280ee9b91d476e46cfc",
   "install": [
     "corepack",
     "pnpm",
@@ -38,6 +38,6 @@
   "defaultExport": false,
   "external": [],
   "esmScope": "Pinned PostHog selected kernel source modules via scripts/official-bundle.mjs; not the complete SDK",
-  "lilscriptBuild": "node scripts/build.mjs --compile --force",
+  "lilscriptBuild": "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile",
   "test": "node --test test/compat.test.mjs test/api.test.mjs"
 }

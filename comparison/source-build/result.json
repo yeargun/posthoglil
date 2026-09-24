@@ -1,31 +1,31 @@
 {
   "schemaVersion": 1,
   "name": "posthoglil",
-  "startedAt": "2026-09-10T20:23:51Z",
+  "startedAt": "2026-09-24T05:12:15Z",
   "machine": {
     "provider": "Azure",
-    "instanceClass": "Standard_D16als_v7",
-    "cpu": "AMD EPYC 9V45 96-Core Processor",
-    "logicalCpus": 16,
-    "memoryBytes": 33648435200,
-    "os": "Ubuntu 24.04.4 LTS",
-    "kernel": "6.17.0-1022-azure",
+    "instanceClass": "Standard_B8als_v2",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "logicalCpus": 8,
+    "memoryBytes": 16706420736,
+    "os": "Ubuntu 24.04.3 LTS",
+    "kernel": "7.0.0-1014-azure",
     "node": "v24.11.1",
     "rayonThreads": 8,
     "loadAtStart": [
-      0.6640625,
-      2.34130859375,
-      2.37451171875
+      21.53173828125,
+      19.65283203125,
+      17.35888671875
     ],
     "loadAtEnd": [
-      2.70458984375,
-      2.55419921875,
-      2.72216796875
+      18.4189453125,
+      19.15966796875,
+      17.2939453125
     ]
   },
   "compiler": {
-    "commit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
-    "sha256": "0616048498eb9eb2e4bd75b39e8e6a083733ada647e16108edfee30ad183beeb"
+    "commit": "aa2052f081ca8184666ca280ee9b91d476e46cfc",
+    "sha256": "13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9"
   },
   "source": {
     "repository": "https://github.com/PostHog/posthog-js.git",
@@ -35,143 +35,153 @@
     "directory": "packages/browser"
   },
   "portSource": {
-    "commit": "673f757a7a25247d2238198132149cc30ecd5a80",
-    "snapshot": "/tmp/lilscript-page-refresh-20260910/current/posthoglil"
+    "commit": "e2c542f76615066a0ed7275dbc18902506040a09",
+    "snapshot": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil"
   },
+  "prerequisiteAdjustments": null,
   "steps": {
-    "original-install": {
-      "command": [
-        "corepack",
-        "pnpm",
-        "install",
-        "--frozen-lockfile",
-        "--ignore-scripts",
-        "--filter",
-        "posthog-js..."
-      ],
-      "cwd": "upstream",
-      "wallSeconds": 78.59281580900006,
-      "cpuSeconds": 47.830489,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "original-install.log",
-      "logSha256": "02e2870765bdb1dfe91f2a77e97dc5b782d62e8265ed2b58298f17db5c113f2c",
-      "tail": "Scope: 13 of 42 workspace projects\n? Verifying lockfile against supply-chain policies (3688 entries)...\nLockfile is up to date, resolution step is skipped\nProgress: resolved 1, reused 0, downloaded 0, added 0\n.                                        |    +1823 ++++++++++++++++++++++++++++\nProgress: resolved 1823, reused 0, downloaded 255, added 0\nProgress: resolved 1823, reused 0, downloaded 509, added 0\nProgress: resolved 1823, reused 0, downloaded 581, added 0\nProgress: resolved 1823, reused 0, downloaded 737, added 0\nProgress: resolved 1823, reused 0, downloaded 970, added 14\nProgress: resolved 1823, reused 0, downloaded 1103, added 26\nProgress: resolved 1823, reused 0, downloaded 1296, added 46\nProgress: resolved 1823, reused 0, downloaded 1323, added 50\nProgress: resolved 1823, reused 0, downloaded 1354, added 52\nProgress: resolved 1823, reused 0, downloaded 1397, added 56\nProgress: resolved 1823, reused 0, downloaded 1458, added 62\nProgress: resolved 1823, reused 0, downloaded 1479, added 64\nProgress: resolved 1823, reused 0, downloaded 1540, added 68\nProgress: resolved 1823, reused 0, downloaded 1627, added 76\nProgress: resolved 1823, reused 0, downloaded 1650, added 80\nProgress: resolved 1823, reused 0, downloaded 1733, added 86\nProgress: resolved 1823, reused 0, downloaded 1754, added 319\nProgress: resolved 1823, reused 0, downloaded 1757, added 732\n[WARN] Request took 14147ms: https://registry.npmjs.org/@typescript-eslint%2Ftype-utils\n[WARN] Request took 14269ms: https://registry.npmjs.org/@typescript-eslint%2Futils\n[WARN] Request took 14344ms: https://registry.npmjs.org/@typescript-eslint%2Ftypes\n[WARN] Request took 14320ms: https://registry.npmjs.org/@typescript-eslint%2Fvisitor-keys\nProgress: resolved 1823, reused 0, downloaded 1757, added 1342\n[WARN] Request took 19625ms: https://registry.npmjs.org/@typescript-eslint%2Fscope-manager\n[WARN] Request took 16053ms: https://registry.npmjs.org/@types%2Fnode\nProgress: resolved 1823, reused 0, downloaded 1757, added 1772\n[WARN] Request took 11724ms: https://registry.npmjs.org/date-fns\n[WARN] Request took 25710ms: https://registry.npmjs.org/@typescript-eslint%2Fparser\n[WARN] Request took 24769ms: https://registry.npmjs.org/@typescript-eslint%2Ftypescript-estree\nProgress: resolved 1823, reused 0, downloaded 1757, added 1821\n[WARN] Request took 25033ms: https://registry.npmjs.org/@typescript-eslint%2Feslint-plugin\n\u2713 Lockfile passes supply-chain policies (3688 entries in 58.3s)\nProgress: resolved 1823, reused 0, downloaded 1757, added 1822\nProgress: resolved 1823, reused 0, downloaded 1757, added 1823, done\nDone in 1m 17.9s using pnpm v11.7.0\n"
-    },
-    "lilscript-install": {
-      "command": [
-        "npm",
-        "ci",
-        "--no-audit",
-        "--no-fund"
-      ],
-      "cwd": "port",
-      "wallSeconds": 1.2656907099999444,
-      "cpuSeconds": 0.7597389999999979,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "lilscript-install.log",
-      "logSha256": "459cb85f724ab3ff7ed8f9a4e232396b7a6bbbdc68cb31934723301ca198e0b4",
-      "tail": "\nadded 30 packages in 1s\n"
-    },
-    "original-build-1": {
-      "command": [
-        "corepack",
-        "pnpm",
-        "exec",
-        "turbo",
-        "run",
-        "build",
-        "--filter=posthog-js...",
-        "--force"
-      ],
-      "cwd": "upstream",
-      "wallSeconds": 186.00121822200026,
-      "cpuSeconds": 316.456771,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "original-build-1.log",
-      "logSha256": "67b6e30a66c35bfa505703e8605af0f50b008d3088ab4308bbbc0223459bb06d",
-      "tail": "onType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m42ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    3m5.507s \n\n"
-    },
     "lilscript-build-1": {
       "command": [
         "bash",
         "-c",
-        "node scripts/build.mjs --compile --force"
+        "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
       ],
       "cwd": "port",
-      "wallSeconds": 40.63686424400021,
-      "cpuSeconds": 146.56531,
+      "wallSeconds": 12.303040541999508,
+      "cpuSeconds": 6.697605,
       "exitCode": 0,
       "timedOut": false,
       "log": "lilscript-build-1.log",
-      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
-      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\ncompiling surveys with lilscript.toml\nwrote dist/surveys.esm.js, dist/surveys.cjs, dist/surveys.d.ts\ncompiling error-tracking with lilscript.toml\nwrote dist/error-tracking.esm.js, dist/error-tracking.cjs, dist/error-tracking.d.ts\ncompiling otlp with lilscript.toml\nwrote dist/otlp.esm.js, dist/otlp.cjs, dist/otlp.d.ts\ncompiling autocapture with lilscript.toml\nwrote dist/autocapture.esm.js, dist/autocapture.cjs, dist/autocapture.d.ts\ncompiling replay-core with lilscript.toml\nwrote dist/replay-core.esm.js, dist/replay-core.cjs, dist/replay-core.d.ts\n",
       "invocations": [
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js"
           ],
-          "startedAt": 1789072097.5344808,
-          "wallSeconds": 16.52358865737915,
+          "startedAt": 1790226737.0565321,
+          "wallSeconds": 1.4891977310180664,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
-          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.gzip.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js"
           ],
-          "startedAt": 1789072114.0823529,
-          "wallSeconds": 9.265848636627197,
+          "startedAt": 1790226739.177782,
+          "wallSeconds": 0.4991328716278076,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
-          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.bytes.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js"
           ],
-          "startedAt": 1789072123.3720124,
-          "wallSeconds": 7.143406867980957,
+          "startedAt": 1790226740.1684935,
+          "wallSeconds": 0.5577526092529297,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
-          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "e6d3957d44a193af27a1a7556581fb7b1a361d6f503e8034bc9a28716ba6e7b1"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/surveys-entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js"
           ],
-          "startedAt": 1789072130.5392628,
-          "wallSeconds": 7.515974283218384,
+          "startedAt": 1790226742.2877004,
+          "wallSeconds": 0.41017985343933105,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
-          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js",
+          "sha256": "d0c559cf1dd5b17c3da5c8971b10e7576c3d12ad1faae244a7963310acbc030e"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/error-tracking-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js"
+          ],
+          "startedAt": 1790226743.2594252,
+          "wallSeconds": 1.0980212688446045,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js",
+          "sha256": "d03211db6a483d5af0ec775032bc018fcc039dcef03790f0baf0ec45549d601b"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/otlp-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js"
+          ],
+          "startedAt": 1790226744.880316,
+          "wallSeconds": 0.5896062850952148,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js",
+          "sha256": "8a9e571b87b45583be5f4d53a9b0e9324b84977f22c8450144e83a636c687e76"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/autocapture-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js"
+          ],
+          "startedAt": 1790226746.1090753,
+          "wallSeconds": 0.6693077087402344,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js",
+          "sha256": "c173bbdda97a2c933bc6294064ea0681f6f43f394446af42dec6c46202f9e7d8"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/replay-core-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js"
+          ],
+          "startedAt": 1790226747.1994755,
+          "wallSeconds": 0.7294516563415527,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js",
+          "sha256": "6d48b04ac7cb5871a59b8d931c63cc4a19e04c4f8745b6e0b401b40549d644db"
         }
       ]
     },
@@ -179,214 +189,302 @@
       "command": [
         "bash",
         "-c",
-        "node scripts/build.mjs --compile --force"
+        "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
       ],
       "cwd": "port",
-      "wallSeconds": 40.685474051000256,
-      "cpuSeconds": 146.88111500000008,
+      "wallSeconds": 10.312622033998196,
+      "cpuSeconds": 6.370133999999998,
       "exitCode": 0,
       "timedOut": false,
       "log": "lilscript-build-2.log",
-      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
-      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\ncompiling surveys with lilscript.toml\nwrote dist/surveys.esm.js, dist/surveys.cjs, dist/surveys.d.ts\ncompiling error-tracking with lilscript.toml\nwrote dist/error-tracking.esm.js, dist/error-tracking.cjs, dist/error-tracking.d.ts\ncompiling otlp with lilscript.toml\nwrote dist/otlp.esm.js, dist/otlp.cjs, dist/otlp.d.ts\ncompiling autocapture with lilscript.toml\nwrote dist/autocapture.esm.js, dist/autocapture.cjs, dist/autocapture.d.ts\ncompiling replay-core with lilscript.toml\nwrote dist/replay-core.esm.js, dist/replay-core.cjs, dist/replay-core.d.ts\n",
       "invocations": [
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js"
           ],
-          "startedAt": 1789072138.1777527,
-          "wallSeconds": 16.529772996902466,
+          "startedAt": 1790226749.6211843,
+          "wallSeconds": 1.4297966957092285,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
-          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.gzip.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js"
           ],
-          "startedAt": 1789072154.731452,
-          "wallSeconds": 9.30361795425415,
+          "startedAt": 1790226751.7304368,
+          "wallSeconds": 0.3525962829589844,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
-          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.bytes.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js"
           ],
-          "startedAt": 1789072164.0588686,
-          "wallSeconds": 7.152541637420654,
+          "startedAt": 1790226752.4916985,
+          "wallSeconds": 0.37047767639160156,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
-          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "e6d3957d44a193af27a1a7556581fb7b1a361d6f503e8034bc9a28716ba6e7b1"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/surveys-entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js"
           ],
-          "startedAt": 1789072171.2348087,
-          "wallSeconds": 7.5269293785095215,
+          "startedAt": 1790226754.7327592,
+          "wallSeconds": 0.521273136138916,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
-          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js",
+          "sha256": "d0c559cf1dd5b17c3da5c8971b10e7576c3d12ad1faae244a7963310acbc030e"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/error-tracking-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js"
+          ],
+          "startedAt": 1790226755.5427477,
+          "wallSeconds": 0.8891546726226807,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js",
+          "sha256": "d03211db6a483d5af0ec775032bc018fcc039dcef03790f0baf0ec45549d601b"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/otlp-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js"
+          ],
+          "startedAt": 1790226756.724574,
+          "wallSeconds": 0.29742860794067383,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js",
+          "sha256": "8a9e571b87b45583be5f4d53a9b0e9324b84977f22c8450144e83a636c687e76"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/autocapture-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js"
+          ],
+          "startedAt": 1790226757.3325963,
+          "wallSeconds": 0.3410496711730957,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js",
+          "sha256": "c173bbdda97a2c933bc6294064ea0681f6f43f394446af42dec6c46202f9e7d8"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/replay-core-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js"
+          ],
+          "startedAt": 1790226757.9350712,
+          "wallSeconds": 0.41884422302246094,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js",
+          "sha256": "6d48b04ac7cb5871a59b8d931c63cc4a19e04c4f8745b6e0b401b40549d644db"
         }
       ]
-    },
-    "original-build-2": {
-      "command": [
-        "corepack",
-        "pnpm",
-        "exec",
-        "turbo",
-        "run",
-        "build",
-        "--filter=posthog-js...",
-        "--force"
-      ],
-      "cwd": "upstream",
-      "wallSeconds": 169.0167915449997,
-      "cpuSeconds": 283.15308,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "original-build-2.log",
-      "logSha256": "3ec1f11f03879e29f42ec1f5d10ceb6597eca0ff59173adb80f3ac63055f0925",
-      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m45ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m58ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m48.497s \n\n"
-    },
-    "original-build-3": {
-      "command": [
-        "corepack",
-        "pnpm",
-        "exec",
-        "turbo",
-        "run",
-        "build",
-        "--filter=posthog-js...",
-        "--force"
-      ],
-      "cwd": "upstream",
-      "wallSeconds": 170.4987566750001,
-      "cpuSeconds": 286.6412529999999,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "original-build-3.log",
-      "logSha256": "7e5694f3bf11e127b7c6f9b7ac1aad8aace6af6abe48cc76ea15ec9311caa914",
-      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m34ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m49.992s \n\n"
     },
     "lilscript-build-3": {
       "command": [
         "bash",
         "-c",
-        "node scripts/build.mjs --compile --force"
+        "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
       ],
       "cwd": "port",
-      "wallSeconds": 40.686588218,
-      "cpuSeconds": 147.09975000000009,
+      "wallSeconds": 6.031017531000543,
+      "cpuSeconds": 5.62895,
       "exitCode": 0,
       "timedOut": false,
       "log": "lilscript-build-3.log",
-      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
-      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\ncompiling surveys with lilscript.toml\nwrote dist/surveys.esm.js, dist/surveys.cjs, dist/surveys.d.ts\ncompiling error-tracking with lilscript.toml\nwrote dist/error-tracking.esm.js, dist/error-tracking.cjs, dist/error-tracking.d.ts\ncompiling otlp with lilscript.toml\nwrote dist/otlp.esm.js, dist/otlp.cjs, dist/otlp.d.ts\ncompiling autocapture with lilscript.toml\nwrote dist/autocapture.esm.js, dist/autocapture.cjs, dist/autocapture.d.ts\ncompiling replay-core with lilscript.toml\nwrote dist/replay-core.esm.js, dist/replay-core.cjs, dist/replay-core.d.ts\n",
       "invocations": [
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js"
           ],
-          "startedAt": 1789072518.4157894,
-          "wallSeconds": 16.526140689849854,
+          "startedAt": 1790226759.2143173,
+          "wallSeconds": 0.5887057781219482,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
-          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.gzip.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js"
           ],
-          "startedAt": 1789072534.9662898,
-          "wallSeconds": 9.33491063117981,
+          "startedAt": 1790226760.0530605,
+          "wallSeconds": 0.30205345153808594,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
-          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.bytes.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js"
           ],
-          "startedAt": 1789072544.3247736,
-          "wallSeconds": 7.140847682952881,
+          "startedAt": 1790226760.584682,
+          "wallSeconds": 0.190032958984375,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
-          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "e6d3957d44a193af27a1a7556581fb7b1a361d6f503e8034bc9a28716ba6e7b1"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/surveys-entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js"
           ],
-          "startedAt": 1789072551.4895318,
-          "wallSeconds": 7.5003039836883545,
+          "startedAt": 1790226761.5152547,
+          "wallSeconds": 0.1894392967224121,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
-          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js",
+          "sha256": "d0c559cf1dd5b17c3da5c8971b10e7576c3d12ad1faae244a7963310acbc030e"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/error-tracking-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js"
+          ],
+          "startedAt": 1790226761.9964275,
+          "wallSeconds": 0.7596011161804199,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js",
+          "sha256": "d03211db6a483d5af0ec775032bc018fcc039dcef03790f0baf0ec45549d601b"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/otlp-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js"
+          ],
+          "startedAt": 1790226763.015962,
+          "wallSeconds": 0.2383403778076172,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js",
+          "sha256": "8a9e571b87b45583be5f4d53a9b0e9324b84977f22c8450144e83a636c687e76"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/autocapture-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js"
+          ],
+          "startedAt": 1790226763.5263278,
+          "wallSeconds": 0.28830909729003906,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js",
+          "sha256": "c173bbdda97a2c933bc6294064ea0681f6f43f394446af42dec6c46202f9e7d8"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/replay-core-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js"
+          ],
+          "startedAt": 1790226764.0557916,
+          "wallSeconds": 0.38014674186706543,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js",
+          "sha256": "6d48b04ac7cb5871a59b8d931c63cc4a19e04c4f8745b6e0b401b40549d644db"
         }
       ]
     },
     "original-esm": {
       "command": [
         "node",
-        "/home/lilfarm/source-perf-20260910/tools/source-esm.mjs",
-        "/home/lilfarm/source-perf-20260910",
+        "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/tools/source-esm.mjs",
+        "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild",
         "posthoglil"
       ],
       "cwd": "upstream",
-      "wallSeconds": 0.5146899319997829,
-      "cpuSeconds": 0.8390099999998881,
+      "wallSeconds": 6.702391436003381,
+      "cpuSeconds": 8.102609000000001,
       "exitCode": 0,
       "timedOut": false,
       "log": "original-esm.log",
@@ -400,156 +498,159 @@
         "node --test test/compat.test.mjs test/api.test.mjs"
       ],
       "cwd": "port",
-      "wallSeconds": 0.11381571800029633,
-      "cpuSeconds": 0.19203399999997828,
+      "wallSeconds": 1.311336377999396,
+      "cpuSeconds": 1.918428,
       "exitCode": 0,
       "timedOut": false,
       "log": "lilscript-tests.log",
-      "logSha256": "0746f3044dbe29bec35d9c463a4d1fd8176cc86fc0e72c28a85351e05d289319",
-      "tail": "\u25b6 @itslil/posthog-js JS library API\n  \u2714 keeps every public kernel name exact in the compiler output (0.833711ms)\n  \u2714 exposes the same named surface as default (1.515564ms)\n\u2714 @itslil/posthog-js JS library API (2.841184ms)\n\u25b6 uuid\n  \u2714 parses the official hyphenated, hex, brace, and urn forms (0.9529ms)\n  \u2714 matches official fromFieldsV7 (0.168663ms)\n  \u2714 generates version-7 and version-4 strings (0.292829ms)\n\u2714 uuid (1.897147ms)\n\u25b6 feature flags\n  \u2714 normalizes v2 flags the same way (0.961753ms)\n  \u2714 normalizes v1 flags the same way (0.203866ms)\n  \u2714 minimizes $feature_flag_called properties from the same allowlist (0.151698ms)\n\u2714 feature flags (1.443476ms)\n\u25b6 cookies and consent\n  \u2714 sanitizes cookie names (0.203967ms)\n  \u2714 parses official cookie fixtures (0.203886ms)\n  \u2714 roundtrips serialize \u2192 parse as anonymous (0.124306ms)\n  \u2714 reads cookies from a header store (0.249565ms)\n  \u2714 matches consent cookie names and opt-out (0.159339ms)\n\u2714 cookies and consent (1.11299ms)\n\u25b6 router, rate limit, queue\n  \u2714 routes US, EU, custom, and app hosts (0.434432ms)\n  \u2714 matches the token-bucket updates (0.166991ms)\n  \u2714 batches, offsets, and sorts unload requests (0.222163ms)\n\u2714 router, rate limit, queue (0.906501ms)\n\u25b6 bot detection\n  \u2714 matches the default blocked UA list and lookups (0.27331ms)\n\u2714 bot detection (0.327542ms)\n\u25b6 strings, numbers, types, json, url\n  \u2714 matches string helpers and person-property hashes (0.254683ms)\n  \u2714 matches clamp, remote config, and sample-rate checks (0.261021ms)\n  \u2714 matches portable type, json, and url helpers (0.323826ms)\n\u2714 strings, numbers, types, json, url (0.908684ms)\n\u25b6 bucketed rate limiter\n  \u2714 resolves config and consumes tokens the same way (0.197707ms)\n\u2714 bucketed rate limiter (0.234772ms)\n\u2139 tests 21\n\u2139 suites 8\n\u2139 pass 21\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 83.443519\n"
+      "logSha256": "64a00285a90448eade9b3ede22acc5bccab5cb725657534f8a8386ddee26f679",
+      "tail": "\u25b6 @itslil/posthog-js JS library API\n  \u2714 keeps every public kernel name exact in the compiler output (11.833774ms)\n  \u2714 exposes the same named surface as default (9.875714ms)\n\u2714 @itslil/posthog-js JS library API (30.383981ms)\n\u25b6 uuid\n  \u2714 parses the official hyphenated, hex, brace, and urn forms (9.09959ms)\n  \u2714 matches official fromFieldsV7 (7.993938ms)\n  \u2714 generates version-7 and version-4 strings (0.695452ms)\n\u2714 uuid (19.265699ms)\n\u25b6 feature flags\n  \u2714 normalizes v2 flags the same way (9.661383ms)\n  \u2714 normalizes v1 flags the same way (0.767127ms)\n  \u2714 minimizes $feature_flag_called properties from the same allowlist (0.486661ms)\n\u2714 feature flags (11.298059ms)\n\u25b6 cookies and consent\n  \u2714 sanitizes cookie names (8.60863ms)\n  \u2714 parses official cookie fixtures (0.474078ms)\n  \u2714 roundtrips serialize \u2192 parse as anonymous (0.283992ms)\n  \u2714 reads cookies from a header store (0.849723ms)\n  \u2714 matches consent cookie names and opt-out (0.883626ms)\n\u2714 cookies and consent (19.691197ms)\n\u25b6 router, rate limit, queue\n  \u2714 routes US, EU, custom, and app hosts (8.251972ms)\n  \u2714 matches the token-bucket updates (0.383188ms)\n  \u2714 batches, offsets, and sorts unload requests (0.647503ms)\n\u2714 router, rate limit, queue (9.705105ms)\n\u25b6 bot detection\n  \u2714 matches the default blocked UA list and lookups (7.761563ms)\n\u2714 bot detection (8.05856ms)\n\u25b6 strings, numbers, types, json, url\n  \u2714 matches string helpers and person-property hashes (0.735588ms)\n  \u2714 matches clamp, remote config, and sample-rate checks (0.954909ms)\n  \u2714 matches portable type, json, and url helpers (7.937392ms)\n\u2714 strings, numbers, types, json, url (9.831622ms)\n\u25b6 bucketed rate limiter\n  \u2714 resolves config and consumes tokens the same way (0.715611ms)\n\u2714 bucketed rate limiter (0.833532ms)\n\u2139 tests 21\n\u2139 suites 8\n\u2139 pass 21\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 1034.173231\n"
     }
   },
-  "nativeBuilds": [
-    {
-      "command": [
-        "corepack",
-        "pnpm",
-        "exec",
-        "turbo",
-        "run",
-        "build",
-        "--filter=posthog-js...",
-        "--force"
-      ],
-      "cwd": "upstream",
-      "wallSeconds": 186.00121822200026,
-      "cpuSeconds": 316.456771,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "original-build-1.log",
-      "logSha256": "67b6e30a66c35bfa505703e8605af0f50b008d3088ab4308bbbc0223459bb06d",
-      "tail": "onType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m42ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m54ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    3m5.507s \n\n"
-    },
-    {
-      "command": [
-        "corepack",
-        "pnpm",
-        "exec",
-        "turbo",
-        "run",
-        "build",
-        "--filter=posthog-js...",
-        "--force"
-      ],
-      "cwd": "upstream",
-      "wallSeconds": 169.0167915449997,
-      "cpuSeconds": 283.15308,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "original-build-2.log",
-      "logSha256": "3ec1f11f03879e29f42ec1f5d10ceb6597eca0ff59173adb80f3ac63055f0925",
-      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m45ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m58ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m57ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m48.497s \n\n"
-    },
-    {
-      "command": [
-        "corepack",
-        "pnpm",
-        "exec",
-        "turbo",
-        "run",
-        "build",
-        "--filter=posthog-js...",
-        "--force"
-      ],
-      "cwd": "upstream",
-      "wallSeconds": 170.4987566750001,
-      "cpuSeconds": 286.6412529999999,
-      "exitCode": 0,
-      "timedOut": false,
-      "log": "original-build-3.log",
-      "logSha256": "7e5694f3bf11e127b7c6f9b7ac1aad8aace6af6abe48cc76ea15ec9311caa914",
-      "tail": "nType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m34ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution-soft-navs.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m56ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals-with-attribution.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \u001b[36m\nposthog-js:build: \u001b[1m./lib/src/entrypoints/web-vitals.d.ts\u001b[22m \u2192 \u001b[1mdist\u001b[22m...\u001b[39m\nposthog-js:build: \u001b[1m\u001b[33m(!) Unused external imports\u001b[39m\u001b[22m\nposthog-js:build: SessionRecordingTriggerGroup,SurveyEventName,SurveyEventProperties,SurveyEventType,SurveyQuestionBranchingType,SurveyQuestionType,SurveySchedule,SurveyTabPosition,SurveyType,SurveyWidgetType imported from external module \"@posthog/browser-common\" but never used in \"lib/src/types.d.ts\" and \"lib/src/posthog-surveys-types.d.ts\".\nposthog-js:build: \u001b[32mcreated \u001b[1mdist\u001b[22m in \u001b[1m55ms\u001b[22m\u001b[39m\nposthog-js:build: \nposthog-js:build: > posthog-js@1.418.10 postbuild /home/lilfarm/source-perf-20260910/upstream/posthoglil/packages/browser\nposthog-js:build: > node scripts/strip-lib-package-json.js && node scripts/check-mangled-property-consistency.js && node scripts/check-sourcemap-ignore-list.js\nposthog-js:build: \nposthog-js:build: OK: 31 no-external private-property overlaps are classified\nposthog-js:build: OK: 24 cross-bundle private properties are consistent between module.slim.js and extension-bundles.js\nposthog-js:build: OK: 6 cross-bundle private properties are consistent between module.slim.no-external.js and extension-bundles.js\nposthog-js:build: OK: all 41 bundle source maps ignore-list every source\n\n Tasks:    12 successful, 12 total\nCached:    0 cached, 12 total\n  Time:    2m49.992s \n\n"
-    }
-  ],
+  "nativeBuilds": [],
   "lilscriptBuilds": [
     {
       "command": [
         "bash",
         "-c",
-        "node scripts/build.mjs --compile --force"
+        "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
       ],
       "cwd": "port",
-      "wallSeconds": 40.63686424400021,
-      "cpuSeconds": 146.56531,
+      "wallSeconds": 12.303040541999508,
+      "cpuSeconds": 6.697605,
       "exitCode": 0,
       "timedOut": false,
       "log": "lilscript-build-1.log",
-      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
-      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\ncompiling surveys with lilscript.toml\nwrote dist/surveys.esm.js, dist/surveys.cjs, dist/surveys.d.ts\ncompiling error-tracking with lilscript.toml\nwrote dist/error-tracking.esm.js, dist/error-tracking.cjs, dist/error-tracking.d.ts\ncompiling otlp with lilscript.toml\nwrote dist/otlp.esm.js, dist/otlp.cjs, dist/otlp.d.ts\ncompiling autocapture with lilscript.toml\nwrote dist/autocapture.esm.js, dist/autocapture.cjs, dist/autocapture.d.ts\ncompiling replay-core with lilscript.toml\nwrote dist/replay-core.esm.js, dist/replay-core.cjs, dist/replay-core.d.ts\n",
       "invocations": [
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js"
           ],
-          "startedAt": 1789072097.5344808,
-          "wallSeconds": 16.52358865737915,
+          "startedAt": 1790226737.0565321,
+          "wallSeconds": 1.4891977310180664,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
-          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.gzip.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js"
           ],
-          "startedAt": 1789072114.0823529,
-          "wallSeconds": 9.265848636627197,
+          "startedAt": 1790226739.177782,
+          "wallSeconds": 0.4991328716278076,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
-          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.bytes.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js"
           ],
-          "startedAt": 1789072123.3720124,
-          "wallSeconds": 7.143406867980957,
+          "startedAt": 1790226740.1684935,
+          "wallSeconds": 0.5577526092529297,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
-          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "e6d3957d44a193af27a1a7556581fb7b1a361d6f503e8034bc9a28716ba6e7b1"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/surveys-entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js"
           ],
-          "startedAt": 1789072130.5392628,
-          "wallSeconds": 7.515974283218384,
+          "startedAt": 1790226742.2877004,
+          "wallSeconds": 0.41017985343933105,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
-          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js",
+          "sha256": "d0c559cf1dd5b17c3da5c8971b10e7576c3d12ad1faae244a7963310acbc030e"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/error-tracking-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js"
+          ],
+          "startedAt": 1790226743.2594252,
+          "wallSeconds": 1.0980212688446045,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js",
+          "sha256": "d03211db6a483d5af0ec775032bc018fcc039dcef03790f0baf0ec45549d601b"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/otlp-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js"
+          ],
+          "startedAt": 1790226744.880316,
+          "wallSeconds": 0.5896062850952148,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js",
+          "sha256": "8a9e571b87b45583be5f4d53a9b0e9324b84977f22c8450144e83a636c687e76"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/autocapture-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js"
+          ],
+          "startedAt": 1790226746.1090753,
+          "wallSeconds": 0.6693077087402344,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js",
+          "sha256": "c173bbdda97a2c933bc6294064ea0681f6f43f394446af42dec6c46202f9e7d8"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/replay-core-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js"
+          ],
+          "startedAt": 1790226747.1994755,
+          "wallSeconds": 0.7294516563415527,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js",
+          "sha256": "6d48b04ac7cb5871a59b8d931c63cc4a19e04c4f8745b6e0b401b40549d644db"
         }
       ]
     },
@@ -557,80 +658,144 @@
       "command": [
         "bash",
         "-c",
-        "node scripts/build.mjs --compile --force"
+        "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
       ],
       "cwd": "port",
-      "wallSeconds": 40.685474051000256,
-      "cpuSeconds": 146.88111500000008,
+      "wallSeconds": 10.312622033998196,
+      "cpuSeconds": 6.370133999999998,
       "exitCode": 0,
       "timedOut": false,
       "log": "lilscript-build-2.log",
-      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
-      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\ncompiling surveys with lilscript.toml\nwrote dist/surveys.esm.js, dist/surveys.cjs, dist/surveys.d.ts\ncompiling error-tracking with lilscript.toml\nwrote dist/error-tracking.esm.js, dist/error-tracking.cjs, dist/error-tracking.d.ts\ncompiling otlp with lilscript.toml\nwrote dist/otlp.esm.js, dist/otlp.cjs, dist/otlp.d.ts\ncompiling autocapture with lilscript.toml\nwrote dist/autocapture.esm.js, dist/autocapture.cjs, dist/autocapture.d.ts\ncompiling replay-core with lilscript.toml\nwrote dist/replay-core.esm.js, dist/replay-core.cjs, dist/replay-core.d.ts\n",
       "invocations": [
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js"
           ],
-          "startedAt": 1789072138.1777527,
-          "wallSeconds": 16.529772996902466,
+          "startedAt": 1790226749.6211843,
+          "wallSeconds": 1.4297966957092285,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
-          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.gzip.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js"
           ],
-          "startedAt": 1789072154.731452,
-          "wallSeconds": 9.30361795425415,
+          "startedAt": 1790226751.7304368,
+          "wallSeconds": 0.3525962829589844,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
-          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.bytes.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js"
           ],
-          "startedAt": 1789072164.0588686,
-          "wallSeconds": 7.152541637420654,
+          "startedAt": 1790226752.4916985,
+          "wallSeconds": 0.37047767639160156,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
-          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "e6d3957d44a193af27a1a7556581fb7b1a361d6f503e8034bc9a28716ba6e7b1"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/surveys-entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js"
           ],
-          "startedAt": 1789072171.2348087,
-          "wallSeconds": 7.5269293785095215,
+          "startedAt": 1790226754.7327592,
+          "wallSeconds": 0.521273136138916,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
-          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js",
+          "sha256": "d0c559cf1dd5b17c3da5c8971b10e7576c3d12ad1faae244a7963310acbc030e"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/error-tracking-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js"
+          ],
+          "startedAt": 1790226755.5427477,
+          "wallSeconds": 0.8891546726226807,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js",
+          "sha256": "d03211db6a483d5af0ec775032bc018fcc039dcef03790f0baf0ec45549d601b"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/otlp-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js"
+          ],
+          "startedAt": 1790226756.724574,
+          "wallSeconds": 0.29742860794067383,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js",
+          "sha256": "8a9e571b87b45583be5f4d53a9b0e9324b84977f22c8450144e83a636c687e76"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/autocapture-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js"
+          ],
+          "startedAt": 1790226757.3325963,
+          "wallSeconds": 0.3410496711730957,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js",
+          "sha256": "c173bbdda97a2c933bc6294064ea0681f6f43f394446af42dec6c46202f9e7d8"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/replay-core-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js"
+          ],
+          "startedAt": 1790226757.9350712,
+          "wallSeconds": 0.41884422302246094,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js",
+          "sha256": "6d48b04ac7cb5871a59b8d931c63cc4a19e04c4f8745b6e0b401b40549d644db"
         }
       ]
     },
@@ -638,80 +803,144 @@
       "command": [
         "bash",
         "-c",
-        "node scripts/build.mjs --compile --force"
+        "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
       ],
       "cwd": "port",
-      "wallSeconds": 40.686588218,
-      "cpuSeconds": 147.09975000000009,
+      "wallSeconds": 6.031017531000543,
+      "cpuSeconds": 5.62895,
       "exitCode": 0,
       "timedOut": false,
       "log": "lilscript-build-3.log",
-      "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a",
-      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\n",
+      "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c",
+      "tail": "wrote dist/posthog.esm.js, dist/posthog.cjs, dist/posthog.umd.js\ncompiling surveys with lilscript.toml\nwrote dist/surveys.esm.js, dist/surveys.cjs, dist/surveys.d.ts\ncompiling error-tracking with lilscript.toml\nwrote dist/error-tracking.esm.js, dist/error-tracking.cjs, dist/error-tracking.d.ts\ncompiling otlp with lilscript.toml\nwrote dist/otlp.esm.js, dist/otlp.cjs, dist/otlp.d.ts\ncompiling autocapture with lilscript.toml\nwrote dist/autocapture.esm.js, dist/autocapture.cjs, dist/autocapture.d.ts\ncompiling replay-core with lilscript.toml\nwrote dist/replay-core.esm.js, dist/replay-core.cjs, dist/replay-core.d.ts\n",
       "invocations": [
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js"
           ],
-          "startedAt": 1789072518.4157894,
-          "wallSeconds": 16.526140689849854,
+          "startedAt": 1790226759.2143173,
+          "wallSeconds": 0.5887057781219482,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.raw.js",
-          "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.raw.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.closed.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.gzip.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js"
           ],
-          "startedAt": 1789072534.9662898,
-          "wallSeconds": 9.33491063117981,
+          "startedAt": 1790226760.0530605,
+          "wallSeconds": 0.30205345153808594,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.closed.js",
-          "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.gzip.js",
+          "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.gzip.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.bytes.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js"
           ],
-          "startedAt": 1789072544.3247736,
-          "wallSeconds": 7.140847682952881,
+          "startedAt": 1790226760.584682,
+          "wallSeconds": 0.190032958984375,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.gzip.js",
-          "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/posthog.bytes.js",
+          "sha256": "e6d3957d44a193af27a1a7556581fb7b1a361d6f503e8034bc9a28716ba6e7b1"
         },
         {
           "args": [
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/src/entry.lil",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/surveys-entry.lil",
             "--target",
             "js-module",
             "--config",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/lilscript.bytes.toml",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
             "-o",
-            "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js"
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js"
           ],
-          "startedAt": 1789072551.4895318,
-          "wallSeconds": 7.5003039836883545,
+          "startedAt": 1790226761.5152547,
+          "wallSeconds": 0.1894392967224121,
           "exitCode": 0,
-          "output": "/home/lilfarm/source-perf-20260910/ports/posthoglil/dist/posthog.bytes.js",
-          "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/surveys.raw.js",
+          "sha256": "d0c559cf1dd5b17c3da5c8971b10e7576c3d12ad1faae244a7963310acbc030e"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/error-tracking-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js"
+          ],
+          "startedAt": 1790226761.9964275,
+          "wallSeconds": 0.7596011161804199,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/error-tracking.raw.js",
+          "sha256": "d03211db6a483d5af0ec775032bc018fcc039dcef03790f0baf0ec45549d601b"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/otlp-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js"
+          ],
+          "startedAt": 1790226763.015962,
+          "wallSeconds": 0.2383403778076172,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/otlp.raw.js",
+          "sha256": "8a9e571b87b45583be5f4d53a9b0e9324b84977f22c8450144e83a636c687e76"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/autocapture-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js"
+          ],
+          "startedAt": 1790226763.5263278,
+          "wallSeconds": 0.28830909729003906,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/autocapture.raw.js",
+          "sha256": "c173bbdda97a2c933bc6294064ea0681f6f43f394446af42dec6c46202f9e7d8"
+        },
+        {
+          "args": [
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/src/replay-core-entry.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/lilscript.toml",
+            "-o",
+            "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js"
+          ],
+          "startedAt": 1790226764.0557916,
+          "wallSeconds": 0.38014674186706543,
+          "exitCode": 0,
+          "output": "/home/azureuser/lilscript-work/release-m2/posthoglil/srcbuild/ports/posthoglil/dist/replay-core.raw.js",
+          "sha256": "6d48b04ac7cb5871a59b8d931c63cc4a19e04c4f8745b6e0b401b40549d644db"
         }
       ]
     }
@@ -721,7 +950,7 @@
     "cleanOutputs": true,
     "dependencyInstallationTimedSeparately": true,
     "sourceArchives": "Pinned Git checkouts; original repository package build commands, followed by production ESM assembly.",
-    "workerUse": "Both implementations use the same machine and Node version. This shared build pool also runs unrelated jobs; timings are contextual wall times, with CPU time recorded separately."
+    "workerUse": "The LilScript lane ran on a burstable Azure VM that also runs unrelated jobs; timings are contextual wall times, with CPU time recorded separately. The original repository build was not re-run on this host; its record comes from the 2026-09-10 worker named with it."
   },
   "esm": {
     "source": {
@@ -736,22 +965,23 @@
     "external": [],
     "samples": [
       {
-        "bundleSeconds": 0.009698234,
-        "wallSeconds": 0.10506338700000001
+        "bundleSeconds": 0.13091876500000002,
+        "wallSeconds": 1.5116072139999999
       },
       {
-        "bundleSeconds": 0.004686189000000013,
-        "wallSeconds": 0.06448149
+        "bundleSeconds": 0.0503460869999999,
+        "wallSeconds": 0.8488158069999999
       },
       {
-        "bundleSeconds": 0.00437115399999999,
-        "wallSeconds": 0.05691247100000001
+        "bundleSeconds": 0.060888358000000156,
+        "wallSeconds": 0.8713866079999998
       }
     ],
-    "medianSeconds": 0.06448149,
+    "medianSeconds": 0.8713866079999998,
     "toolchain": {
       "esbuild": "0.28.1",
-      "terser": "5.51.2"
+      "terser": "5.51.2",
+      "vite": "8.2.1 (Oxc minify)"
     },
     "artifacts": [
       {
@@ -817,70 +1047,160 @@
   },
   "lilscriptArtifacts": [
     {
+      "path": "dist/autocapture.esm.js",
+      "raw": 9590,
+      "gzip9": 3558,
+      "brotli11": 3216,
+      "sha256": "06d1575cffca8060a200d40d7615688c9fd25e77564fcf38299fff1875d25648"
+    },
+    {
       "path": "dist/posthog.umd.js",
-      "raw": 18502,
-      "gzip9": 6855,
-      "brotli11": 6099,
-      "sha256": "40a05bae54f8378ac92955d195c4b5903bf6af98c2783393969a4495b67de344"
+      "raw": 20331,
+      "gzip9": 6877,
+      "brotli11": 6216,
+      "sha256": "6510428fae499113f3fd0f53a7fdab6f20e1f57d38bbe6a9b402eb3c5e4bae3a"
+    },
+    {
+      "path": "dist/surveys.raw.js",
+      "raw": 6077,
+      "gzip9": 2096,
+      "brotli11": 1824,
+      "sha256": "d0c559cf1dd5b17c3da5c8971b10e7576c3d12ad1faae244a7963310acbc030e"
     },
     {
       "path": "dist/posthog.cjs",
-      "raw": 18430,
-      "gzip9": 6828,
-      "brotli11": 6040,
-      "sha256": "ebe8da86bfaa7ba78884c18589e0405dc60cf3b843a28866f8c47e44e1faa2f0"
+      "raw": 20259,
+      "gzip9": 6846,
+      "brotli11": 6192,
+      "sha256": "95f354db702146329f3675bdbef0d5bff8966113702b5c48e54d4e0361467f68"
     },
     {
-      "path": "dist/posthog.closed.js",
-      "raw": 16458,
-      "gzip9": 6374,
-      "brotli11": 5637,
-      "sha256": "b50a0a87ebd15194ff8d4f08f23509fc43cbb345f809a911770d9bb11a95f445"
+      "path": "dist/error-tracking.cjs",
+      "raw": 20845,
+      "gzip9": 6980,
+      "brotli11": 6325,
+      "sha256": "5824a9687213fb7c752a522e562287b7ee12e279d2ceb8a6704d0bb6eecf8f3a"
     },
     {
-      "path": "dist/posthog.gzip.js",
-      "raw": 16195,
-      "gzip9": 6299,
-      "brotli11": 5629,
-      "sha256": "b6091e05a38f244a7b1a499df9d39c7962c091e905b913bddc6d2ee38bb9e3ff"
-    },
-    {
-      "path": "dist/posthog.raw.js",
-      "raw": 16264,
-      "gzip9": 6313,
-      "brotli11": 5533,
-      "sha256": "f1bdea7ec8419cbadb74ed4bce8e54864c2851a18deffc781b65a9d7de3eb79f"
+      "path": "dist/otlp.raw.js",
+      "raw": 6915,
+      "gzip9": 2479,
+      "brotli11": 2256,
+      "sha256": "8a9e571b87b45583be5f4d53a9b0e9324b84977f22c8450144e83a636c687e76"
     },
     {
       "path": "dist/posthog.esm.js",
-      "raw": 16355,
-      "gzip9": 6369,
-      "brotli11": 5618,
-      "sha256": "0698716353065fbab13ded2c558b0a73a91663c53e65eb2165e1e8bf64c7ac8d"
+      "raw": 17622,
+      "gzip9": 6039,
+      "brotli11": 5419,
+      "sha256": "0bd29dbb766ace6e65c73fdc848872a7001ecfebc11dc4ba63d9c68ef8b6458b"
     },
     {
       "path": "dist/posthog.bytes.js",
-      "raw": 15646,
-      "gzip9": 6676,
-      "brotli11": 5892,
-      "sha256": "d1542a0ed0cb92c5208f9a452ff85ec5c88fb468238cf0628e2220c13a4671c6"
+      "raw": 15651,
+      "gzip9": 6300,
+      "brotli11": 5554,
+      "sha256": "e6d3957d44a193af27a1a7556581fb7b1a361d6f503e8034bc9a28716ba6e7b1"
+    },
+    {
+      "path": "dist/surveys.esm.js",
+      "raw": 6199,
+      "gzip9": 2176,
+      "brotli11": 1895,
+      "sha256": "05474e9ac31e2999ff89c611a20f7fe9f3d498d45f149452eb69e4cca38cd091"
+    },
+    {
+      "path": "dist/replay-core.esm.js",
+      "raw": 9486,
+      "gzip9": 3935,
+      "brotli11": 3576,
+      "sha256": "45949838241649208ed3267e803fbb49cc28207b166ace8ce284aa332a8cfe8c"
+    },
+    {
+      "path": "dist/autocapture.raw.js",
+      "raw": 9440,
+      "gzip9": 3465,
+      "brotli11": 3136,
+      "sha256": "c173bbdda97a2c933bc6294064ea0681f6f43f394446af42dec6c46202f9e7d8"
+    },
+    {
+      "path": "dist/otlp.cjs",
+      "raw": 8274,
+      "gzip9": 2981,
+      "brotli11": 2719,
+      "sha256": "f9f2ebdae794593451d7669c40c6f24670746603bf71090d073e8f86dc9d8eb6"
+    },
+    {
+      "path": "dist/posthog.raw.js",
+      "raw": 17531,
+      "gzip9": 5984,
+      "brotli11": 5370,
+      "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
+    },
+    {
+      "path": "dist/error-tracking.esm.js",
+      "raw": 19187,
+      "gzip9": 6480,
+      "brotli11": 5864,
+      "sha256": "71efb1972dfe9e8fa9e77482b34447d6329223bac7b528fb42134ea851f7f222"
+    },
+    {
+      "path": "dist/replay-core.cjs",
+      "raw": 10748,
+      "gzip9": 4289,
+      "brotli11": 3884,
+      "sha256": "6a4575d887adc1e9567e92419f0cd43a5721c54f82006cdd9094c8f68b738563"
+    },
+    {
+      "path": "dist/error-tracking.raw.js",
+      "raw": 19051,
+      "gzip9": 6399,
+      "brotli11": 5811,
+      "sha256": "d03211db6a483d5af0ec775032bc018fcc039dcef03790f0baf0ec45549d601b"
+    },
+    {
+      "path": "dist/replay-core.raw.js",
+      "raw": 9337,
+      "gzip9": 3836,
+      "brotli11": 3486,
+      "sha256": "6d48b04ac7cb5871a59b8d931c63cc4a19e04c4f8745b6e0b401b40549d644db"
+    },
+    {
+      "path": "dist/surveys.cjs",
+      "raw": 7786,
+      "gzip9": 2634,
+      "brotli11": 2323,
+      "sha256": "e7b27c1024303ec7619b88a395baa0c6642374be7fa99b2f0bdb119cfe7e6c78"
+    },
+    {
+      "path": "dist/posthog.gzip.js",
+      "raw": 17531,
+      "gzip9": 5984,
+      "brotli11": 5370,
+      "sha256": "6310af90b1af2e45d8d8a7ff233830312bb4e0343025c4ae3650058081274fe4"
+    },
+    {
+      "path": "dist/otlp.esm.js",
+      "raw": 7053,
+      "gzip9": 2576,
+      "brotli11": 2337,
+      "sha256": "a9921bf83c814a5846792c1253ee04cb585fd3e8e10420c389d1f2dd43df12f9"
+    },
+    {
+      "path": "dist/autocapture.cjs",
+      "raw": 11430,
+      "gzip9": 4092,
+      "brotli11": 3702,
+      "sha256": "462a1dc7d14391f5c91b9e479e82fcb3389e5926df72b5b21c6334f32c54c81e"
     }
   ],
-  "nativeBuildsSummary": {
-    "samples": 3,
-    "successful": 3,
-    "medianSeconds": 170.4987566750001,
-    "minimumSeconds": 169.0167915449997,
-    "maximumSeconds": 186.00121822200026
-  },
   "lilscriptBuildsSummary": {
     "samples": 3,
     "successful": 3,
-    "medianSeconds": 40.685474051000256,
-    "minimumSeconds": 40.63686424400021,
-    "maximumSeconds": 40.686588218
+    "medianSeconds": 10.312622033998196,
+    "minimumSeconds": 6.031017531000543,
+    "maximumSeconds": 12.303040541999508
   },
   "status": "complete",
-  "finishedAt": "2026-09-10T20:35:59Z",
-  "workerIp": "10.1.0.20"
+  "finishedAt": "2026-09-24T05:12:54Z"
 }

@@ -1,7 +1,5 @@
 # @itslil/posthog-js
 
-
-
 This is **not** the official [`posthog-js`](https://github.com/PostHog/posthog-js) package. It ports selected `posthog-js@1.418.10` surfaces to [LilScript](https://github.com/yeargun/lilscript): the original capture kernel plus five independent package lanes, including the complete autocapture utility module and a two-module session-replay core.
 
 It is not affiliated with PostHog. The `PostHog` client, active replay recorder, product tours, heatmaps, web vitals, network transport, and persistence adapters are absent. The five lanes are separate subpath exports and are never folded into the root kernel comparison.
@@ -98,14 +96,14 @@ On each objective the kernel beats the strongest official lane, Oxc with manglin
 
 ### Since the previous release
 
-The previous release (dist committed 2026-09-02) was compiled by the old compiler route, which has since been deleted. This release is compiled by the one LilScript compiler at revision `aa2052f0`. The kernel sources were also rewritten: `CookieStore` became a closure, constant arrays became literals, `is` narrowing replaced `isStr()`/`toStr()`, export aliases went, `parseUuid` lost its byte round trip, and the flags response became one loop. That loop also fixes an inherited-key bug: a payload key named `constructor` used to be dropped.
+The previous release (page and dist published 2026-09-10, `aa1ea81`) was compiled by the old compiler route, which has since been deleted. This release is compiled by the one LilScript compiler at revision `aa2052f0`. The kernel sources were also rewritten: `CookieStore` became a closure, constant arrays became literals, `is` narrowing replaced `isStr()`/`toStr()`, export aliases went, `parseUuid` lost its byte round trip, and the flags response became one loop. That loop also fixes an inherited-key bug: a payload key named `constructor` used to be dropped.
 
 | Artifact | Codec | Previous release | This release |
 | --- | --- | ---: | ---: |
-| Kernel · Brotli-scored compile | Brotli-11 | 5,559 | **5,370** |
-| Kernel · gzip-scored compile | gzip-9 | 6,338 | **5,984** |
-| Kernel · raw-scored compile | raw | 15,894 | **15,651** |
-| Kernel · packaged ESM | Brotli-11 | 5,621 | **5,419** |
+| Kernel · Brotli-scored compile | Brotli-11 | 5,533 | **5,370** |
+| Kernel · gzip-scored compile | gzip-9 | 6,299 | **5,984** |
+| Kernel · raw-scored compile | raw | **15,646** | 15,651 |
+| Kernel · packaged ESM (`dist/posthog.esm.js`) | Brotli-11 | 5,606 | **5,419** |
 | Autocapture pack | Brotli-11 | **3,097** | 3,136 |
 | Session replay core pack | Brotli-11 | **3,445** | 3,486 |
 | Surveys pack | Brotli-11 | **1,809** | 1,824 |
@@ -116,7 +114,18 @@ The three packs that were already Brotli-scored are 15–41 bytes larger than th
 
 ### Compiler and compile time
 
-Every compiled file comes from one compiler binary (SHA-256 `13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9`, revision `aa2052f0`). `node scripts/record-compiler-run.mjs --revision <commit>` runs the release build three times, refuses the run unless every sample compiles identical bytes, and records the wall time of each compiler process in `site/results.json`. The eight invocations (three kernel objectives, five packs) take about half a second together (523, 517 and 517 ms in the recorded run); the site lists every invocation.
+Every compiled file comes from one compiler binary (SHA-256 `13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9`, revision `aa2052f0`). `node scripts/record-compiler-run.mjs --revision <commit>` runs the release build three times, refuses the run unless every sample compiles identical bytes, and records the wall time of each compiler process in `site/results.json`. The eight invocations (three kernel objectives, five packs) took 828, 899 and 998 ms together in the recorded run (a shared host at load average 10); the site lists every invocation.
+
+### Build time from source
+
+`comparison/source-build/` and `site/source-build.json` record clean builds from the pinned sources (LilScript's page-refresh protocol: outputs cleared between builds, dependency installation excluded). The page shows them next to the size table.
+
+| Lane | Command | Median (min–max), 3 builds | Machine |
+| --- | --- | ---: | --- |
+| LilScript package (kernel's three objective compiles + five packs) | `node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile` | 10.31 s (6.03–12.30 s), of which the 8 compiler processes take 4.62 s | Azure Standard_B8als_v2, 8 vCPUs, 2026-09-24, load average about 19 |
+| Original repository (the complete PostHog SDK) | `corepack pnpm exec turbo run build --filter=posthog-js... --force` | 170.50 s (169.02–186.00 s) | Azure Standard_D16als_v7, 16 vCPUs, 2026-09-10 |
+
+The original build was not re-run for this release: on the 8-vCPU host, under load, one sample ran past 20 minutes. Its three samples are carried from the 2026-09-10 record (`comparison/source-build/original-2026-09-10-result.json`). The two lanes build different scopes on different machines, so no speedup is claimed. The clean LilScript build reproduced every file in `dist/` byte for byte and passed the 21 kernel tests.
 
 ### Delivered files
 

@@ -214,7 +214,11 @@ function renderCompiler() {
     ["Compile time", summary.headline, summary.detail],
     ["Compiler revision", compiler.revision, `recorded ${compiler.date}`],
     ["Compiler binary SHA-256", `${compiler.binarySha256.slice(0, 12)}…`, compiler.binarySha256],
-    ["Measured on", compiler.host, compiler.scope],
+    [
+      "Measured on",
+      compiler.host,
+      `${compiler.scope}${compiler.load ? `; shared host, 1-minute load average ${compiler.load.atStart} at start, ${compiler.load.atEnd} at end` : ""}`,
+    ],
   ]
     .map(
       ([label, value, detail]) =>

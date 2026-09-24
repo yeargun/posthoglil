@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "measuredAt": "2026-09-10T20:35:59Z",
+  "measuredAt": "2026-09-24T05:12:54Z",
   "name": "posthoglil",
   "compiler": {
-    "commit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
-    "sha256": "0616048498eb9eb2e4bd75b39e8e6a083733ada647e16108edfee30ad183beeb"
+    "commit": "aa2052f081ca8184666ca280ee9b91d476e46cfc",
+    "sha256": "13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9"
   },
   "upstream": {
     "package": "posthog-js",
@@ -21,46 +21,47 @@
   "buildComplete": true,
   "machine": {
     "provider": "Azure",
-    "instanceClass": "Standard_D16als_v7",
-    "cpu": "AMD EPYC 9V45 96-Core Processor",
-    "logicalCpus": 16,
-    "memoryBytes": 33648435200,
-    "os": "Ubuntu 24.04.4 LTS",
-    "kernel": "6.17.0-1022-azure",
+    "instanceClass": "Standard_B8als_v2",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "logicalCpus": 8,
+    "memoryBytes": 16706420736,
+    "os": "Ubuntu 24.04.3 LTS",
+    "kernel": "7.0.0-1014-azure",
     "node": "v24.11.1",
     "rayonThreads": 8,
     "loadAtStart": [
-      0.6640625,
-      2.34130859375,
-      2.37451171875
+      21.53173828125,
+      19.65283203125,
+      17.35888671875
     ],
     "loadAtEnd": [
-      2.70458984375,
-      2.55419921875,
-      2.72216796875
+      18.4189453125,
+      19.15966796875,
+      17.2939453125
     ]
   },
   "build": {
-    "compilerSeconds": null,
-    "packageSeconds": 40.685474051000256,
+    "compilerSeconds": 4.620620965957642,
+    "compilerInvocationsPerBuild": 8,
+    "packageSeconds": 10.312622033998196,
     "originalSeconds": 170.4987566750001,
-    "originalEsmSeconds": 0.06448149,
-    "packageScope": "node scripts/build.mjs --compile --force",
+    "originalEsmSeconds": 0.8713866079999998,
+    "packageScope": "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile",
     "originalScope": "corepack pnpm exec turbo run build --filter=posthog-js... --force",
     "protocol": {
       "repetitions": 3,
       "cleanOutputs": true,
       "dependencyInstallationTimedSeparately": true,
       "sourceArchives": "Pinned Git checkouts; original repository package build commands, followed by production ESM assembly.",
-      "workerUse": "Both implementations use the same machine and Node version. This shared build pool also runs unrelated jobs; timings are contextual wall times, with CPU time recorded separately."
+      "workerUse": "The LilScript lane ran on a burstable Azure VM that also runs unrelated jobs; timings are contextual wall times, with CPU time recorded separately. The original repository build was not re-run on this host; its record comes from the 2026-09-10 worker named with it."
     }
   },
   "esm": {
     "lilscript": {
-      "raw": 16355,
-      "gzip9": 6369,
-      "brotli11": 5618,
-      "sha256": "0698716353065fbab13ded2c558b0a73a91663c53e65eb2165e1e8bf64c7ac8d",
+      "raw": 17622,
+      "gzip9": 6039,
+      "brotli11": 5419,
+      "sha256": "0bd29dbb766ace6e65c73fdc848872a7001ecfebc11dc4ba63d9c68ef8b6458b",
       "file": "./esm-comparison/lilscript.js"
     },
     "original": {
@@ -132,56 +133,80 @@
           "log": "original-build-3.log",
           "logSha256": "7e5694f3bf11e127b7c6f9b7ac1aad8aace6af6abe48cc76ea15ec9311caa914"
         }
-      ]
+      ],
+      "measuredAt": "2026-09-10T20:35:59Z",
+      "machine": {
+        "provider": "Azure",
+        "instanceClass": "Standard_D16als_v7",
+        "cpu": "AMD EPYC 9V45 96-Core Processor",
+        "logicalCpus": 16,
+        "memoryBytes": 33648435200,
+        "os": "Ubuntu 24.04.4 LTS",
+        "kernel": "6.17.0-1022-azure",
+        "node": "v24.11.1",
+        "rayonThreads": 8,
+        "loadAtStart": [
+          0.6640625,
+          2.34130859375,
+          2.37451171875
+        ],
+        "loadAtEnd": [
+          2.70458984375,
+          2.55419921875,
+          2.72216796875
+        ]
+      },
+      "record": "comparison/source-build/original-2026-09-10-result.json",
+      "note": "Not re-run for this release: on this host one PostHog SDK build ran past 20 minutes under load. Samples from the 2026-09-10 paired source build."
     },
     "lilscript": {
       "complete": true,
-      "medianSeconds": 40.685474051000256,
-      "minimumSeconds": 40.63686424400021,
-      "maximumSeconds": 40.686588218,
+      "medianSeconds": 10.312622033998196,
+      "minimumSeconds": 6.031017531000543,
+      "maximumSeconds": 12.303040541999508,
       "samples": [
         {
           "command": [
             "bash",
             "-c",
-            "node scripts/build.mjs --compile --force"
+            "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
           ],
-          "wallSeconds": 40.63686424400021,
-          "cpuSeconds": 146.56531,
+          "wallSeconds": 12.303040541999508,
+          "cpuSeconds": 6.697605,
           "exitCode": 0,
           "timedOut": false,
           "log": "lilscript-build-1.log",
-          "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a"
+          "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c"
         },
         {
           "command": [
             "bash",
             "-c",
-            "node scripts/build.mjs --compile --force"
+            "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
           ],
-          "wallSeconds": 40.685474051000256,
-          "cpuSeconds": 146.88111500000008,
+          "wallSeconds": 10.312622033998196,
+          "cpuSeconds": 6.370133999999998,
           "exitCode": 0,
           "timedOut": false,
           "log": "lilscript-build-2.log",
-          "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a"
+          "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c"
         },
         {
           "command": [
             "bash",
             "-c",
-            "node scripts/build.mjs --compile --force"
+            "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
           ],
-          "wallSeconds": 40.686588218,
-          "cpuSeconds": 147.09975000000009,
+          "wallSeconds": 6.031017531000543,
+          "cpuSeconds": 5.62895,
           "exitCode": 0,
           "timedOut": false,
           "log": "lilscript-build-3.log",
-          "logSha256": "9f9060ffe947b2e5d099dcd708c5ac18b065cef698a8e8a24204b582fb6e3e2a"
+          "logSha256": "a946a0c52bfa250e452c027956093258b88604912e0d41b1af370307be9a056c"
         }
       ]
     },
-    "scopeNote": "Original timing covers the complete PostHog SDK and its workspace builds; LilScript and the ESM byte comparison cover the selected kernel only.",
+    "scopeNote": "Original timing covers the complete PostHog SDK and its workspace builds; LilScript timing covers the kernel's three objective compiles and the five subpath packs; the ESM byte comparison covers the selected kernel only. The two lanes ran on different machines on different dates, so the times are context, not a ratio.",
     "cleanOutputs": true,
     "installationExcluded": true
   }
