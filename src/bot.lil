@@ -1,4 +1,4 @@
-import { isArr, isUndef, len, toStr } from "./host.lil";
+import { isArr, toStr } from "./host.lil";
 
 export string[] DEFAULT_BLOCKED_UA_STRS = [
   "amazonbot",
@@ -81,28 +81,19 @@ export string[] DEFAULT_BLOCKED_UA_STRS = [
 ];
 
 
-bool listBlocksUa(string uaLower, JsValue list) {
-  int n = len(list);
-  int i = 0;
-  while (i < n) {
-    if (uaLower.indexOf(toStr(list[i]).toLowerCase()) != -1) {
-      return true;
-    }
-    i = i + 1;
-  }
-  return false;
-}
-
 export bool isBlockedUA(JsValue ua, JsValue customBlockedUserAgents = JS.undefined()) {
   if (!ua.truthy()) {
     return false;
   }
   string uaLower = toStr(ua).toLowerCase();
-  if (listBlocksUa(uaLower, DEFAULT_BLOCKED_UA_STRS)) {
+  // Upstream's DEFAULT.concat(custom).some(...) without copying the default list on every call.
+  func(string)->bool blocks = (string blocked) => uaLower.includes(blocked.toLowerCase());
+  if (DEFAULT_BLOCKED_UA_STRS.some(blocks)) {
     return true;
   }
-  if (isUndef(customBlockedUserAgents) || !isArr(customBlockedUserAgents)) {
+  if (!isArr(customBlockedUserAgents)) {
     return false;
   }
-  return listBlocksUa(uaLower, customBlockedUserAgents);
+  string[] custom = JS.assume(customBlockedUserAgents);
+  return custom.some(blocks);
 }

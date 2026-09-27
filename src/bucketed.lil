@@ -1,47 +1,18 @@
-import { floorNum, isNum, isUndef, minNum, toNum, toStr } from "./host.lil";
+import { floorNum, isUndef, minNum, toStr } from "./host.lil";
 
 export number DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE = 1.0;
 export number DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE = 10.0;
 
-number readConfigNum(JsValue config, string key, string fallbackKey, number fallback) {
-  if (isUndef(config) || JS.isNullish(config)) {
-    return fallback;
-  }
-  JsValue primary = config[key];
-  if (primary is float) {
-    return primary;
-  }
-  JsValue legacy = config[fallbackKey];
-  if (legacy is float) {
-    return legacy;
-  }
-  return fallback;
+JsValue? present(JsValue value) {
+  return value;
 }
 
-export JsValue resolveExceptionRateLimiterConfig(JsValue config = JS.undefined()) {
-  JsValue out = JS.object();
-  out["refillRate"] = readConfigNum(
-    config,
-    "exceptionRateLimiterRefillRate",
-    "__exceptionRateLimiterRefillRate",
-    DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE
-  );
-  out["bucketSize"] = readConfigNum(
-    config,
-    "exceptionRateLimiterBucketSize",
-    "__exceptionRateLimiterBucketSize",
-    DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE
-  );
-  return out;
-}
-
-void applyRefill(JsValue bucket, number now, number refillRate, number bucketSize, number refillInterval) {
-  number elapsedMs = now - toNum(bucket["lastAccess"]);
-  number refillIntervals = floorNum(elapsedMs / refillInterval);
-  if (refillIntervals > 0.0) {
-    bucket["tokens"] = minNum(toNum(bucket["tokens"]) + refillIntervals * refillRate, bucketSize);
-    bucket["lastAccess"] = toNum(bucket["lastAccess"]) + refillIntervals * refillInterval;
-  }
+export JsValue resolveExceptionRateLimiterConfig(JsValue options = JS.undefined()) {
+  JsValue config = if (JS.isUndefined(options)) { JS.object() } else { options };
+  return object {
+    refillRate: present(config["exceptionRateLimiterRefillRate"]) ?? present(config["__exceptionRateLimiterRefillRate"]) ?? DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+    bucketSize: present(config["exceptionRateLimiterBucketSize"]) ?? present(config["__exceptionRateLimiterBucketSize"]) ?? DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE
+  };
 }
 
 export bool consumeBucketedRateLimit(
@@ -54,13 +25,19 @@ export bool consumeBucketedRateLimit(
 ) {
   string keyStr = toStr(key);
   JsValue bucket = buckets[keyStr];
-  if (isUndef(bucket) || JS.isNullish(bucket)) {
+  if (!bucket.truthy()) {
     bucket = JS.object("tokens", bucketSize, "lastAccess", now);
     buckets[keyStr] = bucket;
   } else {
-    applyRefill(bucket, now, refillRate, bucketSize, refillInterval);
+    number lastAccess = JS.assume(bucket["lastAccess"]);
+    number refillIntervals = floorNum((now - lastAccess) / refillInterval);
+    if (refillIntervals > 0.0) {
+      number tokens = JS.assume(bucket["tokens"]);
+      bucket["tokens"] = minNum(tokens + refillIntervals * refillRate, bucketSize);
+      bucket["lastAccess"] = lastAccess + refillIntervals * refillInterval;
+    }
   }
-  number tokens = toNum(bucket["tokens"]);
+  number tokens = JS.assume(bucket["tokens"]);
   if (tokens == 0.0) {
     return true;
   }

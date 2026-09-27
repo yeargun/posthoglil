@@ -1,11 +1,9 @@
 import {
   absNum,
   copyObj,
-  deleteKey,
   isFiniteNum,
   isNum,
   isUndef,
-  len,
   toNum,
   toStr,
   undef
@@ -26,66 +24,34 @@ export number clampFlushInterval(JsValue value) {
   return defaultFlush;
 }
 
-export JsValue formatQueue(JsValue items) {
+export JsValue formatQueue(JsValue[] items) {
   JsValue requests = JS.object();
-  int n = len(items);
-  int i = 0;
-  while (i < n) {
-    JsValue req = items[i];
-    JsValue batchKey = req["batchKey"];
-    JsValue key = req["url"];
-    if (batchKey.truthy()) {
-      key = batchKey;
-    }
+  // for...of, as upstream: a hole is read as undefined and throws, where forEach would skip it.
+  for (JsValue req of items) {
+    JsValue key = JS.or(req["batchKey"], req["url"]);
     if (isUndef(requests[key])) {
-      JsValue next = JS.object();
-      next["url"] = req["url"];
-      next["batchKey"] = req["batchKey"];
-      next["data"] = JS.array();
-      requests[key] = next;
+      requests[key] = object { url: req["url"], batchKey: req["batchKey"], data: JS.array() };
     }
     JS.invoke(requests[key]["data"], "push", req["data"]);
-    i = i + 1;
   }
   return requests;
 }
 
-export JsValue applyOffsets(JsValue data, number now) {
-  JsValue out = JS.array();
-  int n = len(data);
-  int i = 0;
-  while (i < n) {
-    JsValue next = copyObj(data[i]);
+export JsValue[] applyOffsets(JsValue[] data, number now) {
+  return data.map((JsValue item) => {
+    JsValue next = copyObj(item);
     JsValue timestamp = next["timestamp"];
     if (timestamp is float) {
       next["offset"] = absNum(timestamp - now);
-      deleteKey(next, "timestamp");
+      JS.delete(next, "timestamp");
     }
-    JS.invoke(out, "push", next);
-    i = i + 1;
-  }
-  return out;
+    return next;
+  });
 }
 
-export JsValue sortUnloadRequests(JsValue requests) {
-  JsValue events = JS.array();
-  JsValue other = JS.array();
-  int n = len(requests);
-  int i = 0;
-  while (i < n) {
-    JsValue req = requests[i];
-    if (JS.strictEqual(JS.invoke(req["url"], "indexOf", "/e"), 0)) {
-      JS.invoke(events, "push", req);
-    } else {
-      JS.invoke(other, "push", req);
-    }
-    i = i + 1;
-  }
-  int j = 0;
-  int extra = len(other);
-  while (j < extra) {
-    JS.invoke(events, "push", other[j]);
-    j = j + 1;
-  }
-  return events;
+export JsValue[] sortUnloadRequests(JsValue[] requests) {
+  return [
+    ...requests.filter((JsValue req) => JS.strictEqual(JS.invoke(req["url"], "indexOf", "/e"), 0)),
+    ...requests.filter((JsValue req) => !JS.strictEqual(JS.invoke(req["url"], "indexOf", "/e"), 0))
+  ];
 }

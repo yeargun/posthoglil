@@ -25,7 +25,7 @@ export number clampToRange(
     }
     return clampToRange(next, min, max, logger);
   }
-  number n = toNum(value);
+  number n = JS.assume(value);
   if (n > max) {
     JS.invoke(logger, "warn", " cannot be  greater than max: " + toStr(max) + ". Using max value instead.");
     return max;

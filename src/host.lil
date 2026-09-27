@@ -139,7 +139,7 @@ export number floorNum(number value) {
 }
 
 export string objectTag(JsValue value) {
-  return JS.string(JS.invoke(Object["prototype"]["toString"], "call", value));
+  return JS.assume(JS.invoke(Object["prototype"]["toString"], "call", value));
 }
 
 export JsValue asObject(JsValue value) {
@@ -179,14 +179,9 @@ export JsValue syntaxError(string message) {
 }
 
 export bool isNoLike(JsValue value) {
-  if (JS.strictEqual(value, false)) {
-    return true;
-  }
-  if (JS.strictEqual(value, 0)) {
-    return true;
-  }
-  if (value is string) {
-    return value == "false" || value == "0" || value == "no";
-  }
-  return false;
+  return JS.strictEqual(value, false) || JS.strictEqual(value, "false") || JS.strictEqual(value, 0) || JS.strictEqual(value, "0") || JS.strictEqual(value, "no");
+}
+
+export string[] keysOf(JsValue target) {
+  return JS.assume(JS.invoke(Object, "keys", target));
 }

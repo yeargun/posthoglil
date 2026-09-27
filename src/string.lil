@@ -1,4 +1,4 @@
-import { isArr, jsonStringify, len, objectKeys, toStr, undef } from "./host.lil";
+import { isArr, jsonStringify, objectKeys, undef } from "./host.lil";
 
 export bool includes(JsValue haystack, JsValue needle) {
   return !JS.strictEqual(JS.invoke(haystack, "indexOf", needle), -1);
@@ -24,25 +24,14 @@ JsValue deepSortKeys(JsValue value) {
     return value;
   }
   if (isArr(value)) {
-    JsValue out = JS.array();
-    int n = len(value);
-    int i = 0;
-    while (i < n) {
-      JS.invoke(out, "push", deepSortKeys(value[i]));
-      i = i + 1;
-    }
-    return out;
+    JsValue[] items = JS.assume(value);
+    return items.map(deepSortKeys);
   }
-  JsValue keys = objectKeys(value);
-  JS.invoke(keys, "sort");
   JsValue acc = JS.object();
-  int n = len(keys);
-  int i = 0;
-  while (i < n) {
-    JsValue key = keys[i];
+  string[] keys = JS.assume(JS.invoke(objectKeys(value), "sort"));
+  keys.forEach((string key) => {
     acc[key] = deepSortKeys(value[key]);
-    i = i + 1;
-  }
+  });
   return acc;
 }
 
@@ -51,17 +40,9 @@ export string getPersonPropertiesHash(
   JsValue userPropertiesToSet = JS.undefined(),
   JsValue userPropertiesToSetOnce = JS.undefined()
 ) {
-  JsValue payload = JS.object();
-  payload["distinct_id"] = distinct_id;
-  if (userPropertiesToSet.truthy()) {
-    payload["userPropertiesToSet"] = deepSortKeys(userPropertiesToSet);
-  } else {
-    payload["userPropertiesToSet"] = undef();
-  }
-  if (userPropertiesToSetOnce.truthy()) {
-    payload["userPropertiesToSetOnce"] = deepSortKeys(userPropertiesToSetOnce);
-  } else {
-    payload["userPropertiesToSetOnce"] = undef();
-  }
-  return toStr(jsonStringify(payload));
+  return JS.assume(jsonStringify(object {
+    distinct_id: distinct_id,
+    userPropertiesToSet: if (userPropertiesToSet.truthy()) { deepSortKeys(userPropertiesToSet) } else { undef() },
+    userPropertiesToSetOnce: if (userPropertiesToSetOnce.truthy()) { deepSortKeys(userPropertiesToSetOnce) } else { undef() }
+  }));
 }

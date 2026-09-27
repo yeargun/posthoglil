@@ -168,10 +168,10 @@ export string uuidToHex(string uuid) {
   return parseUuid(uuid).replace(new Regex("-", "g"), "");
 }
 
-export string uuidv7() {
+export func()->string uuidv7 = () => {
   return generateOrResetCore(nowMs(), 10000.0);
-}
+};
 
-export string uuidv4() {
+export func()->string uuidv4 = () => {
   return generateV4();
-}
+};

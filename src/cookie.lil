@@ -30,7 +30,7 @@ export string serializePostHogCookie(string anonymousId) {
   payload["$device_id"] = anonymousId;
   payload["$user_state"] = "anonymous";
   payload["$sesid"] = sesid;
-  return toStr(jsonStringify(payload));
+  return JS.assume(jsonStringify(payload));
 }
 
 export JsValue parsePostHogCookie(JsValue cookieValue) {
@@ -69,24 +69,15 @@ export JsValue parsePostHogCookie(JsValue cookieValue) {
 export JsValue cookieStoreFromHeader(string cookieHeader) {
   JsValue cookies = JS.object();
   if (cookieHeader != "") {
-    string[] pairs = cookieHeader.split(";");
-    int i = 0;
-    while (i < pairs.length) {
-      string pair = pairs[i].trim();
+    cookieHeader.split(";").forEach((string part) => {
+      // Upstream's `[key, ...valueParts] = pair.trim().split("=")`, read by index.
+      string pair = part.trim();
       int eq = pair.indexOf("=");
-      string key = "";
-      string raw = "";
-      if (eq < 0) {
-        key = pair;
-      } else {
-        key = pair.slice(0, eq).trim();
-        raw = pair.slice(eq + 1).trim();
-      }
+      string key = if (eq < 0) { pair } else { pair.slice(0, eq) };
       if (key != "") {
-        cookies[key] = decodeUri(raw);
+        cookies[key.trim()] = decodeUri(if (eq < 0) { "" } else { pair.slice(eq + 1).trim() });
       }
-      i = i + 1;
-    }
+    });
   }
   JsValue store = JS.object();
   store["get"] = (JsValue name) => {

@@ -9,9 +9,9 @@ import {
 } from "./host.lil";
 import { includes } from "./string.lil";
 
-export bool isNumber(JsValue x) {
+export func(JsValue)->bool isNumber = (JsValue x) => {
   return objectTag(x) == "[object Number]" && JS.strictEqual(x, x);
-}
+};
 
 export bool isStringValue(JsValue x) {
   return objectTag(x) == "[object String]";
@@ -21,23 +21,24 @@ export bool isObjectValue(JsValue x) {
   return JS.strictEqual(x, asObject(x)) && !isArr(x);
 }
 
-export bool isEmptyObject(JsValue x) {
+export func(JsValue)->bool isEmptyObject = (JsValue x) => {
   if (!isObjectValue(x)) {
     return false;
   }
   return len(objectKeys(x)) == 0;
-}
+};
 
-export bool isEmptyString(JsValue x) {
+export func(JsValue)->bool isEmptyString = (JsValue x) => {
   if (!isStringValue(x)) {
     return false;
   }
   return JS.invoke(x, "trim").length == 0.0;
-}
+};
 
-export bool isPositiveNumber(JsValue value) {
-  return isNumber(value) && toNum(value) > 0.0;
-}
+export func(JsValue)->bool isPositiveNumber = (JsValue value) => {
+  number n = JS.assume(value);
+  return isNumber(value) && n > 0.0;
+};
 
 export bool isPrimitive(JsValue value) {
   return !isObj(value);
@@ -67,21 +68,21 @@ export string[] knownUnsafeEditableEvent = [
 export string[] knownUnsafeEditableEventProperty = ["token"];
 
 
-export bool isKnownUnsafeEditableEvent(JsValue x) {
+export func(JsValue)->bool isKnownUnsafeEditableEvent = (JsValue x) => {
   return includes(knownUnsafeEditableEvent, x);
-}
+};
 
-export bool isKnownUnsafeEditableEventProperty(JsValue x) {
+export func(JsValue)->bool isKnownUnsafeEditableEventProperty = (JsValue x) => {
   return includes(knownUnsafeEditableEventProperty, x);
-}
+};
 
 export JsValue[] yesLikeValues = [true, "true", 1, "1", "yes"];
 export JsValue[] noLikeValues = [false, "false", 0, "0", "no"];
 
-export bool isYesLike(JsValue val) {
+export func(JsValue)->bool isYesLike = (JsValue val) => {
   return includes(yesLikeValues, val);
-}
+};
 
-export bool isNoLike(JsValue val) {
+export func(JsValue)->bool isNoLike = (JsValue val) => {
   return includes(noLikeValues, val);
-}
+};

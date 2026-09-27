@@ -9,6 +9,7 @@ import {
   isStr,
   isUndef,
   jsonStringify,
+  keysOf,
   len,
   nowMs,
   objectKeys,
@@ -40,30 +41,17 @@ int maxItems = 1000;
 int maxNodes = 10000;
 number int64RangeLimit = 9223372036854775808.0;
 
-JsValue makeSeverityMap() {
-  JsValue map = JS.object();
-  string[] names = ["trace", "debug", "info", "warn", "error", "fatal"];
-  string[] texts = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"];
-  int[] numbers = [1, 5, 9, 13, 17, 21];
-  int i = 0;
-  while (i < names.length) {
-    JsValue entry = JS.object();
-    entry["text"] = texts[i];
-    entry["number"] = numbers[i];
-    map[names[i]] = entry;
-    i = i + 1;
-  }
-  return map;
-}
-
-JsValue severityMap = makeSeverityMap();
+JsValue severityMap = object {
+  trace: object { text: "TRACE", number: 1 },
+  debug: object { text: "DEBUG", number: 5 },
+  info: object { text: "INFO", number: 9 },
+  warn: object { text: "WARN", number: 13 },
+  error: object { text: "ERROR", number: 17 },
+  fatal: object { text: "FATAL", number: 21 }
+};
 
 JsValue severityFor(JsValue level) {
-  JsValue entry = severityMap[level];
-  if (!entry.truthy()) {
-    entry = severityMap["info"];
-  }
-  return entry;
+  return JS.or(severityMap[level], severityMap["info"]);
 }
 
 export JsValue getOtlpSeverityText(JsValue level) {
@@ -185,29 +173,26 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) 
   return stringAny(sanitizeString(explicitString(value)));
 }
 
-JsValue encodeArrayValues(JsValue values, JsValue logger, JsValue state, int depth) {
-  JsValue result = JS.array();
-  int itemCount = len(values);
-  if (itemCount > maxItems) {
-    itemCount = maxItems;
-  }
+JsValue[] encodeArrayValues(JsValue values, JsValue logger, JsValue state, int depth) {
+  JsValue[] result = [];
+  number total = JS.number(values["length"]);
+  int itemCount = if (total > 1000.0) { maxItems } else { total.toInt() };
   int index = 0;
-  while (index < itemCount && JS.number(state["remainingNodes"]) > 0.0) {
-    int currentIndex = index;
-    index = index + 1;
+  for (; index < itemCount && JS.number(state["remainingNodes"]) > 0.0; index++) {
     try {
-      if (hasKey(values, currentIndex.toString())) {
-        JsValue element = values[currentIndex];
+      if (JS.in(index, values)) {
+        JsValue element = values[index];
         if (!isNullish(element)) {
-          JS.invoke(result, "push", encodeAnyValue(element, logger, state, depth));
+          result.push(encodeAnyValue(element, logger, state, depth));
         }
       }
     } catch {
-      JS.invoke(result, "push", stringAny(unserializableValue));
+      result.push(stringAny(unserializableValue));
     }
   }
-  if (len(values) > index) {
-    JS.invoke(result, "push", stringAny(truncatedValue));
+  // Re-read, as upstream does: an element's toJSON or getter may have grown the array.
+  if (JS.number(values["length"]) > index) {
+    result.push(stringAny(truncatedValue));
   }
   return result;
 }
@@ -216,27 +201,21 @@ bool propertyEnumerable(JsValue target, string key) {
   return JS.invoke(Object["prototype"]["propertyIsEnumerable"], "call", target, key).truthy();
 }
 
-JsValue encodeKeyValueList(JsValue attrs, JsValue logger, JsValue state, int depth) {
-  JsValue result = JS.array();
+JsValue[] encodeKeyValueList(JsValue attrs, JsValue logger, JsValue state, int depth) {
+  JsValue[] result = [];
   for (string key in attrs) {
     if (propertyEnumerable(attrs, key)) {
-      if (len(result) >= maxItems || JS.number(state["remainingNodes"]) <= 0.0) {
+      if (result.length >= maxItems || JS.number(state["remainingNodes"]) <= 0.0) {
         logDebug(logger, "Attributes truncated: the value exceeds the OTLP encoder budget");
         break;
       }
       try {
         JsValue value = attrs[key];
         if (!isNullish(value)) {
-          JsValue entry = JS.object();
-          entry["key"] = sanitizeString(key);
-          entry["value"] = encodeAnyValue(value, logger, state, depth);
-          JS.invoke(result, "push", entry);
+          result.push(object { key: sanitizeString(key), value: encodeAnyValue(value, logger, state, depth) });
         }
       } catch {
-        JsValue entry = JS.object();
-        entry["key"] = sanitizeString(key);
-        entry["value"] = stringAny(unserializableValue);
-        JS.invoke(result, "push", entry);
+        result.push(object { key: sanitizeString(key), value: stringAny(unserializableValue) });
       }
     }
   }
@@ -251,11 +230,11 @@ export JsValue toOtlpAnyValue(JsValue value, JsValue logger = JS.undefined()) {
   }
 }
 
-export JsValue toOtlpKeyValueList(JsValue attrs, JsValue logger = JS.undefined()) {
+export JsValue[] toOtlpKeyValueList(JsValue attrs, JsValue logger = JS.undefined()) {
   try {
     return encodeKeyValueList(attrs, logger, newState(), 0);
   } catch {
-    return JS.array();
+    return [];
   }
 }
 
@@ -320,15 +299,13 @@ export JsValue buildOtlpLogRecord(JsValue options, JsValue sdkContext, JsValue l
   JsValue mergedAttributes = spreadOwn(JS.object(), autoAttributes);
   JsValue userAttributes = options["attributes"];
   if (userAttributes.truthy()) {
-    JsValue keys = JS.array();
+    string[] keys = [];
     try {
-      keys = objectKeys(userAttributes);
+      keys = keysOf(userAttributes);
     } catch {
-      keys = JS.array();
+      keys = [];
     }
-    int i = 0;
-    while (i < len(keys)) {
-      JsValue key = keys[i];
+    keys.forEach((string key) => {
       JsValue value = undef();
       try {
         value = userAttributes[key];
@@ -336,26 +313,25 @@ export JsValue buildOtlpLogRecord(JsValue options, JsValue sdkContext, JsValue l
         value = unserializableValue;
       }
       defineData(mergedAttributes, key, value);
-      i = i + 1;
-    }
+    });
   }
-  JsValue logRecord = JS.object();
-  logRecord["timeUnixNano"] = now;
-  logRecord["observedTimeUnixNano"] = now;
-  logRecord["severityNumber"] = severity["number"];
-  logRecord["severityText"] = severity["text"];
-  logRecord["body"] = JS.object("stringValue", encodeBody(options["body"]));
-  logRecord["attributes"] = toOtlpKeyValueList(mergedAttributes, logger);
+  JsValue logRecord = object {
+    timeUnixNano: now,
+    observedTimeUnixNano: now,
+    severityNumber: severity["number"],
+    severityText: severity["text"],
+    body: object { stringValue: encodeBody(options["body"]) },
+    attributes: toOtlpKeyValueList(mergedAttributes, logger)
+  };
   if (options["trace_id"].truthy()) logRecord["traceId"] = options["trace_id"];
   if (options["span_id"].truthy()) logRecord["spanId"] = options["span_id"];
   if (!isUndef(options["trace_flags"])) logRecord["flags"] = options["trace_flags"];
   return logRecord;
 }
 
-export JsValue buildResourceAttributes(JsValue config, string sdkName, string sdkVersion) {
+JsValue resourceAttributesFor(JsValue config, string sdkName, string sdkVersion) {
   JsValue out = spreadOwn(JS.object(), config["resourceAttributes"]);
-  if (config["serviceName"].truthy()) out["service.name"] = config["serviceName"];
-  else out["service.name"] = "unknown_service";
+  out["service.name"] = JS.or(config["serviceName"], "unknown_service");
   if (config["environment"].truthy()) out["deployment.environment"] = config["environment"];
   if (config["serviceVersion"].truthy()) out["service.version"] = config["serviceVersion"];
   out["telemetry.sdk.name"] = sdkName;
@@ -363,21 +339,14 @@ export JsValue buildResourceAttributes(JsValue config, string sdkName, string sd
   return out;
 }
 
+export JsValue buildResourceAttributes(JsValue config, string sdkName, string sdkVersion) {
+  return resourceAttributesFor(config, sdkName, sdkVersion);
+}
+
 export JsValue buildOtlpLogsPayload(JsValue logRecords, JsValue resourceAttributes, string scopeName, string scopeVersion) {
-  JsValue scope = JS.object();
-  scope["name"] = scopeName;
-  scope["version"] = scopeVersion;
-  JsValue scopeLog = JS.object();
-  scopeLog["scope"] = scope;
-  scopeLog["logRecords"] = logRecords;
-  JsValue scopeLogs = JS.array();
-  JS.invoke(scopeLogs, "push", scopeLog);
-  JsValue resourceLog = JS.object();
-  resourceLog["resource"] = JS.object("attributes", toOtlpKeyValueList(resourceAttributes));
-  resourceLog["scopeLogs"] = scopeLogs;
-  JsValue resourceLogs = JS.array();
-  JS.invoke(resourceLogs, "push", resourceLog);
-  return JS.object("resourceLogs", resourceLogs);
+  JsValue[] scopeLogs = [object { scope: object { name: scopeName, version: scopeVersion }, logRecords: logRecords }];
+  JsValue[] resourceLogs = [object { resource: object { attributes: toOtlpKeyValueList(resourceAttributes) }, scopeLogs: scopeLogs }];
+  return object { resourceLogs: resourceLogs };
 }
 
 int[] histogramBounds = [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000];
@@ -390,62 +359,35 @@ export string msToUnixNano(JsValue milliseconds) {
 export string seriesKey(string type, string name, JsValue unit, JsValue attributes) {
   string attrsKey = "";
   if (attributes.truthy()) {
-    JsValue keys = objectKeys(attributes);
-    JS.invoke(keys, "sort");
-    JsValue pieces = JS.array();
-    int i = 0;
-    while (i < len(keys)) {
-      JsValue key = keys[i];
-      JsValue keyJson = jsonStringify(key);
-      JsValue valueJson = jsonStringify(attributes[key]);
-      JS.invoke(pieces, "push", toStr(keyJson) + ":" + toStr(valueJson));
-      i = i + 1;
-    }
-    attrsKey = toStr(JS.invoke(pieces, "join", ","));
+    string[] keys = JS.assume(JS.invoke(JS.invoke(Object, "keys", attributes), "sort"));
+    attrsKey = keys.map((string key) => {
+      string k = JS.assume(jsonStringify(key));
+      string v = JS.assume(jsonStringify(attributes[key]));
+      return k + ":" + v;
+    }).join(",");
   }
-  if (isNullish(unit)) {
-    return type + "\u0000" + name + "\u0000\u0000" + attrsKey;
-  }
-  return type + "\u0000" + name + "\u0000" + toStr(unit) + "\u0000" + attrsKey;
+  string unitText = if (isNullish(unit)) { "" } else { toStr(unit) };
+  return type + "\u0000" + name + "\u0000" + unitText + "\u0000" + attrsKey;
 }
 
 export int bucketIndexFor(number value, JsValue bounds) {
-  int i = 0;
-  while (i < len(bounds)) {
-    if (value <= JS.number(bounds[i])) {
+  number[] list = JS.assume(bounds);
+  for (int i = 0; i < list.length; i++) {
+    if (value <= list[i]) {
       return i;
     }
-    i = i + 1;
   }
-  return len(bounds);
+  return list.length;
 }
 
 export JsValue buildMetricsResourceAttributes(JsValue config, string scopeName, string scopeVersion) {
-  JsValue out = spreadOwn(JS.object(), config["resourceAttributes"]);
-  if (config["serviceName"].truthy()) out["service.name"] = config["serviceName"];
-  else out["service.name"] = "unknown_service";
-  if (config["environment"].truthy()) out["deployment.environment"] = config["environment"];
-  if (config["serviceVersion"].truthy()) out["service.version"] = config["serviceVersion"];
-  out["telemetry.sdk.name"] = scopeName;
-  out["telemetry.sdk.version"] = scopeVersion;
-  return out;
+  return resourceAttributesFor(config, scopeName, scopeVersion);
 }
 
 export JsValue buildOtlpMetricsPayload(JsValue metrics, JsValue resourceAttributes, string scopeName, string scopeVersion) {
-  JsValue scope = JS.object();
-  scope["name"] = scopeName;
-  scope["version"] = scopeVersion;
-  JsValue scopeMetric = JS.object();
-  scopeMetric["scope"] = scope;
-  scopeMetric["metrics"] = metrics;
-  JsValue scopeMetrics = JS.array();
-  JS.invoke(scopeMetrics, "push", scopeMetric);
-  JsValue resourceMetric = JS.object();
-  resourceMetric["resource"] = JS.object("attributes", toOtlpKeyValueList(resourceAttributes));
-  resourceMetric["scopeMetrics"] = scopeMetrics;
-  JsValue resourceMetrics = JS.array();
-  JS.invoke(resourceMetrics, "push", resourceMetric);
-  return JS.object("resourceMetrics", resourceMetrics);
+  JsValue[] scopeMetrics = [object { scope: object { name: scopeName, version: scopeVersion }, metrics: metrics }];
+  JsValue[] resourceMetrics = [object { resource: object { attributes: toOtlpKeyValueList(resourceAttributes) }, scopeMetrics: scopeMetrics }];
+  return object { resourceMetrics: resourceMetrics };
 }
 
 export JsValue resolveMetricsConfig(JsValue config) {

@@ -2,23 +2,12 @@ import { isStr, isUndef, toStr } from "./host.lil";
 
 Regex usHost = new Regex("https://(app|us|us-assets)(\\.i)?\\.posthog\\.com", "i");
 Regex euHost = new Regex("https://(eu|eu-assets)(\\.i)?\\.posthog\\.com", "i");
+Regex ingestionHost = new Regex("\\.i\\.posthog\\.com", "");
 string ingestion = "i.posthog.com";
 
 string trimSlash(string host) {
   string trimmed = host.trim();
-  if (trimmed.endsWith("/")) {
-    return trimmed.slice(0, trimmed.length - 1);
-  }
-  return trimmed;
-}
-
-string replaceIngestion(string host) {
-  string suffix = "." + ingestion;
-  int idx = host.indexOf(suffix);
-  if (idx < 0) {
-    return host;
-  }
-  return host.slice(0, idx) + ".posthog.com" + host.slice(idx + suffix.length);
+  return if (trimmed.endsWith("/")) { trimmed.slice(0, trimmed.length - 1) } else { trimmed };
 }
 
 export string apiHostFromConfig(string apiHost) {
@@ -34,17 +23,16 @@ export string flagsApiHostFromConfig(JsValue config) {
   if (custom.truthy() && custom is string) {
     return trimSlash(custom);
   }
-  return apiHostFromConfig(toStr(config["api_host"]));
+  return apiHostFromConfig(JS.assume(config["api_host"]));
 }
 
 export string uiHostFromConfig(JsValue config) {
   JsValue custom = config["ui_host"];
-  string host = "";
-  if (custom.truthy() && custom is string) {
-    host = trimSlash(custom);
+  string host = if (custom.truthy() && custom is string) {
+    trimSlash(custom)
   } else {
-    host = replaceIngestion(apiHostFromConfig(toStr(config["api_host"])));
-  }
+    apiHostFromConfig(JS.assume(config["api_host"])).replace(ingestionHost, ".posthog.com")
+  };
   if (host == "https://app.posthog.com") {
     return "https://us.posthog.com";
   }
@@ -62,38 +50,30 @@ export string regionForHost(string apiHost) {
   return "custom";
 }
 
-string withSlash(string path) {
-  if (path == "") {
-    return "";
+export string endpointFor(JsValue config, string target, string path = "") {
+  if (path != "" && !path.startsWith("/")) {
+    path = "/" + path;
   }
-  if (path.charAt(0) == "/") {
-    return path;
-  }
-  return "/" + path;
-}
-
-export string endpointFor(JsValue config, string target, string path) {
-  string resolved = withSlash(path);
   if (target == "ui") {
-    return uiHostFromConfig(config) + resolved;
+    return uiHostFromConfig(config) + path;
   }
   if (target == "flags") {
-    return flagsApiHostFromConfig(config) + resolved;
+    return flagsApiHostFromConfig(config) + path;
   }
-  if (target == "assets" && resolved.startsWith("/static/")) {
+  if (target == "assets" && path.startsWith("/static/")) {
     JsValue override = config["asset_host"];
-    if (override.truthy() && override is string) {
+    if (override is string) {
       string host = trimSlash(override);
       if (host != "") {
-        return host + resolved;
+        return host + path;
       }
     }
   }
-  string region = regionForHost(toStr(config["api_host"]));
+  string region = regionForHost(JS.assume(config["api_host"]));
   if (region == "custom") {
-    return apiHostFromConfig(toStr(config["api_host"])) + resolved;
+    return apiHostFromConfig(JS.assume(config["api_host"])) + path;
   }
-  string suffix = ingestion + resolved;
+  string suffix = ingestion + path;
   if (target == "assets") {
     return "https://" + region + "-assets." + suffix;
   }
