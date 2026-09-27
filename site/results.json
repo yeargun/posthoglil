@@ -17,9 +17,9 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 0.8527551942186089,
-        "gzip9": 0.7467672413793104,
-        "brotli11": 0.7440094899169633
+        "raw": 0.8517615176151762,
+        "gzip9": 0.7461206896551724,
+        "brotli11": 0.7423487544483985
       },
       "lanes": [
         {
@@ -117,9 +117,9 @@
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 9440,
-          "gzip9": 3465,
-          "brotli11": 3136
+          "raw": 9429,
+          "gzip9": 3462,
+          "brotli11": 3129
         },
         {
           "id": "package",
@@ -128,9 +128,9 @@
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 9590,
-          "gzip9": 3558,
-          "brotli11": 3216
+          "raw": 9579,
+          "gzip9": 3555,
+          "brotli11": 3220
         }
       ]
     },
@@ -144,9 +144,9 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 0.909684333593141,
-        "gzip9": 0.8269023496443199,
-        "brotli11": 0.818694222639737
+        "raw": 0.9091971940763834,
+        "gzip9": 0.8256089674498814,
+        "brotli11": 0.8172851103804603
       },
       "lanes": [
         {
@@ -244,9 +244,9 @@
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 9337,
-          "gzip9": 3836,
-          "brotli11": 3486
+          "raw": 9332,
+          "gzip9": 3830,
+          "brotli11": 3480
         },
         {
           "id": "package",
@@ -255,9 +255,9 @@
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 9486,
-          "gzip9": 3935,
-          "brotli11": 3576
+          "raw": 9481,
+          "gzip9": 3928,
+          "brotli11": 3557
         }
       ]
     },
@@ -271,9 +271,9 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 0.9732543241511852,
-        "gzip9": 0.8333996023856859,
-        "brotli11": 0.8103065304309196
+        "raw": 0.9141575912876362,
+        "gzip9": 0.7848906560636183,
+        "brotli11": 0.7601066192803199
       },
       "lanes": [
         {
@@ -371,9 +371,9 @@
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 6077,
-          "gzip9": 2096,
-          "brotli11": 1824
+          "raw": 5708,
+          "gzip9": 1974,
+          "brotli11": 1711
         },
         {
           "id": "package",
@@ -382,9 +382,9 @@
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 6199,
-          "gzip9": 2176,
-          "brotli11": 1895
+          "raw": 5830,
+          "gzip9": 2054,
+          "brotli11": 1790
         }
       ]
     },
@@ -398,9 +398,9 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 1.2993452462147046,
-        "gzip9": 1.1226315789473684,
-        "brotli11": 1.112366003062787
+        "raw": 1.2048151684626927,
+        "gzip9": 1.0643859649122807,
+        "brotli11": 1.0520673813169985
       },
       "lanes": [
         {
@@ -498,9 +498,9 @@
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 19051,
-          "gzip9": 6399,
-          "brotli11": 5811
+          "raw": 17665,
+          "gzip9": 6067,
+          "brotli11": 5496
         },
         {
           "id": "package",
@@ -509,9 +509,9 @@
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 19187,
-          "gzip9": 6480,
-          "brotli11": 5864
+          "raw": 17801,
+          "gzip9": 6148,
+          "brotli11": 5564
         }
       ]
     },
@@ -525,9 +525,9 @@
       "exact": true,
       "costModel": "brotli",
       "ratios": {
-        "raw": 1,
-        "gzip9": 0.8885304659498208,
-        "brotli11": 0.8802184939523995
+        "raw": 0.9084598698481562,
+        "gzip9": 0.8516129032258064,
+        "brotli11": 0.8439328911431916
       },
       "lanes": [
         {
@@ -625,9 +625,9 @@
           "baseline": false,
           "primary": true,
           "costModel": "brotli",
-          "raw": 6915,
-          "gzip9": 2479,
-          "brotli11": 2256
+          "raw": 6282,
+          "gzip9": 2376,
+          "brotli11": 2163
         },
         {
           "id": "package",
@@ -636,9 +636,9 @@
           "baseline": false,
           "primary": false,
           "costModel": null,
-          "raw": 7053,
-          "gzip9": 2576,
-          "brotli11": 2337
+          "raw": 6420,
+          "gzip9": 2473,
+          "brotli11": 2258
         }
       ]
     }
@@ -743,9 +743,9 @@
     {
       "id": "itslil",
       "name": "LilScript compiler · cost_model brotli",
-      "raw": 17531,
-      "gzip9": 5984,
-      "brotli11": 5370,
+      "raw": 16177,
+      "gzip9": 5681,
+      "brotli11": 5072,
       "note": "Direct compiler output, not post-minified and without package metadata.",
       "primary": true,
       "baseline": false,
@@ -755,9 +755,9 @@
     {
       "id": "itslil-package",
       "name": "@itslil/posthog-js · packaged ESM",
-      "raw": 17622,
-      "gzip9": 6039,
-      "brotli11": 5419,
+      "raw": 16268,
+      "gzip9": 5734,
+      "brotli11": 5131,
       "note": "The same Brotli-scored output with the package license banner added.",
       "primary": false,
       "baseline": false,
@@ -767,9 +767,9 @@
     {
       "id": "itslil-gzip",
       "name": "LilScript compiler · cost_model gzip",
-      "raw": 17531,
-      "gzip9": 5984,
-      "brotli11": 5370,
+      "raw": 15921,
+      "gzip9": 5645,
+      "brotli11": 5049,
       "note": "Direct compiler output scored for gzip. Not the packaged ESM.",
       "primary": false,
       "baseline": false,
@@ -779,9 +779,9 @@
     {
       "id": "itslil-bytes",
       "name": "LilScript compiler · cost_model raw",
-      "raw": 15651,
-      "gzip9": 6300,
-      "brotli11": 5554,
+      "raw": 14610,
+      "gzip9": 6014,
+      "brotli11": 5289,
       "note": "Direct compiler output scored for raw bytes. Not the packaged ESM.",
       "primary": false,
       "baseline": false,
@@ -790,155 +790,155 @@
     }
   ],
   "matched": {
-    "raw": 17622,
-    "gzip9": 6039,
-    "brotli11": 5419,
+    "raw": 16268,
+    "gzip9": 5734,
+    "brotli11": 5131,
     "vsOxc": {
-      "raw": 1.0929727718166595,
-      "gzip9": 0.9749757830158218,
-      "brotli11": 0.963891853432942
+      "raw": 1.0089933635179558,
+      "gzip9": 0.9257345818534065,
+      "brotli11": 0.9126645321949484
     }
   },
   "hero": {
-    "brotliRatio": 0.963891853432942,
+    "brotliRatio": 0.9126645321949484,
     "officialBrotli": 5622,
-    "itslilBrotli": 5419,
-    "packageBrotli": 5419,
-    "packageRaw": 17622,
-    "gzipRatio": 0.9749757830158218,
+    "itslilBrotli": 5131,
+    "packageBrotli": 5131,
+    "packageRaw": 16268,
+    "gzipRatio": 0.9257345818534065,
     "officialGzip": 6194,
-    "itslilGzip": 6039,
-    "rawRatio": 1.0929727718166595,
+    "itslilGzip": 5734,
+    "rawRatio": 1.0089933635179558,
     "officialRaw": 16123,
-    "itslilRaw": 17622,
+    "itslilRaw": 16268,
     "kernelRawBrotli": 8561
   },
   "objectives": {
-    "brotli11": 5370,
-    "gzip9": 5984,
-    "raw": 15651
+    "brotli11": 5072,
+    "gzip9": 5645,
+    "raw": 14610
   },
   "delivered": [
     {
       "file": "dist/posthog.esm.js",
       "writtenBy": "LilScript compiler output + license banner",
       "compilerWritten": true,
-      "raw": 17622,
-      "gzip9": 6039,
-      "brotli11": 5419
+      "raw": 16268,
+      "gzip9": 5734,
+      "brotli11": 5131
     },
     {
       "file": "dist/posthog.cjs",
       "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
       "compilerWritten": false,
-      "raw": 20259,
-      "gzip9": 6846,
-      "brotli11": 6192
+      "raw": 18836,
+      "gzip9": 6513,
+      "brotli11": 5845
     },
     {
       "file": "dist/posthog.umd.js",
       "writtenBy": "post-processed by esbuild (IIFE wrapper, whitespace-minified reprint), not compiler-written",
       "compilerWritten": false,
-      "raw": 20331,
-      "gzip9": 6877,
-      "brotli11": 6216
+      "raw": 18908,
+      "gzip9": 6543,
+      "brotli11": 5873
     },
     {
       "file": "dist/autocapture.esm.js",
       "writtenBy": "LilScript compiler output + license banner",
       "compilerWritten": true,
-      "raw": 9590,
-      "gzip9": 3558,
-      "brotli11": 3216
+      "raw": 9579,
+      "gzip9": 3555,
+      "brotli11": 3220
     },
     {
       "file": "dist/autocapture.cjs",
       "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
       "compilerWritten": false,
-      "raw": 11430,
-      "gzip9": 4092,
-      "brotli11": 3702
+      "raw": 11419,
+      "gzip9": 4086,
+      "brotli11": 3699
     },
     {
       "file": "dist/replay-core.esm.js",
       "writtenBy": "LilScript compiler output + license banner",
       "compilerWritten": true,
-      "raw": 9486,
-      "gzip9": 3935,
-      "brotli11": 3576
+      "raw": 9481,
+      "gzip9": 3928,
+      "brotli11": 3557
     },
     {
       "file": "dist/replay-core.cjs",
       "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
       "compilerWritten": false,
-      "raw": 10748,
-      "gzip9": 4289,
-      "brotli11": 3884
+      "raw": 10743,
+      "gzip9": 4284,
+      "brotli11": 3858
     },
     {
       "file": "dist/surveys.esm.js",
       "writtenBy": "LilScript compiler output + license banner",
       "compilerWritten": true,
-      "raw": 6199,
-      "gzip9": 2176,
-      "brotli11": 1895
+      "raw": 5830,
+      "gzip9": 2054,
+      "brotli11": 1790
     },
     {
       "file": "dist/surveys.cjs",
       "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
       "compilerWritten": false,
-      "raw": 7786,
-      "gzip9": 2634,
-      "brotli11": 2323
+      "raw": 7424,
+      "gzip9": 2515,
+      "brotli11": 2220
     },
     {
       "file": "dist/error-tracking.esm.js",
       "writtenBy": "LilScript compiler output + license banner",
       "compilerWritten": true,
-      "raw": 19187,
-      "gzip9": 6480,
-      "brotli11": 5864
+      "raw": 17801,
+      "gzip9": 6148,
+      "brotli11": 5564
     },
     {
       "file": "dist/error-tracking.cjs",
       "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
       "compilerWritten": false,
-      "raw": 20845,
-      "gzip9": 6980,
-      "brotli11": 6325
+      "raw": 20242,
+      "gzip9": 6807,
+      "brotli11": 6119
     },
     {
       "file": "dist/otlp.esm.js",
       "writtenBy": "LilScript compiler output + license banner",
       "compilerWritten": true,
-      "raw": 7053,
-      "gzip9": 2576,
-      "brotli11": 2337
+      "raw": 6420,
+      "gzip9": 2473,
+      "brotli11": 2258
     },
     {
       "file": "dist/otlp.cjs",
       "writtenBy": "post-processed by esbuild (CJS wrapper, whitespace-minified reprint), not compiler-written",
       "compilerWritten": false,
-      "raw": 8274,
-      "gzip9": 2981,
-      "brotli11": 2719
+      "raw": 7639,
+      "gzip9": 2874,
+      "brotli11": 2614
     }
   ],
   "compiler": {
-    "revision": "aa2052f0",
-    "binarySha256": "13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9",
-    "codecSha256": "125776830df72bbaf9704fee3c38bb0bf29bfc6bcceb5bc8707a0507a128d7b9",
-    "date": "2026-09-24",
+    "revision": "d1d48c4c",
+    "binarySha256": "47048e41164027e92d3bf1d1840d8d83e04c60532c031ceb3346222e194b3041",
+    "codecSha256": "85329d361ef3339d4ff7b7ca1f00065d561340eb4fc98a2799af327134a3a3f0",
+    "date": "2026-09-27",
     "compileWallMs": [
-      828,
-      899,
-      998
+      2382,
+      2230,
+      2332
     ],
     "scope": "sum of the 8 compiler invocations of npm run build and npm run build:packs, one process each; esbuild packaging not counted",
     "host": "8 × AMD EPYC 7763 64-Core Processor, Node v24.11.1",
     "load": {
-      "atStart": 10.15,
-      "atEnd": 10.15
+      "atStart": 6.89,
+      "atEnd": 7.13
     },
     "invocations": [
       {
@@ -946,9 +946,9 @@
         "config": "lilscript.toml",
         "output": "dist/posthog.raw.js",
         "wallMs": [
-          123,
-          194,
-          178
+          481,
+          594,
+          402
         ]
       },
       {
@@ -956,9 +956,9 @@
         "config": "lilscript.gzip.toml",
         "output": "dist/posthog.gzip.js",
         "wallMs": [
-          56,
-          44,
-          133
+          123,
+          137,
+          120
         ]
       },
       {
@@ -966,9 +966,9 @@
         "config": "lilscript.bytes.toml",
         "output": "dist/posthog.bytes.js",
         "wallMs": [
-          75,
-          74,
-          60
+          139,
+          101,
+          111
         ]
       },
       {
@@ -976,9 +976,9 @@
         "config": "lilscript.toml",
         "output": "dist/surveys.raw.js",
         "wallMs": [
-          66,
-          71,
-          90
+          144,
+          141,
+          187
         ]
       },
       {
@@ -986,9 +986,9 @@
         "config": "lilscript.toml",
         "output": "dist/error-tracking.raw.js",
         "wallMs": [
-          235,
-          219,
-          222
+          754,
+          678,
+          733
         ]
       },
       {
@@ -996,9 +996,9 @@
         "config": "lilscript.toml",
         "output": "dist/otlp.raw.js",
         "wallMs": [
-          75,
-          77,
-          94
+          179,
+          160,
+          236
         ]
       },
       {
@@ -1006,9 +1006,9 @@
         "config": "lilscript.toml",
         "output": "dist/autocapture.raw.js",
         "wallMs": [
-          100,
-          106,
-          91
+          233,
+          194,
+          289
         ]
       },
       {
@@ -1016,59 +1016,59 @@
         "config": "lilscript.toml",
         "output": "dist/replay-core.raw.js",
         "wallMs": [
-          98,
-          114,
-          130
+          329,
+          225,
+          254
         ]
       }
     ]
   },
   "previousRelease": {
-    "label": "Previous release: the page and dist published 2026-09-10 (aa1ea81), compiled by the old compiler route",
-    "commit": "aa1ea81",
-    "date": "2026-09-10",
+    "label": "Previous release: the page and dist published 2026-09-24 (1e13341), compiled by the one LilScript compiler at aa2052f0 from the previous port sources",
+    "commit": "1e13341",
+    "date": "2026-09-24",
     "kernel": {
-      "brotli11": 5533,
-      "gzip9": 6299,
-      "raw": 15646,
-      "packageBrotli": 5606,
-      "packageRaw": 16359
+      "brotli11": 5370,
+      "gzip9": 5984,
+      "raw": 15651,
+      "packageBrotli": 5419,
+      "packageRaw": 17622
     },
     "packs": {
       "autocapture": {
         "costModel": "brotli",
-        "raw": 8642,
-        "gzip9": 3451,
-        "brotli11": 3097,
-        "packageBrotli": 3178
+        "raw": 9440,
+        "gzip9": 3465,
+        "brotli11": 3136,
+        "packageBrotli": 3216
       },
       "replay-core": {
         "costModel": "brotli",
-        "raw": 8380,
-        "gzip9": 3760,
-        "brotli11": 3445,
-        "packageBrotli": 3547
+        "raw": 9337,
+        "gzip9": 3836,
+        "brotli11": 3486,
+        "packageBrotli": 3576
       },
       "surveys": {
         "costModel": "brotli",
-        "raw": 5402,
-        "gzip9": 2102,
-        "brotli11": 1809,
-        "packageBrotli": 1893
+        "raw": 6077,
+        "gzip9": 2096,
+        "brotli11": 1824,
+        "packageBrotli": 1895
       },
       "error-tracking": {
-        "costModel": "raw",
-        "raw": 19319,
-        "gzip9": 7141,
-        "brotli11": 6496,
-        "packageBrotli": 6569
+        "costModel": "brotli",
+        "raw": 19051,
+        "gzip9": 6399,
+        "brotli11": 5811,
+        "packageBrotli": 5864
       },
       "otlp": {
-        "costModel": "raw",
-        "raw": 7495,
-        "gzip9": 3123,
-        "brotli11": 2852,
-        "packageBrotli": 2944
+        "costModel": "brotli",
+        "raw": 6915,
+        "gzip9": 2479,
+        "brotli11": 2256,
+        "packageBrotli": 2337
       }
     }
   }

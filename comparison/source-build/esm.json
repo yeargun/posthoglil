@@ -11,19 +11,19 @@
   "external": [],
   "samples": [
     {
-      "bundleSeconds": 0.13091876500000002,
-      "wallSeconds": 1.5116072139999999
+      "bundleSeconds": 0.08455411999999995,
+      "wallSeconds": 0.9220722069999999
     },
     {
-      "bundleSeconds": 0.0503460869999999,
-      "wallSeconds": 0.8488158069999999
+      "bundleSeconds": 0.0392550839999999,
+      "wallSeconds": 0.546943969
     },
     {
-      "bundleSeconds": 0.060888358000000156,
-      "wallSeconds": 0.8713866079999998
+      "bundleSeconds": 0.037325111000000105,
+      "wallSeconds": 0.46242168700000025
     }
   ],
-  "medianSeconds": 0.8713866079999998,
+  "medianSeconds": 0.546943969,
   "toolchain": {
     "esbuild": "0.28.1",
     "terser": "5.51.2",
@@ -39,10 +39,10 @@
     },
     {
       "path": "original.unminified.js",
-      "raw": 35538,
+      "raw": 35628,
       "gzip9": 9751,
-      "brotli11": 8533,
-      "sha256": "2360751b5c5c916b0c0b0af56604e0351ab0c32b7eaee56266547ec574cb44e8"
+      "brotli11": 8522,
+      "sha256": "4433c5d55592479099d92b9c2f80e514b829aef988b723b4add975eb071e58d9"
     },
     {
       "path": "original.terser-nomangle.js",
@@ -74,20 +74,20 @@
     }
   ],
   "inputs": [
-    "../../ports/posthoglil/official/uuidv7.ts",
-    "../../ports/posthoglil/official/feature-flags.ts",
-    "../../ports/posthoglil/official/helpers.ts",
-    "../../ports/posthoglil/official/cookie.ts",
-    "../../ports/posthoglil/official/router.ts",
-    "../../ports/posthoglil/official/rate-limit.ts",
-    "../../ports/posthoglil/official/queue.ts",
-    "../../ports/posthoglil/official/bot-detection.ts",
-    "../../ports/posthoglil/official/string-utils.ts",
-    "../../ports/posthoglil/official/type-utils.ts",
-    "../../ports/posthoglil/official/number-utils.ts",
-    "../../ports/posthoglil/official/json-utils.ts",
-    "../../ports/posthoglil/official/url.ts",
-    "../../ports/posthoglil/official/bucketed-rate-limit.ts",
-    "../../ports/posthoglil/official/entry.ts"
+    "../../../../../../posthoglil/official/uuidv7.ts",
+    "../../../../../../posthoglil/official/feature-flags.ts",
+    "../../../../../../posthoglil/official/helpers.ts",
+    "../../../../../../posthoglil/official/cookie.ts",
+    "../../../../../../posthoglil/official/router.ts",
+    "../../../../../../posthoglil/official/rate-limit.ts",
+    "../../../../../../posthoglil/official/queue.ts",
+    "../../../../../../posthoglil/official/bot-detection.ts",
+    "../../../../../../posthoglil/official/string-utils.ts",
+    "../../../../../../posthoglil/official/type-utils.ts",
+    "../../../../../../posthoglil/official/number-utils.ts",
+    "../../../../../../posthoglil/official/json-utils.ts",
+    "../../../../../../posthoglil/official/url.ts",
+    "../../../../../../posthoglil/official/bucketed-rate-limit.ts",
+    "../../../../../../posthoglil/official/entry.ts"
   ]
 }

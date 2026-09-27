@@ -1,6 +1,6 @@
 # Source-build measurements
 
-Measured 2026-09-24T05:12:54Z using LilScript `aa2052f081ca8184666ca280ee9b91d476e46cfc` and the upstream Git revision recorded in `job.json`.
+Measured 2026-09-27T16:44:36Z using LilScript `d1d48c4ca24b5d4ccd3016dc4913d85c6d38a41c` and the upstream Git revision recorded in `job.json`.
 
 `result.json` records the commands, wall time, CPU time, machine and exit codes. `esm.json` records the production ESM assembly and exact input graph. `compiler-invocations.jsonl` records the wall time of each compiler invocation inside the last LilScript build. The lockfiles record dependency resolution. The public page uses `source-build.json` for the final consolidated record.
 

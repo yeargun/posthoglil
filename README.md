@@ -45,15 +45,15 @@ Each pack is measured separately against Vite 8 Oxc with mangling enabled. The f
 
 | Pack | Exact runtime surface | Official Oxc raw / gzip-9 / Brotli-11 | LilScript raw / gzip-9 / Brotli-11 | Result vs Oxc |
 | --- | --- | ---: | ---: | --- |
-| Autocapture utilities | 21 exports · 5/5 differential groups | 11,070 / 4,640 / 4,215 | **9,440 / 3,465 / 3,136** | **14.7% / 25.3% / 25.6% smaller** |
-| Session replay core | 20 exports · 6/6 differential groups | 10,264 / 4,639 / 4,258 | **9,337 / 3,836 / 3,486** | **9.0% / 17.3% / 18.1% smaller** |
-| Surveys | 21 exports · 6/6 differential groups | 6,244 / 2,515 / 2,251 | **6,077 / 2,096 / 1,824** | **2.7% / 16.7% / 19.0% smaller** |
-| Error tracking | 26 exports · 5/5 differential groups | **14,662 / 5,700 / 5,224** | 19,051 / 6,399 / 5,811 | 29.9% / 12.3% / 11.2% larger |
-| OTLP logs + metrics | 14 exports · 6/6 differential groups | 6,915 / 2,790 / 2,563 | 6,915 / **2,479 / 2,256** | even raw; **11.1% / 12.0% smaller compressed** |
+| Autocapture utilities | 21 exports · 5/5 differential groups | 11,070 / 4,640 / 4,215 | **9,429 / 3,462 / 3,129** | **14.8% / 25.4% / 25.8% smaller** |
+| Session replay core | 20 exports · 6/6 differential groups | 10,264 / 4,639 / 4,258 | **9,332 / 3,830 / 3,480** | **9.1% / 17.4% / 18.3% smaller** |
+| Surveys | 21 exports · 6/6 differential groups | 6,244 / 2,515 / 2,251 | **5,708 / 1,974 / 1,711** | **8.6% / 21.5% / 24.0% smaller** |
+| Error tracking | 26 exports · 5/5 differential groups | **14,662 / 5,700 / 5,224** | 17,665 / 6,067 / 5,496 | 20.5% / 6.4% / 5.2% larger |
+| OTLP logs + metrics | 14 exports · 6/6 differential groups | 6,915 / 2,790 / 2,563 | **6,282 / 2,376 / 2,163** | **9.2% / 14.8% / 15.6% smaller** |
 
-Three-pass Terser is the strongest official Brotli lane on every pack. Against it, autocapture is 829 Brotli bytes smaller, replay core 521, surveys 242 and OTLP 170. Error tracking is 749 bytes larger. The losses stay visible.
+Three-pass Terser is the strongest official Brotli lane on every pack. Against it, autocapture is 836 Brotli bytes smaller, replay core 527, surveys 355 and OTLP 263. Error tracking is 434 bytes larger. The losses stay visible.
 
-Error tracking and OTLP used to ship `cost_model = raw` builds with the candidate search off, because the old compiler's Brotli-scored output failed their differential or syntax gates. The current compiler's Brotli builds pass both suites, so every pack now uses the release configuration: OTLP went from 2,852 to 2,256 Brotli bytes and now beats Oxc, and error tracking went from 6,496 to 5,811. None of the LilScript rows is post-minified.
+Every pack uses the release configuration. The surveys and OTLP sources were rewritten idiomatically for this release (see below); error tracking, autocapture and replay core keep their sources, and their bytes change only with the compiler. None of the LilScript rows is post-minified.
 
 The committed differential suites cover autocapture DOM/event decisions, sensitive values, text normalization, and elements-chain serialization; replay network redaction, callback fallbacks, circular sizing, data-URI replacement, console truncation, and recursive buffer splitting; survey translation and activation semantics; every error coercer, recursive causes, exception-step byte budgets, class shapes, async frame modifiers, and browser/Node parser families; and OTLP integer boundaries, sparse/circular/deep graphs, `toJSON`, throwing getters, resource precedence, and log/metrics envelopes.
 
@@ -87,45 +87,57 @@ Pin: `posthog-js@1.418.10` commit `9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb`.
 | Official · Terser mangle on · 1 pass | 16,343 | 6,234 | 5,626 | — |
 | Official · esbuild minify esnext | 16,551 | 6,355 | 5,775 | — |
 | Official · esbuild minify es2018 | 17,213 | 6,598 | 5,943 | — |
-| **LilScript compiler · cost_model brotli** | 17,531 | 5,984 | **5,370** | **0.955× Brotli** |
-| LilScript compiler · cost_model gzip | 17,531 | **5,984** | 5,370 | **0.966× gzip** |
-| LilScript compiler · cost_model raw | **15,651** | 6,300 | 5,554 | **0.971× raw** |
-| `@itslil/posthog-js` · packaged ESM | 17,622 | 6,039 | 5,419 | 0.964× Brotli |
+| **LilScript compiler · cost_model brotli** | 16,177 | 5,681 | **5,072** | **0.902× Brotli** |
+| LilScript compiler · cost_model gzip | 15,921 | **5,645** | 5,049 | **0.911× gzip** |
+| LilScript compiler · cost_model raw | **14,610** | 6,014 | 5,289 | **0.906× raw** |
+| `@itslil/posthog-js` · packaged ESM | 16,268 | 5,734 | 5,131 | 0.913× Brotli |
 
-On each objective the kernel beats the strongest official lane, Oxc with mangling: **252 Brotli bytes (4.5%)**, **210 gzip bytes (3.4%)** and **472 raw bytes (2.9%)** smaller, with all **21 compatibility tests** passing. Three-pass Terser is 4 Brotli bytes behind Oxc. The packaged ESM, license banner included, is still 203 Brotli bytes below Oxc. The gzip-scored compile currently selects the same bytes as the Brotli-scored one.
+On each objective the kernel beats the strongest official lane, Oxc with mangling: **550 Brotli bytes (9.8%)**, **549 gzip bytes (8.9%)** and **1,513 raw bytes (9.4%)** smaller, with all **21 compatibility tests** passing. Three-pass Terser is 4 Brotli bytes behind Oxc. The packaged ESM, license banner included, is 491 Brotli bytes below Oxc.
 
 ### Since the previous release
 
-The previous release (page and dist published 2026-09-10, `aa1ea81`) was compiled by the old compiler route, which has since been deleted. This release is compiled by the one LilScript compiler at revision `aa2052f0`. The kernel sources were also rewritten: `CookieStore` became a closure, constant arrays became literals, `is` narrowing replaced `isStr()`/`toStr()`, export aliases went, `parseUuid` lost its byte round trip, and the flags response became one loop. That loop also fixes an inherited-key bug: a payload key named `constructor` used to be dropped.
+The previous release (page and dist published 2026-09-24, `1e13341`) was compiled by the one LilScript compiler at revision `aa2052f0`. This release is compiled at `d1d48c4c`, and its kernel, surveys and OTLP sources are rewritten idiomatically. The rewrite uses typed views instead of index loops over `JsValue`, upstream's own spellings (`??` chains, `||`, strict `===` chains, arrow exports where upstream has arrows, literal tables), and one helper per meaning. Error tracking, autocapture and replay core keep their sources; their bytes change only with the compiler.
 
 | Artifact | Codec | Previous release | This release |
 | --- | --- | ---: | ---: |
-| Kernel · Brotli-scored compile | Brotli-11 | 5,533 | **5,370** |
-| Kernel · gzip-scored compile | gzip-9 | 6,299 | **5,984** |
-| Kernel · raw-scored compile | raw | **15,646** | 15,651 |
-| Kernel · packaged ESM (`dist/posthog.esm.js`) | Brotli-11 | 5,606 | **5,419** |
-| Autocapture pack | Brotli-11 | **3,097** | 3,136 |
-| Session replay core pack | Brotli-11 | **3,445** | 3,486 |
-| Surveys pack | Brotli-11 | **1,809** | 1,824 |
-| Error tracking pack (raw → Brotli objective) | Brotli-11 | 6,496 | **5,811** |
-| OTLP pack (raw → Brotli objective) | Brotli-11 | 2,852 | **2,256** |
+| Kernel · Brotli-scored compile | Brotli-11 | 5,370 | **5,072** |
+| Kernel · gzip-scored compile | gzip-9 | 5,984 | **5,645** |
+| Kernel · raw-scored compile | raw | 15,651 | **14,610** |
+| Kernel · packaged ESM (`dist/posthog.esm.js`) | Brotli-11 | 5,419 | **5,131** |
+| Autocapture pack | Brotli-11 | 3,136 | **3,129** |
+| Session replay core pack | Brotli-11 | 3,486 | **3,480** |
+| Surveys pack | Brotli-11 | 1,824 | **1,711** |
+| Error tracking pack | Brotli-11 | 5,811 | **5,496** |
+| OTLP pack | Brotli-11 | 2,256 | **2,163** |
 
-The three packs that were already Brotli-scored are 15–41 bytes larger than the old route made them. Their modules changed only by declaring the host globals each one uses (`extern JsValue Reflect;` and the like), which this compiler requires per module, and by the kernel rewrite of the shared `host.lil`.
+The main configuration with only `cost_model` switched to `raw` keeps `fn.name`. It now compiles the kernel to 15,452 bytes, below Oxc's 16,123. The previous sources compiled to 16,504 bytes with the same compiler.
+
+The rewrite was checked against upstream in two ways, both outside this repository. One is a three-way differential harness over adversarial inputs, comparing upstream, the previous port and this source. The other is upstream's own spec files for these modules, run with the port's exports substituted. The rewrite matches upstream in several places where the previous port did not:
+- holes in `applyOffsets`, `sortUnloadRequests`, `minimizeFlagCalledEventProperties` and `isBlockedUA`;
+- a `null` rate-limiter config;
+- a non-string `api_host`.
+
+The 19 exports that upstream declares as arrows are now arrows: they cannot be constructed and have no `prototype`, and their names and lengths are unchanged. `endpointFor(config, target)` now works without a path, as its type declares.
+
+Runtime was compared with the previous release's dist using a paired in-process benchmark, also outside this repository. It ran on Node 24.11.1, with 12 fresh processes per pair and three no-op-perturbed builds per lane. The results are parity, as the median ratio with its 95% bootstrap interval:
+- kernel workload: 1.002× [0.997, 1.005]
+- surveys: 1.001× [0.989, 1.028]
+- OTLP: 0.995× [0.991, 0.999]
 
 ### Compiler and compile time
 
-Every compiled file comes from one compiler binary (SHA-256 `13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9`, revision `aa2052f0`). `node scripts/record-compiler-run.mjs --revision <commit>` runs the release build three times, refuses the run unless every sample compiles identical bytes, and records the wall time of each compiler process in `site/results.json`. The eight invocations (three kernel objectives, five packs) took 828, 899 and 998 ms together in the recorded run (a shared host at load average 10); the site lists every invocation.
+Every compiled file comes from one compiler binary (SHA-256 `47048e41164027e92d3bf1d1840d8d83e04c60532c031ceb3346222e194b3041`, revision `d1d48c4c`). `node scripts/record-compiler-run.mjs --revision <commit>` runs the release build three times. It refuses the run unless every sample compiles identical bytes, and it records the wall time of each compiler process in `site/results.json`. The eight invocations (three kernel objectives, five packs) took 2,382, 2,230 and 2,332 ms together in the recorded run, on a shared host at load average 7. The site lists every invocation. The previous release's compiler took 828 to 998 ms. On this host, back to back and with the same binary, the previous sources took 3,008 / 2,825 / 2,863 ms and these sources took 2,909 / 2,744 / 2,568 ms. The longer time comes with the compiler, not with the rewrite.
 
 ### Build time from source
 
-`comparison/source-build/` and `site/source-build.json` record clean builds from the pinned sources (LilScript's page-refresh protocol: outputs cleared between builds, dependency installation excluded). The page shows them next to the size table.
+`comparison/source-build/` and `site/source-build.json` record clean builds from the pinned sources, using LilScript's page-refresh protocol: outputs are cleared between builds, and dependency installation is excluded. The page shows them next to the size table.
 
 | Lane | Command | Median (min–max), 3 builds | Machine |
 | --- | --- | ---: | --- |
-| LilScript package (kernel's three objective compiles + five packs) | `node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile` | 10.31 s (6.03–12.30 s), of which the 8 compiler processes take 4.62 s | Azure Standard_B8als_v2, 8 vCPUs, 2026-09-24, load average about 19 |
+| LilScript package (kernel's three objective compiles + five packs) | `node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile` | 6.10 s (5.15–6.14 s), of which the 8 compiler processes take 4.44 s | Azure Standard_B8als_v2, 8 vCPUs, 2026-09-27, load average about 12 |
 | Original repository (the complete PostHog SDK) | `corepack pnpm exec turbo run build --filter=posthog-js... --force` | 170.50 s (169.02–186.00 s) | Azure Standard_D16als_v7, 16 vCPUs, 2026-09-10 |
 
-The original build was not re-run for this release: on the 8-vCPU host, under load, one sample ran past 20 minutes. Its three samples are carried from the 2026-09-10 record (`comparison/source-build/original-2026-09-10-result.json`). The two lanes build different scopes on different machines, so no speedup is claimed. The clean LilScript build reproduced every file in `dist/` byte for byte and passed the 21 kernel tests.
+The original build was not re-run for this release. On the 8-vCPU host under load, one sample ran past 20 minutes, so its three samples are carried from the 2026-09-10 record (`comparison/source-build/original-2026-09-10-result.json`). The two lanes build different scopes on different machines, so no speedup is claimed. The clean LilScript build reproduced every file in `dist/` byte for byte and passed the 21 kernel tests.
 
 ### Delivered files
 

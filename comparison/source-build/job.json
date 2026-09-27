@@ -7,9 +7,9 @@
     "directory": "packages/browser"
   },
   "portSource": {
-    "commit": "e2c542f76615066a0ed7275dbc18902506040a09"
+    "commit": "f8985ca1dfbabfd20b3057acda0a4d835df3b5ff"
   },
-  "compilerCommit": "aa2052f081ca8184666ca280ee9b91d476e46cfc",
+  "compilerCommit": "d1d48c4ca24b5d4ccd3016dc4913d85c6d38a41c",
   "install": [
     "corepack",
     "pnpm",

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "measuredAt": "2026-09-24T05:12:54Z",
+  "measuredAt": "2026-09-27T16:44:36Z",
   "name": "posthoglil",
   "compiler": {
-    "commit": "aa2052f081ca8184666ca280ee9b91d476e46cfc",
-    "sha256": "13cb49a93fb3e376a5978484835322c84adea692b69ae4720775291377cf18f9"
+    "commit": "d1d48c4ca24b5d4ccd3016dc4913d85c6d38a41c",
+    "sha256": "47048e41164027e92d3bf1d1840d8d83e04c60532c031ceb3346222e194b3041"
   },
   "upstream": {
     "package": "posthog-js",
@@ -30,22 +30,22 @@
     "node": "v24.11.1",
     "rayonThreads": 8,
     "loadAtStart": [
-      21.53173828125,
-      19.65283203125,
-      17.35888671875
+      11.65478515625,
+      10.30859375,
+      9.56494140625
     ],
     "loadAtEnd": [
-      18.4189453125,
-      19.15966796875,
-      17.2939453125
+      12.27734375,
+      10.57177734375,
+      9.6728515625
     ]
   },
   "build": {
-    "compilerSeconds": 4.620620965957642,
+    "compilerSeconds": 4.439943313598633,
     "compilerInvocationsPerBuild": 8,
-    "packageSeconds": 10.312622033998196,
+    "packageSeconds": 6.0993179170181975,
     "originalSeconds": 170.4987566750001,
-    "originalEsmSeconds": 0.8713866079999998,
+    "originalEsmSeconds": 0.546943969,
     "packageScope": "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile",
     "originalScope": "corepack pnpm exec turbo run build --filter=posthog-js... --force",
     "protocol": {
@@ -58,10 +58,10 @@
   },
   "esm": {
     "lilscript": {
-      "raw": 17622,
-      "gzip9": 6039,
-      "brotli11": 5419,
-      "sha256": "0bd29dbb766ace6e65c73fdc848872a7001ecfebc11dc4ba63d9c68ef8b6458b",
+      "raw": 16268,
+      "gzip9": 5734,
+      "brotli11": 5131,
+      "sha256": "34aa64a8d4dd318f6ebccd2acbab3476874abf26115221b8d5d6fc0d870580ec",
       "file": "./esm-comparison/lilscript.js"
     },
     "original": {
@@ -161,9 +161,9 @@
     },
     "lilscript": {
       "complete": true,
-      "medianSeconds": 10.312622033998196,
-      "minimumSeconds": 6.031017531000543,
-      "maximumSeconds": 12.303040541999508,
+      "medianSeconds": 6.0993179170181975,
+      "minimumSeconds": 5.1460342650534585,
+      "maximumSeconds": 6.141376216022763,
       "samples": [
         {
           "command": [
@@ -171,8 +171,8 @@
             "-c",
             "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
           ],
-          "wallSeconds": 12.303040541999508,
-          "cpuSeconds": 6.697605,
+          "wallSeconds": 5.1460342650534585,
+          "cpuSeconds": 3.8433370000000004,
           "exitCode": 0,
           "timedOut": false,
           "log": "lilscript-build-1.log",
@@ -184,8 +184,8 @@
             "-c",
             "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
           ],
-          "wallSeconds": 10.312622033998196,
-          "cpuSeconds": 6.370133999999998,
+          "wallSeconds": 6.141376216022763,
+          "cpuSeconds": 3.8643700000000005,
           "exitCode": 0,
           "timedOut": false,
           "log": "lilscript-build-2.log",
@@ -197,8 +197,8 @@
             "-c",
             "node scripts/build.mjs --compile --force && node scripts/build-packs.mjs --compile"
           ],
-          "wallSeconds": 6.031017531000543,
-          "cpuSeconds": 5.62895,
+          "wallSeconds": 6.0993179170181975,
+          "cpuSeconds": 3.8749919999999993,
           "exitCode": 0,
           "timedOut": false,
           "log": "lilscript-build-3.log",
