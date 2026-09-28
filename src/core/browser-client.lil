@@ -1,7 +1,7 @@
 // browser/src/extensions/browser-client.ts with browser-common's ExtensionRuntime and
 // createDisposable: the `Client` a new-style extension's `setup(client)` receives.
 
-import { PostHog } from "./posthog-core.lil";
+import { PostHog, registerExtensionEventProperties } from "./posthog-core.lil";
 import { PostHogPersistence } from "./persistence.lil";
 import { SessionIdManager } from "./sessionid.lil";
 import { Config } from "./config.lil";
@@ -212,7 +212,7 @@ export class BrowserClientAdapter {
   }
 
   JsValue registerDynamicEventProperties(JsValue producer) {
-    return createDisposable(this.instance._registerExtensionEventProperties(producer));
+    return createDisposable(registerExtensionEventProperties(this.instance, producer));
   }
 
   void handleRemoteConfig(JsValue result) {

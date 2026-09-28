@@ -248,8 +248,8 @@ export class PostHogPersistence {
     this.props = JS.object();
     this._campaign_params_url = JS.undefined();
     this._name = persistenceName(config);
-    this._storage = this._buildStorage(config);
-    this._splitStorage = this._resolveSplitStorage(config);
+    this._storage = buildStorage(this, config);
+    this._splitStorage = resolveSplitStorage(this, config);
     this.load();
     if (config["debug"].truthy()) {
       logger.info(JS.array("Persistence loaded", config["persistence"], copy(this.props)));
@@ -264,134 +264,8 @@ export class PostHogPersistence {
     }
   }
 
-  SlotState _slot(int group) {
-    if (group == FLAGS) {
-      return this._flagsSlot;
-    }
-    return if (group == SURVEYS) { this._surveysSlot } else { this._mainSlot };
-  }
-
-  void _resetSlot(int group) {
-    if (group == FLAGS) {
-      this._flagsSlot = new SlotState();
-    } else if (group == SURVEYS) {
-      this._surveysSlot = new SlotState();
-    } else {
-      this._mainSlot = new SlotState();
-    }
-  }
-
-  bool _cookieReconciled(JsValue config) {
-    return config["cookieWinsOnConflict"].truthy() && lower(config["persistence"]) == "localstorage+cookie";
-  }
-
-  number _saveDebounceMs() {
-    JsValue value = if (JS.isNullish(this._config)) { JS.undefined() } else { this._config["persistence_save_debounce_ms"] };
-    return if (isNumber(value) && JS.number(value) > 0.0) { JS.number(value) } else { 0.0 };
-  }
-
-  // Remember the main cookie this instance wrote, so the next sync skips its own write.
-  void _rememberCurrentCookieProperties(JsValue props) {
-    if (!this._cookieReconciled(this._config)) {
-      return;
-    }
-    try {
-      string[] custom = stringList(this._config["cookie_persisted_properties"]);
-      JsValue cookieProperties = getCookiePersistedProperties(props, custom);
-      JsValue metadata = getCookiePersistedPropertiesMetadata(cookieProperties, custom);
-      string expected = asString(JS.invoke(JSON, "stringify", cookieProperties)) + "|" + asString(JS.invoke(JSON, "stringify", metadata));
-      JsValue current = JS.or(cookieStore.get(this._name), JS.undefined());
-      if (current.truthy() && getCookiePropertiesFingerprint(this._name, JS.string(current)) == expected) {
-        this._lastSeenMainCookieValue = current;
-      }
-    } catch {
-    }
-  }
-
   bool syncCookieProperties() {
-    return this._syncCookieProperties(this._config, false);
-  }
-
-  bool _syncCookieProperties(JsValue config, bool ignoreDisabled) {
-    if ((this._disabled && !ignoreDisabled) || this._cookieSyncSuppressed || !this._cookieReconciled(config)) {
-      return false;
-    }
-    JsValue cookieValue = JS.undefined();
-    try {
-      cookieValue = JS.or(cookieStore.get(this._name), JS.undefined());
-    } catch {
-    }
-    if (!cookieValue.truthy() || JS.strictEqual(cookieValue, this._lastSeenMainCookieValue)) {
-      return false;
-    }
-    string cookieText = JS.string(cookieValue);
-    JsValue cookieProperties = JS.undefined();
-    try {
-      cookieProperties = getSafeCookieProperties(JS.invoke(JSON, "parse", cookieText));
-    } catch {
-      return false;
-    }
-    if (JS.strictNotEqual(JS.or(cookieStore.get(this._name), JS.undefined()), cookieValue)) {
-      return false;
-    }
-    this._lastSeenMainCookieValue = cookieValue;
-    MetadataState metadataState = getCookiePersistedPropertiesMetadataState(this._name, cookieText);
-    string[] authoritative = [...COOKIE_PERSISTED_PROPERTIES, ...metadataState.properties];
-    JsValue invalid = JS.object();
-    for (string key of keysOf(cookieProperties)) {
-      JsValue value = cookieProperties[key];
-      if (JS.isNullish(value) || JS.strictEqual(value, "") || (key == USER_STATE && JS.strictNotEqual(value, USER_STATE_ANONYMOUS) && JS.strictNotEqual(value, USER_STATE_IDENTIFIED))) {
-        invalid[key] = true;
-        JS.delete(cookieProperties, key);
-      }
-    }
-    if (isEmptyObject(cookieProperties)) {
-      return false;
-    }
-    bool hasValidCookieIdentity = JS.in(DISTINCT_ID, cookieProperties) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_ANONYMOUS) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_IDENTIFIED);
-    JsValue previousDistinctId = this.props[DISTINCT_ID];
-    JsValue previousUserState = this.props[USER_STATE];
-    JsValue nextProps = extend(JS.object(), this.props);
-    for (string key of [...COOKIE_PERSISTED_PROPERTIES, ...stringList(config["cookie_persisted_properties"])]) {
-      if (authoritative.indexOf(key) != -1 && !JS.in(key, cookieProperties) && !invalid[key].truthy() && (hasValidCookieIdentity || (key != DISTINCT_ID && key != USER_STATE))) {
-        JsValue localValue = nextProps[key];
-        bool legacyFalsyBuiltIn = !metadataState.isValid && COOKIE_PERSISTED_PROPERTIES.indexOf(key) != -1 && (JS.strictEqual(localValue, false) || JS.strictEqual(localValue, 0));
-        if (!legacyFalsyBuiltIn) {
-          JS.delete(nextProps, key);
-        }
-      }
-    }
-    this.props = extend(nextProps, cookieProperties);
-    if (hasValidCookieIdentity && !JS.in(USER_STATE, cookieProperties) && !JS.in(USER_STATE, this.props)) {
-      this._setProp(USER_STATE, USER_STATE_ANONYMOUS);
-    }
-    JsValue nextDistinctId = this.props[DISTINCT_ID];
-    JsValue nextUserState = this.props[USER_STATE];
-    if (hasValidCookieIdentity && (JS.strictNotEqual(nextDistinctId, previousDistinctId) || JS.strictNotEqual(nextUserState, previousUserState))) {
-      this._cookieIdentityChangePending = true;
-      sessionStore.set(pendingChangeName(this._name), true, JS.undefined(), JS.undefined(), JS.undefined());
-      this._deleteProp(STORED_PERSON_PROPERTIES_KEY);
-      this._deleteProp(PERSISTENCE_ACTIVE_FEATURE_FLAGS);
-      this._deleteProp(ENABLED_FEATURE_FLAGS);
-      this._deleteProp(PERSISTENCE_FEATURE_FLAG_DETAILS);
-      this._deleteProp(PERSISTENCE_FEATURE_FLAG_PAYLOADS);
-      this._deleteProp(PERSISTENCE_FEATURE_FLAG_REQUEST_ID);
-      this._deleteProp(PERSISTENCE_FEATURE_FLAG_EVALUATED_AT);
-      this._deleteProp(PERSISTENCE_FEATURE_FLAG_ERRORS);
-      this._deleteProp(FLAG_CALL_REPORTED);
-      bool siblingReset = JS.strictEqual(nextUserState, USER_STATE_ANONYMOUS) && (JS.strictEqual(previousUserState, USER_STATE_IDENTIFIED) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_ANONYMOUS) || (!JS.isUndefined(previousDistinctId) && JS.strictNotEqual(nextDistinctId, previousDistinctId)));
-      if (siblingReset) {
-        clearStaleEventProperties(this.props, cookieProperties);
-        this._deleteProp(STORED_GROUP_PROPERTIES_KEY);
-      }
-      if (JS.strictEqual(nextUserState, USER_STATE_IDENTIFIED)) {
-        this.props["$user_id"] = nextDistinctId;
-      } else {
-        JS.delete(this.props, "$user_id");
-      }
-      this._deleteProp(ALIAS_ID_KEY);
-    }
-    return true;
+    return reconcileCookieProperties(this, this._config, false);
   }
 
   bool consumeCookieIdentityChange() {
@@ -404,85 +278,8 @@ export class PostHogPersistence {
     return changed;
   }
 
-  bool _beginCookieSyncSuppression(bool ignoreDisabled = false) {
-    if (!this._cookieSyncSuppressed && (!this._disabled || ignoreDisabled) && this._cookieReconciled(this._config)) {
-      this._cookieSyncSuppressed = true;
-      return true;
-    }
-    return false;
-  }
-
-  void _publishSuppressedCookieSnapshot() {
-    if (!this._cookieSyncSuppressed) {
-      return;
-    }
-    this._cancelPendingSave();
-    this._resetSlot(0);
-    this._writeNow(true);
-  }
-
-  void _endCookieSyncSuppression(bool publish = true) {
-    if (!this._cookieSyncSuppressed) {
-      return;
-    }
-    try {
-      if (publish) {
-        this._publishSuppressedCookieSnapshot();
-      } else {
-        this._cancelPendingSave();
-      }
-    } finally {
-      this._cookieSyncSuppressed = false;
-    }
-  }
-
   bool isDisabled() {
     return this._disabled;
-  }
-
-  void _cancelPendingSave() {
-    if (!JS.isUndefined(this._pendingSaveTimer)) {
-      JS.call(clearTimeout, JS.undefined(), this._pendingSaveTimer);
-      this._pendingSaveTimer = JS.undefined();
-    }
-  }
-
-  Store _buildStorage(JsValue config) {
-    string persistence = lower(config["persistence"]);
-    if (persistence != "cookie" && persistence != "localstorage" && persistence != "localstorage+cookie" && persistence != "sessionstorage" && persistence != "memory") {
-      logger.critical(JS.array(JS.add(JS.add("Unknown persistence type ", config["persistence"]), "; falling back to localStorage+cookie")));
-      config["persistence"] = "localStorage+cookie";
-    }
-    Store localPlusCookie = createLocalPlusCookieStore(stringList(config["cookie_persisted_properties"]), config["cookieWinsOnConflict"].truthy());
-    string storageType = lower(config["persistence"]);
-    Store store = cookieStore;
-    bool splitEligible = false;
-    if (storageType == "localstorage" && localStore.isSupported()) {
-      store = localStore;
-      splitEligible = true;
-    } else if (storageType == "localstorage+cookie" && localPlusCookie.isSupported()) {
-      store = localPlusCookie;
-      splitEligible = true;
-    } else if (storageType == "sessionstorage" && sessionStore.isSupported()) {
-      store = sessionStore;
-    } else if (storageType == "memory") {
-      store = memoryStore;
-    } else if (storageType == "cookie") {
-      store = cookieStore;
-    } else if (localPlusCookie.isSupported()) {
-      store = localPlusCookie;
-      splitEligible = true;
-    }
-    this._splitStorageEligible = splitEligible;
-    return store;
-  }
-
-  string _groupEntryName(int group) {
-    return this._name + "__" + groupName(group);
-  }
-
-  bool _resolveSplitStorage(JsValue config) {
-    return this._splitStorageEligible && config["split_storage"].truthy();
   }
 
   JsValue properties() {
@@ -503,7 +300,7 @@ export class PostHogPersistence {
     if (this._disabled && !allowDisabled) {
       return;
     }
-    bool reconcileCookieIdentity = this._cookieReconciled(this._config);
+    bool reconcileCookieIdentity = cookieReconciled(this, this._config);
     JsValue localEntryBeforeMerge = if (reconcileCookieIdentity) { localStore.parse(this._name) } else { null };
     JsValue cookieEntryBeforeMerge = JS.object();
     if (reconcileCookieIdentity) {
@@ -523,7 +320,7 @@ export class PostHogPersistence {
       this.props = extend(JS.object(), entry);
     }
     if (this._splitStorage) {
-      this._loadGroupEntries();
+      loadGroupEntries(this);
     }
     if (reconcileCookieIdentity && entry.truthy()) {
       JsValue previousDistinctId = if (JS.isNullish(localEntryBeforeMerge)) { JS.undefined() } else { localEntryBeforeMerge[DISTINCT_ID] };
@@ -559,13 +356,13 @@ export class PostHogPersistence {
             }
           });
           if (isEmptyObject(groupProps)) {
-            localStore.remove(this._groupEntryName(group), JS.undefined());
-            this._resetSlot(group);
-          } else if (localStore.set(this._groupEntryName(group), groupProps, JS.undefined(), JS.undefined(), JS.undefined())) {
-            this._resetSlot(group);
-            SlotState state = this._slot(group);
+            localStore.remove(groupEntryName(this, group), JS.undefined());
+            resetSlot(this, group);
+          } else if (localStore.set(groupEntryName(this, group), groupProps, JS.undefined(), JS.undefined(), JS.undefined())) {
+            resetSlot(this, group);
+            SlotState state = slot(this, group);
             state.persisted = true;
-            state.fingerprint = this._entryFingerprint(groupProps, group);
+            state.fingerprint = entryFingerprint(this, groupProps, group);
           }
         }
       }
@@ -575,65 +372,33 @@ export class PostHogPersistence {
     }
   }
 
-  void _loadGroupEntries() {
-    for (int group of STORAGE_GROUPS) {
-      JsValue groupEntry = localStore.parse(this._groupEntryName(group));
-      if (groupEntry.truthy() && !isEmptyObject(groupEntry)) {
-        SlotState state = this._slot(group);
-        state.persisted = true;
-        if (!this._mainCarriesGroupKey(group)) {
-          state.fingerprint = this._entryFingerprint(groupEntry, group);
-        }
-        if (!this._groupEntryIsStale(group, groupEntry)) {
-          extend(this.props, groupEntry);
-        }
-      }
-    }
-  }
-
-  bool _mainCarriesGroupKey(int group) {
-    for (string key of keysOf(this.props)) {
-      if (groupOf(policyOf(key)) == group) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool _groupEntryIsStale(int group, JsValue groupEntry) {
-    string freshnessKey = if (group == FLAGS) { PERSISTENCE_FEATURE_FLAG_EVALUATED_AT } else { "$surveys_loaded_at" };
-    JsValue groupLoadedAt = groupEntry[freshnessKey];
-    JsValue mainLoadedAt = this.props[freshnessKey];
-    return isNumber(groupLoadedAt) && isNumber(mainLoadedAt) && JS.number(mainLoadedAt) > JS.number(groupLoadedAt);
-  }
-
   void refreshKey(string prop) {
     if (this._disabled) {
       return;
     }
     int group = if (this._splitStorage) { groupOf(policyOf(prop)) } else { 0 };
-    JsValue entry = if (group != 0) { localStore.parse(this._groupEntryName(group)) } else { this._storage.parse(this._name) };
+    JsValue entry = if (group != 0) { localStore.parse(groupEntryName(this, group)) } else { this._storage.parse(this._name) };
     if (entry.truthy() && JS.in(prop, entry)) {
-      this._setProp(prop, entry[prop]);
+      setProp(this, prop, entry[prop]);
       return;
     }
     if (group != 0) {
       JsValue mainEntry = this._storage.parse(this._name);
       if (mainEntry.truthy() && JS.in(prop, mainEntry)) {
-        this._setProp(prop, mainEntry[prop]);
+        setProp(this, prop, mainEntry[prop]);
         return;
       }
     }
-    this._deleteProp(prop);
+    deleteProp(this, prop);
   }
 
   void save() {
     if (this._disabled) {
       return;
     }
-    number debounce = this._saveDebounceMs();
+    number debounce = saveDebounceMs(this);
     if (debounce <= 0.0) {
-      this._writeNow(false);
+      writeNow(this, false);
       return;
     }
     if (!JS.isUndefined(this._pendingSaveTimer)) {
@@ -641,7 +406,7 @@ export class PostHogPersistence {
     }
     this._pendingSaveTimer = JS.call(setTimeout, JS.undefined(), () => {
       this._pendingSaveTimer = JS.undefined();
-      this._writeNow(false);
+      writeNow(this, false);
     }, debounce);
   }
 
@@ -651,101 +416,25 @@ export class PostHogPersistence {
     }
     JS.call(clearTimeout, JS.undefined(), this._pendingSaveTimer);
     this._pendingSaveTimer = JS.undefined();
-    this._writeNow(false);
-  }
-
-  void _writeNow(bool forceSuppressedSnapshot) {
-    if (this._disabled || (this._cookieSyncSuppressed && !forceSuppressedSnapshot)) {
-      return;
-    }
-    if (!forceSuppressedSnapshot) {
-      this.syncCookieProperties();
-    }
-    if (this._splitStorage) {
-      JsValue main = JS.object();
-      JsValue flags = JS.object();
-      JsValue surveys = JS.object();
-      each(this.props, (JsValue value, JsValue key) => {
-        int group = groupOf(policyOf(asString(key)));
-        JsValue target = if (group == FLAGS) { flags } else { if (group == SURVEYS) { surveys } else { main } };
-        target[asString(key)] = value;
-      });
-      if (this._writeEntry(this._storage, this._name, main, 0)) {
-        this._rememberCurrentCookieProperties(main);
-      }
-      for (int group of STORAGE_GROUPS) {
-        JsValue groupProps = if (group == FLAGS) { flags } else { surveys };
-        if (isEmptyObject(groupProps) && !this._slot(group).persisted) {
-          continue;
-        }
-        this._writeEntry(localStore, this._groupEntryName(group), groupProps, group);
-      }
-      return;
-    }
-    if (this._writeEntry(this._storage, this._name, this.props, 0)) {
-      this._rememberCurrentCookieProperties(this.props);
-    }
-  }
-
-  string _entryFingerprint(JsValue props, int group) {
-    if (group == 0) {
-      return asString(JS.add(JS.add(JS.add(JS.add(JS.add(JS.add(JS.invoke(JSON, "stringify", props), "|"), this._expire_days), "|"), this._cross_subdomain), "|"), this._secure));
-    }
-    JsValue stable = JS.object();
-    each(props, (JsValue value, JsValue key) => {
-      stable[asString(key)] = if ((policyOf(asString(key)) & VOLATILE) != 0) { "__volatile__" } else { value };
-    });
-    return asString(JS.invoke(JSON, "stringify", stable));
-  }
-
-  bool _writeEntry(Store storage, string name, JsValue props, int group) {
-    SlotState state = this._slot(group);
-    // A group entry is rewritten only when a non-volatile key changed.
-    if (group != 0 && !state.dirty && state.fingerprint != null) {
-      return false;
-    }
-    string? fingerprint = null;
-    try {
-      string computed = this._entryFingerprint(props, group);
-      fingerprint = computed;
-      if (state.fingerprint != null && computed == state.fingerprint) {
-        state.dirty = false;
-        return false;
-      }
-    } catch {
-      fingerprint = null;
-    }
-    if (storage.set(name, props, this._expire_days, this._cross_subdomain, this._secure)) {
-      state.dirty = false;
-      if (group != 0) {
-        state.persisted = true;
-      }
-      if (fingerprint != null) {
-        state.fingerprint = fingerprint;
-      }
-      return true;
-    } else if (this._config["debug"].truthy()) {
-      logger.warn(JS.array("failed to persist storage entry \"" + name + "\"; will retry on next save"));
-    }
-    return false;
+    writeNow(this, false);
   }
 
   void remove(JsValue options = JS.undefined()) {
     bool keepGroupEntries = !JS.isNullish(options) && options["keepGroupEntries"].truthy();
-    this._cancelPendingSave();
+    cancelPendingSave(this);
     this._storage.remove(this._name, false);
     this._storage.remove(this._name, true);
     if (!keepGroupEntries && this._ownsSplitStorage) {
       for (int group of STORAGE_GROUPS) {
-        localStore.remove(this._groupEntryName(group), JS.undefined());
+        localStore.remove(groupEntryName(this, group), JS.undefined());
       }
     }
     if (keepGroupEntries) {
-      this._resetSlot(0);
+      resetSlot(this, 0);
     } else {
-      this._resetSlot(0);
-      this._resetSlot(FLAGS);
-      this._resetSlot(SURVEYS);
+      resetSlot(this, 0);
+      resetSlot(this, FLAGS);
+      resetSlot(this, SURVEYS);
     }
     this._lastSeenMainCookieValue = JS.undefined();
   }
@@ -763,7 +452,7 @@ export class PostHogPersistence {
       bool hasChanges = false;
       each(props, (JsValue value, JsValue prop) => {
         if (!JS.invoke(this.props, "hasOwnProperty", prop).truthy() || JS.strictEqual(this.props[asString(prop)], overridable)) {
-          this._setProp(asString(prop), value);
+          setProp(this, asString(prop), value);
           hasChanges = true;
         }
       });
@@ -782,7 +471,7 @@ export class PostHogPersistence {
       bool hasChanges = false;
       each(props, (JsValue value, JsValue prop) => {
         if (JS.invoke(props, "hasOwnProperty", prop).truthy() && (JS.strictNotEqual(this.props[asString(prop)], value) || isObject(value) || isArray(value))) {
-          this._setProp(asString(prop), value);
+          setProp(this, asString(prop), value);
           hasChanges = true;
         }
       });
@@ -802,7 +491,7 @@ export class PostHogPersistence {
     for (int i = 0; i < count; i++) {
       JsValue prop = list[i];
       if (JS.in(prop, this.props)) {
-        this._deleteProp(asString(prop));
+        deleteProp(this, asString(prop));
         hasChanges = true;
       }
     }
@@ -874,20 +563,20 @@ export class PostHogPersistence {
     bool reEnabling = this._disabled && !disabled;
     // Take in a sibling's cookie under the old rules before switching.
     if (!disabled) {
-      this._syncCookieProperties(oldConfig, reEnabling);
+      reconcileCookieProperties(this, oldConfig, reEnabling);
     }
     this._config = config;
     if (!disabled && (persistenceModeChanged || cookiePersistedPropertiesChanged || cookiePrecedenceChanged)) {
       this._lastSeenMainCookieValue = JS.undefined();
       JsValue syncConfig = copy(config);
       syncConfig["cookie_persisted_properties"] = oldConfig["cookie_persisted_properties"];
-      this._syncCookieProperties(syncConfig, reEnabling);
+      reconcileCookieProperties(this, syncConfig, reEnabling);
     }
-    Store newStore = if (persistenceChanged || cookiePrecedenceChanged) { this._buildStorage(config) } else { this._storage };
-    bool wantSplit = this._resolveSplitStorage(config);
+    Store newStore = if (persistenceChanged || cookiePrecedenceChanged) { buildStorage(this, config) } else { this._storage };
+    bool wantSplit = resolveSplitStorage(this, config);
     bool storageMigration = persistenceChanged || wantSplit != this._splitStorage;
     bool cookieOptionsChanged = JS.strictNotEqual(config["cross_subdomain_cookie"], this._cross_subdomain) || JS.strictNotEqual(config["secure_cookie"], this._secure);
-    bool suppressionStarted = !disabled && (storageMigration || cookieOptionsChanged) && this._beginCookieSyncSuppression(reEnabling);
+    bool suppressionStarted = !disabled && (storageMigration || cookieOptionsChanged) && beginCookieSyncSuppression(this, reEnabling);
     try {
       this._expire_days = config["cookie_expiration"];
       this._default_expiry = this._expire_days;
@@ -904,13 +593,13 @@ export class PostHogPersistence {
       } else if (cookiePrecedenceChanged) {
         this._storage = newStore;
         if (!disabled) {
-          this._resetSlot(0);
-          this._writeNow(false);
+          resetSlot(this, 0);
+          writeNow(this, false);
         }
       }
     } finally {
       if (suppressionStarted) {
-        this._endCookieSyncSuppression(true);
+        endCookieSyncSuppression(this, true);
       }
     }
   }
@@ -943,7 +632,7 @@ export class PostHogPersistence {
   void set_event_timer(string eventName, JsValue timestamp) {
     JsValue timers = JS.or(this.props[EVENT_TIMERS_KEY], JS.object());
     timers[eventName] = timestamp;
-    this._setProp(EVENT_TIMERS_KEY, timers);
+    setProp(this, EVENT_TIMERS_KEY, timers);
     this.save();
   }
 
@@ -952,7 +641,7 @@ export class PostHogPersistence {
     JsValue timestamp = timers[eventName];
     if (!JS.isUndefined(timestamp)) {
       JS.delete(timers, eventName);
-      this._setProp(EVENT_TIMERS_KEY, timers);
+      setProp(this, EVENT_TIMERS_KEY, timers);
       this.save();
     }
     return timestamp;
@@ -963,29 +652,340 @@ export class PostHogPersistence {
   }
 
   void set_property(string prop, JsValue to) {
-    this._setProp(prop, to);
+    setProp(this, prop, to);
     this.save();
   }
+}
 
-  void _setProp(string prop, JsValue to) {
-    this.props[prop] = to;
-    // Volatile keys ride along with the next real write instead of forcing one.
-    int code = policyOf(prop);
-    if ((code & VOLATILE) == 0) {
-      this._markGroupDirty(code);
+SlotState slot(PostHogPersistence self, int group) {
+  if (group == FLAGS) {
+    return self._flagsSlot;
+  }
+  return if (group == SURVEYS) { self._surveysSlot } else { self._mainSlot };
+}
+
+void resetSlot(PostHogPersistence self, int group) {
+  if (group == FLAGS) {
+    self._flagsSlot = new SlotState();
+  } else if (group == SURVEYS) {
+    self._surveysSlot = new SlotState();
+  } else {
+    self._mainSlot = new SlotState();
+  }
+}
+
+bool cookieReconciled(PostHogPersistence self, JsValue config) {
+  return config["cookieWinsOnConflict"].truthy() && lower(config["persistence"]) == "localstorage+cookie";
+}
+
+number saveDebounceMs(PostHogPersistence self) {
+  JsValue value = if (JS.isNullish(self._config)) { JS.undefined() } else { self._config["persistence_save_debounce_ms"] };
+  return if (isNumber(value) && JS.number(value) > 0.0) { JS.number(value) } else { 0.0 };
+}
+
+// Remember the main cookie this instance wrote, so the next sync skips its own write.
+void rememberCurrentCookieProperties(PostHogPersistence self, JsValue props) {
+  if (!cookieReconciled(self, self._config)) {
+    return;
+  }
+  try {
+    string[] custom = stringList(self._config["cookie_persisted_properties"]);
+    JsValue cookieProperties = getCookiePersistedProperties(props, custom);
+    JsValue metadata = getCookiePersistedPropertiesMetadata(cookieProperties, custom);
+    string expected = asString(JS.invoke(JSON, "stringify", cookieProperties)) + "|" + asString(JS.invoke(JSON, "stringify", metadata));
+    JsValue current = JS.or(cookieStore.get(self._name), JS.undefined());
+    if (current.truthy() && getCookiePropertiesFingerprint(self._name, JS.string(current)) == expected) {
+      self._lastSeenMainCookieValue = current;
+    }
+  } catch {
+  }
+}
+
+bool reconcileCookieProperties(PostHogPersistence self, JsValue config, bool ignoreDisabled) {
+  if ((self._disabled && !ignoreDisabled) || self._cookieSyncSuppressed || !cookieReconciled(self, config)) {
+    return false;
+  }
+  JsValue cookieValue = JS.undefined();
+  try {
+    cookieValue = JS.or(cookieStore.get(self._name), JS.undefined());
+  } catch {
+  }
+  if (!cookieValue.truthy() || JS.strictEqual(cookieValue, self._lastSeenMainCookieValue)) {
+    return false;
+  }
+  string cookieText = JS.string(cookieValue);
+  JsValue cookieProperties = JS.undefined();
+  try {
+    cookieProperties = getSafeCookieProperties(JS.invoke(JSON, "parse", cookieText));
+  } catch {
+    return false;
+  }
+  if (JS.strictNotEqual(JS.or(cookieStore.get(self._name), JS.undefined()), cookieValue)) {
+    return false;
+  }
+  self._lastSeenMainCookieValue = cookieValue;
+  MetadataState metadataState = getCookiePersistedPropertiesMetadataState(self._name, cookieText);
+  string[] authoritative = [...COOKIE_PERSISTED_PROPERTIES, ...metadataState.properties];
+  JsValue invalid = JS.object();
+  for (string key of keysOf(cookieProperties)) {
+    JsValue value = cookieProperties[key];
+    if (JS.isNullish(value) || JS.strictEqual(value, "") || (key == USER_STATE && JS.strictNotEqual(value, USER_STATE_ANONYMOUS) && JS.strictNotEqual(value, USER_STATE_IDENTIFIED))) {
+      invalid[key] = true;
+      JS.delete(cookieProperties, key);
     }
   }
-
-  void _deleteProp(string prop) {
-    JS.delete(this.props, prop);
-    this._markGroupDirty(policyOf(prop));
+  if (isEmptyObject(cookieProperties)) {
+    return false;
   }
+  bool hasValidCookieIdentity = JS.in(DISTINCT_ID, cookieProperties) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_ANONYMOUS) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_IDENTIFIED);
+  JsValue previousDistinctId = self.props[DISTINCT_ID];
+  JsValue previousUserState = self.props[USER_STATE];
+  JsValue nextProps = extend(JS.object(), self.props);
+  for (string key of [...COOKIE_PERSISTED_PROPERTIES, ...stringList(config["cookie_persisted_properties"])]) {
+    if (authoritative.indexOf(key) != -1 && !JS.in(key, cookieProperties) && !invalid[key].truthy() && (hasValidCookieIdentity || (key != DISTINCT_ID && key != USER_STATE))) {
+      JsValue localValue = nextProps[key];
+      bool legacyFalsyBuiltIn = !metadataState.isValid && COOKIE_PERSISTED_PROPERTIES.indexOf(key) != -1 && (JS.strictEqual(localValue, false) || JS.strictEqual(localValue, 0));
+      if (!legacyFalsyBuiltIn) {
+        JS.delete(nextProps, key);
+      }
+    }
+  }
+  self.props = extend(nextProps, cookieProperties);
+  if (hasValidCookieIdentity && !JS.in(USER_STATE, cookieProperties) && !JS.in(USER_STATE, self.props)) {
+    setProp(self, USER_STATE, USER_STATE_ANONYMOUS);
+  }
+  JsValue nextDistinctId = self.props[DISTINCT_ID];
+  JsValue nextUserState = self.props[USER_STATE];
+  if (hasValidCookieIdentity && (JS.strictNotEqual(nextDistinctId, previousDistinctId) || JS.strictNotEqual(nextUserState, previousUserState))) {
+    self._cookieIdentityChangePending = true;
+    sessionStore.set(pendingChangeName(self._name), true, JS.undefined(), JS.undefined(), JS.undefined());
+    deleteProp(self, STORED_PERSON_PROPERTIES_KEY);
+    deleteProp(self, PERSISTENCE_ACTIVE_FEATURE_FLAGS);
+    deleteProp(self, ENABLED_FEATURE_FLAGS);
+    deleteProp(self, PERSISTENCE_FEATURE_FLAG_DETAILS);
+    deleteProp(self, PERSISTENCE_FEATURE_FLAG_PAYLOADS);
+    deleteProp(self, PERSISTENCE_FEATURE_FLAG_REQUEST_ID);
+    deleteProp(self, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT);
+    deleteProp(self, PERSISTENCE_FEATURE_FLAG_ERRORS);
+    deleteProp(self, FLAG_CALL_REPORTED);
+    bool siblingReset = JS.strictEqual(nextUserState, USER_STATE_ANONYMOUS) && (JS.strictEqual(previousUserState, USER_STATE_IDENTIFIED) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_ANONYMOUS) || (!JS.isUndefined(previousDistinctId) && JS.strictNotEqual(nextDistinctId, previousDistinctId)));
+    if (siblingReset) {
+      clearStaleEventProperties(self.props, cookieProperties);
+      deleteProp(self, STORED_GROUP_PROPERTIES_KEY);
+    }
+    if (JS.strictEqual(nextUserState, USER_STATE_IDENTIFIED)) {
+      self.props["$user_id"] = nextDistinctId;
+    } else {
+      JS.delete(self.props, "$user_id");
+    }
+    deleteProp(self, ALIAS_ID_KEY);
+  }
+  return true;
+}
 
-  void _markGroupDirty(int code) {
-    int group = groupOf(code);
+export bool beginCookieSyncSuppression(PostHogPersistence self, bool ignoreDisabled = false) {
+  if (!self._cookieSyncSuppressed && (!self._disabled || ignoreDisabled) && cookieReconciled(self, self._config)) {
+    self._cookieSyncSuppressed = true;
+    return true;
+  }
+  return false;
+}
+
+export void publishSuppressedCookieSnapshot(PostHogPersistence self) {
+  if (!self._cookieSyncSuppressed) {
+    return;
+  }
+  cancelPendingSave(self);
+  resetSlot(self, 0);
+  writeNow(self, true);
+}
+
+export void endCookieSyncSuppression(PostHogPersistence self, bool publish = true) {
+  if (!self._cookieSyncSuppressed) {
+    return;
+  }
+  try {
+    if (publish) {
+      publishSuppressedCookieSnapshot(self);
+    } else {
+      cancelPendingSave(self);
+    }
+  } finally {
+    self._cookieSyncSuppressed = false;
+  }
+}
+
+void cancelPendingSave(PostHogPersistence self) {
+  if (!JS.isUndefined(self._pendingSaveTimer)) {
+    JS.call(clearTimeout, JS.undefined(), self._pendingSaveTimer);
+    self._pendingSaveTimer = JS.undefined();
+  }
+}
+
+Store buildStorage(PostHogPersistence self, JsValue config) {
+  string persistence = lower(config["persistence"]);
+  if (persistence != "cookie" && persistence != "localstorage" && persistence != "localstorage+cookie" && persistence != "sessionstorage" && persistence != "memory") {
+    logger.critical(JS.array(JS.add(JS.add("Unknown persistence type ", config["persistence"]), "; falling back to localStorage+cookie")));
+    config["persistence"] = "localStorage+cookie";
+  }
+  Store localPlusCookie = createLocalPlusCookieStore(stringList(config["cookie_persisted_properties"]), config["cookieWinsOnConflict"].truthy());
+  string storageType = lower(config["persistence"]);
+  Store store = cookieStore;
+  bool splitEligible = false;
+  if (storageType == "localstorage" && localStore.isSupported()) {
+    store = localStore;
+    splitEligible = true;
+  } else if (storageType == "localstorage+cookie" && localPlusCookie.isSupported()) {
+    store = localPlusCookie;
+    splitEligible = true;
+  } else if (storageType == "sessionstorage" && sessionStore.isSupported()) {
+    store = sessionStore;
+  } else if (storageType == "memory") {
+    store = memoryStore;
+  } else if (storageType == "cookie") {
+    store = cookieStore;
+  } else if (localPlusCookie.isSupported()) {
+    store = localPlusCookie;
+    splitEligible = true;
+  }
+  self._splitStorageEligible = splitEligible;
+  return store;
+}
+
+string groupEntryName(PostHogPersistence self, int group) {
+  return self._name + "__" + groupName(group);
+}
+
+bool resolveSplitStorage(PostHogPersistence self, JsValue config) {
+  return self._splitStorageEligible && config["split_storage"].truthy();
+}
+
+void loadGroupEntries(PostHogPersistence self) {
+  for (int group of STORAGE_GROUPS) {
+    JsValue groupEntry = localStore.parse(groupEntryName(self, group));
+    if (groupEntry.truthy() && !isEmptyObject(groupEntry)) {
+      SlotState state = slot(self, group);
+      state.persisted = true;
+      if (!mainCarriesGroupKey(self, group)) {
+        state.fingerprint = entryFingerprint(self, groupEntry, group);
+      }
+      if (!groupEntryIsStale(self, group, groupEntry)) {
+        extend(self.props, groupEntry);
+      }
+    }
+  }
+}
+
+bool mainCarriesGroupKey(PostHogPersistence self, int group) {
+  for (string key of keysOf(self.props)) {
+    if (groupOf(policyOf(key)) == group) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool groupEntryIsStale(PostHogPersistence self, int group, JsValue groupEntry) {
+  string freshnessKey = if (group == FLAGS) { PERSISTENCE_FEATURE_FLAG_EVALUATED_AT } else { "$surveys_loaded_at" };
+  JsValue groupLoadedAt = groupEntry[freshnessKey];
+  JsValue mainLoadedAt = self.props[freshnessKey];
+  return isNumber(groupLoadedAt) && isNumber(mainLoadedAt) && JS.number(mainLoadedAt) > JS.number(groupLoadedAt);
+}
+
+void writeNow(PostHogPersistence self, bool forceSuppressedSnapshot) {
+  if (self._disabled || (self._cookieSyncSuppressed && !forceSuppressedSnapshot)) {
+    return;
+  }
+  if (!forceSuppressedSnapshot) {
+    self.syncCookieProperties();
+  }
+  if (self._splitStorage) {
+    JsValue main = JS.object();
+    JsValue flags = JS.object();
+    JsValue surveys = JS.object();
+    each(self.props, (JsValue value, JsValue key) => {
+      int group = groupOf(policyOf(asString(key)));
+      JsValue target = if (group == FLAGS) { flags } else { if (group == SURVEYS) { surveys } else { main } };
+      target[asString(key)] = value;
+    });
+    if (writeEntry(self, self._storage, self._name, main, 0)) {
+      rememberCurrentCookieProperties(self, main);
+    }
+    for (int group of STORAGE_GROUPS) {
+      JsValue groupProps = if (group == FLAGS) { flags } else { surveys };
+      if (isEmptyObject(groupProps) && !slot(self, group).persisted) {
+        continue;
+      }
+      writeEntry(self, localStore, groupEntryName(self, group), groupProps, group);
+    }
+    return;
+  }
+  if (writeEntry(self, self._storage, self._name, self.props, 0)) {
+    rememberCurrentCookieProperties(self, self.props);
+  }
+}
+
+string entryFingerprint(PostHogPersistence self, JsValue props, int group) {
+  if (group == 0) {
+    return asString(JS.add(JS.add(JS.add(JS.add(JS.add(JS.add(JS.invoke(JSON, "stringify", props), "|"), self._expire_days), "|"), self._cross_subdomain), "|"), self._secure));
+  }
+  JsValue stable = JS.object();
+  each(props, (JsValue value, JsValue key) => {
+    stable[asString(key)] = if ((policyOf(asString(key)) & VOLATILE) != 0) { "__volatile__" } else { value };
+  });
+  return asString(JS.invoke(JSON, "stringify", stable));
+}
+
+bool writeEntry(PostHogPersistence self, Store storage, string name, JsValue props, int group) {
+  SlotState state = slot(self, group);
+  // A group entry is rewritten only when a non-volatile key changed.
+  if (group != 0 && !state.dirty && state.fingerprint != null) {
+    return false;
+  }
+  string? fingerprint = null;
+  try {
+    string computed = entryFingerprint(self, props, group);
+    fingerprint = computed;
+    if (state.fingerprint != null && computed == state.fingerprint) {
+      state.dirty = false;
+      return false;
+    }
+  } catch {
+    fingerprint = null;
+  }
+  if (storage.set(name, props, self._expire_days, self._cross_subdomain, self._secure)) {
+    state.dirty = false;
     if (group != 0) {
-      this._slot(group).dirty = true;
+      state.persisted = true;
     }
+    if (fingerprint != null) {
+      state.fingerprint = fingerprint;
+    }
+    return true;
+  } else if (self._config["debug"].truthy()) {
+    logger.warn(JS.array("failed to persist storage entry \"" + name + "\"; will retry on next save"));
+  }
+  return false;
+}
+
+void setProp(PostHogPersistence self, string prop, JsValue to) {
+  self.props[prop] = to;
+  // Volatile keys ride along with the next real write instead of forcing one.
+  int code = policyOf(prop);
+  if ((code & VOLATILE) == 0) {
+    markGroupDirty(self, code);
+  }
+}
+
+void deleteProp(PostHogPersistence self, string prop) {
+  JS.delete(self.props, prop);
+  markGroupDirty(self, policyOf(prop));
+}
+
+void markGroupDirty(PostHogPersistence self, int code) {
+  int group = groupOf(code);
+  if (group != 0) {
+    slot(self, group).dirty = true;
   }
 }
 export constructor PostHogPersistence;

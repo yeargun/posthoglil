@@ -12,7 +12,7 @@ import { assignableWindow, document, location, navigator, userAgent, win } from 
 import { createLogger, Logger, logger } from "./logger.lil";
 import { uuidv7 } from "./uuidv7.lil";
 import { localStore, sessionStore } from "./storage.lil";
-import { PostHogPersistence } from "./persistence.lil";
+import { PostHogPersistence, beginCookieSyncSuppression, endCookieSyncSuppression, publishSuppressedCookieSnapshot } from "./persistence.lil";
 import { SessionIdManager } from "./sessionid.lil";
 import { SessionPropsManager } from "./session-props.lil";
 import { PageViewManager } from "./page-view.lil";
@@ -435,7 +435,7 @@ void enrollFeatureFlags(PostHog ph) {
       ph._featureFlagsReloadingUnsubscribe = JS.invoke(flags, "onReloading", () => {
         ph._internalEventEmitter.emit("featureFlagsReloading", true);
       });
-      ph._getBrowserClientAdapter().add(flags);
+      getBrowserClientAdapter(ph).add(flags);
     }
   } else if (!JS.isNullish(flags["initialize"])) {
     JS.invoke(flags, "initialize");
@@ -609,8 +609,7 @@ bool requirePersonProcessing(PostHog ph, string functionName) {
     logger.error(JS.array(functionName + " was called, but process_person is set to \"never\". This call will be ignored."));
     return false;
   }
-  JsValue client = ph;
-  JS.invoke(client, "_register_single", "$epp", true);
+  registerSingle(ph, "$epp", true);
   return true;
 }
 
@@ -759,7 +758,7 @@ void identifyUser(PostHog ph, JsValue newDistinctIdArg, JsValue userPropertiesTo
   JsValue preSyncDistinctId = JS.invoke(client, "get_distinct_id");
   bool identityChangedDuringSync = persistence.syncCookieProperties() && JS.strictNotEqual(JS.invoke(client, "get_distinct_id"), preSyncDistinctId);
   bool processedCookieIdentityChange = processCookieIdentityChange(ph, false);
-  bool suppressionStarted = persistence._beginCookieSyncSuppression(false);
+  bool suppressionStarted = beginCookieSyncSuppression(persistence, false);
   bool identifyCompleted = false;
   try {
     JsValue previousDistinctId = JS.invoke(client, "get_distinct_id");
@@ -779,7 +778,7 @@ void identifyUser(PostHog ph, JsValue newDistinctIdArg, JsValue userPropertiesTo
       persistence.set_property("$user_state", "identified");
       JS.invoke(client, "setPersonPropertiesForFlags", JS.object("$set", JS.or(userPropertiesToSet, JS.object()), "$set_once", JS.or(userPropertiesToSetOnce, JS.object())), false);
       if (ph.config["cookieWinsOnConflict"].truthy()) {
-        persistence._publishSuppressedCookieSnapshot();
+        publishSuppressedCookieSnapshot(persistence);
       }
       JS.invoke(client, "capture", "$identify", JS.object("distinct_id", newDistinctId, "$anon_distinct_id", previousDistinctId), JS.object("$set", JS.or(userPropertiesToSet, JS.object()), "$set_once", JS.or(userPropertiesToSetOnce, JS.object())));
       ph._cachedPersonProperties = getPersonPropertiesHash(newDistinctId, userPropertiesToSet, userPropertiesToSetOnce);
@@ -792,7 +791,7 @@ void identifyUser(PostHog ph, JsValue newDistinctIdArg, JsValue userPropertiesTo
       JsValue setOnceProperties = JS.or(userPropertiesToSetOnce, JS.object());
       JS.invoke(client, "setPersonPropertiesForFlags", JS.object("$set", setProperties, "$set_once", setOnceProperties), false);
       if (ph.config["cookieWinsOnConflict"].truthy()) {
-        persistence._publishSuppressedCookieSnapshot();
+        publishSuppressedCookieSnapshot(persistence);
       }
       JS.invoke(client, "capture", "$set", JS.object("$set", setProperties, "$set_once", setOnceProperties));
       ph._cachedPersonProperties = getPersonPropertiesHash(newDistinctId, userPropertiesToSet, userPropertiesToSetOnce);
@@ -812,7 +811,7 @@ void identifyUser(PostHog ph, JsValue newDistinctIdArg, JsValue userPropertiesTo
     identifyCompleted = true;
   } finally {
     if (suppressionStarted) {
-      persistence._endCookieSyncSuppression(identifyCompleted);
+      endCookieSyncSuppression(persistence, identifyCompleted);
     }
   }
 }
@@ -845,7 +844,7 @@ void resetClient(PostHog ph, JsValue resetDeviceId, bool isConsentTransition, Js
     JS.invoke(console, "warn", "[PostHog.js]", RESET_CONSENT_WARN);
   }
   PostHogPersistence? persistence = ph.persistence;
-  bool suppressionStarted = persistence != null && persistence._beginCookieSyncSuppression(false);
+  bool suppressionStarted = persistence != null && beginCookieSyncSuppression(persistence, false);
   bool resetCompleted = false;
   try {
     if (persistence != null) {
@@ -908,7 +907,7 @@ void resetClient(PostHog ph, JsValue resetDeviceId, bool isConsentTransition, Js
     resetCompleted = true;
   } finally {
     if (suppressionStarted && persistence != null) {
-      persistence._endCookieSyncSuppression(resetCompleted);
+      endCookieSyncSuppression(persistence, resetCompleted);
     }
   }
   JS.invoke(client, "reloadFeatureFlags");
@@ -1199,7 +1198,7 @@ export class PostHog {
     JsValue initialSessionProps = copy(sessionPersistence.props);
     JS.invoke(client, "register", JS.object("$initialization_time", JS.invoke(JS.construct(Date), "toISOString")));
     this._requestQueue = new RequestQueue((JsValue req) => {
-      this._send_retriable_request(req);
+      sendRetriableRequest(this, req);
     }, this.config["request_queue_config"]);
     this._retryQueue = new RetryQueue(this);
     this.__request_queue = JS.array();
@@ -1211,7 +1210,7 @@ export class PostHog {
       // Session-scoped super properties end with the session.
       sessionManager.onSessionId((JsValue sessionId, JsValue windowId, JsValue changeReason) => {
         if (getProp(changeReason, "activityTimeout").truthy() || getProp(changeReason, "sessionPastMaximumLength").truthy() || getProp(changeReason, "crossTabAdoption").truthy()) {
-          this._clearSessionRegisteredProps();
+          clearSessionRegisteredProps(this);
         }
       });
     }
@@ -1261,10 +1260,10 @@ export class PostHog {
     addEventListener(win, if (JS.in("onpagehide", self)) { "pagehide" } else { "unload" }, JS.invoke(client["_handle_unload"], "bind", client), false, false);
     if (config["segment"].truthy()) {
       setupSegmentIntegration(this, () => {
-        this._loaded();
+        loaded(this);
       });
     } else {
-      this._loaded();
+      loaded(this);
     }
     JsValue onCapture = this.config["_onCapture"];
     if (isFunction(onCapture) && JS.strictNotEqual(onCapture, NOOP)) {
@@ -1286,95 +1285,18 @@ export class PostHog {
     return client;
   }
 
-  void _onRemoteConfig(JsValue result) {
-    if (!(document.truthy() && document["body"].truthy())) {
-      logger.info(JS.array("document not ready yet, trying again in 500 milliseconds..."));
-      JS.call(setTimeout, JS.undefined(), () => {
-        this._onRemoteConfig(result);
-      }, 500);
-      return;
-    }
-    if (this.config["__preview_deferred_init_extensions"].truthy()) {
-      this._pendingRemoteConfig = result;
-    }
-    this._lastRemoteConfig = result;
-    this.compression = JS.undefined();
-    if (result["ok"].truthy()) {
-      JsValue remote = result["config"];
-      JsValue supported = remote["supportedCompression"];
-      if (supported.truthy() && !this.config["disable_compression"].truthy()) {
-        this.compression = if (JS.number(JS.invoke(supported, "indexOf", "gzip-js")) != -1.0) { "gzip-js" } else { if (JS.number(JS.invoke(supported, "indexOf", "base64")) != -1.0) { "base64" } else { JS.undefined() } };
-      }
-      JsValue analytics = remote["analytics"];
-      if (!JS.isNullish(analytics) && analytics["endpoint"].truthy()) {
-        this.analyticsDefaultEndpoint = analytics["endpoint"];
-      }
-    }
-    JsValue client = this;
-    JS.invoke(client, "set_config", JS.object("person_profiles", if (this._initialPersonProfilesConfig.truthy()) { this._initialPersonProfilesConfig } else { "identified_only" }));
-    BrowserClientAdapter? adapter = this._browserClientAdapter;
-    if (adapter != null) {
-      adapter.handleRemoteConfig(result);
-    }
-    this._extensions.forEach((JsValue extension) => {
-      if (!JS.isNullish(extension["onRemoteConfig"])) {
-        JS.invoke(extension, "onRemoteConfig", result);
-      }
-    });
-  }
-
-  void _loaded() {
-    JsValue client = this;
-    try {
-      JS.invoke(this.config, "loaded", client);
-    } catch (JsValue err) {
-      logger.critical(JS.array("`loaded` function failed", err));
-    }
-    this._start_queue_if_opted_in();
-    // Mark internal or test users before any event goes out.
-    JsValue pattern = this.config["internal_or_test_user_hostname"];
-    if (pattern.truthy() && !JS.isNullish(location) && location["hostname"].truthy()) {
-      JsValue hostname = location["hostname"];
-      bool matches = if (JS.typeOf(pattern) == "string") { JS.strictEqual(hostname, pattern) } else { JS.invoke(pattern, "test", hostname).truthy() };
-      if (matches) {
-        JS.invoke(client, "setInternalOrTestUser");
-      }
-    }
-    // After `loaded`, so a page can identify before the first pageview.
-    if (this.config["capture_pageview"].truthy()) {
-      JS.call(setTimeout, JS.undefined(), () => {
-        if (this.consent.isOptedIn() || inCookielessMode(this)) {
-          this._captureInitialPageview();
-        }
-      }, 1);
-    }
-    RemoteConfigLoader loader = new RemoteConfigLoader(this);
-    this._remoteConfigLoader = loader;
-    loader.load();
-  }
-
-  void _start_queue_if_opted_in() {
-    JsValue client = this;
-    if (JS.invoke(client, "is_capturing").truthy()) {
-      RequestQueue? queue = this._requestQueue;
-      if (this.config["request_batching"].truthy() && queue != null) {
-        queue.enable();
-      }
-    }
-  }
-
   void _dom_loaded() {
     JsValue client = this;
     if (JS.invoke(client, "is_capturing").truthy()) {
       JsValue pending = this.__request_queue;
       if (isArray(pending)) {
         JS.invoke(pending, "forEach", (JsValue item) => {
-          this._send_retriable_request(item);
+          sendRetriableRequest(this, item);
         });
       }
     }
     this.__request_queue = JS.array();
-    this._start_queue_if_opted_in();
+    startQueueIfOptedIn(this);
   }
 
   void _handle_unload() {
@@ -1442,16 +1364,6 @@ export class PostHog {
         JS.invoke(options, "callback", response);
       }
     })));
-  }
-
-  void _send_retriable_request(JsValue options) {
-    RetryQueue? retries = this._retryQueue;
-    if (retries != null) {
-      retries.retriableRequest(options);
-    } else {
-      JsValue client = this;
-      JS.invoke(client, "_send_request", options);
-    }
   }
 
   // Calls queued by the snippet before the SDK loaded: aliases first, then everything
@@ -1583,7 +1495,7 @@ export class PostHog {
     // always carries the initial properties.
     bool markSetOnceAsSent = JS.strictNotEqual(eventName, "$groupidentify");
     bool forceIncludeInitialProps = JS.strictEqual(eventName, "$identify");
-    JsValue setOnceProperties = if (minimalFlagCalled) { JS.undefined() } else { this._calculate_set_once_properties(getProp(options, "$set_once"), markSetOnceAsSent, forceIncludeInitialProps) };
+    JsValue setOnceProperties = if (minimalFlagCalled) { JS.undefined() } else { calculateSetOnceProperties(this, getProp(options, "$set_once"), markSetOnceAsSent, forceIncludeInitialProps) };
     if (setOnceProperties.truthy()) {
       data["$set_once"] = setOnceProperties;
     }
@@ -1646,7 +1558,7 @@ export class PostHog {
     if (this.config["request_batching"].truthy() && (!options.truthy() || batchKey.truthy()) && !getProp(options, "send_instantly").truthy()) {
       queue.enqueue(requestOptions);
     } else {
-      this._send_retriable_request(requestOptions);
+      sendRetriableRequest(this, requestOptions);
     }
     return data;
   }
@@ -1654,31 +1566,6 @@ export class PostHog {
   JsValue _addCaptureHook(JsValue callback) {
     JsValue client = this;
     return JS.invoke(client, "on", "eventCaptured", (JsValue data) => JS.call(callback, JS.undefined(), data["event"], data));
-  }
-
-  BrowserClientAdapter _getBrowserClientAdapter() {
-    BrowserClientAdapter? existing = this._browserClientAdapter;
-    if (existing != null) {
-      return existing;
-    }
-    BrowserClientAdapter adapter = new BrowserClientAdapter(this);
-    this._browserClientAdapter = adapter;
-    return adapter;
-  }
-
-  JsValue _registerExtensionEventProperties(JsValue producer) {
-    this._extensionEventPropertyProducers.push(producer);
-    bool active = true;
-    return () => {
-      if (!active) {
-        return;
-      }
-      active = false;
-      int index = this._extensionEventPropertyProducers.indexOf(producer);
-      if (index != -1) {
-        this._extensionEventPropertyProducers.splice(index, 1);
-      }
-    };
   }
 
   JsValue calculateEventProperties(JsValue eventName, JsValue eventProperties, JsValue timestampArg = JS.undefined(), JsValue uuid = JS.undefined(), JsValue readOnly = JS.undefined()) {
@@ -1796,33 +1683,6 @@ export class PostHog {
     return properties;
   }
 
-  JsValue _calculate_set_once_properties(JsValue dataSetOnce = JS.undefined(), bool markAsSent = true, bool forceIncludeInitialProps = false) {
-    PostHogPersistence? persistenceValue = this.persistence;
-    if (persistenceValue == null || !hasPersonProcessing(this)) {
-      return dataSetOnce;
-    }
-    PostHogPersistence persistence = persistenceValue;
-    if (this._personProcessingSetOncePropertiesSent && !forceIncludeInitialProps) {
-      return dataSetOnce;
-    }
-    JsValue initialProps = persistence.get_initial_props();
-    SessionPropsManager? sessionProps = this.sessionPropsManager;
-    JsValue sessionSetOnce = if (sessionProps != null) { sessionProps.getSetOnceProps() } else { JS.undefined() };
-    JsValue setOnceProperties = extend(extend(extend(JS.object(), initialProps), JS.or(sessionSetOnce, JS.object())), JS.or(dataSetOnce, JS.object()));
-    JsValue sanitize = this.config["sanitize_properties"];
-    if (sanitize.truthy()) {
-      logger.error(JS.array(SANITIZE_DEPRECATED));
-      setOnceProperties = JS.call(sanitize, JS.undefined(), setOnceProperties, "$set_once");
-    }
-    if (markAsSent) {
-      this._personProcessingSetOncePropertiesSent = true;
-    }
-    if (isEmptyObject(setOnceProperties)) {
-      return JS.undefined();
-    }
-    return setOnceProperties;
-  }
-
   void register(JsValue properties, JsValue days = JS.undefined()) {
     PostHogPersistence? persistence = this.persistence;
     if (persistence != null) {
@@ -1869,24 +1729,6 @@ export class PostHog {
     if (index != -1) {
       this._sessionRegisteredPropKeys.splice(index, 1);
     }
-    persistSessionRegisteredPropKeys(this);
-  }
-
-  void _register_single(JsValue prop, JsValue value) {
-    JsValue client = this;
-    JsValue properties = JS.object();
-    properties[asString(prop)] = value;
-    JS.invoke(client, "register", properties);
-  }
-
-  void _clearSessionRegisteredProps() {
-    for (string property of this._sessionRegisteredPropKeys.slice()) {
-      PostHogPersistence? sessionPersistence = this.sessionPersistence;
-      if (sessionPersistence != null) {
-        sessionPersistence.unregister(property);
-      }
-    }
-    this._sessionRegisteredPropKeys = [];
     persistSessionRegisteredPropKeys(this);
   }
 
@@ -2198,7 +2040,7 @@ export class PostHog {
     }
     JsValue originalId = if (JS.isUndefined(original)) { JS.invoke(client, "get_distinct_id") } else { original };
     if (JS.strictNotEqual(alias, originalId)) {
-      this._register_single("__alias", alias);
+      registerSingle(this, "__alias", alias);
       return JS.invoke(client, "capture", "$create_alias", JS.object("alias", alias, "distinct_id", originalId));
     }
     logger.warn(JS.array("alias matches current distinct_id - skipping api call."));
@@ -2416,7 +2258,7 @@ export class PostHog {
     }
     this.consent.optInOut(true);
     syncOptOutWithPersistence(this);
-    this._start_queue_if_opted_in();
+    startQueueIfOptedIn(this);
     callOptional(this.sessionRecording, "startIfEnabledOrStop");
     if (JS.strictEqual(this.config["cookieless_mode"], "on_reject")) {
       callOptional(this.surveys, "loadIfEnabled");
@@ -2426,7 +2268,7 @@ export class PostHog {
       JS.invoke(client, "capture", if (JS.isNullish(captureEventName)) { "$opt_in" } else { captureEventName }, getProp(options, "captureProperties"), JS.object("send_instantly", true));
     }
     if (this.config["capture_pageview"].truthy()) {
-      this._captureInitialPageview();
+      captureInitialPageview(this);
     }
   }
 
@@ -2453,9 +2295,9 @@ export class PostHog {
       this.sessionManager = JS.assume(JS.undefined());
       this.sessionPropsManager = JS.assume(JS.undefined());
       if (this.config["capture_pageview"].truthy()) {
-        this._captureInitialPageview();
+        captureInitialPageview(this);
       }
-      this._start_queue_if_opted_in();
+      startQueueIfOptedIn(this);
     }
   }
 
@@ -2494,29 +2336,6 @@ export class PostHog {
       return isLikelyBot(navigator, this.config["custom_blocked_useragents"]);
     }
     return JS.undefined();
-  }
-
-  void _captureInitialPageview() {
-    JsValue client = this;
-    if (!document.truthy()) {
-      return;
-    }
-    // A prerendered or background tab captures its first pageview when it is shown.
-    if (JS.strictNotEqual(document["visibilityState"], "visible")) {
-      if (!this._visibilityStateListener.truthy()) {
-        this._visibilityStateListener = JS.invoke(client["_captureInitialPageview"], "bind", client);
-        addEventListener(document, "visibilitychange", this._visibilityStateListener, false, true);
-      }
-      return;
-    }
-    if (!this._initialPageviewCaptured) {
-      this._initialPageviewCaptured = true;
-      JS.invoke(client, "capture", "$pageview", JS.object("title", document["title"]), JS.object("send_instantly", true));
-      if (this._visibilityStateListener.truthy()) {
-        JS.invoke(document, "removeEventListener", "visibilitychange", this._visibilityStateListener);
-        this._visibilityStateListener = null;
-      }
-    }
   }
 
   void debug(JsValue debug = JS.undefined()) {
@@ -2561,6 +2380,187 @@ export class PostHog {
   void captureTraceMetric(JsValue traceId, JsValue metricName, JsValue metricValue) {
     JsValue client = this;
     JS.invoke(client, "capture", "$ai_metric", JS.object("$ai_trace_id", JS.call(String, JS.undefined(), traceId), "$ai_metric_name", metricName, "$ai_metric_value", JS.call(String, JS.undefined(), metricValue)));
+  }
+}
+
+export void onRemoteConfig(PostHog self, JsValue result) {
+  if (!(document.truthy() && document["body"].truthy())) {
+    logger.info(JS.array("document not ready yet, trying again in 500 milliseconds..."));
+    JS.call(setTimeout, JS.undefined(), () => {
+      onRemoteConfig(self, result);
+    }, 500);
+    return;
+  }
+  if (self.config["__preview_deferred_init_extensions"].truthy()) {
+    self._pendingRemoteConfig = result;
+  }
+  self._lastRemoteConfig = result;
+  self.compression = JS.undefined();
+  if (result["ok"].truthy()) {
+    JsValue remote = result["config"];
+    JsValue supported = remote["supportedCompression"];
+    if (supported.truthy() && !self.config["disable_compression"].truthy()) {
+      self.compression = if (JS.number(JS.invoke(supported, "indexOf", "gzip-js")) != -1.0) { "gzip-js" } else { if (JS.number(JS.invoke(supported, "indexOf", "base64")) != -1.0) { "base64" } else { JS.undefined() } };
+    }
+    JsValue analytics = remote["analytics"];
+    if (!JS.isNullish(analytics) && analytics["endpoint"].truthy()) {
+      self.analyticsDefaultEndpoint = analytics["endpoint"];
+    }
+  }
+  JsValue client = self;
+  JS.invoke(client, "set_config", JS.object("person_profiles", if (self._initialPersonProfilesConfig.truthy()) { self._initialPersonProfilesConfig } else { "identified_only" }));
+  BrowserClientAdapter? adapter = self._browserClientAdapter;
+  if (adapter != null) {
+    adapter.handleRemoteConfig(result);
+  }
+  self._extensions.forEach((JsValue extension) => {
+    if (!JS.isNullish(extension["onRemoteConfig"])) {
+      JS.invoke(extension, "onRemoteConfig", result);
+    }
+  });
+}
+
+void loaded(PostHog self) {
+  JsValue client = self;
+  try {
+    JS.invoke(self.config, "loaded", client);
+  } catch (JsValue err) {
+    logger.critical(JS.array("`loaded` function failed", err));
+  }
+  startQueueIfOptedIn(self);
+  // Mark internal or test users before any event goes out.
+  JsValue pattern = self.config["internal_or_test_user_hostname"];
+  if (pattern.truthy() && !JS.isNullish(location) && location["hostname"].truthy()) {
+    JsValue hostname = location["hostname"];
+    bool matches = if (JS.typeOf(pattern) == "string") { JS.strictEqual(hostname, pattern) } else { JS.invoke(pattern, "test", hostname).truthy() };
+    if (matches) {
+      JS.invoke(client, "setInternalOrTestUser");
+    }
+  }
+  // After `loaded`, so a page can identify before the first pageview.
+  if (self.config["capture_pageview"].truthy()) {
+    JS.call(setTimeout, JS.undefined(), () => {
+      if (self.consent.isOptedIn() || inCookielessMode(self)) {
+        captureInitialPageview(self);
+      }
+    }, 1);
+  }
+  RemoteConfigLoader loader = new RemoteConfigLoader(self);
+  self._remoteConfigLoader = loader;
+  loader.load();
+}
+
+void startQueueIfOptedIn(PostHog self) {
+  JsValue client = self;
+  if (JS.invoke(client, "is_capturing").truthy()) {
+    RequestQueue? queue = self._requestQueue;
+    if (self.config["request_batching"].truthy() && queue != null) {
+      queue.enable();
+    }
+  }
+}
+
+void sendRetriableRequest(PostHog self, JsValue options) {
+  RetryQueue? retries = self._retryQueue;
+  if (retries != null) {
+    retries.retriableRequest(options);
+  } else {
+    JsValue client = self;
+    JS.invoke(client, "_send_request", options);
+  }
+}
+
+BrowserClientAdapter getBrowserClientAdapter(PostHog self) {
+  BrowserClientAdapter? existing = self._browserClientAdapter;
+  if (existing != null) {
+    return existing;
+  }
+  BrowserClientAdapter adapter = new BrowserClientAdapter(self);
+  self._browserClientAdapter = adapter;
+  return adapter;
+}
+
+export JsValue registerExtensionEventProperties(PostHog self, JsValue producer) {
+  self._extensionEventPropertyProducers.push(producer);
+  bool active = true;
+  return () => {
+    if (!active) {
+      return;
+    }
+    active = false;
+    int index = self._extensionEventPropertyProducers.indexOf(producer);
+    if (index != -1) {
+      self._extensionEventPropertyProducers.splice(index, 1);
+    }
+  };
+}
+
+JsValue calculateSetOnceProperties(PostHog self, JsValue dataSetOnce = JS.undefined(), bool markAsSent = true, bool forceIncludeInitialProps = false) {
+  PostHogPersistence? persistenceValue = self.persistence;
+  if (persistenceValue == null || !hasPersonProcessing(self)) {
+    return dataSetOnce;
+  }
+  PostHogPersistence persistence = persistenceValue;
+  if (self._personProcessingSetOncePropertiesSent && !forceIncludeInitialProps) {
+    return dataSetOnce;
+  }
+  JsValue initialProps = persistence.get_initial_props();
+  SessionPropsManager? sessionProps = self.sessionPropsManager;
+  JsValue sessionSetOnce = if (sessionProps != null) { sessionProps.getSetOnceProps() } else { JS.undefined() };
+  JsValue setOnceProperties = extend(extend(extend(JS.object(), initialProps), JS.or(sessionSetOnce, JS.object())), JS.or(dataSetOnce, JS.object()));
+  JsValue sanitize = self.config["sanitize_properties"];
+  if (sanitize.truthy()) {
+    logger.error(JS.array(SANITIZE_DEPRECATED));
+    setOnceProperties = JS.call(sanitize, JS.undefined(), setOnceProperties, "$set_once");
+  }
+  if (markAsSent) {
+    self._personProcessingSetOncePropertiesSent = true;
+  }
+  if (isEmptyObject(setOnceProperties)) {
+    return JS.undefined();
+  }
+  return setOnceProperties;
+}
+
+void registerSingle(PostHog self, JsValue prop, JsValue value) {
+  JsValue client = self;
+  JsValue properties = JS.object();
+  properties[asString(prop)] = value;
+  JS.invoke(client, "register", properties);
+}
+
+void clearSessionRegisteredProps(PostHog self) {
+  for (string property of self._sessionRegisteredPropKeys.slice()) {
+    PostHogPersistence? sessionPersistence = self.sessionPersistence;
+    if (sessionPersistence != null) {
+      sessionPersistence.unregister(property);
+    }
+  }
+  self._sessionRegisteredPropKeys = [];
+  persistSessionRegisteredPropKeys(self);
+}
+
+void captureInitialPageview(PostHog self) {
+  JsValue client = self;
+  if (!document.truthy()) {
+    return;
+  }
+  // A prerendered or background tab captures its first pageview when it is shown.
+  if (JS.strictNotEqual(document["visibilityState"], "visible")) {
+    if (!self._visibilityStateListener.truthy()) {
+      func(JsValue)->void listener = (JsValue event) => captureInitialPageview(self);
+      self._visibilityStateListener = listener;
+      addEventListener(document, "visibilitychange", self._visibilityStateListener, false, true);
+    }
+    return;
+  }
+  if (!self._initialPageviewCaptured) {
+    self._initialPageviewCaptured = true;
+    JS.invoke(client, "capture", "$pageview", JS.object("title", document["title"]), JS.object("send_instantly", true));
+    if (self._visibilityStateListener.truthy()) {
+      JS.invoke(document, "removeEventListener", "visibilitychange", self._visibilityStateListener);
+      self._visibilityStateListener = null;
+    }
   }
 }
 

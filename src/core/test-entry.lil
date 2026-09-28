@@ -40,11 +40,20 @@ export JsValue utilOp(string op, JsValue a, JsValue b) {
   return JS.undefined();
 }
 
-import { PostHogPersistence } from "./persistence.lil";
+import { PostHogPersistence, beginCookieSyncSuppression, endCookieSyncSuppression, publishSuppressedCookieSnapshot } from "./persistence.lil";
 import { getEventProperties, getCampaignParams, getPersonInfo, getInitialPersonPropsFromInfo, getReferrerInfo, getSearchInfo, getQueryParam, maskQueryParams } from "./event-utils.lil";
 
 export JsValue newPersistence(JsValue config, bool disabled, bool owns) {
   return new PostHogPersistence(config, disabled, owns);
+}
+
+// The cookie-sync suppression helpers are private (module functions of persistence.lil).
+export JsValue suppressionOp(JsValue store, string op, JsValue arg) {
+  PostHogPersistence p = JS.assume(store);
+  if (op == "begin") { return beginCookieSyncSuppression(p, arg.truthy()); }
+  if (op == "publish") { publishSuppressedCookieSnapshot(p); return JS.undefined(); }
+  if (JS.isUndefined(arg)) { endCookieSyncSuppression(p); } else { endCookieSyncSuppression(p, arg.truthy()); }
+  return JS.undefined();
 }
 
 export JsValue eventOp(string op, JsValue a, JsValue b, JsValue c, JsValue d) {

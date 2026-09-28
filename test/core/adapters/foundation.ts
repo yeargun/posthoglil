@@ -50,6 +50,14 @@ export function newPersistence(config: any, disabled: boolean, owns: boolean): a
     return new PostHogPersistence(config, disabled, owns)
 }
 
+// The cookie-sync suppression helpers are private on both sides (upstream mangles them);
+// the scenario drives them through this hook.
+export function suppressionOp(p: any, op: string, arg?: boolean): any {
+    if (op === 'begin') return p._beginCookieSyncSuppression(arg)
+    if (op === 'publish') return p._publishSuppressedCookieSnapshot()
+    return arg === undefined ? p._endCookieSyncSuppression() : p._endCookieSyncSuppression(arg)
+}
+
 export function eventOp(op: string, a: any, b: any, c: any, d: any): any {
     if (op === 'eventProps') return getEventProperties(a, b, c, !!d)
     if (op === 'campaign') return getCampaignParams(a, b, c)

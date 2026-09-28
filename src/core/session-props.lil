@@ -15,7 +15,7 @@ export class SessionPropsManager {
 
   init(PostHog instance, SessionIdManager sessionIdManager, PostHogPersistence persistence) {
     this._onSessionIdCallback = (JsValue sessionId) => {
-      JsValue stored = this._getStored();
+      JsValue stored = getStored(this);
       if (stored.truthy() && JS.strictEqual(stored["sessionId"], sessionId)) {
         return;
       }
@@ -29,12 +29,8 @@ export class SessionPropsManager {
     this._sessionIdManager.onSessionId(this._onSessionIdCallback);
   }
 
-  JsValue _getStored() {
-    return this._persistence.props["$client_session_props"];
-  }
-
   JsValue getSetOnceProps() {
-    JsValue stored = this._getStored();
+    JsValue stored = getStored(this);
     JsValue p = if (JS.isNullish(stored)) { JS.undefined() } else { stored["props"] };
     if (!p.truthy()) {
       return JS.object();
@@ -64,6 +60,10 @@ export class SessionPropsManager {
     });
     return p;
   }
+}
+
+JsValue getStored(SessionPropsManager self) {
+  return self._persistence.props["$client_session_props"];
 }
 
 export constructor SessionPropsManager;

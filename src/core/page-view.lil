@@ -60,7 +60,7 @@ export class PageViewManager {
   }
 
   JsValue doPageView(JsValue timestamp, JsValue pageViewId) {
-    JsValue response = this._previousPageViewProperties(timestamp, pageViewId);
+    JsValue response = previousPageViewProperties(this, timestamp, pageViewId);
     JsValue pathname = if (JS.isNullish(win)) { JS.undefined() } else { win["location"]["pathname"] };
     this._currentPageview = new CurrentPageview(if (JS.isNullish(pathname)) { "" } else { pathname }, pageViewId, timestamp);
     this._instance.scrollManager.resetContext();
@@ -69,59 +69,59 @@ export class PageViewManager {
 
   JsValue doPageLeave(JsValue timestamp) {
     CurrentPageview? current = this._currentPageview;
-    return this._previousPageViewProperties(timestamp, if (current != null) { current.pageViewId } else { JS.undefined() });
+    return previousPageViewProperties(this, timestamp, if (current != null) { current.pageViewId } else { JS.undefined() });
   }
 
   JsValue doEvent() {
     CurrentPageview? current = this._currentPageview;
     return JS.object("$pageview_id", if (current != null) { current.pageViewId } else { JS.undefined() });
   }
+}
 
-  JsValue _previousPageViewProperties(JsValue timestamp, JsValue pageviewId) {
-    CurrentPageview? previous = this._currentPageview;
-    if (previous == null) {
-      return JS.object("$pageview_id", pageviewId);
-    }
-    JsValue properties = JS.object("$pageview_id", pageviewId, "$prev_pageview_id", previous.pageViewId);
-    JsValue scrollContext = this._instance.scrollManager.getContext();
-    if (scrollContext.truthy() && !this._instance.config["disable_scroll_properties"].truthy()) {
-      JsValue maxScrollHeight = scrollContext["maxScrollHeight"];
-      JsValue lastScrollY = scrollContext["lastScrollY"];
-      JsValue maxScrollY = scrollContext["maxScrollY"];
-      JsValue maxContentHeight = scrollContext["maxContentHeight"];
-      JsValue lastContentY = scrollContext["lastContentY"];
-      JsValue maxContentY = scrollContext["maxContentY"];
-      if (!JS.isUndefined(maxScrollHeight) && !JS.isUndefined(lastScrollY) && !JS.isUndefined(maxScrollY) && !JS.isUndefined(maxContentHeight) && !JS.isUndefined(lastContentY) && !JS.isUndefined(maxContentY)) {
-        number scrollHeight = ceil(maxScrollHeight);
-        number lastScroll = ceil(lastScrollY);
-        number maxScroll = ceil(maxScrollY);
-        number contentHeight = ceil(maxContentHeight);
-        number lastContent = ceil(lastContentY);
-        number maxContent = ceil(maxContentY);
-        number lastScrollPercentage = ratio(lastScroll, scrollHeight);
-        number maxScrollPercentage = ratio(maxScroll, scrollHeight);
-        number lastContentPercentage = ratio(lastContent, contentHeight);
-        number maxContentPercentage = ratio(maxContent, contentHeight);
-        properties = extend(properties, JS.object(
-          "$prev_pageview_last_scroll", lastScroll,
-          "$prev_pageview_last_scroll_percentage", lastScrollPercentage,
-          "$prev_pageview_max_scroll", maxScroll,
-          "$prev_pageview_max_scroll_percentage", maxScrollPercentage,
-          "$prev_pageview_last_content", lastContent,
-          "$prev_pageview_last_content_percentage", lastContentPercentage,
-          "$prev_pageview_max_content", maxContent,
-          "$prev_pageview_max_content_percentage", maxContentPercentage
-        ));
-      }
-    }
-    if (previous.pathname.truthy()) {
-      properties["$prev_pageview_pathname"] = previous.pathname;
-    }
-    if (previous.timestamp.truthy()) {
-      properties["$prev_pageview_duration"] = (JS.number(JS.invoke(timestamp, "getTime")) - JS.number(JS.invoke(previous.timestamp, "getTime"))) / 1000.0;
-    }
-    return properties;
+JsValue previousPageViewProperties(PageViewManager self, JsValue timestamp, JsValue pageviewId) {
+  CurrentPageview? previous = self._currentPageview;
+  if (previous == null) {
+    return JS.object("$pageview_id", pageviewId);
   }
+  JsValue properties = JS.object("$pageview_id", pageviewId, "$prev_pageview_id", previous.pageViewId);
+  JsValue scrollContext = self._instance.scrollManager.getContext();
+  if (scrollContext.truthy() && !self._instance.config["disable_scroll_properties"].truthy()) {
+    JsValue maxScrollHeight = scrollContext["maxScrollHeight"];
+    JsValue lastScrollY = scrollContext["lastScrollY"];
+    JsValue maxScrollY = scrollContext["maxScrollY"];
+    JsValue maxContentHeight = scrollContext["maxContentHeight"];
+    JsValue lastContentY = scrollContext["lastContentY"];
+    JsValue maxContentY = scrollContext["maxContentY"];
+    if (!JS.isUndefined(maxScrollHeight) && !JS.isUndefined(lastScrollY) && !JS.isUndefined(maxScrollY) && !JS.isUndefined(maxContentHeight) && !JS.isUndefined(lastContentY) && !JS.isUndefined(maxContentY)) {
+      number scrollHeight = ceil(maxScrollHeight);
+      number lastScroll = ceil(lastScrollY);
+      number maxScroll = ceil(maxScrollY);
+      number contentHeight = ceil(maxContentHeight);
+      number lastContent = ceil(lastContentY);
+      number maxContent = ceil(maxContentY);
+      number lastScrollPercentage = ratio(lastScroll, scrollHeight);
+      number maxScrollPercentage = ratio(maxScroll, scrollHeight);
+      number lastContentPercentage = ratio(lastContent, contentHeight);
+      number maxContentPercentage = ratio(maxContent, contentHeight);
+      properties = extend(properties, JS.object(
+        "$prev_pageview_last_scroll", lastScroll,
+        "$prev_pageview_last_scroll_percentage", lastScrollPercentage,
+        "$prev_pageview_max_scroll", maxScroll,
+        "$prev_pageview_max_scroll_percentage", maxScrollPercentage,
+        "$prev_pageview_last_content", lastContent,
+        "$prev_pageview_last_content_percentage", lastContentPercentage,
+        "$prev_pageview_max_content", maxContent,
+        "$prev_pageview_max_content_percentage", maxContentPercentage
+      ));
+    }
+  }
+  if (previous.pathname.truthy()) {
+    properties["$prev_pageview_pathname"] = previous.pathname;
+  }
+  if (previous.timestamp.truthy()) {
+    properties["$prev_pageview_duration"] = (JS.number(JS.invoke(timestamp, "getTime")) - JS.number(JS.invoke(previous.timestamp, "getTime"))) / 1000.0;
+  }
+  return properties;
 }
 
 export constructor PageViewManager;

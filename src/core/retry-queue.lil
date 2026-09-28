@@ -75,7 +75,8 @@ export class RetryQueue {
     if (isPositiveNumber(retriesPerformedSoFar)) {
       options["url"] = extendURLParams(JS.string(options["url"]), JS.object("retry_count", retriesPerformedSoFar));
     }
-    this._instance._send_request(assign(copy(options), JS.object("callback", (JsValue response) => {
+    JsValue client = this._instance;
+    JS.invoke(client, "_send_request", assign(copy(options), JS.object("callback", (JsValue response) => {
       JsValue statusCode = response["statusCode"];
       if (JS.strictNotEqual(statusCode, 200) && (JS.lessThan(statusCode, 400) || JS.greaterThanOrEqual(statusCode, 500))) {
         number retries = if (JS.isNullish(retriesPerformedSoFar)) { 0.0 } else { JS.number(retriesPerformedSoFar) };
@@ -163,7 +164,8 @@ export class RetryQueue {
     }
     for (RetryQueueElement item of this._queue) {
       try {
-        this._instance._send_request(assign(copy(item.requestOptions), JS.object("transport", "sendBeacon")));
+        JsValue client = this._instance;
+        JS.invoke(client, "_send_request", assign(copy(item.requestOptions), JS.object("transport", "sendBeacon")));
       } catch (JsValue e) {
         logger.error(JS.array(e));
       }

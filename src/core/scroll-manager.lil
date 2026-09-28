@@ -71,28 +71,28 @@ export class ScrollManager {
     return if (JS.isNullish(win)) { JS.undefined() } else { win["document"]["documentElement"] };
   }
 
-  JsValue _scrollPosition(bool vertical) {
-    string elementKey = if (vertical) { "scrollTop" } else { "scrollLeft" };
-    if (this._instance.config["scroll_root_selector"].truthy()) {
-      JsValue element = this.scrollElement();
-      return JS.or(JS.and(element, element[elementKey]), 0);
-    }
-    if (!win.truthy()) {
-      return 0;
-    }
-    if (vertical) {
-      return JS.or(JS.or(JS.or(win["scrollY"], win["pageYOffset"]), win["document"]["documentElement"]["scrollTop"]), 0);
-    }
-    return JS.or(JS.or(JS.or(win["scrollX"], win["pageXOffset"]), win["document"]["documentElement"]["scrollLeft"]), 0);
-  }
-
   JsValue scrollY() {
-    return this._scrollPosition(true);
+    return scrollPosition(this, true);
   }
 
   JsValue scrollX() {
-    return this._scrollPosition(false);
+    return scrollPosition(this, false);
   }
+}
+
+JsValue scrollPosition(ScrollManager self, bool vertical) {
+  string elementKey = if (vertical) { "scrollTop" } else { "scrollLeft" };
+  if (self._instance.config["scroll_root_selector"].truthy()) {
+    JsValue element = self.scrollElement();
+    return JS.or(JS.and(element, element[elementKey]), 0);
+  }
+  if (!win.truthy()) {
+    return 0;
+  }
+  if (vertical) {
+    return JS.or(JS.or(JS.or(win["scrollY"], win["pageYOffset"]), win["document"]["documentElement"]["scrollTop"]), 0);
+  }
+  return JS.or(JS.or(JS.or(win["scrollX"], win["pageXOffset"]), win["document"]["documentElement"]["scrollLeft"]), 0);
 }
 
 export constructor ScrollManager;

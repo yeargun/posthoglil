@@ -2,7 +2,7 @@
 // loaded by the external-dependency loader, or fetched as JSON; then refreshed every
 // five minutes by reloading feature flags while the page is visible.
 
-import { PostHog } from "./posthog-core.lil";
+import { PostHog, onRemoteConfig } from "./posthog-core.lil";
 import { assignableWindow, document } from "./globals.lil";
 import { createLogger, Logger } from "./logger.lil";
 import { asString } from "./utils.lil";
@@ -116,7 +116,7 @@ export class RemoteConfigLoader {
       }
     }
     try {
-      this._instance._onRemoteConfig(if (config.truthy()) { JS.object("ok", true, "config", config) } else { JS.object("ok", false) });
+      onRemoteConfig(this._instance, if (config.truthy()) { JS.object("ok", true, "config", config) } else { JS.object("ok", false) });
     } catch (JsValue error) {
       remoteLogger.error(JS.array("Error applying remote config", error));
     }

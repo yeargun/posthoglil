@@ -45,7 +45,9 @@ bool captureWarning(RateLimiter limiter, number droppedSinceLastWarning) {
   JsValue burst = burstLimit(limiter);
   JsValue perSecond = eventsPerSecond(limiter);
   JsValue page = triggeringPage(limiter);
-  JsValue sessionId = if (isPropertyAllowed(limiter, "$session_id")) { limiter.instance.get_session_id() } else { JS.undefined() };
+  // Upstream calls the client's own methods through the object (`get_session_id?.()`).
+  JsValue client = limiter.instance;
+  JsValue sessionId = if (isPropertyAllowed(limiter, "$session_id") && !JS.isNullish(client["get_session_id"])) { JS.invoke(client, "get_session_id") } else { JS.undefined() };
   string context = JS.string(droppedSinceLastWarning) + " event(s) dropped since the last warning";
   if (page.truthy()) {
     context = context + ", " + asString(JS.add("triggered on ", page));
@@ -54,7 +56,7 @@ bool captureWarning(RateLimiter limiter, number droppedSinceLastWarning) {
     context = context + ", " + asString(JS.add("session ", sessionId));
   }
   JsValue message = JS.add(JS.add(JS.add(JS.add("posthog-js client rate limited: " + context + ". Config is set to ", perSecond), " events per second and "), burst), " events burst limit.");
-  return limiter.instance.capture("$$client_ingestion_warning", JS.object("$$client_ingestion_warning_message", message), JS.object("skip_client_rate_limiting", true)).truthy();
+  return JS.invoke(client, "capture", "$$client_ingestion_warning", JS.object("$$client_ingestion_warning_message", message), JS.object("skip_client_rate_limiting", true)).truthy();
 }
 
 export class RateLimiter {

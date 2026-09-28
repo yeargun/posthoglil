@@ -111,12 +111,12 @@ export const cases = [
       env.window.document.cookie = "ph_phc_testPLSLEQtoken_posthog=" + encodeURIComponent(JSON.stringify({ distinct_id: "third", $user_state: "anonymous", $sesid: "" })) + "; path=/"
       env.record("sync", p.syncCookieProperties())
       env.record("after-sync", p.props)
-      env.record("begin", p._beginCookieSyncSuppression())
+      env.record("begin", sut.suppressionOp(p, "begin"))
       p.register({ during: 1 })
-      p._publishSuppressedCookieSnapshot()
-      p._endCookieSyncSuppression(false)
-      env.record("begin2", p._beginCookieSyncSuppression(true))
-      p._endCookieSyncSuppression()
+      sut.suppressionOp(p, "publish")
+      sut.suppressionOp(p, "end", false)
+      env.record("begin2", sut.suppressionOp(p, "begin", true))
+      sut.suppressionOp(p, "end")
       const cfg2 = { ...config, cookieWinsOnConflict: false }
       p.update_config(cfg2, config, false)
       p.update_config(config, cfg2, false)
