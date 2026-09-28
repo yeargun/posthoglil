@@ -5,6 +5,7 @@
 import { PostHog } from "./posthog-core.lil";
 import { assignableWindow, document } from "./globals.lil";
 import { createLogger, Logger } from "./logger.lil";
+import { asString } from "./utils.lil";
 
 extern JsValue setInterval;
 extern JsValue clearInterval;
@@ -13,7 +14,7 @@ Logger remoteLogger = createLogger("[RemoteConfig]");
 
 JsValue preloadedRemoteConfig(PostHog instance) {
   JsValue all = assignableWindow["_POSTHOG_REMOTE_CONFIG"];
-  JsValue entry = if (JS.isNullish(all)) { JS.undefined() } else { all[JS.string(instance.config["token"])] };
+  JsValue entry = if (JS.isNullish(all)) { JS.undefined() } else { all[asString(instance.config["token"])] };
   return if (JS.isNullish(entry)) { JS.undefined() } else { entry["config"] };
 }
 
@@ -47,7 +48,7 @@ export class RemoteConfigLoader {
           JsValue token = this._instance.config["token"];
           JS.invoke(client, "_send_request", JS.object(
             "method", "GET",
-            "url", this._instance.requestRouter.endpointFor("assets", JS.string(JS.add(JS.add("/array/", token), "/config"))),
+            "url", this._instance.requestRouter.endpointFor("assets", asString(JS.add(JS.add("/array/", token), "/config"))),
             "callback", (JsValue response) => {
               this._onRemoteConfig(response["json"], response);
               this._startRefreshInterval();

@@ -3,7 +3,7 @@
 // on unload the batches go out by sendBeacon, event batches first.
 
 import { logger } from "./logger.lil";
-import { assign, clampToRange, copy, each, keysOf } from "./utils.lil";
+import { assign, asString, clampToRange, copy, each, keysOf } from "./utils.lil";
 
 extern JsValue Date;
 extern JsValue Math;
@@ -100,10 +100,10 @@ export class RequestQueue {
     for (JsValue req of this._queue) {
       JsValue batchKey = if (req.truthy()) { req["batchKey"] } else { null };
       JsValue key = JS.or(batchKey, req["url"]);
-      if (JS.isUndefined(requests[JS.string(key)])) {
-        requests[JS.string(key)] = assign(copy(req), JS.object("data", JS.array()));
+      if (JS.isUndefined(requests[asString(key)])) {
+        requests[asString(key)] = assign(copy(req), JS.object("data", JS.array()));
       }
-      JsValue target = requests[JS.string(key)]["data"];
+      JsValue target = requests[asString(key)]["data"];
       if (!JS.isNullish(target)) {
         JS.invoke(target, "push", req["data"]);
       }

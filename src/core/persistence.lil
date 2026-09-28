@@ -50,7 +50,7 @@ import {
   getSearchInfo,
   stripLeadingDollar
 } from "./event-utils.lil";
-import { addEventListener, copy, each, extend, hasOwn, isArray, isEmptyObject, isNumber, isObject, keysOf, stripEmptyProperties } from "./utils.lil";
+import { addEventListener, asString, copy, each, extend, hasOwn, isArray, isEmptyObject, isNumber, isObject, keysOf, stripEmptyProperties } from "./utils.lil";
 
 extern JsValue JSON;
 extern JsValue setTimeout;
@@ -142,7 +142,7 @@ int[] STORAGE_GROUPS = [2, 4];
 
 void clearStaleEventProperties(JsValue props, JsValue cookieProperties) {
   each(props, (JsValue value, JsValue key) => {
-    string name = JS.string(key);
+    string name = asString(key);
     if (exposedAsEvent(policyOf(name)) && !hasOwn(cookieProperties, name)) {
       JS.delete(props, name);
     }
@@ -170,7 +170,7 @@ string[] stringList(JsValue value) {
 }
 
 string lower(JsValue value) {
-  return JS.string(JS.invoke(value, "toLowerCase"));
+  return asString(JS.invoke(value, "toLowerCase"));
 }
 
 string pendingChangeName(string name) {
@@ -184,10 +184,10 @@ Regex equals = new Regex("=", "g");
 string persistenceName(JsValue config) {
   string token = "";
   if (config["token"].truthy()) {
-    token = JS.string(JS.invoke(JS.invoke(JS.invoke(config["token"], "replace", plusSign, "PL"), "replace", slash, "SL"), "replace", equals, "EQ"));
+    token = asString(JS.invoke(JS.invoke(JS.invoke(config["token"], "replace", plusSign, "PL"), "replace", slash, "SL"), "replace", equals, "EQ"));
   }
   if (config["persistence_name"].truthy()) {
-    return JS.string(JS.add("ph_", config["persistence_name"]));
+    return asString(JS.add("ph_", config["persistence_name"]));
   }
   return "ph_" + token + "_posthog";
 }
@@ -299,7 +299,7 @@ export class PostHogPersistence {
       string[] custom = stringList(this._config["cookie_persisted_properties"]);
       JsValue cookieProperties = getCookiePersistedProperties(props, custom);
       JsValue metadata = getCookiePersistedPropertiesMetadata(cookieProperties, custom);
-      string expected = JS.string(JS.invoke(JSON, "stringify", cookieProperties)) + "|" + JS.string(JS.invoke(JSON, "stringify", metadata));
+      string expected = asString(JS.invoke(JSON, "stringify", cookieProperties)) + "|" + asString(JS.invoke(JSON, "stringify", metadata));
       JsValue current = JS.or(cookieStore.get(this._name), JS.undefined());
       if (current.truthy() && getCookiePropertiesFingerprint(this._name, JS.string(current)) == expected) {
         this._lastSeenMainCookieValue = current;
@@ -488,12 +488,12 @@ export class PostHogPersistence {
   JsValue properties() {
     JsValue p = JS.object();
     each(this.props, (JsValue value, JsValue key) => {
-      int code = policyOf(JS.string(key));
+      int code = policyOf(asString(key));
       if (exposedAsEvent(code)) {
         if ((code & SKIP_NULL) != 0 && JS.strictEqual(value, null)) {
           return;
         }
-        p[JS.string(key)] = value;
+        p[asString(key)] = value;
       }
     });
     return p;
@@ -554,8 +554,8 @@ export class PostHogPersistence {
         for (int group of [FLAGS]) {
           JsValue groupProps = JS.object();
           each(this.props, (JsValue value, JsValue key) => {
-            if (groupOf(policyOf(JS.string(key))) == group) {
-              groupProps[JS.string(key)] = value;
+            if (groupOf(policyOf(asString(key))) == group) {
+              groupProps[asString(key)] = value;
             }
           });
           if (isEmptyObject(groupProps)) {
@@ -666,9 +666,9 @@ export class PostHogPersistence {
       JsValue flags = JS.object();
       JsValue surveys = JS.object();
       each(this.props, (JsValue value, JsValue key) => {
-        int group = groupOf(policyOf(JS.string(key)));
+        int group = groupOf(policyOf(asString(key)));
         JsValue target = if (group == FLAGS) { flags } else { if (group == SURVEYS) { surveys } else { main } };
-        target[JS.string(key)] = value;
+        target[asString(key)] = value;
       });
       if (this._writeEntry(this._storage, this._name, main, 0)) {
         this._rememberCurrentCookieProperties(main);
@@ -689,13 +689,13 @@ export class PostHogPersistence {
 
   string _entryFingerprint(JsValue props, int group) {
     if (group == 0) {
-      return JS.string(JS.add(JS.add(JS.add(JS.add(JS.add(JS.add(JS.invoke(JSON, "stringify", props), "|"), this._expire_days), "|"), this._cross_subdomain), "|"), this._secure));
+      return asString(JS.add(JS.add(JS.add(JS.add(JS.add(JS.add(JS.invoke(JSON, "stringify", props), "|"), this._expire_days), "|"), this._cross_subdomain), "|"), this._secure));
     }
     JsValue stable = JS.object();
     each(props, (JsValue value, JsValue key) => {
-      stable[JS.string(key)] = if ((policyOf(JS.string(key)) & VOLATILE) != 0) { "__volatile__" } else { value };
+      stable[asString(key)] = if ((policyOf(asString(key)) & VOLATILE) != 0) { "__volatile__" } else { value };
     });
-    return JS.string(JS.invoke(JSON, "stringify", stable));
+    return asString(JS.invoke(JSON, "stringify", stable));
   }
 
   bool _writeEntry(Store storage, string name, JsValue props, int group) {
@@ -762,8 +762,8 @@ export class PostHogPersistence {
       this._expire_days = if (JS.isUndefined(days)) { this._default_expiry } else { days };
       bool hasChanges = false;
       each(props, (JsValue value, JsValue prop) => {
-        if (!JS.invoke(this.props, "hasOwnProperty", prop).truthy() || JS.strictEqual(this.props[JS.string(prop)], overridable)) {
-          this._setProp(JS.string(prop), value);
+        if (!JS.invoke(this.props, "hasOwnProperty", prop).truthy() || JS.strictEqual(this.props[asString(prop)], overridable)) {
+          this._setProp(asString(prop), value);
           hasChanges = true;
         }
       });
@@ -781,8 +781,8 @@ export class PostHogPersistence {
       this._expire_days = if (JS.isUndefined(days)) { this._default_expiry } else { days };
       bool hasChanges = false;
       each(props, (JsValue value, JsValue prop) => {
-        if (JS.invoke(props, "hasOwnProperty", prop).truthy() && (JS.strictNotEqual(this.props[JS.string(prop)], value) || isObject(value) || isArray(value))) {
-          this._setProp(JS.string(prop), value);
+        if (JS.invoke(props, "hasOwnProperty", prop).truthy() && (JS.strictNotEqual(this.props[asString(prop)], value) || isObject(value) || isArray(value))) {
+          this._setProp(asString(prop), value);
           hasChanges = true;
         }
       });
@@ -802,7 +802,7 @@ export class PostHogPersistence {
     for (int i = 0; i < count; i++) {
       JsValue prop = list[i];
       if (JS.in(prop, this.props)) {
-        this._deleteProp(JS.string(prop));
+        this._deleteProp(asString(prop));
         hasChanges = true;
       }
     }
@@ -845,7 +845,7 @@ export class PostHogPersistence {
       JsValue initialInfo = this.props[key];
       if (initialInfo.truthy()) {
         each(initialInfo, (JsValue value, JsValue k) => {
-          p["$initial_" + stripLeadingDollar(JS.string(k))] = value;
+          p["$initial_" + stripLeadingDollar(asString(k))] = value;
         });
       }
     }
@@ -859,7 +859,7 @@ export class PostHogPersistence {
   JsValue safe_merge(JsValue props) {
     each(this.props, (JsValue value, JsValue prop) => {
       if (!JS.in(prop, props)) {
-        props[JS.string(prop)] = value;
+        props[asString(prop)] = value;
       }
     });
     return props;

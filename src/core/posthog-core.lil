@@ -35,6 +35,7 @@ import { BrowserClientAdapter } from "./browser-client.lil";
 import {
   addEventListener,
   assign,
+  asString,
   copy,
   copyAndTruncateStrings,
   defineGetter,
@@ -42,6 +43,7 @@ import {
   extend,
   isArray,
   isBoolean,
+  isCrossDomainCookie,
   isDistinctIdStringLike,
   isEmptyObject,
   isEmptyString,
@@ -51,7 +53,6 @@ import {
   isNumber,
   isObject,
   isString,
-  isCrossDomainCookie,
   keysOf,
   migrateConfigField,
   minimizeFlagCalledEventProperties
@@ -717,10 +718,10 @@ void executeCalls(JsValue calls, JsValue thisArg) {
       if (isArray(item[0])) {
         JsValue caller = thisArg;
         each(item, (JsValue call, JsValue index) => {
-          caller = JS.invoke(caller[JS.string(call[0])], "apply", caller, JS.invoke(call, "slice", 1));
+          caller = JS.invoke(caller[asString(call[0])], "apply", caller, JS.invoke(call, "slice", 1));
         });
       } else {
-        JS.invoke(thisArg[JS.string(item[0])], "apply", thisArg, JS.invoke(item, "slice", 1));
+        JS.invoke(thisArg[asString(item[0])], "apply", thisArg, JS.invoke(item, "slice", 1));
       }
     } catch (JsValue e) {
       logger.error(JS.array("Error executing queued PostHog call", item, e));
@@ -1093,7 +1094,7 @@ export class PostHog {
         JsValue setProps = prop;
         if (isString(prop)) {
           setProps = JS.object();
-          setProps[JS.string(prop)] = to;
+          setProps[asString(prop)] = to;
         }
         JS.invoke(client, "setPersonProperties", setProps);
         if (!JS.isNullish(callback)) {
@@ -1104,7 +1105,7 @@ export class PostHog {
         JsValue setProps = prop;
         if (isString(prop)) {
           setProps = JS.object();
-          setProps[JS.string(prop)] = to;
+          setProps[asString(prop)] = to;
         }
         JS.invoke(client, "setPersonProperties", JS.undefined(), setProps);
         if (!JS.isNullish(callback)) {
@@ -1122,18 +1123,18 @@ export class PostHog {
     if (!name.truthy() || JS.strictEqual(name, PRIMARY_INSTANCE_NAME)) {
       return JS.invoke(client, "_init", token, config, name);
     }
-    JsValue existing = instances[JS.string(name)];
+    JsValue existing = instances[asString(name)];
     JsValue named = if (JS.isNullish(existing)) { new PostHog() } else { existing };
     JS.invoke(named, "_init", token, config, name);
-    instances[JS.string(name)] = named;
-    instances[PRIMARY_INSTANCE_NAME][JS.string(name)] = named;
+    instances[asString(name)] = named;
+    instances[PRIMARY_INSTANCE_NAME][asString(name)] = named;
     return named;
   }
 
   JsValue _init(JsValue token, JsValue userConfigArg = JS.undefined(), JsValue name = JS.undefined()) {
     JsValue client = this;
     JsValue config = if (JS.isUndefined(userConfigArg)) { JS.object() } else { userConfigArg };
-    string normalizedToken = if (isString(token)) { JS.string(JS.invoke(token, "trim")) } else { "" };
+    string normalizedToken = if (isString(token)) { asString(JS.invoke(token, "trim")) } else { "" };
     if (normalizedToken == "") {
       logger.critical(JS.array("PostHog was initialized without a token. This likely indicates a misconfiguration. Please check the first argument passed to posthog.init()"));
       return client;
@@ -1181,13 +1182,13 @@ export class PostHog {
     }
     this.sessionPersistence = sessionPersistence;
     JsValue persistenceName = JS.or(this.config["persistence_name"], this.config["token"]);
-    this._sessionRegisteredPropertiesStorageKey = JS.string(JS.add(JS.add("ph_", persistenceName), "_session_registered_properties"));
+    this._sessionRegisteredPropertiesStorageKey = asString(JS.add(JS.add("ph_", persistenceName), "_session_registered_properties"));
     if (JS.strictNotEqual(this.config["persistence"], "memory") && !persistenceDisabled && sessionStore.isSupported()) {
       JsValue stored = sessionStore.parse(this._sessionRegisteredPropertiesStorageKey);
       if (isArray(stored)) {
         JS.invoke(stored, "forEach", (JsValue key) => {
           if (isString(key)) {
-            addRegisteredKey(this, JS.string(key));
+            addRegisteredKey(this, asString(key));
           }
         });
       }
@@ -1478,7 +1479,7 @@ export class PostHog {
             }
           } else if (isArray(item) && JS.strictEqual(fnName, "alias")) {
             JS.invoke(aliasCalls, "push", item);
-          } else if (isArray(item) && JS.number(JS.invoke(fnName, "indexOf", "capture")) != -1.0 && isFunction(thisArg[JS.string(fnName)])) {
+          } else if (isArray(item) && JS.number(JS.invoke(fnName, "indexOf", "capture")) != -1.0 && isFunction(thisArg[asString(fnName)])) {
             JS.invoke(capturingCalls, "push", item);
           } else {
             JS.invoke(otherCalls, "push", item);
@@ -1498,7 +1499,7 @@ export class PostHog {
     // A proxy that turns method calls into push() (TikTok's in-app browser) would loop
     // forever through _execute_array: dispatch from the prototype instead.
     if (executeArrayDepth > 0 && isArray(item) && isString(item[0])) {
-      JsValue fn = JS.get(PostHog, "prototype")[JS.string(item[0])];
+      JsValue fn = JS.get(PostHog, "prototype")[asString(item[0])];
       if (isFunction(fn)) {
         JS.invoke(fn, "apply", client, JS.invoke(item, "slice", 1));
       }
@@ -1602,7 +1603,7 @@ export class PostHog {
       JsValue surveyIteration = getProp(properties, "$survey_iteration");
       setSurveySeenOnLocalStorage(surveyId, surveyIteration);
       JsValue surveySet = assign(JS.object(), data["$set"]);
-      surveySet[JS.string(surveyInteractionProperty(surveyId, surveyIteration, if (JS.strictEqual(eventName, "survey sent")) { "responded" } else { "dismissed" }))] = true;
+      surveySet[asString(surveyInteractionProperty(surveyId, surveyIteration, if (JS.strictEqual(eventName, "survey sent")) { "responded" } else { "dismissed" }))] = true;
       data["$set"] = surveySet;
     } else if (JS.strictEqual(eventName, "survey shown")) {
       data["$set"] = assign(assign(JS.object(), data["$set"]), JS.object("$survey_last_seen_date", JS.invoke(JS.construct(Date), "toISOString")));
@@ -1611,7 +1612,7 @@ export class PostHog {
       JsValue tourType = getProp(properties, "$product_tour_type");
       if (tourType.truthy()) {
         JsValue tourSet = assign(JS.object(), data["$set"]);
-        tourSet[JS.string(JS.add("$product_tour_last_seen_date/", tourType))] = JS.invoke(JS.construct(Date), "toISOString");
+        tourSet[asString(JS.add("$product_tour_last_seen_date/", tourType))] = JS.invoke(JS.construct(Date), "toISOString");
         data["$set"] = tourSet;
       }
     }
@@ -1874,7 +1875,7 @@ export class PostHog {
   void _register_single(JsValue prop, JsValue value) {
     JsValue client = this;
     JsValue properties = JS.object();
-    properties[JS.string(prop)] = value;
+    properties[asString(prop)] = value;
     JS.invoke(client, "register", properties);
   }
 
@@ -2067,12 +2068,12 @@ export class PostHog {
     }
     processCookieIdentityChange(this, true);
     JsValue existingGroups = JS.invoke(client, "getGroups");
-    bool isNewGroup = JS.strictNotEqual(existingGroups[JS.string(groupType)], groupKey);
+    bool isNewGroup = JS.strictNotEqual(existingGroups[asString(groupType)], groupKey);
     if (isNewGroup) {
       JS.invoke(client, "resetGroupPropertiesForFlags", groupType);
     }
     JsValue groups = assign(JS.object(), existingGroups);
-    groups[JS.string(groupType)] = groupKey;
+    groups[asString(groupType)] = groupKey;
     JS.invoke(client, "register", JS.object("$groups", groups));
     if (isNewGroup || groupPropertiesToSet.truthy()) {
       JsValue groupIdentify = JS.object("$group_type", groupType, "$group_key", groupKey);
@@ -2083,7 +2084,7 @@ export class PostHog {
     }
     if (groupPropertiesToSet.truthy()) {
       JsValue forFlags = JS.object();
-      forFlags[JS.string(groupType)] = groupPropertiesToSet;
+      forFlags[asString(groupType)] = groupPropertiesToSet;
       JS.invoke(client, "setGroupPropertiesForFlags", forFlags);
     }
     if (isNewGroup && !groupPropertiesToSet.truthy()) {
@@ -2176,7 +2177,7 @@ export class PostHog {
     }
     JsValue current = sessionManager.checkAndGetSessionAndWindowId(true, null, false);
     JsValue sessionStartTimestamp = current["sessionStartTimestamp"];
-    JsValue url = this.requestRouter.endpointFor("ui", JS.string(JS.add(JS.add(JS.add("/project/", this.config["token"]), "/replay/"), current["sessionId"])));
+    JsValue url = this.requestRouter.endpointFor("ui", asString(JS.add(JS.add(JS.add("/project/", this.config["token"]), "/replay/"), current["sessionId"])));
     if (getProp(options, "withTimestamp").truthy() && sessionStartTimestamp.truthy()) {
       JsValue lookBack = options["timestampLookBack"];
       number LOOK_BACK = if (JS.isNullish(lookBack)) { 10.0 } else { JS.number(lookBack) };
@@ -2339,19 +2340,19 @@ export class PostHog {
 
   JsValue get_property(JsValue propertyName) {
     PostHogPersistence? persistence = this.persistence;
-    return if (persistence == null) { JS.undefined() } else { persistence.props[JS.string(propertyName)] };
+    return if (persistence == null) { JS.undefined() } else { persistence.props[asString(propertyName)] };
   }
 
   JsValue getSessionProperty(JsValue propertyName) {
     PostHogPersistence? sessionPersistence = this.sessionPersistence;
-    return if (sessionPersistence == null) { JS.undefined() } else { sessionPersistence.props[JS.string(propertyName)] };
+    return if (sessionPersistence == null) { JS.undefined() } else { sessionPersistence.props[asString(propertyName)] };
   }
 
   string toString() {
     JsValue configured = this.config["name"];
     JsValue name = if (JS.isNullish(configured)) { PRIMARY_INSTANCE_NAME } else { configured };
     if (JS.strictNotEqual(name, PRIMARY_INSTANCE_NAME)) {
-      return JS.string(JS.add(PRIMARY_INSTANCE_NAME + ".", name));
+      return asString(JS.add(PRIMARY_INSTANCE_NAME + ".", name));
     }
     return JS.string(name);
   }

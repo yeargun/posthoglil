@@ -8,7 +8,7 @@ import { document, location, userAgent, win } from "./globals.lil";
 import { logger } from "./logger.lil";
 import { getCookieValue } from "./storage.lil";
 import { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS, OsInfo } from "./user-agent.lil";
-import { each, extend, isUndefined, stripEmptyProperties } from "./utils.lil";
+import { asString, each, extend, isUndefined, stripEmptyProperties } from "./utils.lil";
 
 extern JsValue navigator;
 extern JsValue Date;
@@ -256,7 +256,7 @@ export JsValue personPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
 export JsValue getInitialPersonPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
   JsValue props = JS.object();
   each(personPropsFromInfo(info, disableCaptureUrlHashes), (JsValue value, JsValue key) => {
-    props["$initial_" + stripLeadingDollar(JS.string(key))] = value;
+    props["$initial_" + stripLeadingDollar(asString(key))] = value;
   });
   return props;
 }

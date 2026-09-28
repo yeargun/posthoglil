@@ -5,7 +5,7 @@ import { PostHog } from "./posthog-core.lil";
 import { SessionIdManager } from "./sessionid.lil";
 import { PostHogPersistence } from "./persistence.lil";
 import { getPersonInfo, personPropsFromInfo, stripLeadingDollar } from "./event-utils.lil";
-import { each, stripEmptyProperties } from "./utils.lil";
+import { asString, each, stripEmptyProperties } from "./utils.lil";
 
 export class SessionPropsManager {
   PostHog _instance;
@@ -56,7 +56,7 @@ export class SessionPropsManager {
   JsValue getSessionProps() {
     JsValue p = JS.object();
     each(stripEmptyProperties(this.getSetOnceProps()), (JsValue value, JsValue key) => {
-      string name = JS.string(key);
+      string name = asString(key);
       if (name == "$current_url") {
         name = "url";
       }

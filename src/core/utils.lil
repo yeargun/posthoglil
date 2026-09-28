@@ -18,7 +18,7 @@ JsValue objectToString = Object["prototype"]["toString"];
 JsValue hasOwnProperty = Object["prototype"]["hasOwnProperty"];
 
 export string tagOf(JsValue value) {
-  return JS.string(JS.invoke(objectToString, "call", value));
+  return asString(JS.invoke(objectToString, "call", value));
 }
 
 export bool hasOwn(JsValue target, string key) {
@@ -59,6 +59,13 @@ export bool isNull(JsValue value) {
 
 export bool isNullish(JsValue value) {
   return JS.isNullish(value);
+}
+
+// A trusted string view of a host value (no code): where upstream uses a value as the
+// string it is (a key from enumeration, a string method's result, an index key), the port
+// neither converts nor checks it. Stands in for `value as string` (language R12).
+export string asString(JsValue value) {
+  return JS.assume(value);
 }
 
 export bool isString(JsValue value) {
@@ -174,7 +181,7 @@ export JsValue stripEmptyProperties(JsValue properties) {
   JsValue out = JS.object();
   each(properties, (JsValue value, JsValue key) => {
     if ((isString(value) && JS.number(value["length"]) > 0.0) || isNumber(value)) {
-      out[JS.string(key)] = value;
+      out[asString(key)] = value;
     }
   });
   return out;
@@ -203,7 +210,7 @@ JsValue copyTruncating(JsValue value, JsValue inProgress, JsValue maxLength) {
   JsValue result = JS.object();
   each(value, (JsValue item, JsValue key) => {
     if (!JS.invoke(inProgress, "has", item).truthy()) {
-      result[JS.string(key)] = copyTruncating(item, inProgress, maxLength);
+      result[asString(key)] = copyTruncating(item, inProgress, maxLength);
     }
   });
   return result;

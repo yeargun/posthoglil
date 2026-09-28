@@ -7,7 +7,7 @@ import { SessionIdManager } from "./sessionid.lil";
 import { Config } from "./config.lil";
 import { Logger, logger, loggerObject } from "./logger.lil";
 import { extendURLParams } from "./request.lil";
-import { defineGetter, isFunction } from "./utils.lil";
+import { asString, defineGetter, isFunction } from "./utils.lil";
 
 extern JsValue Error;
 extern JsValue Promise;
@@ -124,7 +124,7 @@ export class BrowserClientKeyValueStore {
     JsValue values = JS.object();
     int count = JS.number(keyOrKeys["length"]).toInt();
     for (int i = 0; i < count; i++) {
-      string key = JS.string(keyOrKeys[i]);
+      string key = asString(keyOrKeys[i]);
       JsValue value = if (persistence != null) { persistence.get_property(key) } else { JS.undefined() };
       if (!JS.isUndefined(value)) {
         values[key] = value;
@@ -139,7 +139,7 @@ export class BrowserClientKeyValueStore {
       JsValue props = properties;
       if (JS.typeOf(properties) == "string") {
         props = JS.object();
-        props[JS.string(properties)] = value;
+        props[asString(properties)] = value;
       }
       persistence.register(props, JS.undefined());
     }

@@ -10,7 +10,7 @@ import { EventEmitter } from "./event-emitter.lil";
 import { createLogger, Logger } from "./logger.lil";
 import { uuidv7, uuid7ToTimestampMs } from "./uuidv7.lil";
 import { win } from "./globals.lil";
-import { addEventListener, clampToRange, isPositiveNumber } from "./utils.lil";
+import { addEventListener, asString, clampToRange, isPositiveNumber } from "./utils.lil";
 
 extern JsValue Date;
 extern JsValue Math;
@@ -105,8 +105,8 @@ export class SessionIdManager {
     JsValue client = instance;
     JS.invoke(client, "register", JS.object("$configured_session_timeout_ms", this._sessionTimeoutMs));
     this._resetIdleTimer();
-    this._window_id_storage_key = JS.string(JS.add(JS.add("ph_", persistenceName), "_window_id"));
-    this._primary_window_exists_storage_key = JS.string(JS.add(JS.add("ph_", persistenceName), "_primary_window_exists"));
+    this._window_id_storage_key = asString(JS.add(JS.add("ph_", persistenceName), "_window_id"));
+    this._primary_window_exists_storage_key = asString(JS.add(JS.add("ph_", persistenceName), "_primary_window_exists"));
     // A window id survives a reload of the same tab, but not a duplicated tab: the
     // primary-window flag in sessionStorage tells the two apart.
     if (this._canUseSessionStorage()) {

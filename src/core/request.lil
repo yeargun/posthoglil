@@ -10,7 +10,7 @@ extern bool instanceOf(JsValue value, JsValue ctor);
 import { logger } from "./logger.lil";
 import { AbortController, CompressionStream, fetch, navigator, XMLHttpRequest } from "./globals.lil";
 import { crc32, gzipSync, strToU8 } from "./gzip.lil";
-import { assign, copy, each, isFile } from "./utils.lil";
+import { assign, asString, copy, each, isFile } from "./utils.lil";
 import { getQueryParam } from "./event-utils.lil";
 
 extern JsValue JSON;
@@ -113,7 +113,7 @@ string formDataToQuery(JsValue formdata) {
       return;
     }
     JsValue text = if (isFile(value)) { value["name"] } else { JS.invoke(value, "toString") };
-    pairs.push(JS.string(JS.call(encodeURIComponent, JS.undefined(), key)) + "=" + JS.string(JS.call(encodeURIComponent, JS.undefined(), text)));
+    pairs.push(asString(JS.call(encodeURIComponent, JS.undefined(), key)) + "=" + asString(JS.call(encodeURIComponent, JS.undefined(), text)));
   });
   return pairs.join("&");
 }
@@ -130,7 +130,7 @@ export string extendURLParams(string url, JsValue params) {
       JsValue override = newParams[key];
       JsValue value = if (JS.isNullish(override)) { origValue } else { override };
       JS.delete(newParams, key);
-      updatedSearch.push(JS.string(JS.add(key + "=", value)));
+      updatedSearch.push(asString(JS.add(key + "=", value)));
     }
   }
   string remaining = formDataToQuery(newParams);
@@ -162,7 +162,7 @@ JsValue encodePostData(JsValue options) {
   }
   if (JS.strictEqual(compression, "base64")) {
     JsValue b64 = base64Encode(jsonStringify(data));
-    string encodedBody = "data=" + JS.string(JS.call(encodeURIComponent, JS.undefined(), if (JS.typeOf(b64) == "string") { b64 } else { jsonStringify(b64) }));
+    string encodedBody = "data=" + asString(JS.call(encodeURIComponent, JS.undefined(), if (JS.typeOf(b64) == "string") { b64 } else { jsonStringify(b64) }));
     return JS.object("contentType", "application/x-www-form-urlencoded", "body", encodedBody, "estimatedSize", JS.construct(Blob, JS.array(encodedBody))["size"]);
   }
   JsValue jsonBody = jsonStringify(data);
@@ -299,7 +299,7 @@ bool errorNamed(JsValue error, string name) {
   if (!error.truthy() || JS.typeOf(error) != "object") {
     return false;
   }
-  string actual = if (JS.in("name", error)) { JS.string(JS.call(String, JS.undefined(), error["name"])) } else { "" };
+  string actual = if (JS.in("name", error)) { asString(JS.call(String, JS.undefined(), error["name"])) } else { "" };
   return actual == name;
 }
 

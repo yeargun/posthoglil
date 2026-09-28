@@ -3,7 +3,7 @@
 
 import { PostHog } from "./posthog-core.lil";
 import { convertToURL } from "./event-utils.lil";
-import { defineGetter } from "./utils.lil";
+import { asString, defineGetter } from "./utils.lil";
 
 extern JsValue URL;
 
@@ -86,7 +86,7 @@ JsValue prepareEndpoint(RequestRouter router, string target, string path, JsValu
       IngestionEndpoints? endpoints = router._ingestionEndpoints;
       IngestionEndpoints current = if (endpoints != null && endpoints.apiHost == apiHost && JS.strictEqual(endpoints.rewriteRequestPath, rewriteRequestPath)) { endpoints } else { new IngestionEndpoints(apiHost, rewriteRequestPath) };
       router._ingestionEndpoints = current;
-      current.urls.add(JS.string(key));
+      current.urls.add(asString(key));
     }
   }
   return rewritten;
@@ -106,7 +106,7 @@ export class RequestRouter {
   bool isIngestionEndpoint(string url) {
     IngestionEndpoints? endpoints = this._ingestionEndpoints;
     JsValue key = urlKey(url);
-    return endpoints != null && endpoints.apiHost == apiHostOf(this) && JS.strictEqual(endpoints.rewriteRequestPath, this.instance.config["rewriteRequestPath"]) && key.truthy() && endpoints.urls.has(JS.string(key));
+    return endpoints != null && endpoints.apiHost == apiHostOf(this) && JS.strictEqual(endpoints.rewriteRequestPath, this.instance.config["rewriteRequestPath"]) && key.truthy() && endpoints.urls.has(asString(key));
   }
 
   JsValue endpointFor(string target, string path = "") {

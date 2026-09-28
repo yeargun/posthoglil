@@ -6,7 +6,7 @@
 import { document, win } from "./globals.lil";
 import { logger } from "./logger.lil";
 import { uuidv7 } from "./uuidv7.lil";
-import { isObject, extend, keysOf } from "./utils.lil";
+import { asString, extend, isObject, keysOf } from "./utils.lil";
 import {
   DISTINCT_ID,
   GROUPS,
@@ -149,12 +149,12 @@ bool setCookie(string name, JsValue value, JsValue days, JsValue crossSubdomain,
     if (days.truthy()) {
       JsValue date = JS.construct(Date);
       JS.invoke(date, "setTime", JS.number(JS.invoke(date, "getTime")) + JS.number(days) * 24.0 * 60.0 * 60.0 * 1000.0);
-      expires = "; expires=" + JS.string(JS.invoke(date, "toUTCString"));
+      expires = "; expires=" + asString(JS.invoke(date, "toUTCString"));
     }
     if (secure.truthy()) {
       secureFlag = "; secure";
     }
-    string cookie = name + "=" + JS.string(JS.call(encodeURIComponent, JS.undefined(), JS.invoke(JSON, "stringify", value))) + expires + "; SameSite=Lax; path=/" + cdomain + secureFlag;
+    string cookie = name + "=" + asString(JS.call(encodeURIComponent, JS.undefined(), JS.invoke(JSON, "stringify", value))) + expires + "; SameSite=Lax; path=/" + cdomain + secureFlag;
     // 4096 bytes is where some browsers stop storing a cookie; warn a little before.
     if (cookie.length > 3686) {
       logger.warn(JS.array("cookieStore warning: large cookie, len=" + cookie.length.toString()));
@@ -317,7 +317,7 @@ string cookieSnapshotFingerprint(string cookieValue) {
 }
 
 export JsValue getCookiePersistedPropertiesMetadata(JsValue cookieProperties, string[] customCookieProperties) {
-  return JS.object("p", customCookieProperties, "f", cookieSnapshotFingerprint(JS.string(JS.invoke(JSON, "stringify", cookieProperties))));
+  return JS.object("p", customCookieProperties, "f", cookieSnapshotFingerprint(asString(JS.invoke(JSON, "stringify", cookieProperties))));
 }
 
 export class MetadataState {

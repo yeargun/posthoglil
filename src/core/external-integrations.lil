@@ -4,6 +4,7 @@
 import { PostHog } from "./posthog-core.lil";
 import { assignableWindow } from "./globals.lil";
 import { createLogger, Logger } from "./logger.lil";
+import { asString } from "./utils.lil";
 
 extern JsValue Object;
 
@@ -27,7 +28,7 @@ export class ExternalIntegrations {
     JsValue entries = JS.invoke(Object, "entries", if (JS.isNullish(configured)) { JS.object() } else { configured });
     int count = JS.number(entries["length"]).toInt();
     for (int i = 0; i < count; i++) {
-      string key = JS.string(entries[i][0]);
+      string key = asString(entries[i][0]);
       JsValue value = entries[i][1];
       if (value.truthy() && !loadedIntegration(key).truthy()) {
         JsValue scriptName = if (key == "intercom") { "intercom-integration" } else { if (key == "crispChat") { "crisp-chat-integration" } else { JS.undefined() } };

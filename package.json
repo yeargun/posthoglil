@@ -97,10 +97,14 @@
     "measure": "node scripts/measure.mjs",
     "measure:packs": "node scripts/measure-packs.mjs && node scripts/write-results.mjs --packs-only",
     "write:results": "node scripts/write-results.mjs",
-    "check:site": "npm run build:site && node --test test/site.test.mjs"
+    "check:site": "npm run build:site && node --test test/site.test.mjs",
+    "test:core": "node test/core/verify.mjs",
+    "test:core:release": "node test/core/verify.mjs release"
   },
   "devDependencies": {
     "esbuild": "0.28.1",
+    "fflate": "^0.4.8",
+    "jsdom": "^26.1.0",
     "terser": "^5.43.1",
     "vite": "8.2.1"
   }

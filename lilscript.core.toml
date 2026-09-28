@@ -1,0 +1,15 @@
+# Release build of the slim core (`@itslil/posthog-js/slim`). Console output is part of
+# the SDK's behaviour (debug mode, warnings), so nothing strips it.
+[javascript]
+priority = "size-first"
+optimization_level = 13
+cost_model = "brotli"
+assume_pristine_builtins = true
+
+[mangle]
+identifiers = true
+properties = true
+pool_strings = true
+
+[delivery]
+host_modules = "embed"
