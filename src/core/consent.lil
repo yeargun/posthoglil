@@ -4,23 +4,23 @@
 import { PostHog } from "./posthog-core.lil";
 import { navigator, assignableWindow } from "./globals.lil";
 import { Store, cookieStore, localStore } from "./storage.lil";
-import { defineGetter, isNoLike, isYesLike } from "./utils.lil";
+import { asString, defineGetter, isNoLike, isYesLike } from "./utils.lil";
 
 export int CONSENT_PENDING = -1;
 export int CONSENT_DENIED = 0;
 export int CONSENT_GRANTED = 1;
 
-JsValue storageKey(ConsentManager manager) {
+string storageKey(ConsentManager manager) {
   JsValue config = manager._instance.config;
   JsValue consentName = config["consent_persistence_name"];
   if (consentName.truthy()) {
-    return consentName;
+    return asString(consentName);
   }
   JsValue prefix = config["opt_out_capturing_cookie_prefix"];
   if (prefix.truthy()) {
-    return JS.add(prefix, config["token"]);
+    return asString(JS.add(prefix, config["token"]));
   }
-  return JS.add("__ph_opt_in_out_", config["token"]);
+  return asString(JS.add("__ph_opt_in_out_", config["token"]));
 }
 
 // The configured store; a value left in the other store is moved over once.
@@ -32,18 +32,18 @@ Store consentStorage(ConsentManager manager) {
   if (current == null || current != expected) {
     manager._persistentStore = expected;
     Store other = if (useLocal) { cookieStore } else { localStore };
-    if (other.get(JS.string(storageKey(manager))).truthy()) {
-      if (!expected.get(JS.string(storageKey(manager))).truthy()) {
-        manager.optInOut(isYesLike(other.get(JS.string(storageKey(manager)))));
+    if (other.get(storageKey(manager)).truthy()) {
+      if (!expected.get(storageKey(manager)).truthy()) {
+        manager.optInOut(isYesLike(other.get(storageKey(manager))));
       }
-      other.remove(JS.string(storageKey(manager)), config["cross_subdomain_cookie"]);
+      other.remove(storageKey(manager), config["cross_subdomain_cookie"]);
     }
   }
   return expected;
 }
 
 int storedConsent(ConsentManager manager) {
-  JsValue value = consentStorage(manager).get(JS.string(storageKey(manager)));
+  JsValue value = consentStorage(manager).get(storageKey(manager));
   return if (isYesLike(value)) { CONSENT_GRANTED } else { if (isNoLike(value)) { CONSENT_DENIED } else { CONSENT_PENDING } };
 }
 
@@ -95,11 +95,11 @@ export class ConsentManager {
 
   void optInOut(bool isOptedIn) {
     JsValue config = this._instance.config;
-    consentStorage(this).set(JS.string(storageKey(this)), if (isOptedIn) { 1 } else { 0 }, config["cookie_expiration"], config["cross_subdomain_cookie"], config["secure_cookie"]);
+    consentStorage(this).set(storageKey(this), if (isOptedIn) { 1 } else { 0 }, config["cookie_expiration"], config["cross_subdomain_cookie"], config["secure_cookie"]);
   }
 
   void reset() {
-    consentStorage(this).remove(JS.string(storageKey(this)), this._instance.config["cross_subdomain_cookie"]);
+    consentStorage(this).remove(storageKey(this), this._instance.config["cross_subdomain_cookie"]);
   }
 }
 

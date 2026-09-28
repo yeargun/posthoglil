@@ -3,7 +3,7 @@
 // on unload the batches go out by sendBeacon, event batches first.
 
 import { logger } from "./logger.lil";
-import { assign, asString, clampToRange, copy, each, keysOf } from "./utils.lil";
+import { assign, asString, clampToRange, copy, each, keysOf, merge } from "./utils.lil";
 
 extern JsValue Date;
 extern JsValue Math;
@@ -42,12 +42,12 @@ export class RequestQueue {
     }
     for (JsValue req of values) {
       if (JS.number(JS.invoke(req["url"], "indexOf", "/e")) == 0.0) {
-        this._sendRequestSafely(assign(copy(req), JS.object("transport", "sendBeacon")));
+        this._sendRequestSafely(merge(req, JS.object("transport", "sendBeacon")));
       }
     }
     for (JsValue req of values) {
       if (JS.number(JS.invoke(req["url"], "indexOf", "/e")) != 0.0) {
-        this._sendRequestSafely(assign(copy(req), JS.object("transport", "sendBeacon")));
+        this._sendRequestSafely(merge(req, JS.object("transport", "sendBeacon")));
       }
     }
   }
@@ -101,7 +101,7 @@ export class RequestQueue {
       JsValue batchKey = if (req.truthy()) { req["batchKey"] } else { null };
       JsValue key = JS.or(batchKey, req["url"]);
       if (JS.isUndefined(requests[asString(key)])) {
-        requests[asString(key)] = assign(copy(req), JS.object("data", JS.array()));
+        requests[asString(key)] = merge(req, JS.object("data", JS.array()));
       }
       JsValue target = requests[asString(key)]["data"];
       if (!JS.isNullish(target)) {

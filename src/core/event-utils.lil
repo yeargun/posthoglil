@@ -50,7 +50,7 @@ Regex plus = new Regex("\\+", "g");
 export string getQueryParam(string url, string param) {
   string withoutHash = url.split("#")[0];
   JsValue afterQuery = JS.invoke(withoutHash, "split", queryPrefix)[1];
-  string queryParams = if (afterQuery.truthy()) { JS.string(afterQuery) } else { "" };
+  string queryParams = if (afterQuery.truthy()) { asString(afterQuery) } else { "" };
   string[] queryParts = queryParams.replace(leadingQuestionMarks, "").split("&");
   string[]? keyValuePair = null;
   for (string part of queryParts) {
@@ -65,7 +65,7 @@ export string getQueryParam(string url, string param) {
   }
   string result = keyValuePair[1];
   try {
-    result = JS.string(JS.call(decodeURIComponent, JS.undefined(), result));
+    result = asString(JS.call(decodeURIComponent, JS.undefined(), result));
   } catch {
     logger.error(JS.array("Skipping decoding for malformed query param: " + result));
   }
@@ -76,7 +76,7 @@ export JsValue maskQueryParams(JsValue url, string[] maskedParams, string mask) 
   if (!url.truthy() || maskedParams.length == 0) {
     return url;
   }
-  string[] splitHash = JS.string(url).split("#");
+  string[] splitHash = asString(url).split("#");
   string withoutHash = splitHash[0];
   string[] splitQuery = withoutHash.split("?");
   string? queryString = if (splitQuery.length > 1) { splitQuery[1] } else { null };
@@ -119,7 +119,7 @@ export JsValue stripUrlHash(JsValue url) {
   if (!url.truthy()) {
     return url;
   }
-  return JS.string(url).split("#")[0];
+  return asString(url).split("#")[0];
 }
 
 export string stripLeadingDollar(string key) {
@@ -151,7 +151,7 @@ export JsValue getCampaignParams(JsValue customTrackedParams, JsValue maskPerson
   }
   string[] paramsToMask = masked(maskPersonalData, customPersonalData);
   string[] custom = if (customTrackedParams.truthy()) { JS.assume(customTrackedParams) } else { [] };
-  JsValue urlParams = campaignParamsFromUrl(JS.string(maskQueryParams(document["URL"], paramsToMask, MASKED)), custom);
+  JsValue urlParams = campaignParamsFromUrl(asString(maskQueryParams(document["URL"], paramsToMask, MASKED)), custom);
   JsValue cookieParams = JS.object();
   JsValue cookieValue = getCookieValue("li_fat_id");
   cookieParams["li_fat_id"] = if (cookieValue.truthy()) { cookieValue } else { null };
@@ -182,7 +182,7 @@ JsValue searchInfoFromReferrer(string referrer) {
   JsValue info = JS.object();
   if (!JS.strictEqual(search, null)) {
     info["$search_engine"] = search;
-    string keyword = if (document.truthy()) { getQueryParam(JS.string(document["referrer"]), param) } else { "" };
+    string keyword = if (document.truthy()) { getQueryParam(asString(document["referrer"]), param) } else { "" };
     if (keyword.length != 0) {
       info["ph_keyword"] = keyword;
     }
@@ -195,7 +195,7 @@ export JsValue getSearchInfo() {
   if (!referrer.truthy()) {
     return JS.object();
   }
-  return searchInfoFromReferrer(JS.string(referrer));
+  return searchInfoFromReferrer(asString(referrer));
 }
 
 JsValue browserLanguage() {
@@ -204,14 +204,14 @@ JsValue browserLanguage() {
 
 string getReferrer() {
   JsValue referrer = if (JS.isNullish(document)) { JS.undefined() } else { document["referrer"] };
-  return if (referrer.truthy()) { JS.string(referrer) } else { DIRECT };
+  return if (referrer.truthy()) { asString(referrer) } else { DIRECT };
 }
 
 export JsValue getReferrerInfo() {
   string referrer = getReferrer();
   JsValue domain = DIRECT;
   if (!JS.isNullish(document) && document["referrer"].truthy()) {
-    JsValue host = anchorPart(JS.string(document["referrer"]), "host");
+    JsValue host = anchorPart(asString(document["referrer"]), "host");
     domain = if (host.truthy()) { host } else { DIRECT };
   }
   return JS.object("$referrer", referrer, "$referring_domain", domain);
@@ -235,12 +235,12 @@ export JsValue personPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
     if (referrer == DIRECT) {
       referringDomain = DIRECT;
     } else {
-      referringDomain = anchorPart(JS.string(referrer), "host");
+      referringDomain = anchorPart(asString(referrer), "host");
     }
   }
   JsValue props = JS.object("$referrer", referrer, "$referring_domain", referringDomain);
   if (url.truthy()) {
-    string urlText = JS.string(url);
+    string urlText = asString(url);
     props["$current_url"] = url;
     JsValue anchor = convertToURL(urlText);
     props["$host"] = if (JS.isNullish(anchor)) { JS.undefined() } else { anchor["host"] };
@@ -248,7 +248,7 @@ export JsValue personPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
     extend(props, campaignParamsFromUrl(urlText, []));
   }
   if (referrer.truthy()) {
-    extend(props, searchInfoFromReferrer(JS.string(referrer)));
+    extend(props, searchInfoFromReferrer(asString(referrer)));
   }
   return props;
 }
@@ -289,7 +289,7 @@ export JsValue getEventProperties(JsValue maskPersonalData, JsValue customPerson
   if (!userAgent.truthy()) {
     return JS.object();
   }
-  string ua = JS.string(userAgent);
+  string ua = asString(userAgent);
   string[] paramsToMask = masked(maskPersonalData, customPersonalData);
   OsInfo os = detectOS(ua);
   bool brave = JS.typeOf(navigator) != "undefined" && navigator["brave"].truthy();
@@ -302,7 +302,7 @@ export JsValue getEventProperties(JsValue maskPersonalData, JsValue customPerson
   JsValue screenHeight = orUndefined(screen, "height");
   JsValue devicePixelRatio = orUndefined(win, "devicePixelRatio");
   JsValue vendorValue = navigator["vendor"];
-  string vendor = if (vendorValue.truthy()) { JS.string(vendorValue) } else { "" };
+  string vendor = if (vendorValue.truthy()) { asString(vendorValue) } else { "" };
   JsValue properties = stripEmptyProperties(JS.object(
     "$os", os.name,
     "$os_version", os.version,
@@ -314,7 +314,7 @@ export JsValue getEventProperties(JsValue maskPersonalData, JsValue customPerson
   ));
   JsValue href = orUndefined(location, "href");
   JsValue vendorAgain = navigator["vendor"];
-  string versionVendor = if (vendorAgain.truthy()) { JS.string(vendorAgain) } else { "" };
+  string versionVendor = if (vendorAgain.truthy()) { asString(vendorAgain) } else { "" };
   JsValue language = browserLanguage();
   extend(properties, JS.object(
     "$current_url", maskQueryParams(if (disableCaptureUrlHashes) { stripUrlHash(href) } else { href }, paramsToMask, MASKED),

@@ -10,7 +10,7 @@ extern bool instanceOf(JsValue value, JsValue ctor);
 import { logger } from "./logger.lil";
 import { AbortController, CompressionStream, fetch, navigator, XMLHttpRequest } from "./globals.lil";
 import { crc32, gzipSync, strToU8 } from "./gzip.lil";
-import { assign, asString, copy, each, isFile } from "./utils.lil";
+import { assign, asString, copy, each, isFile, merge } from "./utils.lil";
 import { getQueryParam } from "./event-utils.lil";
 
 extern JsValue JSON;
@@ -152,7 +152,7 @@ JsValue encodePostData(JsValue options) {
     return JS.undefined();
   }
   if (JS.strictEqual(compression, "gzip-js")) {
-    Uint8Array gzipData = gzipSync(strToU8(JS.string(jsonStringify(data))));
+    Uint8Array gzipData = gzipSync(strToU8(asString(jsonStringify(data))));
     JsValue view = gzipData;
     return JS.object(
       "contentType", "text/plain",
@@ -193,11 +193,11 @@ JsValue encodedRequest(JsValue url, JsValue encodedBody) {
 
 JsValue fallbackToUncompressed(JsValue options) {
   if (JS.strictEqual(options["transport"], "sendBeacon")) {
-    JsValue beaconOptions = assign(copy(options), JS.object("compression", "base64", "_encodedBody", JS.undefined()));
-    return encodedRequest(extendURLParams(JS.string(options["url"]), JS.object("compression", "base64")), encodePostData(beaconOptions));
+    JsValue beaconOptions = merge(options, JS.object("compression", "base64", "_encodedBody", JS.undefined()));
+    return encodedRequest(extendURLParams(asString(options["url"]), JS.object("compression", "base64")), encodePostData(beaconOptions));
   }
-  JsValue plainOptions = assign(copy(options), JS.object("compression", JS.undefined(), "_encodedBody", JS.undefined()));
-  return encodedRequest(removeURLParam(JS.string(options["url"]), "compression"), encodePostData(plainOptions));
+  JsValue plainOptions = merge(options, JS.object("compression", JS.undefined(), "_encodedBody", JS.undefined()));
+  return encodedRequest(removeURLParam(asString(options["url"]), "compression"), encodePostData(plainOptions));
 }
 
 JsValue encodePostDataSafely(JsValue options) {
@@ -205,13 +205,13 @@ JsValue encodePostDataSafely(JsValue options) {
   try {
     encodedBody = encodePostData(options);
   } catch (JsValue error) {
-    if (isGzipRequest(options["compression"], getQueryParam(JS.string(options["url"]), "compression"))) {
+    if (isGzipRequest(options["compression"], getQueryParam(asString(options["url"]), "compression"))) {
       logger.error(JS.array("Failed to gzip request body, sending uncompressed payload", error));
       return fallbackToUncompressed(options);
     }
     throw error;
   }
-  if (!encodedBody.truthy() || !isGzipRequest(options["compression"], getQueryParam(JS.string(options["url"]), "compression")) || isGzipData(encodedBody["body"])) {
+  if (!encodedBody.truthy() || !isGzipRequest(options["compression"], getQueryParam(asString(options["url"]), "compression")) || isGzipData(encodedBody["body"])) {
     return encodedRequest(options["url"], encodedBody);
   }
   nativeAsyncGzipDisabled = true;
@@ -292,7 +292,7 @@ async JsValue preEncodeAsync(JsValue options) {
   }
   Task<JsValue> read = JS.assume(JS.invoke(compressed, "arrayBuffer"));
   JsValue body = await read;
-  return assign(copy(options), JS.object("_encodedBody", JS.object("contentType", "text/plain", "body", body, "estimatedSize", body["byteLength"])));
+  return merge(options, JS.object("_encodedBody", JS.object("contentType", "text/plain", "body", body, "estimatedSize", body["byteLength"])));
 }
 
 bool errorNamed(JsValue error, string name) {
@@ -314,7 +314,7 @@ JsValue timeoutAbortReason(JsValue timeout) {
 Regex networkErrorMessages = new Regex("Failed to fetch|NetworkError|Load failed", "i");
 
 bool isExpectedNetworkError(JsValue error) {
-  return !JS.isNullish(error) && JS.strictEqual(error["name"], "TypeError") && networkErrorMessages.test(JS.string(JS.or(error["message"], "")));
+  return !JS.isNullish(error) && JS.strictEqual(error["name"], "TypeError") && networkErrorMessages.test(asString(JS.or(error["message"], "")));
 }
 
 JsValue orEmpty(JsValue value) {
@@ -437,13 +437,13 @@ void beaconTransport(JsValue options) {
     number size = if (JS.isNullish(estimatedSize)) { 0.0 } else { JS.number(estimatedSize) };
     if (batch.isArray() && JS.number(batch["length"]) > 1.0 && size > 16384.0) {
       JsValue mid = JS.invoke(Math, "ceil", JS.number(batch["length"]) / 2.0);
-      func(JsValue)->JsValue splitData = (JsValue events) => if (data.isArray()) { events } else { assign(copy(data), JS.object("batch", events)) };
-      beaconTransport(assign(copy(options), JS.object("data", splitData(JS.invoke(batch, "slice", 0, mid)))));
-      beaconTransport(assign(copy(options), JS.object("data", splitData(JS.invoke(batch, "slice", mid)))));
+      func(JsValue)->JsValue splitData = (JsValue events) => if (data.isArray()) { events } else { merge(data, JS.object("batch", events)) };
+      beaconTransport(merge(options, JS.object("data", splitData(JS.invoke(batch, "slice", 0, mid)))));
+      beaconTransport(merge(options, JS.object("data", splitData(JS.invoke(batch, "slice", mid)))));
       return;
     }
     logger.warn(JS.array(JS.add(JS.add("Beacon of ~", if (JS.isNullish(estimatedSize)) { 0 } else { estimatedSize }), " bytes was rejected by the browser, falling back to fetch")));
-    fetchTransport(assign(copy(options), JS.object("_keepaliveDisabled", true)));
+    fetchTransport(merge(options, JS.object("_keepaliveDisabled", true)));
   } catch (JsValue error) {
     logger.warn(JS.array("Beacon send failed", error));
   }
@@ -480,9 +480,9 @@ void runTransport(string name, JsValue options) {
 JsValue addSentAtToBody(JsValue data) {
   JsValue sentAt = JS.invoke(JS.construct(Date), "toISOString");
   if (!data.isArray()) {
-    return assign(copy(data), JS.object("sent_at", sentAt));
+    return merge(data, JS.object("sent_at", sentAt));
   }
-  return JS.invoke(data, "map", (JsValue item) => assign(copy(item), JS.object("sent_at", sentAt)));
+  return JS.invoke(data, "map", (JsValue item) => merge(item, JS.object("sent_at", sentAt)));
 }
 
 JsValue addSentAtToCaptureBody(JsValue data) {
@@ -511,7 +511,7 @@ string buildRequestURL(JsValue url, JsValue method, JsValue compression, JsValue
   if (!gzip) {
     params["compression"] = compression;
   }
-  return extendURLParams(if (gzip) { removeURLParam(JS.string(url), "compression") } else { JS.string(url) }, params);
+  return extendURLParams(if (gzip) { removeURLParam(asString(url), "compression") } else { asString(url) }, params);
 }
 
 export void request(JsValue originalOptions) {
@@ -531,12 +531,12 @@ export void request(JsValue originalOptions) {
   options["url"] = buildRequestURL(options["url"], options["method"], options["compression"], options["timestampMode"]);
   JsValue disabled = options["disableTransport"];
   string[] candidates = AVAILABLE_TRANSPORTS.filter((string name) => !disabled.truthy() || !JS.invoke(disabled, "includes", name).truthy());
-  if (!candidates.includes(JS.string(transport)) && candidates.length == 0) {
+  if (!candidates.includes(asString(transport)) && candidates.length == 0) {
     // Upstream reads `availableTransports[0].method`: the engine's own TypeError.
     JsValue missing = JS.undefined();
     missing["method"];
   }
-  string chosen = if (candidates.includes(JS.string(transport))) { JS.string(transport) } else { candidates[0] };
+  string chosen = if (candidates.includes(asString(transport))) { asString(transport) } else { candidates[0] };
   func(JsValue)->void safeTransport = (JsValue opts) => {
     try {
       runTransport(chosen, opts);
@@ -555,7 +555,7 @@ export void request(JsValue originalOptions) {
     JS.invoke(JS.invoke(pending, "then", (JsValue encodedOptions) => safeTransport(encodedOptions)), "catch", (JsValue error) => {
       if (errorNamed(error, "NotReadableError")) {
         nativeAsyncGzipDisabled = true;
-        safeTransport(assign(copy(options), JS.object("compression", JS.undefined(), "url", buildRequestURL(originalOptions["url"], originalOptions["method"], JS.undefined(), originalOptions["timestampMode"]))));
+        safeTransport(merge(options, JS.object("compression", JS.undefined(), "url", buildRequestURL(originalOptions["url"], originalOptions["method"], JS.undefined(), originalOptions["timestampMode"]))));
         return;
       }
       if (errorNamed(error, "NativeGzipValidationError")) {

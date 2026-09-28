@@ -5,6 +5,7 @@
 
 import { Config } from "./config.lil";
 import { win } from "./globals.lil";
+import { asString } from "./utils.lil";
 
 extern JsValue console;
 
@@ -61,7 +62,7 @@ export JsValue loggerObject(Logger target) {
   func(JsValue)->JsValue list = (JsValue args) => JS.invoke(JS.get(Array, "prototype")["slice"], "call", args);
   JsValue api = JS.object();
   api["_log"] = JS.staticRest((JsValue args) => {
-    target.log(JS.string(args[0]), JS.invoke(list(args), "slice", 1));
+    target.log(asString(args[0]), JS.invoke(list(args), "slice", 1));
     return JS.undefined();
   });
   api["debug"] = JS.staticRest((JsValue args) => {
@@ -85,9 +86,9 @@ export JsValue loggerObject(Logger target) {
     return JS.undefined();
   });
   api["uninitializedWarning"] = (JsValue methodName) => {
-    target.uninitializedWarning(JS.string(methodName));
+    target.uninitializedWarning(asString(methodName));
   };
-  api["createLogger"] = (JsValue additionalPrefix, JsValue options) => loggerObject(target.child(JS.string(additionalPrefix), !JS.isNullish(options) && options["debugEnabled"].truthy()));
+  api["createLogger"] = (JsValue additionalPrefix, JsValue options) => loggerObject(target.child(asString(additionalPrefix), !JS.isNullish(options) && options["debugEnabled"].truthy()));
   return api;
 }
 

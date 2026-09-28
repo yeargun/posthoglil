@@ -2,7 +2,7 @@
 // person and replay, and forwards them as $exception events.
 
 import { PostHog } from "./posthog-core.lil";
-import { assign, copy } from "./utils.lil";
+import { assign, copy, merge } from "./utils.lil";
 
 JsValue getOpt(JsValue options, string key) {
   return if (JS.isNullish(options)) { JS.undefined() } else { options[key] };
@@ -33,12 +33,12 @@ JsValue createEventProcessor(JsValue posthog, JsValue options) {
       JsValue stacktrace = exception["stacktrace"];
       JsValue mapped = JS.undefined();
       if (stacktrace.truthy()) {
-        mapped = assign(copy(stacktrace), JS.object(
+        mapped = merge(stacktrace, JS.object(
           "type", "raw",
-          "frames", JS.invoke(JS.or(stacktrace["frames"], JS.array()), "map", (JsValue frame) => assign(copy(frame), JS.object("platform", "web:javascript")))
+          "frames", JS.invoke(JS.or(stacktrace["frames"], JS.array()), "map", (JsValue frame) => merge(frame, JS.object("platform", "web:javascript")))
         ));
       }
-      return assign(copy(exception), JS.object("stacktrace", mapped));
+      return merge(exception, JS.object("stacktrace", mapped));
     });
     JsValue first = exceptions[0];
     JsValue firstValue = if (JS.isNullish(first)) { JS.undefined() } else { first["value"] };

@@ -6,7 +6,7 @@ import { PostHog } from "./posthog-core.lil";
 import { win } from "./globals.lil";
 import { logger } from "./logger.lil";
 import { extendURLParams } from "./request.lil";
-import { addEventListener, assign, copy, isPositiveNumber } from "./utils.lil";
+import { addEventListener, assign, asString, copy, isPositiveNumber, merge } from "./utils.lil";
 
 extern JsValue Date;
 extern JsValue Math;
@@ -73,10 +73,10 @@ export class RetryQueue {
     JsValue options = copy(request);
     JS.delete(options, "retriesPerformedSoFar");
     if (isPositiveNumber(retriesPerformedSoFar)) {
-      options["url"] = extendURLParams(JS.string(options["url"]), JS.object("retry_count", retriesPerformedSoFar));
+      options["url"] = extendURLParams(asString(options["url"]), JS.object("retry_count", retriesPerformedSoFar));
     }
     JsValue client = this._instance;
-    JS.invoke(client, "_send_request", assign(copy(options), JS.object("callback", (JsValue response) => {
+    JS.invoke(client, "_send_request", merge(options, JS.object("callback", (JsValue response) => {
       JsValue statusCode = response["statusCode"];
       if (JS.strictNotEqual(statusCode, 200) && (JS.lessThan(statusCode, 400) || JS.greaterThanOrEqual(statusCode, 500))) {
         number retries = if (JS.isNullish(retriesPerformedSoFar)) { 0.0 } else { JS.number(retriesPerformedSoFar) };
@@ -165,7 +165,7 @@ export class RetryQueue {
     for (RetryQueueElement item of this._queue) {
       try {
         JsValue client = this._instance;
-        JS.invoke(client, "_send_request", assign(copy(item.requestOptions), JS.object("transport", "sendBeacon")));
+        JS.invoke(client, "_send_request", merge(item.requestOptions, JS.object("transport", "sendBeacon")));
       } catch (JsValue e) {
         logger.error(JS.array(e));
       }

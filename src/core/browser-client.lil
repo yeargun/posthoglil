@@ -78,7 +78,7 @@ async JsValue addExtension(ExtensionRuntime runtime, JsValue extension) {
   if (runtime._disposed) {
     throw JS.construct(Error, "Cannot add an extension to a disposed ExtensionRuntime");
   }
-  string name = JS.string(extension["name"]);
+  string name = asString(extension["name"]);
   if (runtime._names.includes(name)) {
     throw JS.construct(Error, "Browser extension \"" + name + "\" is already registered");
   }
@@ -119,7 +119,7 @@ export class BrowserClientKeyValueStore {
   JsValue get(JsValue keyOrKeys) {
     PostHogPersistence? persistence = this._instance.persistence;
     if (JS.typeOf(keyOrKeys) == "string") {
-      return if (persistence != null) { persistence.get_property(JS.string(keyOrKeys)) } else { JS.undefined() };
+      return if (persistence != null) { persistence.get_property(asString(keyOrKeys)) } else { JS.undefined() };
     }
     JsValue values = JS.object();
     int count = JS.number(keyOrKeys["length"]).toInt();
@@ -252,10 +252,10 @@ async JsValue adapterSendRequest(BrowserClientAdapter adapter, JsValue path, JsV
   JsValue client = adapter.instance;
   JsValue options = if (JS.isUndefined(requestInit)) { JS.object() } else { requestInit };
   JsValue target = if (JS.isNullish(options["target"])) { "api" } else { options["target"] };
-  JsValue endpoint = adapter.instance.requestRouter.endpointFor(JS.string(target), JS.string(path));
+  JsValue endpoint = adapter.instance.requestRouter.endpointFor(asString(target), asString(path));
   JsValue requestOptions = JS.object(
     "method", options["method"],
-    "url", if (options["query"].truthy()) { extendURLParams(JS.string(endpoint), options["query"]) } else { endpoint },
+    "url", if (options["query"].truthy()) { extendURLParams(asString(endpoint), options["query"]) } else { endpoint },
     "data", options["body"],
     "headers", options["headers"],
     "timeout", options["timeoutMs"],

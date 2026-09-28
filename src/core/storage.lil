@@ -73,7 +73,7 @@ export JsValue getCookieValue(string name) {
     JsValue cookies = JS.invoke(JS.invoke(document["cookie"], "split", ";"), "filter", (JsValue cookie) => cookie["length"]);
     int count = JS.number(cookies["length"]).toInt();
     for (int i = 0; i < count; i++) {
-      string cookie = JS.string(cookies[i]);
+      string cookie = asString(cookies[i]);
       while (cookie.charAt(0) == " ") {
         cookie = cookie.slice(1);
       }
@@ -127,7 +127,7 @@ export string chooseCookieDomain(string hostname, JsValue crossSubdomain) {
     string matchedSubDomain = seekFirstNonPublicSubDomain(hostname);
     if (matchedSubDomain == "") {
       JsValue matches = JS.invoke(hostname, "match", domainMatch);
-      string originalMatch = if (matches.truthy()) { JS.string(matches[0]) } else { "" };
+      string originalMatch = if (matches.truthy()) { asString(matches[0]) } else { "" };
       if (originalMatch != matchedSubDomain) {
         logger.info(JS.array("Warning: cookie subdomain discovery mismatch", originalMatch, matchedSubDomain));
       }
@@ -145,7 +145,7 @@ bool setCookie(string name, JsValue value, JsValue days, JsValue crossSubdomain,
   try {
     string expires = "";
     string secureFlag = "";
-    string cdomain = chooseCookieDomain(JS.string(document["location"]["hostname"]), crossSubdomain);
+    string cdomain = chooseCookieDomain(asString(document["location"]["hostname"]), crossSubdomain);
     if (days.truthy()) {
       JsValue date = JS.construct(Date);
       JS.invoke(date, "setTime", JS.number(JS.invoke(date, "getTime")) + JS.number(days) * 24.0 * 60.0 * 60.0 * 1000.0);
@@ -345,7 +345,7 @@ export MetadataState getCookiePersistedPropertiesMetadataState(string name, stri
 }
 
 export string getCookiePropertiesFingerprint(string name, string cookieValue) {
-  return cookieValue + "|" + JS.string(JS.or(getCookieValue(getCookiePersistedPropertiesMetadataName(name)), ""));
+  return cookieValue + "|" + asString(JS.or(getCookieValue(getCookiePersistedPropertiesMetadataName(name)), ""));
 }
 
 // localStorage merged with the cookie's identity keys; with cookie-wins-on-conflict
@@ -356,7 +356,7 @@ JsValue parseLocalPlusCookie(string name, string[] persistKeys, bool preferCooki
     JsValue cookieProperties = JS.object();
     try {
       JsValue raw = getCookieValue(name);
-      cookieValue = if (raw.truthy()) { JS.string(raw) } else { null };
+      cookieValue = if (raw.truthy()) { asString(raw) } else { null };
       cookieProperties = if (cookieValue != null) { getSafeCookieProperties(JS.invoke(JSON, "parse", cookieValue)) } else { JS.object() };
     } catch {
     }

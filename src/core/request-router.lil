@@ -16,14 +16,14 @@ JsValue trimHost(JsValue host) {
 }
 
 export string apiHostOf(RequestRouter router) {
-  string host = JS.string(trimHost(router.instance.config["api_host"]));
+  string host = asString(trimHost(router.instance.config["api_host"]));
   return if (host == "https://app.posthog.com") { "https://us.i.posthog.com" } else { host };
 }
 
 string flagsApiHostOf(RequestRouter router) {
   JsValue customHost = router.instance.config["flags_api_host"];
   if (customHost.truthy()) {
-    return JS.string(trimHost(customHost));
+    return asString(trimHost(customHost));
   }
   return apiHostOf(router);
 }
@@ -75,12 +75,12 @@ JsValue prepareEndpoint(RequestRouter router, string target, string path, JsValu
   JsValue rewritten = url;
   JsValue rewriteRequestPath = router.instance.config["rewriteRequestPath"];
   if (rewriteRequestPath.truthy()) {
-    JsValue anchor = convertToURL(JS.string(url));
+    JsValue anchor = convertToURL(asString(url));
     JsValue resolved = JS.or(if (JS.isNullish(anchor)) { JS.undefined() } else { anchor["href"] }, url);
     rewritten = JS.invoke(JS.call(rewriteRequestPath, JS.undefined(), JS.construct(URL, resolved)), "toString");
   }
   if (rewriteRequestPath.truthy() && target == "api" && (path.indexOf("/s/") == 0 || path.indexOf("/e/") == 0 || path.indexOf("/i/") == 0)) {
-    JsValue key = urlKey(JS.string(rewritten));
+    JsValue key = urlKey(asString(rewritten));
     if (key.truthy()) {
       string apiHost = apiHostOf(router);
       IngestionEndpoints? endpoints = router._ingestionEndpoints;
@@ -123,7 +123,7 @@ export class RequestRouter {
     if (target == "assets") {
       JsValue override = this.instance.config["asset_host"];
       if (normalized.startsWith("/static/") && JS.typeOf(override) == "string") {
-        string normalizedOverride = JS.string(trimHost(override));
+        string normalizedOverride = asString(trimHost(override));
         if (normalizedOverride != "") {
           return prepareEndpoint(this, target, normalized, normalizedOverride + normalized);
         }

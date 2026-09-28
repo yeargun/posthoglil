@@ -54,6 +54,7 @@ import {
   isObject,
   isString,
   keysOf,
+  merge,
   migrateConfigField,
   minimizeFlagCalledEventProperties
 } from "./utils.lil";
@@ -266,7 +267,7 @@ JsValue getProp(JsValue target, string key) {
 Regex UUID_REGEX = new Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "i");
 
 JsValue getEventUuid(JsValue uuid) {
-  if (JS.typeOf(uuid) == "string" && UUID_REGEX.test(JS.string(uuid))) {
+  if (JS.typeOf(uuid) == "string" && UUID_REGEX.test(asString(uuid))) {
     return uuid;
   }
   return uuidv7();
@@ -448,7 +449,7 @@ JsValue extensionOrNew(JsValue existing, JsValue ctor, PostHog ph) {
 
 void initExtensions(PostHog ph, bool startInCookielessMode) {
   number initStartTime = JS.number(JS.invoke(performance, "now"));
-  JsValue ext = assign(copy(JS.get(PostHog, "__defaultExtensionClasses")), ph.config["__extensionClasses"]);
+  JsValue ext = merge(JS.get(PostHog, "__defaultExtensionClasses"), ph.config["__extensionClasses"]);
   (func()->void)[] initTasks = [];
   if (ext["exceptions"].truthy()) {
     ph.exceptions = extensionOrNew(ph.exceptions, ext["exceptions"], ph);
@@ -1177,7 +1178,7 @@ export class PostHog {
     JsValue persistenceMode = this.config["persistence"];
     PostHogPersistence sessionPersistence = persistence;
     if (!JS.strictEqual(persistenceMode, "sessionStorage") && !JS.strictEqual(persistenceMode, "memory")) {
-      sessionPersistence = new PostHogPersistence(assign(copy(this.config), JS.object("persistence", "sessionStorage")), persistenceDisabled, false);
+      sessionPersistence = new PostHogPersistence(merge(this.config, JS.object("persistence", "sessionStorage")), persistenceDisabled, false);
     }
     this.sessionPersistence = sessionPersistence;
     JsValue persistenceName = JS.or(this.config["persistence_name"], this.config["token"]);
@@ -1231,7 +1232,7 @@ export class PostHog {
     // An identity given at init time seeds the bootstrap distinct id.
     JsValue bootstrapConfig = config["bootstrap"];
     if (this.config["identity_distinct_id"].truthy() && !getProp(bootstrapConfig, "distinctID").truthy()) {
-      config["bootstrap"] = assign(assign(JS.object(), config["bootstrap"]), JS.object("distinctID", this.config["identity_distinct_id"], "isIdentifiedID", true));
+      config["bootstrap"] = merge(config["bootstrap"], JS.object("distinctID", this.config["identity_distinct_id"], "isIdentifiedID", true));
     }
     JsValue bootstrap = config["bootstrap"];
     if (!JS.isUndefined(getProp(bootstrap, "distinctID"))) {
@@ -1348,14 +1349,14 @@ export class PostHog {
       return;
     }
     options["transport"] = JS.or(options["transport"], this.config["api_transport"]);
-    options["headers"] = assign(assign(JS.object(), this.config["request_headers"]), options["headers"]);
+    options["headers"] = merge(this.config["request_headers"], options["headers"]);
     options["compression"] = if (JS.strictEqual(options["compression"], "best-available")) { this.compression } else { options["compression"] };
     JsValue disableBeacon = if (JS.isUndefined(this.config["disable_beacon"])) { this.config["__preview_disable_beacon"] } else { this.config["disable_beacon"] };
     if (disableBeacon.truthy()) {
       options["disableTransport"] = JS.array("sendBeacon");
     }
     options["fetchOptions"] = JS.or(options["fetchOptions"], this.config["fetch_options"]);
-    request(assign(copy(options), JS.object("callback", (JsValue response) => {
+    request(merge(options, JS.object("callback", (JsValue response) => {
       JS.call(this.rateLimiter.checkForLimiting, JS.undefined(), response);
       if (JS.greaterThanOrEqual(response["statusCode"], 400) && !JS.isNullish(this.config["on_request_error"])) {
         JS.invoke(this.config, "on_request_error", response);
@@ -1518,7 +1519,7 @@ export class PostHog {
       surveySet[asString(surveyInteractionProperty(surveyId, surveyIteration, if (JS.strictEqual(eventName, "survey sent")) { "responded" } else { "dismissed" }))] = true;
       data["$set"] = surveySet;
     } else if (JS.strictEqual(eventName, "survey shown")) {
-      data["$set"] = assign(assign(JS.object(), data["$set"]), JS.object("$survey_last_seen_date", JS.invoke(JS.construct(Date), "toISOString")));
+      data["$set"] = merge(data["$set"], JS.object("$survey_last_seen_date", JS.invoke(JS.construct(Date), "toISOString")));
     }
     if (JS.strictEqual(eventName, "product tour shown")) {
       JsValue tourType = getProp(properties, "$product_tour_type");
@@ -1529,7 +1530,7 @@ export class PostHog {
       }
     }
     // A top-level $set overrides properties.$set, as ingestion's normalizeEvent does.
-    JsValue finalSet = assign(assign(JS.object(), data["properties"]["$set"]), data["$set"]);
+    JsValue finalSet = merge(data["properties"]["$set"], data["$set"]);
     if (!isEmptyObject(finalSet)) {
       JS.invoke(client, "setPersonPropertiesForFlags", finalSet);
     }
@@ -1543,9 +1544,9 @@ export class PostHog {
     }
     this._internalEventEmitter.emit("eventCaptured", data);
     JsValue explicitUrl = getProp(options, "_url");
-    JsValue url = if (JS.isNullish(explicitUrl)) { this.requestRouter.endpointFor("api", JS.string(this.analyticsDefaultEndpoint)) } else { explicitUrl };
+    JsValue url = if (JS.isNullish(explicitUrl)) { this.requestRouter.endpointFor("api", asString(this.analyticsDefaultEndpoint)) } else { explicitUrl };
     JsValue batchKey = getProp(options, "_batchKey");
-    bool isSessionRecording = JS.strictEqual(batchKey, "recordings") || new Regex("\\/s\\/(?:\\?|$)").test(JS.string(url));
+    bool isSessionRecording = JS.strictEqual(batchKey, "recordings") || new Regex("\\/s\\/(?:\\?|$)").test(asString(url));
     JsValue requestOptions = JS.object(
       "method", "POST",
       "url", url,
@@ -1581,7 +1582,7 @@ export class PostHog {
     // Cookies raise no cross-origin storage events: reconcile before reading.
     persistence.syncCookieProperties();
     processCookieIdentityChange(this, true);
-    JsValue startTimestamp = if (readOnly.truthy()) { JS.undefined() } else { persistence.remove_event_timer(JS.string(eventName)) };
+    JsValue startTimestamp = if (readOnly.truthy()) { JS.undefined() } else { persistence.remove_event_timer(asString(eventName)) };
     JsValue properties = assign(JS.object(), eventProperties);
     properties["token"] = this.config["token"];
     properties["$config_defaults"] = this.config["defaults"];
@@ -1589,7 +1590,7 @@ export class PostHog {
       properties["$cookieless_mode"] = true;
     }
     if (JS.strictEqual(eventName, "$snapshot")) {
-      JsValue persistenceProps = assign(assign(JS.object(), persistence.properties()), sessionPersistence.properties());
+      JsValue persistenceProps = merge(persistence.properties(), sessionPersistence.properties());
       properties["distinct_id"] = persistenceProps["distinct_id"];
       JsValue distinctId = properties["distinct_id"];
       if (!(isString(distinctId) || isNumber(distinctId)) || isEmptyString(distinctId)) {
@@ -1658,7 +1659,7 @@ export class PostHog {
         }
       }
     }
-    properties = extend(extend(extend(extend(JS.object(), infoProperties), persistenceProperties), sessionPersistenceProperties), assign(assign(JS.object(), dynamicProperties), properties));
+    properties = extend(extend(extend(extend(JS.object(), infoProperties), persistenceProperties), sessionPersistenceProperties), merge(dynamicProperties, properties));
     properties["$is_identified"] = JS.invoke(client, "_isIdentified");
     JsValue denylist = this.config["property_denylist"];
     if (isArray(denylist)) {
@@ -1725,7 +1726,7 @@ export class PostHog {
     if (sessionPersistence != null) {
       sessionPersistence.unregister(property);
     }
-    int index = this._sessionRegisteredPropKeys.indexOf(JS.string(property));
+    int index = this._sessionRegisteredPropKeys.indexOf(asString(property));
     if (index != -1) {
       this._sessionRegisteredPropKeys.splice(index, 1);
     }
@@ -1779,7 +1780,7 @@ export class PostHog {
   }
 
   JsValue on(JsValue event, JsValue cb) {
-    return this._internalEventEmitter.on(JS.string(event), cb);
+    return this._internalEventEmitter.on(asString(event), cb);
   }
 
   JsValue onFeatureFlags(JsValue callback) {
@@ -2063,7 +2064,7 @@ export class PostHog {
     if (JS.strictEqual(persistenceMode, "sessionStorage") || JS.strictEqual(persistenceMode, "memory")) {
       this.sessionPersistence = this.persistence;
     } else {
-      this.sessionPersistence = new PostHogPersistence(assign(copy(this.config), JS.object("persistence", "sessionStorage")), persistenceDisabled, false);
+      this.sessionPersistence = new PostHogPersistence(merge(this.config, JS.object("persistence", "sessionStorage")), persistenceDisabled, false);
     }
     JsValue debugFromLocalStorage = checkLocalStorageForDebug(this.config["debug"]);
     if (isBoolean(debugFromLocalStorage)) {
@@ -2150,7 +2151,7 @@ export class PostHog {
     }
     JsValue syntheticException = JS.construct(Error, "PostHog syntheticException");
     JsValue errorToProperties = JS.invoke(exceptions, "buildProperties", error, JS.object("handled", true, "syntheticException", syntheticException));
-    return JS.invoke(exceptions, "sendExceptionEvent", assign(assign(JS.object(), errorToProperties), additionalProperties));
+    return JS.invoke(exceptions, "sendExceptionEvent", merge(errorToProperties, additionalProperties));
   }
 
   void addExceptionStep(JsValue message, JsValue properties = JS.undefined()) {
@@ -2196,7 +2197,7 @@ export class PostHog {
     if (JS.strictNotEqual(name, PRIMARY_INSTANCE_NAME)) {
       return asString(JS.add(PRIMARY_INSTANCE_NAME + ".", name));
     }
-    return JS.string(name);
+    return asString(name);
   }
 
   bool _isIdentified() {

@@ -161,6 +161,11 @@ export JsValue assign(JsValue target, JsValue source) {
   return JS.invoke(Object, "assign", target, source);
 }
 
+// `{...base, ...extra}` as upstream's build spells it (Babel's `_extends`, Object.assign).
+export JsValue merge(JsValue base, JsValue extra) {
+  return JS.invoke(Object, "assign", JS.object(), base, extra);
+}
+
 export JsValue copy(JsValue source) {
   return JS.invoke(Object, "assign", JS.object(), source);
 }

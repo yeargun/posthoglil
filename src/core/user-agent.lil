@@ -1,6 +1,8 @@
 // @posthog/core user-agent-utils: browser, version, OS and device from a user agent.
 // Pure string logic, so it is typed end to end.
 
+import { asString } from "./utils.lil";
+
 export class OsInfo {
   string name;
   string version;
@@ -151,7 +153,7 @@ string windowsVersion(string version) {
 
 string groupOr(JsValue found, int index, string fallback) {
   JsValue group = found[index];
-  return if (group.truthy()) { JS.string(group) } else { fallback };
+  return if (group.truthy()) { asString(group) } else { fallback };
 }
 
 Regex osXbox = new Regex("Xbox; Xbox (.*?)[);]", "i");
@@ -186,7 +188,7 @@ export OsInfo detectOS(string ua) {
     }
     JsValue nt = new Regex("Windows NT ([0-9.]+)", "i").exec(ua);
     if (nt.truthy() && nt[1].truthy()) {
-      string osVersion = windowsVersion(JS.string(nt[1]));
+      string osVersion = windowsVersion(asString(nt[1]));
       if (new Regex("arm", "i").test(ua)) {
         osVersion = "RT";
       }
@@ -197,25 +199,25 @@ export OsInfo detectOS(string ua) {
   m = osIos.exec(ua);
   if (m.truthy()) {
     if (m[3].truthy()) {
-      return new OsInfo("iOS", JS.string(m[3]) + "." + JS.string(m[4]) + "." + groupOr(m, 5, "0"));
+      return new OsInfo("iOS", asString(m[3]) + "." + asString(m[4]) + "." + groupOr(m, 5, "0"));
     }
     return new OsInfo("iOS", "");
   }
   m = osWatch.exec(ua);
   if (m.truthy()) {
-    return new OsInfo("watchOS", JS.string(if (JS.isUndefined(m[2])) { m[3] } else { m[2] }));
+    return new OsInfo("watchOS", asString(if (JS.isUndefined(m[2])) { m[3] } else { m[2] }));
   }
   m = osAndroid.exec(ua);
   if (m.truthy()) {
     if (m[2].truthy()) {
-      return new OsInfo("Android", JS.string(m[2]) + "." + JS.string(m[3]) + "." + groupOr(m, 4, "0"));
+      return new OsInfo("Android", asString(m[2]) + "." + asString(m[3]) + "." + groupOr(m, 4, "0"));
     }
     return new OsInfo("Android", "");
   }
   m = osMacVersion.exec(ua);
   if (m.truthy()) {
     if (m[1].truthy()) {
-      return new OsInfo("Mac OS X", JS.string(m[1]) + "." + JS.string(m[2]) + "." + groupOr(m, 3, "0"));
+      return new OsInfo("Mac OS X", asString(m[1]) + "." + asString(m[2]) + "." + groupOr(m, 3, "0"));
     }
     return new OsInfo("Mac OS X", "");
   }
