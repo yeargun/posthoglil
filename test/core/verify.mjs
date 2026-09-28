@@ -10,8 +10,11 @@ node([here("./build.mjs"), process.argv[2] ?? "dev"])
 const out = (f) => here("./out/" + f)
 const sc = (f) => here("./scenarios/" + f)
 node([here("./diff.mjs"), out("up-foundation.js"), out("lil-foundation.js"), sc("foundation.mjs"), sc("events.mjs"), sc("persistence.mjs")])
+// Client-level scenarios run against what upstream ships (npm), and the client-basic and
+// extension scenarios also against the pinned sources.
+node([here("./diff.mjs"), out("npm-slim.js"), out("lil-slim.js"), sc("abi.mjs"), sc("client-basic.mjs"), sc("extensions.mjs")])
 node([here("./diff.mjs"), out("up-slim.js"), out("lil-slim.js"), sc("client-basic.mjs"), sc("extensions.mjs")])
 for (const env of (process.env.FUZZ_ENVS ?? "default,xhr,native,nocrypto,nobeacon,nostorage").split(",")) {
   console.log(`fuzz ${env} (seeds ${process.env.FUZZ_SEEDS ?? "1-40"})`)
-  node([here("./diff.mjs"), out("up-slim.js"), out("lil-slim.js"), sc("fuzz.mjs")], { FUZZ_ENV: env, FUZZ_SEEDS: process.env.FUZZ_SEEDS ?? "1-40" })
+  node([here("./diff.mjs"), out("npm-slim.js"), out("lil-slim.js"), sc("fuzz.mjs")], { FUZZ_ENV: env, FUZZ_SEEDS: process.env.FUZZ_SEEDS ?? "1-40" })
 }

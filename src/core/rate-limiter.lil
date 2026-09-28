@@ -1,7 +1,7 @@
 // browser/src/rate-limiter.ts: a client-side token bucket (10 events/s, burst 100 by
 // default) persisted across reloads, and the server's per-batch quota limits.
 
-import { PostHog } from "./posthog-core.lil";
+import { persistenceOf, PostHog } from "./posthog-core.lil";
 import { PostHogPersistence } from "./persistence.lil";
 import { location } from "./globals.lil";
 import { createLogger, Logger } from "./logger.lil";
@@ -59,11 +59,13 @@ bool captureWarning(RateLimiter limiter, number droppedSinceLastWarning) {
   return JS.invoke(client, "capture", "$$client_ingestion_warning", JS.object("$$client_ingestion_warning_message", message), JS.object("skip_client_rate_limiting", true)).truthy();
 }
 
+// Field order is upstream's instance key order: its field initializers run before the
+// constructor stores `instance`.
 export class RateLimiter {
-  PostHog instance;
   JsValue serverLimits;
   bool lastEventRateLimited;
   JsValue checkForLimiting;
+  PostHog instance;
 
   init(PostHog instance) {
     this.serverLimits = JS.object();
@@ -89,11 +91,12 @@ export class RateLimiter {
     this.lastEventRateLimited = this.clientRateLimitContext(true)["isRateLimited"].truthy();
   }
 
-  JsValue clientRateLimitContext(bool checkOnly = false) {
+  JsValue clientRateLimitContext(JsValue checkOnlyArg) {
+    bool checkOnly = checkOnlyArg.truthy();
     JsValue burst = burstLimit(this);
     JsValue perSecond = eventsPerSecond(this);
     number now = nowMs();
-    PostHogPersistence? persistence = this.instance.persistence;
+    PostHogPersistence? persistence = persistenceOf(this.instance);
     JsValue stored = if (persistence != null) { persistence.get_property("$capture_rate_limit") } else { JS.undefined() };
     JsValue bucket = if (JS.isNullish(stored)) { JS.object("tokens", burst, "last", now) } else { stored };
     bucket["tokens"] = JS.add(bucket["tokens"], (now - JS.number(bucket["last"])) / 1000.0 * JS.number(perSecond));
@@ -114,7 +117,7 @@ export class RateLimiter {
       }
     }
     this.lastEventRateLimited = isRateLimited;
-    PostHogPersistence? after = this.instance.persistence;
+    PostHogPersistence? after = persistenceOf(this.instance);
     if (after != null) {
       after.set_property("$capture_rate_limit", bucket);
     }

@@ -58,6 +58,13 @@ async function iife(entryPoints, globalName = "__sut") {
   return r.outputFiles[0].text + `\nwindow.${globalName} = __sut;\n`
 }
 
+// The published bundle itself, wrapped as the harness loads a system under test.
+export async function npmSlim() {
+  const entry = join(dirname(require.resolve("posthog-js/package.json")), "dist", "module.slim.no-external.js")
+  const r = await build({ entryPoints: [entry], bundle: true, format: "iife", globalName: "__sut", write: false, platform: "browser", logLevel: "error" })
+  return r.outputFiles[0].text + "\nwindow.__sut = __sut;\n"
+}
+
 export async function upstream(adapter, globalName) {
   return iife([join(here, "adapters", adapter + ".ts")], globalName)
 }

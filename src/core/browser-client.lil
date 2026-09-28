@@ -1,7 +1,7 @@
 // browser/src/extensions/browser-client.ts with browser-common's ExtensionRuntime and
 // createDisposable: the `Client` a new-style extension's `setup(client)` receives.
 
-import { PostHog, registerExtensionEventProperties } from "./posthog-core.lil";
+import { persistenceOf, PostHog, registerExtensionEventProperties } from "./posthog-core.lil";
 import { PostHogPersistence } from "./persistence.lil";
 import { SessionIdManager } from "./sessionid.lil";
 import { Config } from "./config.lil";
@@ -117,7 +117,7 @@ export class BrowserClientKeyValueStore {
   }
 
   JsValue get(JsValue keyOrKeys) {
-    PostHogPersistence? persistence = this._instance.persistence;
+    PostHogPersistence? persistence = persistenceOf(this._instance);
     if (JS.typeOf(keyOrKeys) == "string") {
       return if (persistence != null) { persistence.get_property(asString(keyOrKeys)) } else { JS.undefined() };
     }
@@ -134,7 +134,7 @@ export class BrowserClientKeyValueStore {
   }
 
   void set(JsValue properties, JsValue value = JS.undefined()) {
-    PostHogPersistence? persistence = this._instance.persistence;
+    PostHogPersistence? persistence = persistenceOf(this._instance);
     if (persistence != null) {
       JsValue props = properties;
       if (JS.typeOf(properties) == "string") {
@@ -146,7 +146,7 @@ export class BrowserClientKeyValueStore {
   }
 
   void remove(JsValue keyOrKeys) {
-    PostHogPersistence? persistence = this._instance.persistence;
+    PostHogPersistence? persistence = persistenceOf(this._instance);
     if (persistence != null) {
       persistence.unregister(keyOrKeys);
     }

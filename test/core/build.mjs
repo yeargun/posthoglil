@@ -2,7 +2,10 @@
 //   up-foundation.js / lil-foundation.js   module-level functions (adapters/foundation.ts, src/core/test-entry.lil)
 //   up-slim.js / lil-slim.js               the whole client (adapters/slim.ts, src/slim.lil)
 //   ext.js                                 upstream's extension classes, bundled on their own
-import { OUT, upstream, port } from "./bundle.mjs"
+//   npm-slim.js                            what upstream ships: posthog-js@1.418.10's
+//                                          dist/module.slim.no-external.js (the reference for
+//                                          client-level scenarios)
+import { OUT, upstream, port, npmSlim } from "./bundle.mjs"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 const config = process.argv[2] === "release" ? "lilscript.core.toml" : "lilscript.core.dev.toml"
@@ -10,6 +13,7 @@ mkdirSync(OUT, { recursive: true })
 writeFileSync(join(OUT, "up-foundation.js"), await upstream("foundation"))
 writeFileSync(join(OUT, "up-slim.js"), await upstream("slim"))
 writeFileSync(join(OUT, "ext.js"), await upstream("extensions", "__ext"))
+writeFileSync(join(OUT, "npm-slim.js"), await npmSlim())
 const f = await port("src/core/test-entry.lil", config)
 writeFileSync(join(OUT, "lil-foundation.js"), f.code)
 const s = await port("src/slim.lil", config)

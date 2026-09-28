@@ -250,7 +250,7 @@ export class PostHogPersistence {
     this._name = persistenceName(config);
     this._storage = buildStorage(this, config);
     this._splitStorage = resolveSplitStorage(this, config);
-    this.load();
+    this.load(JS.undefined());
     if (config["debug"].truthy()) {
       logger.info(JS.array("Persistence loaded", config["persistence"], copy(this.props)));
     }
@@ -296,7 +296,8 @@ export class PostHogPersistence {
     return p;
   }
 
-  void load(bool allowDisabled = false) {
+  void load(JsValue allowDisabledArg) {
+    bool allowDisabled = allowDisabledArg.truthy();
     if (this._disabled && !allowDisabled) {
       return;
     }
@@ -348,22 +349,20 @@ export class PostHogPersistence {
         this.props = nextProps;
         // Rewrite the identity-bound group entry (only flags keys are identity-bound)
         // so a reload cannot resurrect it.
-        for (int group of [FLAGS]) {
-          JsValue groupProps = JS.object();
-          each(this.props, (JsValue value, JsValue key) => {
-            if (groupOf(policyOf(asString(key))) == group) {
-              groupProps[asString(key)] = value;
-            }
-          });
-          if (isEmptyObject(groupProps)) {
-            localStore.remove(groupEntryName(this, group), JS.undefined());
-            resetSlot(this, group);
-          } else if (localStore.set(groupEntryName(this, group), groupProps, JS.undefined(), JS.undefined(), JS.undefined())) {
-            resetSlot(this, group);
-            SlotState state = slot(this, group);
-            state.persisted = true;
-            state.fingerprint = entryFingerprint(this, groupProps, group);
+        JsValue groupProps = JS.object();
+        each(this.props, (JsValue value, JsValue key) => {
+          if (groupOf(policyOf(asString(key))) == FLAGS) {
+            groupProps[asString(key)] = value;
           }
+        });
+        if (isEmptyObject(groupProps)) {
+          localStore.remove(groupEntryName(this, FLAGS), JS.undefined());
+          resetSlot(this, FLAGS);
+        } else if (localStore.set(groupEntryName(this, FLAGS), groupProps, JS.undefined(), JS.undefined(), JS.undefined())) {
+          resetSlot(this, FLAGS);
+          SlotState state = slot(this, FLAGS);
+          state.persisted = true;
+          state.fingerprint = entryFingerprint(this, groupProps, FLAGS);
         }
       }
     }
@@ -554,7 +553,8 @@ export class PostHogPersistence {
     return props;
   }
 
-  void update_config(JsValue config, JsValue oldConfig, bool isDisabled = false) {
+  void update_config(JsValue config, JsValue oldConfig, JsValue isDisabledArg) {
+    bool isDisabled = isDisabledArg.truthy();
     bool persistenceModeChanged = JS.strictNotEqual(config["persistence"], oldConfig["persistence"]);
     bool cookiePersistedPropertiesChanged = !sameMembers(stringList(config["cookie_persisted_properties"]), stringList(oldConfig["cookie_persisted_properties"]));
     bool persistenceChanged = persistenceModeChanged || cookiePersistedPropertiesChanged;

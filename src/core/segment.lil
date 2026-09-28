@@ -1,7 +1,7 @@
 // browser/src/extensions/segment-integration.ts: PostHog as a Segment enrichment
 // plugin; the Segment user seeds PostHog's identity before `loaded` runs.
 
-import { PostHog } from "./posthog-core.lil";
+import { persistenceOf, PostHog } from "./posthog-core.lil";
 import { PostHogPersistence } from "./persistence.lil";
 import { createLogger, Logger } from "./logger.lil";
 import { uuidv7 } from "./uuidv7.lil";
@@ -60,7 +60,7 @@ void setupPostHogFromSegment(PostHog posthog, func()->void done) {
     posthog.config["get_device_id"] = getSegmentAnonymousId;
     if (JS.invoke(user, "id").truthy()) {
       JS.invoke(client, "register", JS.object("distinct_id", JS.invoke(user, "id"), "$device_id", JS.call(getSegmentAnonymousId, JS.undefined())));
-      PostHogPersistence? persistence = posthog.persistence;
+      PostHogPersistence? persistence = persistenceOf(posthog);
       if (persistence != null) {
         persistence.set_property("$user_state", "identified");
       }

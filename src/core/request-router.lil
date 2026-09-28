@@ -109,8 +109,9 @@ export class RequestRouter {
     return endpoints != null && endpoints.apiHost == apiHostOf(this) && JS.strictEqual(endpoints.rewriteRequestPath, this.instance.config["rewriteRequestPath"]) && key.truthy() && endpoints.urls.has(asString(key));
   }
 
-  JsValue endpointFor(string target, string path = "") {
-    string normalized = path;
+  JsValue endpointFor(JsValue targetArg, JsValue pathArg) {
+    string target = asString(targetArg);
+    string normalized = if (JS.isUndefined(pathArg)) { "" } else { asString(pathArg) };
     if (normalized != "") {
       normalized = if (normalized.charAt(0) == "/") { normalized } else { "/" + normalized };
     }

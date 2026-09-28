@@ -346,9 +346,10 @@ export number clampToRange(JsValue value, number min, number max, Logger log, Js
   return JS.number(value);
 }
 
-// A class getter as upstream's class syntax defines it: on the prototype,
-// non-enumerable, configurable.
+// A class getter as upstream's class syntax defines it: on the prototype, non-enumerable,
+// configurable, the function named `get <name>`.
 export JsValue defineGetter(JsValue ctor, string name, JsValue getter) {
+  JS.invoke(Object, "defineProperty", getter, "name", JS.object("value", "get " + name));
   JS.invoke(Object, "defineProperty", ctor["prototype"], name, JS.object("get", getter, "configurable", true));
   return JS.undefined();
 }

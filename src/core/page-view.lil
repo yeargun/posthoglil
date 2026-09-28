@@ -1,7 +1,7 @@
 // browser/src/page-view.ts: pageview ids, and the previous page's duration and scroll
 // depth attached to the next pageview or pageleave.
 
-import { PostHog } from "./posthog-core.lil";
+import { PostHog, sessionManagerOf } from "./posthog-core.lil";
 import { SessionIdManager } from "./sessionid.lil";
 import { win } from "./globals.lil";
 import { logger } from "./logger.lil";
@@ -48,7 +48,7 @@ export class PageViewManager {
     };
     this._currentPageview = null;
     this._instance = instance;
-    SessionIdManager? sessionManager = instance.sessionManager;
+    SessionIdManager? sessionManager = sessionManagerOf(instance);
     this._unsubscribeSessionId = if (sessionManager != null) { sessionManager.onSessionId(this._onSessionIdChange) } else { JS.undefined() };
   }
 

@@ -4,13 +4,13 @@
 // upstream's names and raw values: upstream reserves them from mangling.
 
 import { PostHogPersistence } from "./persistence.lil";
-import { PostHog } from "./posthog-core.lil";
+import { persistenceOf, PostHog } from "./posthog-core.lil";
 import { sessionStore } from "./storage.lil";
 import { EventEmitter } from "./event-emitter.lil";
 import { createLogger, Logger } from "./logger.lil";
 import { uuidv7, uuid7ToTimestampMs } from "./uuidv7.lil";
 import { win } from "./globals.lil";
-import { addEventListener, asString, clampToRange, isPositiveNumber } from "./utils.lil";
+import { addEventListener, asString, clampToRange, defineGetter, isPositiveNumber } from "./utils.lil";
 
 extern JsValue Date;
 extern JsValue Math;
@@ -76,7 +76,7 @@ export class SessionIdManager {
   EventEmitter _eventEmitter;
 
   init(PostHog instance) {
-    PostHogPersistence? instancePersistence = instance.persistence;
+    PostHogPersistence? instancePersistence = persistenceOf(instance);
     if (instancePersistence == null) {
       throw JS.construct(Error, "SessionIdManager requires a PostHogPersistence instance");
     }
@@ -148,7 +148,8 @@ export class SessionIdManager {
     setSessionId(this, null, null, null);
   }
 
-  bool setBootstrapSessionId(JsValue sessionID, bool deferUntilNextSession = false) {
+  bool setBootstrapSessionId(JsValue sessionID, JsValue deferUntilNextSessionArg) {
+    bool deferUntilNextSession = deferUntilNextSessionArg.truthy();
     number sessionStartTimestamp = parseBootstrapSessionId(sessionID);
     if (sessionStartTimestamp == -1.0) {
       return false;
@@ -173,7 +174,9 @@ export class SessionIdManager {
     this._sessionIdChangedHandlers = [];
   }
 
-  JsValue checkAndGetSessionAndWindowId(bool readOnly = false, JsValue timestampArg = null, bool persistenceAlreadySynced = false) {
+  JsValue checkAndGetSessionAndWindowId(JsValue readOnlyArg, JsValue timestampArg, JsValue persistenceAlreadySyncedArg) {
+    bool readOnly = readOnlyArg.truthy();
+    bool persistenceAlreadySynced = persistenceAlreadySyncedArg.truthy();
     if (JS.strictEqual(this._config["cookieless_mode"], "always")) {
       throw JS.construct(Error, "checkAndGetSessionAndWindowId should not be called with cookieless_mode=\"always\"");
     }
@@ -406,14 +409,6 @@ void resetIdleTimer(SessionIdManager self) {
 }
 
 // Upstream exposes the timeout through a getter on the prototype.
-JsValue installSessionTimeoutGetter() {
-  JS.invoke(Object, "defineProperty", JS.get(SessionIdManager, "prototype"), "sessionTimeoutMs", JS.object(
-    "get", JS.method0((JsValue self) => self["_sessionTimeoutMs"]),
-    "configurable", true
-  ));
-  return JS.undefined();
-}
-
-JsValue sessionTimeoutGetter = installSessionTimeoutGetter();
+JsValue sessionTimeoutGetter = defineGetter(SessionIdManager, "sessionTimeoutMs", JS.method0((JsValue self) => self["_sessionTimeoutMs"]));
 
 export constructor SessionIdManager;
