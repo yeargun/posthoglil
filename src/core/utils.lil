@@ -6,7 +6,7 @@
 import extern { instanceOf } from "./host.js";
 extern bool instanceOf(JsValue value, JsValue ctor);
 
-import { logger } from "./logger.lil";
+import { Logger, logger } from "./logger.lil";
 
 extern JsValue Object;
 extern JsValue Array;
@@ -308,4 +308,46 @@ export JsValue minimizeFlagCalledEventProperties(JsValue properties, string[] tr
   minimalFlagCalledEventProperties.forEach(copyKey);
   transportKeys.forEach(copyKey);
   return minimal;
+}
+
+export bool isPositiveNumber(JsValue value) {
+  return isNumber(value) && JS.number(value) > 0.0;
+}
+
+// @posthog/core clampToRange; the recursive call's fallback is undefined, as upstream's.
+export number clampToRange(JsValue value, number min, number max, Logger log, JsValue fallback) {
+  number low = min;
+  if (low > max) {
+    log.warn(JS.array("min cannot be greater than max."));
+    low = max;
+  }
+  if (!isNumber(value)) {
+    log.warn(JS.array(JS.add(" must be a number. using max or fallback. max: " + JS.string(max) + ", fallback: ", fallback)));
+    return clampToRange(JS.or(fallback, max), low, max, log, JS.undefined());
+  } else if (JS.number(value) > max) {
+    log.warn(JS.array(" cannot be  greater than max: " + JS.string(max) + ". Using max value instead."));
+    return max;
+  } else if (JS.number(value) < low) {
+    log.warn(JS.array(" cannot be less than min: " + JS.string(low) + ". Using min value instead."));
+    return low;
+  }
+  return JS.number(value);
+}
+
+// A class getter as upstream's class syntax defines it: on the prototype,
+// non-enumerable, configurable.
+export JsValue defineGetter(JsValue ctor, string name, JsValue getter) {
+  JS.invoke(Object, "defineProperty", ctor["prototype"], name, JS.object("get", getter, "configurable", true));
+  return JS.undefined();
+}
+
+JsValue[] yesLikeValues = [true, "true", 1, "1", "yes"];
+JsValue[] noLikeValues = [false, "false", 0, "0", "no"];
+
+export bool isYesLike(JsValue value) {
+  return includes(yesLikeValues, value);
+}
+
+export bool isNoLike(JsValue value) {
+  return includes(noLikeValues, value);
 }

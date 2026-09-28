@@ -1,0 +1,32 @@
+// browser-common SimpleEventEmitter: listeners per event name plus `*` wildcard
+// listeners, which receive the event name first. Unsubscribing replaces the list, so
+// an emit in progress keeps walking the list it started with.
+
+export class EventEmitter {
+  Map<string, JsValue[]> listeners;
+
+  init() {
+    this.listeners = new Map<string, JsValue[]>();
+  }
+
+  JsValue on(string event, JsValue listener) {
+    JsValue[] current = this.listeners.get(event) ?? [];
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, current);
+    }
+    current.push(listener);
+    return () => {
+      JsValue[] list = this.listeners.get(event) ?? [];
+      this.listeners.set(event, list.filter((JsValue x) => !JS.strictEqual(x, listener)));
+    };
+  }
+
+  void emit(string event, JsValue payload) {
+    for (JsValue listener of this.listeners.get(event) ?? []) {
+      JS.call(listener, JS.undefined(), payload);
+    }
+    for (JsValue listener of this.listeners.get("*") ?? []) {
+      JS.call(listener, JS.undefined(), event, payload);
+    }
+  }
+}

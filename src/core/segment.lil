@@ -1,0 +1,90 @@
+// browser/src/extensions/segment-integration.ts: PostHog as a Segment enrichment
+// plugin; the Segment user seeds PostHog's identity before `loaded` runs.
+
+import { PostHog } from "./posthog-core.lil";
+import { PostHogPersistence } from "./persistence.lil";
+import { createLogger, Logger } from "./logger.lil";
+import { uuidv7 } from "./uuidv7.lil";
+import { assign, isFunction } from "./utils.lil";
+
+extern JsValue Promise;
+extern JsValue Object;
+
+Logger segmentLogger = createLogger("[SegmentIntegration]");
+
+JsValue createSegmentIntegration(PostHog posthog) {
+  JsValue client = posthog;
+  if (JS.typeOf(Promise) == "undefined" || !Promise["resolve"].truthy()) {
+    segmentLogger.warn(JS.array("This browser does not have Promise support, and can not use the segment integration"));
+  }
+  func(JsValue, JsValue)->JsValue enrichEvent = (JsValue ctx, JsValue eventName) => {
+    if (!eventName.truthy()) {
+      return ctx;
+    }
+    JsValue event = ctx["event"];
+    if (!event["userId"].truthy() && JS.strictNotEqual(event["anonymousId"], JS.invoke(client, "get_distinct_id"))) {
+      segmentLogger.info(JS.array("No userId set, resetting PostHog"));
+      JS.invoke(client, "reset");
+    }
+    if (ctx["event"]["userId"].truthy() && JS.strictNotEqual(ctx["event"]["userId"], JS.invoke(client, "get_distinct_id"))) {
+      segmentLogger.info(JS.array("UserId set, identifying with PostHog"));
+      JS.invoke(client, "identify", ctx["event"]["userId"]);
+    }
+    JsValue additionalProperties = JS.invoke(client, "calculateEventProperties", eventName, ctx["event"]["properties"]);
+    ctx["event"]["properties"] = JS.invoke(Object, "assign", JS.object(), additionalProperties, ctx["event"]["properties"]);
+    return ctx;
+  };
+  return JS.object(
+    "name", "PostHog JS",
+    "type", "enrichment",
+    "version", "1.0.0",
+    "isLoaded", () => true,
+    "load", () => JS.invoke(Promise, "resolve"),
+    "track", (JsValue ctx) => enrichEvent(ctx, ctx["event"]["event"]),
+    "page", (JsValue ctx) => enrichEvent(ctx, "$pageview"),
+    "identify", (JsValue ctx) => enrichEvent(ctx, "$identify"),
+    "screen", (JsValue ctx) => enrichEvent(ctx, "$screen")
+  );
+}
+
+void setupPostHogFromSegment(PostHog posthog, func()->void done) {
+  JsValue client = posthog;
+  JsValue segment = posthog.config["segment"];
+  if (!segment.truthy()) {
+    done();
+    return;
+  }
+  func(JsValue)->void bootstrapUser = (JsValue user) => {
+    // Segment's anonymous id becomes PostHog's device id.
+    JsValue getSegmentAnonymousId = () => JS.or(JS.invoke(user, "anonymousId"), uuidv7());
+    posthog.config["get_device_id"] = getSegmentAnonymousId;
+    if (JS.invoke(user, "id").truthy()) {
+      JS.invoke(client, "register", JS.object("distinct_id", JS.invoke(user, "id"), "$device_id", JS.call(getSegmentAnonymousId, JS.undefined())));
+      PostHogPersistence? persistence = posthog.persistence;
+      if (persistence != null) {
+        persistence.set_property("$user_state", "identified");
+      }
+    }
+    done();
+  };
+  JsValue segmentUser = JS.invoke(segment, "user");
+  if (JS.in("then", segmentUser) && isFunction(segmentUser["then"])) {
+    JS.invoke(segmentUser, "then", bootstrapUser);
+  } else {
+    bootstrapUser(segmentUser);
+  }
+}
+
+
+export void setupSegmentIntegration(PostHog posthog, func()->void done) {
+  JsValue segment = posthog.config["segment"];
+  if (!segment.truthy()) {
+    done();
+    return;
+  }
+  setupPostHogFromSegment(posthog, () => {
+    JS.invoke(JS.invoke(segment, "register", createSegmentIntegration(posthog)), "then", () => {
+      done();
+    });
+  });
+}

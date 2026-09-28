@@ -1,0 +1,689 @@
+// fflate 0.4.8 `gzipSync(strToU8(text), { mtime: 0 })`, the synchronous compressor
+// posthog-js bundles: level 6 DEFLATE with fflate's hash chains, block splitting and
+// Huffman construction, so the bytes equal fflate's. Tables are built on first use.
+
+extern JsValue TextEncoder;
+
+int[] fleb = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0, 0];
+int[] fdeb = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 0, 0];
+int[] clim = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+
+class Tables {
+  Int32Array revfl;
+  Int32Array revfd;
+  Uint16Array rev;
+  Uint8Array flt;
+  Uint8Array fdt;
+  Uint16Array flm;
+  Uint16Array fdm;
+  Int32Array crct;
+
+  init() {
+    this.revfl = reverseIndex(fleb, 2, true);
+    this.revfd = reverseIndex(fdeb, 0, false);
+    this.rev = new Uint16Array(32768);
+    for (int i = 0; i < 32768; i++) {
+      int x = ((i & 43690) >>> 1) | ((i & 21845) << 1);
+      x = ((x & 52428) >>> 2) | ((x & 13107) << 2);
+      x = ((x & 61680) >>> 4) | ((x & 3855) << 4);
+      this.rev[i] = (((x & 65280) >>> 8) | ((x & 255) << 8)) >>> 1;
+    }
+    this.flt = new Uint8Array(288);
+    for (int i = 0; i < 288; i++) {
+      this.flt[i] = if (i < 144) { 8 } else { if (i < 256) { 9 } else { if (i < 280) { 7 } else { 8 } } };
+    }
+    this.fdt = new Uint8Array(32);
+    this.fdt.fill(5);
+    this.flm = codeMap(this.rev, this.flt, 9);
+    this.fdm = codeMap(this.rev, this.fdt, 5);
+    this.crct = new Int32Array(256);
+    for (int i = 0; i < 256; i++) {
+      int c = i;
+      for (int k = 0; k < 8; k++) {
+        c = (if ((c & 1) != 0) { -306674912 } else { 0 }) ^ (c >>> 1);
+      }
+      this.crct[i] = c;
+    }
+  }
+}
+
+Tables? tableCache = null;
+
+Tables tables() {
+  Tables? cached = tableCache;
+  if (cached != null) {
+    return cached;
+  }
+  Tables built = new Tables();
+  tableCache = built;
+  return built;
+}
+
+// fflate `freb`: base values from extra bits (its first step adds `1 << eb[-1]`, which
+// is `1 << undefined`, 1), then value -> (offset << 5 | symbol).
+Int32Array reverseIndex(int[] eb, int start, bool lengths) {
+  Int32Array b = new Int32Array(31);
+  int acc = start;
+  for (int i = 0; i < 31; i++) {
+    acc = acc + (1 << (if (i == 0) { 0 } else { eb[i - 1] }));
+    b[i] = acc & 65535;
+  }
+  Int32Array r = new Int32Array(b[30]);
+  for (int i = 1; i < 30; i++) {
+    for (int j = b[i]; j < b[i + 1]; j++) {
+      r[j] = ((j - b[i]) << 5) | i;
+    }
+  }
+  if (lengths) {
+    r[258] = 28;
+  }
+  return r;
+}
+
+// fflate `hMap` without the reverse variant: symbol -> reversed code.
+Uint16Array codeMap(Uint16Array rev, Uint8Array cd, int mb) {
+  int s = cd.length;
+  Uint16Array l = new Uint16Array(mb);
+  for (int i = 0; i < s; i++) {
+    int index = cd[i] - 1;
+    if (index >= 0 && index < mb) {
+      l[index] = l[index] + 1;
+    }
+  }
+  Uint16Array le = new Uint16Array(mb);
+  for (int i = 0; i < mb; i++) {
+    le[i] = if (i == 0) { 0 } else { (le[i - 1] + l[i - 1]) << 1 };
+  }
+  Uint16Array co = new Uint16Array(s);
+  for (int i = 0; i < s; i++) {
+    int length = cd[i];
+    if (length == 0) {
+      co[i] = 0;
+    } else {
+      int code = le[length - 1];
+      le[length - 1] = code + 1;
+      co[i] = rev[code & 65535] >>> (15 - length);
+    }
+  }
+  return co;
+}
+
+void wbits(Uint8Array d, int p, int v) {
+  int shifted = v << (p & 7);
+  int o = p >> 3;
+  d[o] = d[o] | shifted;
+  d[o + 1] = d[o + 1] | (shifted >>> 8);
+}
+
+void wbits16(Uint8Array d, int p, int v) {
+  int shifted = v << (p & 7);
+  int o = p >> 3;
+  d[o] = d[o] | shifted;
+  d[o + 1] = d[o + 1] | (shifted >>> 8);
+  d[o + 2] = d[o + 2] | (shifted >>> 16);
+}
+
+int shft(int p) {
+  return (p >> 3) + (if ((p & 7) != 0) { 1 } else { 0 });
+}
+
+class HNode {
+  int s;
+  int f;
+  HNode? l;
+  HNode? r;
+
+  init(int s, int f, HNode? l, HNode? r) {
+    this.s = s;
+    this.f = f;
+    this.l = l;
+    this.r = r;
+  }
+}
+
+// A stable merge sort: the order equals V8's stable Array.prototype.sort under a
+// consistent comparator, which fflate's tree building depends on.
+void stableSort(HNode[] items, func(HNode, HNode)->int cmp) {
+  int n = items.length;
+  if (n < 2) {
+    return;
+  }
+  HNode[] buffer = items.slice();
+  for (int width = 1; width < n; width = width * 2) {
+    for (int lo = 0; lo < n; lo = lo + 2 * width) {
+      int mid = if (lo + width < n) { lo + width } else { n };
+      int hi = if (lo + 2 * width < n) { lo + 2 * width } else { n };
+      int a = lo;
+      int b = mid;
+      for (int k = lo; k < hi; k++) {
+        if (a < mid && (b >= hi || cmp(items[a], items[b]) <= 0)) {
+          buffer[k] = items[a];
+          a++;
+        } else {
+          buffer[k] = items[b];
+          b++;
+        }
+      }
+    }
+    for (int k = 0; k < n; k++) {
+      items[k] = buffer[k];
+    }
+  }
+}
+
+int assignLengths(HNode node, Uint16Array lengths, int depth) {
+  if (node.s == -1) {
+    HNode? left = node.l;
+    HNode? right = node.r;
+    int a = if (left != null) { assignLengths(left, lengths, depth + 1) } else { 0 };
+    int b = if (right != null) { assignLengths(right, lengths, depth + 1) } else { 0 };
+    return if (a > b) { a } else { b };
+  }
+  lengths[node.s] = depth;
+  return depth;
+}
+
+class Tree {
+  Uint8Array lengths;
+  int maxBits;
+
+  init(Uint8Array lengths, int maxBits) {
+    this.lengths = lengths;
+    this.maxBits = maxBits;
+  }
+}
+
+// fflate `hTree`: code lengths from frequencies, limited to `mb` bits.
+Tree hTree(Uint16Array d, int mb) {
+  HNode[] t = [];
+  for (int i = 0; i < d.length; i++) {
+    if (d[i] != 0) {
+      t.push(new HNode(i, d[i], null, null));
+    }
+  }
+  int s = t.length;
+  HNode[] t2 = t.slice();
+  if (s == 0) {
+    return new Tree(new Uint8Array(0), 0);
+  }
+  if (s == 1) {
+    Uint8Array v = new Uint8Array(t[0].s + 1);
+    v[t[0].s] = 1;
+    return new Tree(v, 1);
+  }
+  stableSort(t, (HNode a, HNode b) => a.f - b.f);
+  t.push(new HNode(-1, 25001, null, null));
+  HNode l = t[0];
+  HNode r = t[1];
+  int i0 = 0;
+  int i1 = 1;
+  int i2 = 2;
+  t[0] = new HNode(-1, l.f + r.f, l, r);
+  while (i1 != s - 1) {
+    if (t[i0].f < t[i2].f) {
+      l = t[i0];
+      i0++;
+    } else {
+      l = t[i2];
+      i2++;
+    }
+    if (i0 != i1 && t[i0].f < t[i2].f) {
+      r = t[i0];
+      i0++;
+    } else {
+      r = t[i2];
+      i2++;
+    }
+    t[i1] = new HNode(-1, l.f + r.f, l, r);
+    i1++;
+  }
+  int maxSym = t2[0].s;
+  for (int i = 1; i < s; i++) {
+    if (t2[i].s > maxSym) {
+      maxSym = t2[i].s;
+    }
+  }
+  Uint16Array tr = new Uint16Array(maxSym + 1);
+  int mbt = assignLengths(t[i1 - 1], tr, 0);
+  if (mbt > mb) {
+    int i = 0;
+    int dt = 0;
+    int lft = mbt - mb;
+    int cst = 1 << lft;
+    stableSort(t2, (HNode a, HNode b) => {
+      int byLength = tr[b.s] - tr[a.s];
+      return if (byLength != 0) { byLength } else { a.f - b.f };
+    });
+    while (i < s) {
+      int sym = t2[i].s;
+      if (tr[sym] > mb) {
+        dt = dt + cst - (1 << (mbt - tr[sym]));
+        tr[sym] = mb;
+        i++;
+      } else {
+        break;
+      }
+    }
+    dt = dt >>> lft;
+    while (dt > 0) {
+      int sym = t2[i].s;
+      if (tr[sym] < mb) {
+        int old = tr[sym];
+        tr[sym] = old + 1;
+        dt = dt - (1 << (mb - old - 1));
+      } else {
+        i++;
+      }
+    }
+    while (i >= 0 && dt != 0) {
+      int sym = t2[i].s;
+      if (tr[sym] == mb) {
+        tr[sym] = tr[sym] - 1;
+        dt++;
+      }
+      i--;
+    }
+    mbt = mb;
+  }
+  Uint8Array out = new Uint8Array(tr.length);
+  for (int i = 0; i < tr.length; i++) {
+    out[i] = tr[i];
+  }
+  return new Tree(out, mbt);
+}
+
+class LengthCodes {
+  Uint16Array codes;
+  int count;
+
+  init(Uint16Array codes, int count) {
+    this.codes = codes;
+    this.count = count;
+  }
+}
+
+// fflate `lc`: run-length codes for a code-length table.
+LengthCodes lc(Uint8Array c) {
+  int s = c.length;
+  while (s != 0) {
+    s--;
+    if (c[s] != 0) {
+      break;
+    }
+  }
+  s++;
+  Uint16Array cl = new Uint16Array(s);
+  int cli = 0;
+  int cln = if (c.length > 0) { c[0] } else { 0 };
+  int cls = 1;
+  for (int i = 1; i <= s; i++) {
+    int next = if (i < c.length) { c[i] } else { -1 };
+    if (next == cln && i != s) {
+      cls++;
+    } else {
+      if (cln == 0 && cls > 2) {
+        while (cls > 138) {
+          cl[cli] = 32754;
+          cli++;
+          cls = cls - 138;
+        }
+        if (cls > 2) {
+          cl[cli] = if (cls > 10) { ((cls - 11) << 5) | 28690 } else { ((cls - 3) << 5) | 12305 };
+          cli++;
+          cls = 0;
+        }
+      } else if (cls > 3) {
+        cl[cli] = cln;
+        cli++;
+        cls--;
+        while (cls > 6) {
+          cl[cli] = 8304;
+          cli++;
+          cls = cls - 6;
+        }
+        if (cls > 2) {
+          cl[cli] = ((cls - 3) << 5) | 8208;
+          cli++;
+          cls = 0;
+        }
+      }
+      while (cls != 0) {
+        cls--;
+        cl[cli] = cln;
+        cli++;
+      }
+      cls = 1;
+      cln = if (i < c.length) { c[i] } else { 0 };
+    }
+  }
+  return new LengthCodes(cl.subarray(0, cli), s);
+}
+
+int clen(Uint16Array cf, Uint8Array cl) {
+  int l = 0;
+  for (int i = 0; i < cl.length; i++) {
+    l = l + cf[i] * cl[i];
+  }
+  return l;
+}
+
+// A stored block.
+int wfblk(Uint8Array out, int pos, Uint8Array dat) {
+  int s = dat.length;
+  int o = shft(pos + 2);
+  out[o] = s & 255;
+  out[o + 1] = s >>> 8;
+  out[o + 2] = out[o] ^ 255;
+  out[o + 3] = out[o + 1] ^ 255;
+  for (int i = 0; i < s; i++) {
+    out[o + i + 4] = dat[i];
+  }
+  return (o + 4 + s) * 8;
+}
+
+Uint16Array widen(Uint8Array lengths) {
+  Uint16Array out = new Uint16Array(lengths.length);
+  for (int i = 0; i < lengths.length; i++) {
+    out[i] = lengths[i];
+  }
+  return out;
+}
+
+int wblk(Tables tb, Uint8Array dat, Uint8Array out, int isFinal, Int32Array syms, Uint16Array lf, Uint16Array df, int eb, int li, int bs, int bl, int pos) {
+  int p = pos;
+  wbits(out, p, isFinal);
+  p++;
+  lf[256] = lf[256] + 1;
+  Tree dlt = hTree(lf, 15);
+  Tree ddt = hTree(df, 15);
+  LengthCodes lclt = lc(dlt.lengths);
+  LengthCodes lcdt = lc(ddt.lengths);
+  Uint16Array lcfreq = new Uint16Array(19);
+  for (int i = 0; i < lclt.codes.length; i++) {
+    int k = lclt.codes[i] & 31;
+    lcfreq[k] = lcfreq[k] + 1;
+  }
+  for (int i = 0; i < lcdt.codes.length; i++) {
+    int k = lcdt.codes[i] & 31;
+    lcfreq[k] = lcfreq[k] + 1;
+  }
+  Tree lct = hTree(lcfreq, 7);
+  int nlcc = 19;
+  while (nlcc > 4 && (clim[nlcc - 1] >= lct.lengths.length || lct.lengths[clim[nlcc - 1]] == 0)) {
+    nlcc--;
+  }
+  int flen = (bl + 5) << 3;
+  int ftlen = clen(lf, tb.flt) + clen(df, tb.fdt) + eb;
+  int dtlen = clen(lf, dlt.lengths) + clen(df, ddt.lengths) + eb + 14 + 3 * nlcc + clen(lcfreq, lct.lengths) + (2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18]);
+  if (flen <= ftlen && flen <= dtlen) {
+    return wfblk(out, p, dat.subarray(bs, bs + bl));
+  }
+  Uint16Array lm = tb.flm;
+  Uint8Array ll = tb.flt;
+  Uint16Array dm = tb.fdm;
+  Uint8Array dl = tb.fdt;
+  wbits(out, p, if (dtlen < ftlen) { 2 } else { 1 });
+  p = p + 2;
+  if (dtlen < ftlen) {
+    lm = codeMap(tb.rev, dlt.lengths, dlt.maxBits);
+    ll = dlt.lengths;
+    dm = codeMap(tb.rev, ddt.lengths, ddt.maxBits);
+    dl = ddt.lengths;
+    Uint16Array llm = codeMap(tb.rev, lct.lengths, lct.maxBits);
+    wbits(out, p, lclt.count - 257);
+    wbits(out, p + 5, lcdt.count - 1);
+    wbits(out, p + 10, nlcc - 4);
+    p = p + 14;
+    for (int i = 0; i < nlcc; i++) {
+      wbits(out, p + 3 * i, if (clim[i] < lct.lengths.length) { lct.lengths[clim[i]] } else { 0 });
+    }
+    p = p + 3 * nlcc;
+    for (int it = 0; it < 2; it++) {
+      Uint16Array clct = if (it == 0) { lclt.codes } else { lcdt.codes };
+      for (int i = 0; i < clct.length; i++) {
+        int len = clct[i] & 31;
+        wbits(out, p, llm[len]);
+        p = p + lct.lengths[len];
+        if (len > 15) {
+          wbits(out, p, (clct[i] >>> 5) & 127);
+          p = p + (clct[i] >>> 12);
+        }
+      }
+    }
+  }
+  for (int i = 0; i < li; i++) {
+    int sym = syms[i];
+    if (sym > 255) {
+      int len = (sym >>> 18) & 31;
+      wbits16(out, p, lm[len + 257]);
+      p = p + ll[len + 257];
+      if (len > 7) {
+        wbits(out, p, (sym >>> 23) & 31);
+        p = p + fleb[len];
+      }
+      int dst = sym & 31;
+      wbits16(out, p, dm[dst]);
+      p = p + dl[dst];
+      if (dst > 3) {
+        wbits16(out, p, (sym >>> 5) & 8191);
+        p = p + fdeb[dst];
+      }
+    } else {
+      wbits16(out, p, lm[sym]);
+      p = p + ll[sym];
+    }
+  }
+  wbits16(out, p, lm[256]);
+  return p + ll[256];
+}
+
+// An out-of-range byte reads as 0, as fflate's `undefined` does in its integer math.
+int byteAt(Uint8Array dat, int i) {
+  return if (i < dat.length) { dat[i] } else { 0 };
+}
+
+// fflate `dflt` at level 6 (nice 128, chain 128), called by `gzipSync` with the gzip
+// header's 10 bytes before and the 8-byte trailer after.
+Uint8Array deflate(Tables tb, Uint8Array dat, int plvl, int pre, int post) {
+  int s = dat.length;
+  Uint8Array o = new Uint8Array(pre + s + 5 * (1 + s / 7000) + post);
+  Uint8Array w = o.subarray(pre, o.length - post);
+  int pos = 0;
+  if (s < 8) {
+    for (int i = 0; i <= s; i = i + 65535) {
+      int e = i + 65535;
+      if (e < s) {
+        pos = wfblk(w, pos, dat.subarray(i, e));
+      } else {
+        w[i] = 1;
+        pos = wfblk(w, pos, dat.subarray(i, s));
+      }
+    }
+  } else {
+    int n = 128;
+    int c = 128;
+    int msk = (1 << plvl) - 1;
+    Uint16Array prev = new Uint16Array(32768);
+    Uint16Array head = new Uint16Array(msk + 1);
+    int bs1 = (plvl + 2) / 3;
+    int bs2 = 2 * bs1;
+    Int32Array syms = new Int32Array(25000);
+    Uint16Array lf = new Uint16Array(288);
+    Uint16Array df = new Uint16Array(32);
+    int lcount = 0;
+    int eb = 0;
+    int i = 0;
+    int li = 0;
+    int wi = 0;
+    int bs = 0;
+    while (i < s) {
+      int hv = (byteAt(dat, i) ^ (byteAt(dat, i + 1) << bs1) ^ (byteAt(dat, i + 2) << bs2)) & msk;
+      int imod = i & 32767;
+      int pimod = head[hv];
+      prev[imod] = pimod;
+      head[hv] = imod;
+      if (wi <= i) {
+        int rem = s - i;
+        if ((lcount > 7000 || li > 24576) && rem > 423) {
+          pos = wblk(tb, dat, w, 0, syms, lf, df, eb, li, bs, i - bs, pos);
+          li = 0;
+          lcount = 0;
+          eb = 0;
+          bs = i;
+          for (int j = 0; j < 286; j++) {
+            lf[j] = 0;
+          }
+          for (int j = 0; j < 30; j++) {
+            df[j] = 0;
+          }
+        }
+        int l = 2;
+        int d = 0;
+        int chain = c;
+        int dif = (imod - pimod) & 32767;
+        if (rem > 2 && hv == ((byteAt(dat, i - dif) ^ (byteAt(dat, i - dif + 1) << bs1) ^ (byteAt(dat, i - dif + 2) << bs2)) & msk)) {
+          int maxn = (if (n < rem) { n } else { rem }) - 1;
+          int maxd = if (32767 < i) { 32767 } else { i };
+          int ml = if (258 < rem) { 258 } else { rem };
+          while (dif <= maxd) {
+            chain--;
+            if (chain == 0 || imod == pimod) {
+              break;
+            }
+            if (i + l < s && dat[i + l] == dat[i + l - dif]) {
+              int nl = 0;
+              while (nl < ml && dat[i + nl] == dat[i + nl - dif]) {
+                nl++;
+              }
+              if (nl > l) {
+                l = nl;
+                d = dif;
+                if (nl > maxn) {
+                  break;
+                }
+                int mmd = if (dif < nl - 2) { dif } else { nl - 2 };
+                int md = 0;
+                for (int j = 0; j < mmd; j++) {
+                  int ti = (i - dif + j + 32768) & 32767;
+                  int pti = prev[ti];
+                  int cd = (ti - pti + 32768) & 32767;
+                  if (cd > md) {
+                    md = cd;
+                    pimod = ti;
+                  }
+                }
+              }
+            }
+            imod = pimod;
+            pimod = prev[imod];
+            dif = dif + ((imod - pimod + 32768) & 32767);
+          }
+        }
+        if (d != 0) {
+          syms[li] = 268435456 | (tb.revfl[l] << 18) | tb.revfd[d];
+          li++;
+          int lin = tb.revfl[l] & 31;
+          int din = tb.revfd[d] & 31;
+          eb = eb + fleb[lin] + fdeb[din];
+          lf[257 + lin] = lf[257 + lin] + 1;
+          df[din] = df[din] + 1;
+          wi = i + l;
+          lcount++;
+        } else {
+          syms[li] = dat[i];
+          li++;
+          lf[dat[i]] = lf[dat[i]] + 1;
+        }
+      }
+      i++;
+    }
+    pos = wblk(tb, dat, w, 1, syms, lf, df, eb, li, bs, i - bs, pos);
+  }
+  return o.slice(0, pre + shft(pos) + post);
+}
+
+// fflate `strToU8`: TextEncoder when present, else its own encoder (whose surrogate
+// arithmetic keeps fflate 0.4.8's operator precedence).
+export Uint8Array strToU8(string str) {
+  if (JS.typeOf(TextEncoder) != "undefined") {
+    return JS.assume(JS.invoke(JS.construct(TextEncoder), "encode", str));
+  }
+  int l = str.length;
+  Uint8Array ar = new Uint8Array(l + (l >>> 1));
+  int ai = 0;
+  int i = 0;
+  while (i < l) {
+    if (ai + 5 > ar.length) {
+      Uint8Array grown = new Uint8Array(ai + 8 + ((l - i) << 1));
+      grown.set(ar);
+      ar = grown;
+    }
+    int c = str.charCodeAt(i);
+    if (c < 128) {
+      ar[ai] = c;
+      ai++;
+    } else if (c < 2048) {
+      ar[ai] = 192 | (c >>> 6);
+      ar[ai + 1] = 128 | (c & 63);
+      ai = ai + 2;
+    } else if (c > 55295 && c < 57344) {
+      i++;
+      c = (65536 + (c & 1047552)) | (str.charCodeAt(i) & 1023);
+      ar[ai] = 240 | (c >>> 18);
+      ar[ai + 1] = 128 | ((c >>> 12) & 63);
+      ar[ai + 2] = 128 | ((c >>> 6) & 63);
+      ar[ai + 3] = 128 | (c & 63);
+      ai = ai + 4;
+    } else {
+      ar[ai] = 224 | (c >>> 12);
+      ar[ai + 1] = 128 | ((c >>> 6) & 63);
+      ar[ai + 2] = 128 | (c & 63);
+      ai = ai + 3;
+    }
+    i++;
+  }
+  return ar.slice(0, ai);
+}
+
+extern JsValue Math;
+
+export Uint8Array gzipSync(Uint8Array data) {
+  Tables tb = tables();
+  int crc = -1;
+  for (int i = 0; i < data.length; i++) {
+    crc = tb.crct[(crc & 255) ^ data[i]] ^ (crc >>> 8);
+  }
+  int length = data.length;
+  number memory = JS.number(JS.invoke(Math, "ceil", JS.number(JS.invoke(Math, "max", 8, JS.invoke(Math, "min", 13, JS.invoke(Math, "log", length)))) * 1.5));
+  Uint8Array d = deflate(tb, data, memory.toInt(), 10, 8);
+  int s = d.length;
+  d[0] = 31;
+  d[1] = 139;
+  d[2] = 8;
+  d[9] = 3;
+  writeBytes(d, s - 8, crc ^ -1);
+  writeBytes(d, s - 4, length);
+  return d;
+}
+
+void writeBytes(Uint8Array d, int at, int value) {
+  int b = at;
+  int v = value;
+  while (v != 0) {
+    d[b] = v;
+    v = v >>> 8;
+    b++;
+  }
+}
+
+// Standard CRC-32 as an unsigned number (@posthog/core gzip.ts uses it to validate the
+// platform's gzip output).
+export number crc32(Uint8Array bytes) {
+  Tables tb = tables();
+  int crc = -1;
+  for (int i = 0; i < bytes.length; i++) {
+    crc = tb.crct[(crc & 255) ^ bytes[i]] ^ (crc >>> 8);
+  }
+  int result = crc ^ -1;
+  return if (result < 0) { result + 4294967296.0 } else { result };
+}

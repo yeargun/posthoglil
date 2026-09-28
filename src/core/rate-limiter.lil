@@ -1,0 +1,139 @@
+// browser/src/rate-limiter.ts: a client-side token bucket (10 events/s, burst 100 by
+// default) persisted across reloads, and the server's per-batch quota limits.
+
+import { PostHog } from "./posthog-core.lil";
+import { PostHogPersistence } from "./persistence.lil";
+import { location } from "./globals.lil";
+import { createLogger, Logger } from "./logger.lil";
+import { defineGetter, isNumber } from "./utils.lil";
+
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue JSON;
+
+Logger rateLogger = createLogger("[RateLimiter]");
+
+number nowMs() {
+  return JS.number(JS.invoke(JS.construct(Date), "getTime"));
+}
+
+JsValue eventsPerSecond(RateLimiter limiter) {
+  JsValue limits = limiter.instance.config["rate_limiting"];
+  return JS.or(if (JS.isNullish(limits)) { JS.undefined() } else { limits["events_per_second"] }, 10);
+}
+
+JsValue burstLimit(RateLimiter limiter) {
+  JsValue limits = limiter.instance.config["rate_limiting"];
+  JsValue burst = if (JS.isNullish(limits)) { JS.undefined() } else { limits["events_burst_limit"] };
+  return JS.invoke(Math, "max", JS.or(burst, JS.number(eventsPerSecond(limiter)) * 10.0), eventsPerSecond(limiter));
+}
+
+bool isPropertyAllowed(RateLimiter limiter, string property) {
+  JsValue denylist = limiter.instance.config["property_denylist"];
+  return !denylist.isArray() || !JS.invoke(denylist, "includes", property).truthy();
+}
+
+JsValue triggeringPage(RateLimiter limiter) {
+  if (!isPropertyAllowed(limiter, "$current_url") || !isPropertyAllowed(limiter, "$pathname") || JS.isNullish(location) || !location["pathname"].truthy()) {
+    return JS.undefined();
+  }
+  JsValue origin = location["origin"];
+  return JS.add(if (JS.isNullish(origin)) { "" } else { origin }, location["pathname"]);
+}
+
+bool captureWarning(RateLimiter limiter, number droppedSinceLastWarning) {
+  JsValue burst = burstLimit(limiter);
+  JsValue perSecond = eventsPerSecond(limiter);
+  JsValue page = triggeringPage(limiter);
+  JsValue sessionId = if (isPropertyAllowed(limiter, "$session_id")) { limiter.instance.get_session_id() } else { JS.undefined() };
+  string context = JS.string(droppedSinceLastWarning) + " event(s) dropped since the last warning";
+  if (page.truthy()) {
+    context = context + ", " + JS.string(JS.add("triggered on ", page));
+  }
+  if (sessionId.truthy()) {
+    context = context + ", " + JS.string(JS.add("session ", sessionId));
+  }
+  JsValue message = JS.add(JS.add(JS.add(JS.add("posthog-js client rate limited: " + context + ". Config is set to ", perSecond), " events per second and "), burst), " events burst limit.");
+  return limiter.instance.capture("$$client_ingestion_warning", JS.object("$$client_ingestion_warning_message", message), JS.object("skip_client_rate_limiting", true)).truthy();
+}
+
+export class RateLimiter {
+  PostHog instance;
+  JsValue serverLimits;
+  bool lastEventRateLimited;
+  JsValue checkForLimiting;
+
+  init(PostHog instance) {
+    this.serverLimits = JS.object();
+    this.lastEventRateLimited = false;
+    this.checkForLimiting = (JsValue httpResponse) => {
+      JsValue text = httpResponse["text"];
+      if (!text.truthy() || !text["length"].truthy()) {
+        return;
+      }
+      try {
+        JsValue response = JS.invoke(JSON, "parse", text);
+        JsValue quotaLimited = JS.or(response["quota_limited"], JS.array());
+        JS.invoke(quotaLimited, "forEach", (JsValue batchKey) => {
+          rateLogger.info(JS.array(JS.add(JS.or(batchKey, "events"), " is quota limited.")));
+          this.serverLimits[JS.string(batchKey)] = nowMs() + 60000.0;
+        });
+      } catch (JsValue e) {
+        JsValue message = if (JS.isNullish(e)) { JS.undefined() } else { e["message"] };
+        rateLogger.warn(JS.array(JS.add(JS.add("could not rate limit - continuing. Error: \"", message), "\""), JS.object("text", text)));
+      }
+    };
+    this.instance = instance;
+    this.lastEventRateLimited = this.clientRateLimitContext(true)["isRateLimited"].truthy();
+  }
+
+  JsValue clientRateLimitContext(bool checkOnly = false) {
+    JsValue burst = burstLimit(this);
+    JsValue perSecond = eventsPerSecond(this);
+    number now = nowMs();
+    PostHogPersistence? persistence = this.instance.persistence;
+    JsValue stored = if (persistence != null) { persistence.get_property("$capture_rate_limit") } else { JS.undefined() };
+    JsValue bucket = if (JS.isNullish(stored)) { JS.object("tokens", burst, "last", now) } else { stored };
+    bucket["tokens"] = JS.add(bucket["tokens"], (now - JS.number(bucket["last"])) / 1000.0 * JS.number(perSecond));
+    bucket["last"] = now;
+    if (JS.greaterThan(bucket["tokens"], burst)) {
+      bucket["tokens"] = burst;
+    }
+    bool isRateLimited = JS.lessThan(bucket["tokens"], 1);
+    if (!isRateLimited && !checkOnly) {
+      bucket["tokens"] = JS.invoke(Math, "max", 0, JS.number(bucket["tokens"]) - 1.0);
+    }
+    if (isRateLimited && !checkOnly) {
+      // Report once per rate-limited run, with the events dropped since the last report.
+      number dropped = (if (isNumber(bucket["dropped"])) { JS.number(bucket["dropped"]) } else { 0.0 }) + 1.0;
+      bucket["dropped"] = dropped;
+      if (!this.lastEventRateLimited && captureWarning(this, dropped)) {
+        bucket["dropped"] = 0;
+      }
+    }
+    this.lastEventRateLimited = isRateLimited;
+    PostHogPersistence? after = this.instance.persistence;
+    if (after != null) {
+      after.set_property("$capture_rate_limit", bucket);
+    }
+    return JS.object("isRateLimited", isRateLimited, "remainingTokens", bucket["tokens"]);
+  }
+
+  bool isServerRateLimited(JsValue batchKey) {
+    JsValue retryAfter = JS.or(this.serverLimits[JS.string(JS.or(batchKey, "events"))], false);
+    if (JS.strictEqual(retryAfter, false)) {
+      return false;
+    }
+    return JS.lessThan(nowMs(), retryAfter);
+  }
+}
+
+JsValue installRateLimiterGetters() {
+  defineGetter(RateLimiter, "captureEventsPerSecond", JS.method0((JsValue self) => eventsPerSecond(JS.assume(self))));
+  defineGetter(RateLimiter, "captureEventsBurstLimit", JS.method0((JsValue self) => burstLimit(JS.assume(self))));
+  return JS.undefined();
+}
+
+JsValue rateLimiterGetters = installRateLimiterGetters();
+
+export constructor RateLimiter;

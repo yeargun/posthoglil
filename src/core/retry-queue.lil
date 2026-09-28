@@ -1,0 +1,173 @@
+// browser/src/retry-queue.ts: failed requests (network errors, 5xx) retried with
+// jittered exponential backoff, polled every 3 s while online; sent by sendBeacon on
+// unload.
+
+import { PostHog } from "./posthog-core.lil";
+import { win } from "./globals.lil";
+import { logger } from "./logger.lil";
+import { extendURLParams } from "./request.lil";
+import { addEventListener, assign, copy, isPositiveNumber } from "./utils.lil";
+
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue navigator;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+number pickNextRetryDelay(number retriesPerformedSoFar) {
+  number rawBackoffTime = 3000.0 * JS.number(JS.invoke(Math, "pow", 2, retriesPerformedSoFar));
+  number minBackoff = rawBackoffTime / 2.0;
+  number cappedBackoffTime = JS.number(JS.invoke(Math, "min", 1800000, rawBackoffTime));
+  number jitterFraction = JS.number(JS.invoke(Math, "random")) - 0.5;
+  number jitter = jitterFraction * (cappedBackoffTime - minBackoff);
+  return JS.number(JS.invoke(Math, "ceil", cappedBackoffTime + jitter));
+}
+
+class RetryQueueElement {
+  number retryAt;
+  JsValue requestOptions;
+
+  init(number retryAt, JsValue requestOptions) {
+    this.retryAt = retryAt;
+    this.requestOptions = requestOptions;
+  }
+}
+
+export class RetryQueue {
+  PostHog _instance;
+  bool _isPolling;
+  JsValue _poller;
+  RetryQueueElement[] _queue;
+  bool _areWeOnline;
+  JsValue _onlineListener;
+  JsValue _offlineListener;
+
+  init(PostHog instance) {
+    this._isPolling = false;
+    this._poller = JS.undefined();
+    this._onlineListener = JS.undefined();
+    this._offlineListener = JS.undefined();
+    this._instance = instance;
+    this._queue = [];
+    this._areWeOnline = true;
+    if (!JS.isUndefined(win) && JS.in("onLine", win["navigator"])) {
+      this._areWeOnline = win["navigator"]["onLine"].truthy();
+      this._onlineListener = () => {
+        this._areWeOnline = true;
+        this._flush();
+      };
+      this._offlineListener = () => {
+        this._areWeOnline = false;
+      };
+      addEventListener(win, "online", this._onlineListener, false, true);
+      addEventListener(win, "offline", this._offlineListener, false, true);
+    }
+  }
+
+  int length() {
+    return this._queue.length;
+  }
+
+  void retriableRequest(JsValue request) {
+    JsValue retriesPerformedSoFar = request["retriesPerformedSoFar"];
+    JsValue options = copy(request);
+    JS.delete(options, "retriesPerformedSoFar");
+    if (isPositiveNumber(retriesPerformedSoFar)) {
+      options["url"] = extendURLParams(JS.string(options["url"]), JS.object("retry_count", retriesPerformedSoFar));
+    }
+    this._instance._send_request(assign(copy(options), JS.object("callback", (JsValue response) => {
+      JsValue statusCode = response["statusCode"];
+      if (JS.strictNotEqual(statusCode, 200) && (JS.lessThan(statusCode, 400) || JS.greaterThanOrEqual(statusCode, 500))) {
+        number retries = if (JS.isNullish(retriesPerformedSoFar)) { 0.0 } else { JS.number(retriesPerformedSoFar) };
+        number maxRetries = if (JS.strictEqual(statusCode, 0)) { 3.0 } else { 10.0 };
+        if (retries < maxRetries) {
+          this._enqueue(assign(JS.object("retriesPerformedSoFar", retriesPerformedSoFar), options));
+          return;
+        }
+        if (JS.strictEqual(statusCode, 0)) {
+          logger.warn(JS.array("Request failed before receiving an HTTP response; this can happen due to network issues, CORS, browser blocking, or ad blockers. Stopped retrying after " + JS.string(retries) + " retries."));
+        }
+      }
+      if (!JS.isNullish(options["callback"])) {
+        JS.invoke(options, "callback", response);
+      }
+    })));
+  }
+
+  void _enqueue(JsValue requestOptions) {
+    number retriesPerformedSoFar = JS.number(JS.or(requestOptions["retriesPerformedSoFar"], 0));
+    requestOptions["retriesPerformedSoFar"] = retriesPerformedSoFar + 1.0;
+    number msToNextRetry = pickNextRetryDelay(retriesPerformedSoFar);
+    number retryAt = JS.number(JS.invoke(Date, "now")) + msToNextRetry;
+    this._queue.push(new RetryQueueElement(retryAt, requestOptions));
+    string logMessage = "Enqueued failed request for retry in " + JS.string(msToNextRetry);
+    if (!navigator["onLine"].truthy()) {
+      logMessage = logMessage + " (Browser is offline)";
+    }
+    logger.warn(JS.array(logMessage));
+    if (!this._isPolling) {
+      this._isPolling = true;
+      this._poll();
+    }
+  }
+
+  void _poll() {
+    if (this._poller.truthy()) {
+      JS.call(clearTimeout, JS.undefined(), this._poller);
+    }
+    if (this._queue.length == 0) {
+      this._isPolling = false;
+      this._poller = JS.undefined();
+      return;
+    }
+    this._poller = JS.call(setTimeout, JS.undefined(), () => {
+      if (this._areWeOnline && this._queue.length > 0) {
+        this._flush();
+      }
+      this._poll();
+    }, 3000);
+  }
+
+  void _flush() {
+    number now = JS.number(JS.invoke(Date, "now"));
+    RetryQueueElement[] notToFlush = [];
+    RetryQueueElement[] toFlush = [];
+    for (RetryQueueElement item of this._queue) {
+      if (item.retryAt < now) {
+        toFlush.push(item);
+      } else {
+        notToFlush.push(item);
+      }
+    }
+    this._queue = notToFlush;
+    for (RetryQueueElement item of toFlush) {
+      this.retriableRequest(item.requestOptions);
+    }
+  }
+
+  void unload() {
+    if (this._poller.truthy()) {
+      JS.call(clearTimeout, JS.undefined(), this._poller);
+      this._poller = JS.undefined();
+    }
+    this._isPolling = false;
+    if (!JS.isUndefined(win)) {
+      if (this._onlineListener.truthy()) {
+        JS.invoke(win, "removeEventListener", "online", this._onlineListener);
+        this._onlineListener = JS.undefined();
+      }
+      if (this._offlineListener.truthy()) {
+        JS.invoke(win, "removeEventListener", "offline", this._offlineListener);
+        this._offlineListener = JS.undefined();
+      }
+    }
+    for (RetryQueueElement item of this._queue) {
+      try {
+        this._instance._send_request(assign(copy(item.requestOptions), JS.object("transport", "sendBeacon")));
+      } catch (JsValue e) {
+        logger.error(JS.array(e));
+      }
+    }
+    this._queue = [];
+  }
+}

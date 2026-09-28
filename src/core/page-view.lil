@@ -1,0 +1,127 @@
+// browser/src/page-view.ts: pageview ids, and the previous page's duration and scroll
+// depth attached to the next pageview or pageleave.
+
+import { PostHog } from "./posthog-core.lil";
+import { SessionIdManager } from "./sessionid.lil";
+import { win } from "./globals.lil";
+import { logger } from "./logger.lil";
+import { clampToRange, extend } from "./utils.lil";
+
+extern JsValue Math;
+
+class CurrentPageview {
+  JsValue pathname;
+  JsValue pageViewId;
+  JsValue timestamp;
+
+  init(JsValue pathname, JsValue pageViewId, JsValue timestamp) {
+    this.pathname = pathname;
+    this.pageViewId = pageViewId;
+    this.timestamp = timestamp;
+  }
+}
+
+number ceil(JsValue value) {
+  return JS.number(JS.invoke(Math, "ceil", value));
+}
+
+number ratio(number part, number whole) {
+  return if (whole <= 1.0) { 1.0 } else { clampToRange(part / whole, 0.0, 1.0, logger, JS.undefined()) };
+}
+
+export class PageViewManager {
+  CurrentPageview? _currentPageview;
+  PostHog _instance;
+  JsValue _unsubscribeSessionId;
+  JsValue _onSessionIdChange;
+
+  init(PostHog instance) {
+    this._onSessionIdChange = (JsValue sessionId, JsValue windowId, JsValue changeReason) => {
+      if (!changeReason.truthy()) {
+        return;
+      }
+      if (changeReason["noSessionId"].truthy() || changeReason["activityTimeout"].truthy() || changeReason["sessionPastMaximumLength"].truthy() || changeReason["crossTabAdoption"].truthy()) {
+        logger.info(JS.array("[PageViewManager] Session rotated, clearing pageview state", JS.object("sessionId", sessionId, "changeReason", changeReason)));
+        this._currentPageview = null;
+        this._instance.scrollManager.resetContext();
+      }
+    };
+    this._currentPageview = null;
+    this._instance = instance;
+    SessionIdManager? sessionManager = instance.sessionManager;
+    this._unsubscribeSessionId = if (sessionManager != null) { sessionManager.onSessionId(this._onSessionIdChange) } else { JS.undefined() };
+  }
+
+  void destroy() {
+    if (!JS.isNullish(this._unsubscribeSessionId)) {
+      JS.call(this._unsubscribeSessionId, JS.undefined());
+    }
+    this._unsubscribeSessionId = JS.undefined();
+  }
+
+  JsValue doPageView(JsValue timestamp, JsValue pageViewId) {
+    JsValue response = this._previousPageViewProperties(timestamp, pageViewId);
+    JsValue pathname = if (JS.isNullish(win)) { JS.undefined() } else { win["location"]["pathname"] };
+    this._currentPageview = new CurrentPageview(if (JS.isNullish(pathname)) { "" } else { pathname }, pageViewId, timestamp);
+    this._instance.scrollManager.resetContext();
+    return response;
+  }
+
+  JsValue doPageLeave(JsValue timestamp) {
+    CurrentPageview? current = this._currentPageview;
+    return this._previousPageViewProperties(timestamp, if (current != null) { current.pageViewId } else { JS.undefined() });
+  }
+
+  JsValue doEvent() {
+    CurrentPageview? current = this._currentPageview;
+    return JS.object("$pageview_id", if (current != null) { current.pageViewId } else { JS.undefined() });
+  }
+
+  JsValue _previousPageViewProperties(JsValue timestamp, JsValue pageviewId) {
+    CurrentPageview? previous = this._currentPageview;
+    if (previous == null) {
+      return JS.object("$pageview_id", pageviewId);
+    }
+    JsValue properties = JS.object("$pageview_id", pageviewId, "$prev_pageview_id", previous.pageViewId);
+    JsValue scrollContext = this._instance.scrollManager.getContext();
+    if (scrollContext.truthy() && !this._instance.config["disable_scroll_properties"].truthy()) {
+      JsValue maxScrollHeight = scrollContext["maxScrollHeight"];
+      JsValue lastScrollY = scrollContext["lastScrollY"];
+      JsValue maxScrollY = scrollContext["maxScrollY"];
+      JsValue maxContentHeight = scrollContext["maxContentHeight"];
+      JsValue lastContentY = scrollContext["lastContentY"];
+      JsValue maxContentY = scrollContext["maxContentY"];
+      if (!JS.isUndefined(maxScrollHeight) && !JS.isUndefined(lastScrollY) && !JS.isUndefined(maxScrollY) && !JS.isUndefined(maxContentHeight) && !JS.isUndefined(lastContentY) && !JS.isUndefined(maxContentY)) {
+        number scrollHeight = ceil(maxScrollHeight);
+        number lastScroll = ceil(lastScrollY);
+        number maxScroll = ceil(maxScrollY);
+        number contentHeight = ceil(maxContentHeight);
+        number lastContent = ceil(lastContentY);
+        number maxContent = ceil(maxContentY);
+        number lastScrollPercentage = ratio(lastScroll, scrollHeight);
+        number maxScrollPercentage = ratio(maxScroll, scrollHeight);
+        number lastContentPercentage = ratio(lastContent, contentHeight);
+        number maxContentPercentage = ratio(maxContent, contentHeight);
+        properties = extend(properties, JS.object(
+          "$prev_pageview_last_scroll", lastScroll,
+          "$prev_pageview_last_scroll_percentage", lastScrollPercentage,
+          "$prev_pageview_max_scroll", maxScroll,
+          "$prev_pageview_max_scroll_percentage", maxScrollPercentage,
+          "$prev_pageview_last_content", lastContent,
+          "$prev_pageview_last_content_percentage", lastContentPercentage,
+          "$prev_pageview_max_content", maxContent,
+          "$prev_pageview_max_content_percentage", maxContentPercentage
+        ));
+      }
+    }
+    if (previous.pathname.truthy()) {
+      properties["$prev_pageview_pathname"] = previous.pathname;
+    }
+    if (previous.timestamp.truthy()) {
+      properties["$prev_pageview_duration"] = (JS.number(JS.invoke(timestamp, "getTime")) - JS.number(JS.invoke(previous.timestamp, "getTime"))) / 1000.0;
+    }
+    return properties;
+  }
+}
+
+export constructor PageViewManager;

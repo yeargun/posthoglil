@@ -1,0 +1,129 @@
+// @posthog/core bot-detection and browser-common blocked-uas and device-model-utils.
+
+import { navigator } from "./globals.lil";
+import { logger } from "./logger.lil";
+import { isString } from "./utils.lil";
+
+string[] DEFAULT_BLOCKED_UA_STRS = [
+  "amazonbot",
+  "amazonproductbot",
+  "app.hypefactors.com",
+  "applebot",
+  "archive.org_bot",
+  "awariobot",
+  "backlinksextendedbot",
+  "baiduspider",
+  "bingbot",
+  "bingpreview",
+  "chrome-lighthouse",
+  "dataforseobot",
+  "deepscan",
+  "duckduckbot",
+  "facebookexternal",
+  "facebookcatalog",
+  "http://yandex.com/bots",
+  "hubspot",
+  "ia_archiver",
+  "leikibot",
+  "linkedinbot",
+  "meta-externalagent",
+  "mj12bot",
+  "msnbot",
+  "nessus",
+  "petalbot",
+  "pinterest",
+  "prerender",
+  "rogerbot",
+  "screaming frog",
+  "sebot-wa",
+  "sitebulb",
+  "slackbot",
+  "slurp",
+  "trendictionbot",
+  "turnitin",
+  "twitterbot",
+  "vercel-screenshot",
+  "vercelbot",
+  "yahoo! slurp",
+  "yandexbot",
+  "zoombot",
+  "bot.htm",
+  "bot.php",
+  "(bot;",
+  "bot/",
+  "crawler",
+  "ahrefsbot",
+  "ahrefssiteaudit",
+  "semrushbot",
+  "siteauditbot",
+  "splitsignalbot",
+  "gptbot",
+  "oai-searchbot",
+  "chatgpt-user",
+  "perplexitybot",
+  "better uptime bot",
+  "sentryuptimebot",
+  "uptimerobot",
+  "headlesschrome",
+  "cypress",
+  "google-hoteladsverifier",
+  "adsbot-google",
+  "apis-google",
+  "duplexweb-google",
+  "feedfetcher-google",
+  "google favicon",
+  "google web preview",
+  "google-read-aloud",
+  "googlebot",
+  "googleother",
+  "google-cloudvertexbot",
+  "googleweblight",
+  "mediapartners-google",
+  "storebot-google",
+  "google-inspectiontool",
+  "bytespider"
+];
+
+bool isBlockedUA(JsValue ua, JsValue customBlockedUserAgents) {
+  if (!ua.truthy()) {
+    return false;
+  }
+  JsValue uaLower = JS.invoke(ua, "toLowerCase");
+  JsValue candidates = JS.invoke(DEFAULT_BLOCKED_UA_STRS, "concat", if (JS.isUndefined(customBlockedUserAgents)) { JS.array() } else { customBlockedUserAgents });
+  return JS.invoke(candidates, "some", (JsValue blocked) => JS.number(JS.invoke(uaLower, "indexOf", JS.invoke(blocked, "toLowerCase"))) != -1.0).truthy();
+}
+
+export bool isLikelyBot(JsValue nav, JsValue customBlockedUserAgents) {
+  if (!nav.truthy()) {
+    return false;
+  }
+  JsValue ua = nav["userAgent"];
+  if (ua.truthy() && isBlockedUA(ua, customBlockedUserAgents)) {
+    return true;
+  }
+  try {
+    JsValue uaData = nav["userAgentData"];
+    JsValue brands = if (JS.isNullish(uaData)) { JS.undefined() } else { uaData["brands"] };
+    if (brands.truthy() && JS.invoke(uaData["brands"], "some", (JsValue brandObj) => isBlockedUA(if (JS.isNullish(brandObj)) { JS.undefined() } else { brandObj["brand"] }, customBlockedUserAgents)).truthy()) {
+      return true;
+    }
+  } catch {
+  }
+  return nav["webdriver"].truthy();
+}
+
+export async JsValue getDeviceModel() {
+  JsValue uaData = if (JS.isNullish(navigator)) { JS.undefined() } else { navigator["userAgentData"] };
+  if (JS.isNullish(uaData) || !uaData["getHighEntropyValues"].truthy()) {
+    return JS.undefined();
+  }
+  try {
+    Task<JsValue> request = JS.assume(JS.invoke(uaData, "getHighEntropyValues", JS.array("model")));
+    JsValue hints = await request;
+    JsValue model = if (JS.isNullish(hints)) { JS.undefined() } else { hints["model"] };
+    return if (isString(model) && JS.number(model["length"]) > 0.0) { model } else { JS.undefined() };
+  } catch (JsValue e) {
+    logger.info(JS.array("Unable to resolve $device_model from userAgentData.getHighEntropyValues", e));
+    return JS.undefined();
+  }
+}

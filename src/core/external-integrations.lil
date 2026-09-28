@@ -1,0 +1,59 @@
+// browser/src/extensions/external-integration.ts: third-party chat integrations
+// (Intercom, Crisp) loaded as external scripts when `config.integrations` asks.
+
+import { PostHog } from "./posthog-core.lil";
+import { assignableWindow } from "./globals.lil";
+import { createLogger, Logger } from "./logger.lil";
+
+extern JsValue Object;
+
+Logger integrationsLogger = createLogger("[PostHog ExternalIntegrations]");
+
+JsValue loadedIntegration(string key) {
+  JsValue extensions = assignableWindow["__PosthogExtensions__"];
+  JsValue integrations = if (JS.isNullish(extensions)) { JS.undefined() } else { extensions["integrations"] };
+  return if (JS.isNullish(integrations)) { JS.undefined() } else { integrations[key] };
+}
+
+export class ExternalIntegrations {
+  PostHog _instance;
+
+  init(PostHog instance) {
+    this._instance = instance;
+  }
+
+  void startIfEnabledOrStop() {
+    JsValue configured = this._instance.config["integrations"];
+    JsValue entries = JS.invoke(Object, "entries", if (JS.isNullish(configured)) { JS.object() } else { configured });
+    int count = JS.number(entries["length"]).toInt();
+    for (int i = 0; i < count; i++) {
+      string key = JS.string(entries[i][0]);
+      JsValue value = entries[i][1];
+      if (value.truthy() && !loadedIntegration(key).truthy()) {
+        JsValue scriptName = if (key == "intercom") { "intercom-integration" } else { if (key == "crispChat") { "crisp-chat-integration" } else { JS.undefined() } };
+        JsValue extensions = assignableWindow["__PosthogExtensions__"];
+        if (!JS.isNullish(extensions) && !JS.isNullish(extensions["loadExternalDependency"])) {
+          JsValue client = this._instance;
+          JS.invoke(extensions, "loadExternalDependency", client, scriptName, (JsValue err) => {
+            if (err.truthy()) {
+              integrationsLogger.error(JS.array("failed to load script", err));
+              return;
+            }
+            JsValue integration = loadedIntegration(key);
+            if (!JS.isNullish(integration)) {
+              JS.invoke(integration, "start", client);
+            }
+          });
+        }
+      }
+      if (!value.truthy() && loadedIntegration(key).truthy()) {
+        JsValue integration = loadedIntegration(key);
+        if (!JS.isNullish(integration)) {
+          JS.invoke(integration, "stop");
+        }
+      }
+    }
+  }
+}
+
+export constructor ExternalIntegrations;

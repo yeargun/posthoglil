@@ -1,0 +1,69 @@
+// browser/src/session-props.ts: the entry referrer and URL of the current session,
+// stored in persistence under `$client_session_props` when the session starts.
+
+import { PostHog } from "./posthog-core.lil";
+import { SessionIdManager } from "./sessionid.lil";
+import { PostHogPersistence } from "./persistence.lil";
+import { getPersonInfo, personPropsFromInfo, stripLeadingDollar } from "./event-utils.lil";
+import { each, stripEmptyProperties } from "./utils.lil";
+
+export class SessionPropsManager {
+  PostHog _instance;
+  SessionIdManager _sessionIdManager;
+  PostHogPersistence _persistence;
+  JsValue _onSessionIdCallback;
+
+  init(PostHog instance, SessionIdManager sessionIdManager, PostHogPersistence persistence) {
+    this._onSessionIdCallback = (JsValue sessionId) => {
+      JsValue stored = this._getStored();
+      if (stored.truthy() && JS.strictEqual(stored["sessionId"], sessionId)) {
+        return;
+      }
+      JsValue config = this._instance.config;
+      JsValue props = getPersonInfo(config["mask_personal_data_properties"], config["custom_personal_data_properties"], config["disable_capture_url_hashes"].truthy());
+      this._persistence.register(JS.object("$client_session_props", JS.object("sessionId", sessionId, "props", props)), JS.undefined());
+    };
+    this._instance = instance;
+    this._sessionIdManager = sessionIdManager;
+    this._persistence = persistence;
+    this._sessionIdManager.onSessionId(this._onSessionIdCallback);
+  }
+
+  JsValue _getStored() {
+    return this._persistence.props["$client_session_props"];
+  }
+
+  JsValue getSetOnceProps() {
+    JsValue stored = this._getStored();
+    JsValue p = if (JS.isNullish(stored)) { JS.undefined() } else { stored["props"] };
+    if (!p.truthy()) {
+      return JS.object();
+    }
+    if (JS.in("r", p)) {
+      return personPropsFromInfo(p, this._instance.config["disable_capture_url_hashes"].truthy());
+    }
+    return JS.object(
+      "$referring_domain", p["referringDomain"],
+      "$pathname", p["initialPathName"],
+      "utm_source", p["utm_source"],
+      "utm_campaign", p["utm_campaign"],
+      "utm_medium", p["utm_medium"],
+      "utm_content", p["utm_content"],
+      "utm_term", p["utm_term"]
+    );
+  }
+
+  JsValue getSessionProps() {
+    JsValue p = JS.object();
+    each(stripEmptyProperties(this.getSetOnceProps()), (JsValue value, JsValue key) => {
+      string name = JS.string(key);
+      if (name == "$current_url") {
+        name = "url";
+      }
+      p["$session_entry_" + stripLeadingDollar(name)] = value;
+    });
+    return p;
+  }
+}
+
+export constructor SessionPropsManager;

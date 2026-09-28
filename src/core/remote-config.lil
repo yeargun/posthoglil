@@ -1,0 +1,134 @@
+// browser/src/remote-config.ts: the project's remote config, preloaded on the page,
+// loaded by the external-dependency loader, or fetched as JSON; then refreshed every
+// five minutes by reloading feature flags while the page is visible.
+
+import { PostHog } from "./posthog-core.lil";
+import { assignableWindow, document } from "./globals.lil";
+import { createLogger, Logger } from "./logger.lil";
+
+extern JsValue setInterval;
+extern JsValue clearInterval;
+
+Logger remoteLogger = createLogger("[RemoteConfig]");
+
+JsValue preloadedRemoteConfig(PostHog instance) {
+  JsValue all = assignableWindow["_POSTHOG_REMOTE_CONFIG"];
+  JsValue entry = if (JS.isNullish(all)) { JS.undefined() } else { all[JS.string(instance.config["token"])] };
+  return if (JS.isNullish(entry)) { JS.undefined() } else { entry["config"] };
+}
+
+export class RemoteConfigLoader {
+  PostHog _instance;
+  JsValue _refreshInterval;
+
+  init(PostHog instance) {
+    this._refreshInterval = JS.undefined();
+    this._instance = instance;
+  }
+
+  void load() {
+    JsValue client = this._instance;
+    try {
+      JsValue preloaded = preloadedRemoteConfig(this._instance);
+      if (preloaded.truthy()) {
+        remoteLogger.info(JS.array("Using preloaded remote config", preloadedRemoteConfig(this._instance)));
+        this._onRemoteConfig(preloadedRemoteConfig(this._instance), JS.undefined());
+        this._startRefreshInterval();
+        return;
+      }
+      if (JS.invoke(client, "_shouldDisableFlags").truthy()) {
+        remoteLogger.warn(JS.array("Remote config is disabled. Falling back to local config."));
+        return;
+      }
+      JsValue extensions = assignableWindow["__PosthogExtensions__"];
+      func(JsValue)->void onScriptConfig = (JsValue config) => {
+        if (!config.truthy()) {
+          remoteLogger.info(JS.array("No config found after loading remote JS config. Falling back to JSON."));
+          JsValue token = this._instance.config["token"];
+          JS.invoke(client, "_send_request", JS.object(
+            "method", "GET",
+            "url", this._instance.requestRouter.endpointFor("assets", JS.string(JS.add(JS.add("/array/", token), "/config"))),
+            "callback", (JsValue response) => {
+              this._onRemoteConfig(response["json"], response);
+              this._startRefreshInterval();
+            }
+          ));
+          return;
+        }
+        this._onRemoteConfig(config, JS.undefined());
+        this._startRefreshInterval();
+      };
+      if (!JS.isNullish(extensions) && extensions["loadExternalDependency"].truthy()) {
+        JsValue current = assignableWindow["__PosthogExtensions__"];
+        if (!JS.isNullish(current) && !JS.isNullish(current["loadExternalDependency"])) {
+          JS.invoke(current, "loadExternalDependency", client, "remote-config", () => {
+            onScriptConfig(preloadedRemoteConfig(this._instance));
+          });
+        }
+      } else {
+        onScriptConfig(JS.undefined());
+      }
+    } catch (JsValue error) {
+      remoteLogger.error(JS.array("Error loading remote config", error));
+      this._onRemoteConfig(JS.undefined(), JS.undefined());
+    }
+  }
+
+  void stop() {
+    if (this._refreshInterval.truthy()) {
+      JS.call(clearInterval, JS.undefined(), this._refreshInterval);
+      this._refreshInterval = JS.undefined();
+    }
+  }
+
+  // Flags are refreshed only for a visible page that has flags enabled.
+  void refresh() {
+    JsValue client = this._instance;
+    if (JS.invoke(client, "_shouldDisableFlags").truthy() || !document.truthy() || JS.strictEqual(document["visibilityState"], "hidden")) {
+      return;
+    }
+    JS.invoke(client, "reloadFeatureFlags");
+  }
+
+  void _startRefreshInterval() {
+    if (this._refreshInterval.truthy()) {
+      return;
+    }
+    JsValue configured = this._instance.config["remote_config_refresh_interval_ms"];
+    JsValue intervalMs = if (JS.isNullish(configured)) { 300000 } else { configured };
+    if (JS.strictEqual(intervalMs, 0)) {
+      return;
+    }
+    this._refreshInterval = JS.call(setInterval, JS.undefined(), () => {
+      this.refresh();
+    }, intervalMs);
+  }
+
+  void _onRemoteConfig(JsValue config, JsValue response) {
+    if (!config.truthy() && response.truthy()) {
+      if (JS.strictEqual(response["statusCode"], 0)) {
+        if (!response["error"].truthy()) {
+          remoteLogger.warn(JS.array("Failed to fetch remote config from PostHog."));
+        }
+      } else {
+        remoteLogger.error(JS.array("Failed to fetch remote config from PostHog."));
+      }
+    }
+    try {
+      this._instance._onRemoteConfig(if (config.truthy()) { JS.object("ok", true, "config", config) } else { JS.object("ok", false) });
+    } catch (JsValue error) {
+      remoteLogger.error(JS.array("Error applying remote config", error));
+    }
+    JsValue hasFeatureFlags = if (JS.isNullish(config)) { JS.undefined() } else { config["hasFeatureFlags"] };
+    if (JS.strictNotEqual(hasFeatureFlags, false) && !this._instance.config["advanced_disable_feature_flags_on_first_load"].truthy()) {
+      try {
+        JsValue flags = this._instance.featureFlags;
+        if (!JS.isNullish(flags)) {
+          JS.invoke(flags, "ensureFlagsLoaded");
+        }
+      } catch (JsValue error) {
+        remoteLogger.error(JS.array("Error loading feature flags", error));
+      }
+    }
+  }
+}

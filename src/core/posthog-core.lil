@@ -1,0 +1,2631 @@
+// browser/src/posthog-core.ts: the PostHog client. `PostHog` and every object it
+// exposes stay real JavaScript classes, because pages and extension bundles reach
+// them by name. Where upstream calls one of its own public methods through `this`,
+// the port does too (a dynamic call), so a page that wraps `posthog.capture` still
+// sees the SDK's own events. Internal helpers are module functions.
+
+import extern { instanceOf } from "./host.js";
+extern bool instanceOf(JsValue value, JsValue ctor);
+
+import { Config } from "./config.lil";
+import { assignableWindow, document, location, navigator, userAgent, win } from "./globals.lil";
+import { createLogger, Logger, logger } from "./logger.lil";
+import { uuidv7 } from "./uuidv7.lil";
+import { localStore, sessionStore } from "./storage.lil";
+import { PostHogPersistence } from "./persistence.lil";
+import { SessionIdManager } from "./sessionid.lil";
+import { SessionPropsManager } from "./session-props.lil";
+import { PageViewManager } from "./page-view.lil";
+import { ScrollManager } from "./scroll-manager.lil";
+import { RateLimiter } from "./rate-limiter.lil";
+import { ConsentManager, CONSENT_DENIED, CONSENT_GRANTED, consentOf } from "./consent.lil";
+import { RequestRouter, regionOf } from "./request-router.lil";
+import { RemoteConfigLoader } from "./remote-config.lil";
+import { request, SUPPORTS_REQUEST } from "./request.lil";
+import { RequestQueue } from "./request-queue.lil";
+import { RetryQueue } from "./retry-queue.lil";
+import { EventEmitter } from "./event-emitter.lil";
+import { getEventProperties } from "./event-utils.lil";
+import { getDeviceModel, isLikelyBot } from "./bot.lil";
+import { getPersonPropertiesHash } from "./person-hash.lil";
+import { setupSegmentIntegration } from "./segment.lil";
+import { SentryIntegrationClass, sentryIntegration } from "./sentry.lil";
+import { ExternalIntegrations } from "./external-integrations.lil";
+import { BrowserClientAdapter } from "./browser-client.lil";
+import {
+  addEventListener,
+  assign,
+  copy,
+  copyAndTruncateStrings,
+  defineGetter,
+  each,
+  extend,
+  isArray,
+  isBoolean,
+  isDistinctIdStringLike,
+  isEmptyObject,
+  isEmptyString,
+  isFunction,
+  isKnownUnsafeEditableEvent,
+  isKnownUnsafeEditableEventProperty,
+  isNumber,
+  isObject,
+  isString,
+  isCrossDomainCookie,
+  keysOf,
+  migrateConfigField,
+  minimizeFlagCalledEventProperties
+} from "./utils.lil";
+
+extern JsValue Object;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue Promise;
+extern JsValue Error;
+extern JsValue String;
+extern JsValue console;
+extern JsValue performance;
+extern JsValue setTimeout;
+extern JsValue parseFloat;
+extern JsValue self;
+
+// ---- module state ----
+
+JsValue instances = JS.object();
+int executeArrayDepth = 0;
+JsValue NOOP = () => {};
+
+string CONSENT_COOKIELESS_WARN = "Consent opt in/out is not valid with cookieless_mode=\"always\" and will be ignored";
+string RESET_CONSENT_WARN = "reset() cleared the stored consent, and capturing is now off because of `opt_out_capturing_by_default`. Call opt_in_capturing() again, and prefer calling reset() before opting in rather than after.";
+string SURVEYS_NOT_AVAILABLE = "Surveys module not available";
+string SANITIZE_DEPRECATED = "sanitize_properties is deprecated. Use before_send instead";
+string DENYLIST_INVALID = "Invalid value for property_denylist config: ";
+string[] FLAG_CALLED_TRANSPORT_PROPERTY_KEYS = ["token", "distinct_id", "$cookieless_mode"];
+string PRIMARY_INSTANCE_NAME = "posthog";
+
+// Old Opera without CORS requests queued requests until the DOM loaded.
+bool ENQUEUE_REQUESTS = !SUPPORTS_REQUEST && !JS.isNullish(userAgent) && JS.strictEqual(JS.invoke(userAgent, "indexOf", "MSIE"), -1) && JS.strictEqual(JS.invoke(userAgent, "indexOf", "Mozilla"), -1);
+
+JsValue DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS = JS.array("next", "previous", "prev", ">", "<", "+", "-", "−", "–");
+
+// ---- configuration ----
+
+bool since(JsValue defaults, string date) {
+  return defaults.truthy() && JS.greaterThanOrEqual(defaults, date);
+}
+
+export JsValue defaultConfig(JsValue defaults) {
+  JsValue searchValue = if (JS.isNullish(location)) { JS.undefined() } else { location["search"] };
+  bool debug = location.truthy() && isString(searchValue) && JS.number(JS.invoke(location["search"], "indexOf", "__posthog_debug=true")) != -1.0;
+  JsValue winLocation = if (JS.isNullish(win)) { JS.undefined() } else { win["location"] };
+  JsValue protocol = if (JS.isNullish(winLocation)) { JS.undefined() } else { winLocation["protocol"] };
+  JsValue config = JS.object(
+    "api_host", "https://us.i.posthog.com",
+    "flags_api_host", null,
+    "ui_host", null,
+    "asset_host", null,
+    "token", "",
+    "autocapture", true,
+    "cross_subdomain_cookie", isCrossDomainCookie(if (JS.isNullish(document)) { JS.undefined() } else { document["location"] }),
+    "persistence", "localStorage+cookie",
+    "persistence_name", "",
+    "cookie_persisted_properties", JS.array(),
+    "loaded", NOOP,
+    "save_campaign_params", true,
+    "custom_campaign_params", JS.array(),
+    "custom_blocked_useragents", JS.array(),
+    "save_referrer", true,
+    "capture_pageleave", "if_capture_pageview",
+    "defaults", if (JS.isNullish(defaults)) { "unset" } else { defaults },
+    "__preview_deferred_init_extensions", false,
+    "__preview_external_dependency_versioned_paths", false,
+    "__preview_cookie_wins_on_conflict", false,
+    "debug", debug,
+    "cookie_expiration", 365,
+    "upgrade", false,
+    "disable_session_recording", false,
+    "disable_persistence", false,
+    "disable_web_experiments", true,
+    "disable_surveys", false,
+    "disable_surveys_automatic_display", false,
+    "disable_conversations", false,
+    "disable_product_tours", false,
+    "disableDeviceModel", false,
+    "disable_external_dependency_loading", false,
+    "strict_script_versioning", "fallback",
+    "enable_recording_console_log", JS.undefined(),
+    "secure_cookie", JS.strictEqual(protocol, "https:"),
+    "ip", false,
+    "opt_out_capturing_by_default", false,
+    "opt_out_persistence_by_default", false,
+    "opt_out_useragent_filter", false,
+    "opt_out_capturing_persistence_type", "localStorage",
+    "consent_persistence_name", null,
+    "opt_out_capturing_cookie_prefix", null,
+    "opt_in_site_apps", false,
+    "property_denylist", JS.array(),
+    "respect_dnt", false,
+    "sanitize_properties", null,
+    "request_headers", JS.object(),
+    "request_batching", true,
+    "properties_string_max_length", 65535,
+    "mask_all_element_attributes", false,
+    "mask_all_text", false,
+    "mask_personal_data_properties", false,
+    "custom_personal_data_properties", JS.array(),
+    "advanced_disable_flags", false,
+    "advanced_disable_decide", false,
+    "advanced_disable_feature_flags", false,
+    "advanced_disable_feature_flags_on_first_load", false,
+    "advanced_only_evaluate_survey_feature_flags", false,
+    "advanced_feature_flags_dedup_per_session", false,
+    "advanced_enable_surveys", false,
+    "advanced_disable_toolbar_metrics", false,
+    "feature_flag_request_timeout_ms", 3000,
+    "surveys_request_timeout_ms", 10000,
+    "on_request_error", (JsValue res) => {
+      logger.error(JS.array(JS.add(JS.add(JS.add("Bad HTTP status: ", res["statusCode"]), " "), res["text"])));
+    },
+    "get_device_id", (JsValue uuid) => uuid,
+    "capture_performance", JS.undefined(),
+    "name", "posthog",
+    "bootstrap", JS.object(),
+    "disable_compression", false,
+    "session_idle_timeout_seconds", 1800,
+    "person_profiles", "identified_only",
+    "before_send", JS.undefined(),
+    "get_current_url", JS.undefined(),
+    "request_queue_config", JS.object("flush_interval_ms", 3000),
+    "error_tracking", JS.object(),
+    "_onCapture", NOOP
+  );
+  // Defaults that depend on the `defaults` date the page opted into.
+  config["rageclick"] = if (since(defaults, "2026-05-30")) { JS.object("content_ignorelist", DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS, "ignore_text_selection", true) } else { if (since(defaults, "2025-11-30")) { JS.object("content_ignorelist", true) } else { true } };
+  config["capture_pageview"] = if (since(defaults, "2025-05-24")) { "history_change" } else { true };
+  config["session_recording"] = if (since(defaults, "2026-06-25")) { JS.object("strictMinimumDuration", true, "canvasCapture", JS.object("resolutionScale", 0.6), "streamNetworkBody", true) } else { if (since(defaults, "2026-05-30")) { JS.object("strictMinimumDuration", true, "canvasCapture", JS.object("resolutionScale", 0.6)) } else { if (since(defaults, "2025-11-30")) { JS.object("strictMinimumDuration", true) } else { JS.object() } } };
+  config["external_scripts_inject_target"] = if (since(defaults, "2026-01-30")) { "head" } else { "body" };
+  config["internal_or_test_user_hostname"] = JS.undefined();
+  if (since(defaults, "2026-01-30")) {
+    config["internal_or_test_user_hostname"] = new Regex("^(localhost|127\\.0\\.0\\.1)$");
+  }
+  config["persistence_save_debounce_ms"] = if (since(defaults, "2026-05-30")) { 250 } else { 0 };
+  config["split_storage"] = since(defaults, "2026-05-30");
+  config["detect_google_search_app"] = since(defaults, "2026-05-30");
+  config["disable_capture_url_hashes"] = since(defaults, "2026-06-25");
+  config["cookieWinsOnConflict"] = defaults.truthy() && JS.strictNotEqual(defaults, "unset") && JS.greaterThanOrEqual(defaults, "2026-08-29");
+  return config;
+}
+
+string[] CONFIG_RENAMES_OLD = ["process_person", "xhr_headers", "cookie_name", "disable_cookie", "__preview_disable_beacon", "store_google", "verbose", "__preview_cookie_wins_on_conflict"];
+string[] CONFIG_RENAMES_NEW = ["person_profiles", "request_headers", "persistence_name", "disable_persistence", "disable_beacon", "save_campaign_params", "debug", "cookieWinsOnConflict"];
+
+export JsValue configRenames(JsValue origConfig) {
+  JsValue renames = JS.object();
+  for (int i = 0; i < CONFIG_RENAMES_OLD.length; i++) {
+    if (!JS.isUndefined(origConfig[CONFIG_RENAMES_OLD[i]])) {
+      renames[CONFIG_RENAMES_NEW[i]] = origConfig[CONFIG_RENAMES_OLD[i]];
+    }
+  }
+  JsValue newConfig = extend(extend(JS.object(), renames), origConfig);
+  JsValue preview = origConfig["__preview_external_dependency_versioned_paths"];
+  if (!JS.isUndefined(preview)) {
+    if (JS.isUndefined(origConfig["strict_script_versioning"])) {
+      newConfig["strict_script_versioning"] = preview.truthy();
+    }
+    if (isString(preview) && JS.isUndefined(origConfig["asset_host"])) {
+      newConfig["asset_host"] = preview;
+    }
+  }
+  JsValue blacklist = origConfig["property_blacklist"];
+  if (isArray(blacklist)) {
+    JsValue denylist = origConfig["property_denylist"];
+    if (JS.isUndefined(denylist)) {
+      newConfig["property_denylist"] = blacklist;
+    } else if (isArray(denylist)) {
+      newConfig["property_denylist"] = JS.invoke(JS.array(), "concat", blacklist, denylist);
+    } else {
+      logger.error(JS.array(JS.add(DENYLIST_INVALID, denylist)));
+    }
+  }
+  return newConfig;
+}
+
+// `posthog.webPerformance`: a deprecated shim whose only behaviour is a warning.
+export class DeprecatedWebPerformanceObserver {
+  bool __forceAllowLocalhost;
+
+  init() {
+    this.__forceAllowLocalhost = false;
+  }
+}
+
+JsValue installWebPerformanceAccessor() {
+  JS.invoke(Object, "defineProperty", JS.get(DeprecatedWebPerformanceObserver, "prototype"), "_forceAllowLocalhost", JS.object(
+    "get", JS.method0((JsValue observer) => observer["__forceAllowLocalhost"]),
+    "set", JS.method1((JsValue observer, JsValue value) => {
+      logger.error(JS.array("WebPerformanceObserver is deprecated and has no impact on network capture. Use `_forceAllowLocalhostNetworkCapture` on `posthog.sessionRecording`"));
+      observer["__forceAllowLocalhost"] = value;
+      return JS.undefined();
+    }),
+    "configurable", true
+  ));
+  return JS.undefined();
+}
+
+JsValue webPerformanceAccessor = installWebPerformanceAccessor();
+
+export constructor DeprecatedWebPerformanceObserver;
+
+// ---- helpers shared by the client's methods ----
+
+JsValue getProp(JsValue target, string key) {
+  return if (JS.isNullish(target)) { JS.undefined() } else { target[key] };
+}
+
+Regex UUID_REGEX = new Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "i");
+
+JsValue getEventUuid(JsValue uuid) {
+  if (JS.typeOf(uuid) == "string" && UUID_REGEX.test(JS.string(uuid))) {
+    return uuid;
+  }
+  return uuidv7();
+}
+
+extern JsValue localStorage;
+
+JsValue surveyIterationKey(JsValue id, JsValue iteration) {
+  if (iteration.truthy() && JS.greaterThan(iteration, 0)) {
+    return JS.add(JS.add(JS.add("", id), "_"), iteration);
+  }
+  return id;
+}
+
+void setSurveySeenOnLocalStorage(JsValue id, JsValue iteration) {
+  try {
+    JsValue key = JS.add("seenSurvey_", surveyIterationKey(id, iteration));
+    if (JS.invoke(localStorage, "getItem", key).truthy()) {
+      return;
+    }
+    JS.invoke(localStorage, "setItem", key, "true");
+  } catch (JsValue error) {
+    createLogger("[Surveys]").error(JS.array("Failed to persist survey seen state", error));
+  }
+}
+
+JsValue surveyInteractionProperty(JsValue id, JsValue iteration, string action) {
+  JsValue property = JS.add(JS.add("$survey_" + action + "/", id), "");
+  if (iteration.truthy() && JS.greaterThan(iteration, 0)) {
+    property = JS.add(JS.add(JS.add("$survey_" + action + "/", id), "/"), iteration);
+  }
+  return property;
+}
+
+JsValue DEFAULT_DISPLAY_SURVEY_OPTIONS = JS.object("ignoreConditions", false, "ignoreDelay", false, "displayType", "popover");
+
+JsValue noopLoggerFn = () => {};
+JsValue NOOP_LOGGER = JS.object("trace", noopLoggerFn, "debug", noopLoggerFn, "info", noopLoggerFn, "warn", noopLoggerFn, "error", noopLoggerFn, "fatal", noopLoggerFn);
+
+JsValue isDeadClicksEnabledForAutocapture = (JsValue deadClicks) => {
+  JsValue client = deadClicks["instance"];
+  JsValue persistence = client["persistence"];
+  bool isRemoteEnabled = if (JS.isNullish(persistence)) { false } else { JS.invoke(persistence, "get_property", "$dead_clicks_enabled_server_side").truthy() };
+  JsValue clientConfig = client["config"]["capture_dead_clicks"];
+  if (isBoolean(clientConfig)) {
+    return clientConfig;
+  }
+  if (isObject(clientConfig)) {
+    return true;
+  }
+  return isRemoteEnabled;
+};
+
+bool inCookielessMode(PostHog ph) {
+  JsValue mode = ph.config["cookieless_mode"];
+  return JS.strictEqual(mode, "always") || (JS.strictEqual(mode, "on_reject") && ph.consent.isRejected());
+}
+
+bool isPersistenceDisabled(PostHog ph) {
+  JsValue config = ph.config;
+  if (JS.strictEqual(config["cookieless_mode"], "always")) {
+    return true;
+  }
+  bool isOptedOut = ph.consent.isOptedOut();
+  bool defaultPersistenceDisabled = config["opt_out_persistence_by_default"].truthy() || JS.strictEqual(config["cookieless_mode"], "on_reject");
+  return config["disable_persistence"].truthy() || (isOptedOut && defaultPersistenceDisabled);
+}
+
+// `_sessionRegisteredPropKeys` behaves as upstream's insertion-ordered Set.
+void addRegisteredKey(PostHog ph, string key) {
+  if (!ph._sessionRegisteredPropKeys.includes(key)) {
+    ph._sessionRegisteredPropKeys.push(key);
+  }
+}
+
+void persistSessionRegisteredPropKeys(PostHog ph) {
+  string key = ph._sessionRegisteredPropertiesStorageKey;
+  if (key == "") {
+    return;
+  }
+  PostHogPersistence? sessionPersistence = ph.sessionPersistence;
+  if (JS.strictEqual(ph.config["persistence"], "memory") || (sessionPersistence != null && sessionPersistence._disabled) || !sessionStore.isSupported()) {
+    sessionStore.remove(key, JS.undefined());
+    return;
+  }
+  string[] registered = ph._sessionRegisteredPropKeys.slice();
+  if (registered.length > 0) {
+    sessionStore.set(key, registered, JS.undefined(), JS.undefined(), JS.undefined());
+  } else {
+    sessionStore.remove(key, JS.undefined());
+  }
+}
+
+bool syncOptOutWithPersistence(PostHog ph) {
+  bool persistenceDisabled = isPersistenceDisabled(ph);
+  PostHogPersistence? persistence = ph.persistence;
+  if (persistence != null && persistence._disabled != persistenceDisabled) {
+    persistence.set_disabled(persistenceDisabled);
+  }
+  PostHogPersistence? sessionPersistence = ph.sessionPersistence;
+  if (sessionPersistence != null && sessionPersistence._disabled != persistenceDisabled) {
+    sessionPersistence.set_disabled(persistenceDisabled);
+  }
+  if (persistenceDisabled) {
+    ph._sessionRegisteredPropKeys = [];
+    persistSessionRegisteredPropKeys(ph);
+  }
+  return persistenceDisabled;
+}
+
+// A tab that started cookieless keeps the sentinel id in memory; once consent flips in
+// another tab it must not leak into real events.
+void healCookielessSentinelDistinctId(PostHog ph) {
+  JsValue client = ph;
+  if (inCookielessMode(ph) || JS.strictNotEqual(JS.invoke(client, "get_distinct_id"), "$posthog_cookieless")) {
+    return;
+  }
+  PostHogPersistence? persistence = ph.persistence;
+  if (persistence == null) {
+    return;
+  }
+  if (!isPersistenceDisabled(ph)) {
+    persistence.load(true);
+  }
+  JsValue currentDistinctId = JS.invoke(client, "get_distinct_id");
+  if (!currentDistinctId.truthy() || JS.strictEqual(currentDistinctId, "$posthog_cookieless")) {
+    JsValue uuid = JS.invoke(ph.config, "get_device_id", uuidv7());
+    JS.invoke(client, "register", JS.object("distinct_id", uuid, "$device_id", uuid));
+    persistence.set_property("$user_state", "anonymous");
+  }
+  syncOptOutWithPersistence(ph);
+}
+
+JsValue checkLocalStorageForDebug(JsValue debugConfig) {
+  bool explicitlyFalse = isBoolean(debugConfig) && !debugConfig.truthy();
+  bool isTrueInLocalStorage = localStore.isSupported() && JS.strictEqual(localStore.get("ph_debug"), "true");
+  if (explicitlyFalse) {
+    return false;
+  }
+  return if (isTrueInLocalStorage) { true } else { debugConfig };
+}
+
+JsValue extensionClass(PostHog ph, string name) {
+  JsValue fromConfig = getProp(ph.config["__extensionClasses"], name);
+  if (!JS.isNullish(fromConfig)) {
+    return fromConfig;
+  }
+  return getProp(JS.get(PostHog, "__defaultExtensionClasses"), name);
+}
+
+void enrollFeatureFlags(PostHog ph) {
+  JsValue FeatureFlagsClass = extensionClass(ph, "featureFlags");
+  if (!FeatureFlagsClass.truthy()) {
+    return;
+  }
+  if (!ph.featureFlags.truthy() || !instanceOf(ph.featureFlags, FeatureFlagsClass)) {
+    if (!JS.isNullish(ph._featureFlagsReloadingUnsubscribe)) {
+      JS.call(ph._featureFlagsReloadingUnsubscribe, JS.undefined());
+    }
+    ph._featureFlagsReloadingUnsubscribe = JS.undefined();
+    ph.featureFlags = JS.construct(FeatureFlagsClass, ph);
+  }
+  JsValue flags = ph.featureFlags;
+  if (isFunction(flags["onReloading"]) && isFunction(flags["setup"])) {
+    if (!ph._featureFlagsReloadingUnsubscribe.truthy()) {
+      ph._featureFlagsReloadingUnsubscribe = JS.invoke(flags, "onReloading", () => {
+        ph._internalEventEmitter.emit("featureFlagsReloading", true);
+      });
+      ph._getBrowserClientAdapter().add(flags);
+    }
+  } else if (!JS.isNullish(flags["initialize"])) {
+    JS.invoke(flags, "initialize");
+  }
+}
+
+JsValue extensionOrNew(JsValue existing, JsValue ctor, PostHog ph) {
+  return if (JS.isNullish(existing)) { JS.construct(ctor, ph) } else { existing };
+}
+
+void initExtensions(PostHog ph, bool startInCookielessMode) {
+  number initStartTime = JS.number(JS.invoke(performance, "now"));
+  JsValue ext = assign(copy(JS.get(PostHog, "__defaultExtensionClasses")), ph.config["__extensionClasses"]);
+  (func()->void)[] initTasks = [];
+  if (ext["exceptions"].truthy()) {
+    ph.exceptions = extensionOrNew(ph.exceptions, ext["exceptions"], ph);
+    ph._extensions.push(ph.exceptions);
+  }
+  if (ext["historyAutocapture"].truthy()) {
+    ph.historyAutocapture = JS.construct(ext["historyAutocapture"], ph);
+    ph._extensions.push(ph.historyAutocapture);
+  }
+  if (ext["tracingHeaders"].truthy()) {
+    ph.tracingHeaders = JS.construct(ext["tracingHeaders"], ph);
+    ph._extensions.push(ph.tracingHeaders);
+  }
+  if (ext["siteApps"].truthy()) {
+    ph.siteApps = JS.construct(ext["siteApps"], ph);
+    ph._extensions.push(ph.siteApps);
+  }
+  if (ext["sessionRecording"].truthy() && !startInCookielessMode) {
+    ph.sessionRecording = JS.construct(ext["sessionRecording"], ph);
+    ph._extensions.push(ph.sessionRecording);
+  }
+  if (!ph.config["disable_scroll_properties"].truthy()) {
+    initTasks.push(() => {
+      ph.scrollManager.startMeasuringScrollPosition();
+    });
+  }
+  if (ext["autocapture"].truthy()) {
+    ph.autocapture = JS.construct(ext["autocapture"], ph);
+    ph._extensions.push(ph.autocapture);
+  }
+  if (ext["surveys"].truthy()) {
+    ph.surveys = extensionOrNew(ph.surveys, ext["surveys"], ph);
+    ph._extensions.push(ph.surveys);
+  }
+  if (ext["logs"].truthy()) {
+    ph.logs = extensionOrNew(ph.logs, ext["logs"], ph);
+    ph._extensions.push(ph.logs);
+  }
+  if (ext["metrics"].truthy()) {
+    ph.metrics = extensionOrNew(ph.metrics, ext["metrics"], ph);
+    ph._extensions.push(ph.metrics);
+  }
+  if (ext["conversations"].truthy()) {
+    ph.conversations = extensionOrNew(ph.conversations, ext["conversations"], ph);
+    ph._extensions.push(ph.conversations);
+  }
+  if (ext["productTours"].truthy()) {
+    ph.productTours = JS.construct(ext["productTours"], ph);
+    ph._extensions.push(ph.productTours);
+  }
+  if (ext["heatmaps"].truthy()) {
+    ph.heatmaps = JS.construct(ext["heatmaps"], ph);
+    ph._extensions.push(ph.heatmaps);
+  }
+  if (ext["webVitalsAutocapture"].truthy()) {
+    ph.webVitalsAutocapture = JS.construct(ext["webVitalsAutocapture"], ph);
+    ph._extensions.push(ph.webVitalsAutocapture);
+  }
+  if (ext["exceptionObserver"].truthy()) {
+    ph.exceptionObserver = JS.construct(ext["exceptionObserver"], ph);
+    ph._extensions.push(ph.exceptionObserver);
+  }
+  if (ext["deadClicksAutocapture"].truthy()) {
+    ph.deadClicksAutocapture = JS.construct(ext["deadClicksAutocapture"], ph, isDeadClicksEnabledForAutocapture);
+    ph._extensions.push(ph.deadClicksAutocapture);
+  }
+  if (ext["toolbar"].truthy()) {
+    ph.toolbar = extensionOrNew(ph.toolbar, ext["toolbar"], ph);
+    ph._extensions.push(ph.toolbar);
+  }
+  if (ext["experiments"].truthy()) {
+    ph.experiments = extensionOrNew(ph.experiments, ext["experiments"], ph);
+    ph._extensions.push(ph.experiments);
+  }
+  ph._extensions.forEach((JsValue extension) => {
+    if (!extension["initialize"].truthy()) {
+      return;
+    }
+    initTasks.push(() => {
+      if (!JS.isNullish(extension["initialize"])) {
+        JS.invoke(extension, "initialize");
+      }
+    });
+  });
+  // Replay a remote config that arrived before the extensions existed.
+  initTasks.push(() => {
+    if (ph._pendingRemoteConfig.truthy()) {
+      JsValue result = ph._pendingRemoteConfig;
+      ph._pendingRemoteConfig = JS.undefined();
+      ph._extensions.forEach((JsValue extension) => {
+        if (!JS.isNullish(extension["onRemoteConfig"])) {
+          JS.invoke(extension, "onRemoteConfig", result);
+        }
+      });
+    }
+  });
+  processInitTaskQueue(ph, initTasks, initStartTime);
+}
+
+// With deferred init, tasks yield to the page every 30 ms.
+void processInitTaskQueue(PostHog ph, (func()->void)[] queue, number initStartTime) {
+  while (queue.length > 0) {
+    if (ph.config["__preview_deferred_init_extensions"].truthy()) {
+      number elapsed = JS.number(JS.invoke(performance, "now")) - initStartTime;
+      if (elapsed >= 30.0 && queue.length > 0) {
+        JS.call(setTimeout, JS.undefined(), () => {
+          processInitTaskQueue(ph, queue, initStartTime);
+        }, 0);
+        return;
+      }
+    }
+    func()->void task = queue[0];
+    queue.splice(0, 1);
+    try {
+      task();
+    } catch (JsValue error) {
+      logger.error(JS.array("Error initializing extension:", error));
+    }
+  }
+  JsValue taskInitTiming = JS.invoke(Math, "round", JS.number(JS.invoke(performance, "now")) - initStartTime);
+  bool deferred = ph.config["__preview_deferred_init_extensions"].truthy();
+  JsValue client = ph;
+  JS.invoke(client, "register_for_session", JS.object(
+    "$sdk_debug_extensions_init_method", if (deferred) { "deferred" } else { "synchronous" },
+    "$sdk_debug_extensions_init_time_ms", taskInitTiming
+  ));
+  if (ph.config["__preview_deferred_init_extensions"].truthy()) {
+    logger.info(JS.array(JS.add(JS.add("PostHog extensions initialized (", taskInitTiming), "ms)")));
+  }
+}
+
+bool processCookieIdentityChange(PostHog ph, bool reloadFeatureFlags) {
+  PostHogPersistence? persistence = ph.persistence;
+  if (persistence == null || !persistence.consumeCookieIdentityChange()) {
+    return false;
+  }
+  ph._cachedPersonProperties = null;
+  if (JS.strictEqual(persistence.get_property("$user_state"), "anonymous")) {
+    PostHogPersistence? sessionPersistence = ph.sessionPersistence;
+    if (sessionPersistence != null) {
+      sessionPersistence.clear();
+    }
+    ph._sessionRegisteredPropKeys = [];
+    persistSessionRegisteredPropKeys(ph);
+  }
+  if (!JS.isNullish(ph.featureFlags)) {
+    JS.invoke(ph.featureFlags, "reset");
+  }
+  if (reloadFeatureFlags) {
+    JsValue client = ph;
+    JS.invoke(client, "reloadFeatureFlags");
+  }
+  return true;
+}
+
+bool requirePersonProcessing(PostHog ph, string functionName) {
+  if (JS.strictEqual(ph.config["person_profiles"], "never")) {
+    logger.error(JS.array(functionName + " was called, but process_person is set to \"never\". This call will be ignored."));
+    return false;
+  }
+  JsValue client = ph;
+  JS.invoke(client, "_register_single", "$epp", true);
+  return true;
+}
+
+bool hasPersonProcessing(PostHog ph) {
+  JsValue profiles = ph.config["person_profiles"];
+  if (JS.strictEqual(profiles, "never")) {
+    return false;
+  }
+  if (!JS.strictEqual(profiles, "identified_only")) {
+    return true;
+  }
+  JsValue client = ph;
+  PostHogPersistence? persistence = ph.persistence;
+  JsValue props = if (persistence != null) { persistence.props } else { JS.undefined() };
+  return JS.invoke(client, "_isIdentified").truthy() || !isEmptyObject(JS.invoke(client, "getGroups")) || getProp(props, "__alias").truthy() || getProp(props, "$epp").truthy();
+}
+
+bool shouldCapturePageleave(PostHog ph) {
+  JsValue pageleave = ph.config["capture_pageleave"];
+  JsValue pageview = ph.config["capture_pageview"];
+  return JS.strictEqual(pageleave, true) || (JS.strictEqual(pageleave, "if_capture_pageview") && (JS.strictEqual(pageview, true) || JS.strictEqual(pageview, "history_change")));
+}
+
+bool validateIdentifyId(JsValue id) {
+  if (!id.truthy() || isEmptyString(id)) {
+    logger.critical(JS.array("Unique user id has not been set in posthog.identify"));
+    return false;
+  }
+  if (JS.strictEqual(id, "$posthog_cookieless")) {
+    logger.critical(JS.array(JS.add(JS.add("The string \"", id), "\" was set in posthog.identify which indicates an error. This ID is only used as a sentinel value.")));
+    return false;
+  }
+  JsValue lower = JS.invoke(id, "toLowerCase");
+  if (JS.strictEqual(lower, "distinct_id") || JS.strictEqual(lower, "distinctid") || JS.strictEqual(lower, "undefined") || JS.strictEqual(lower, "null")) {
+    logger.critical(JS.array(JS.add(JS.add("The string \"", id), "\" was set in posthog.identify which indicates an error. This ID should be unique to the user and not a hardcoded string.")));
+    return false;
+  }
+  return true;
+}
+
+// `before_send`: each function sees the previous one's result; a nullish result drops
+// the event, and so does removing a property ingestion requires.
+JsValue runBeforeSend(PostHog ph, JsValue data) {
+  JsValue beforeSend = ph.config["before_send"];
+  if (JS.isNullish(beforeSend)) {
+    return data;
+  }
+  JsValue dataProperties = data["properties"];
+  string[] requiredProperties = keysOf(if (JS.isNullish(dataProperties)) { JS.object() } else { dataProperties }).filter((string key) => isKnownUnsafeEditableEventProperty(key));
+  JsValue fns = if (isArray(beforeSend)) { beforeSend } else { JS.array(beforeSend) };
+  JsValue result = data;
+  int count = JS.number(fns["length"]).toInt();
+  for (int i = 0; i < count; i++) {
+    JsValue fn = fns[i];
+    try {
+      result = JS.call(fn, JS.undefined(), result);
+      if (JS.isNullish(result)) {
+        JsValue message = JS.add(JS.add("Event '", data["event"]), "' was rejected in beforeSend function");
+        if (isKnownUnsafeEditableEvent(data["event"])) {
+          logger.warn(JS.array(JS.add(message, ". This can cause unexpected behavior.")));
+        } else {
+          logger.info(JS.array(message));
+        }
+        return null;
+      }
+      if (!result["properties"].truthy() || isEmptyObject(result["properties"])) {
+        logger.warn(JS.array(JS.add(JS.add("Event '", data["event"]), "' has no properties after beforeSend function, this is likely an error.")));
+      }
+    } catch (JsValue e) {
+      logger.error(JS.array(JS.add(JS.add("Error in beforeSend function for event '", data["event"]), "':"), e));
+      return null;
+    }
+  }
+  for (string property of requiredProperties) {
+    if (result["properties"].truthy() && JS.isNullish(result["properties"][property])) {
+      logger.warn(JS.array(JS.add(JS.add(JS.add(JS.add("Event '", data["event"]), "' had its '"), property), "' property removed in a beforeSend function. This property is required for ingestion, so the event will be dropped.")));
+      return null;
+    }
+  }
+  return result;
+}
+
+JsValue replaceExtension(PostHog ph, JsValue oldExt, JsValue newExt) {
+  if (oldExt.truthy()) {
+    int index = ph._extensions.indexOf(oldExt);
+    if (index != -1) {
+      ph._extensions.splice(index, 1);
+    }
+  }
+  ph._extensions.push(newExt);
+  if (!JS.isNullish(newExt["initialize"])) {
+    JS.invoke(newExt, "initialize");
+  }
+  return newExt;
+}
+
+// One queued call `[name, ...args]`, or a chain `[[name, ...args], ...]` applied to each
+// result in turn (`posthog.get_group().set()` in the snippet).
+void executeCalls(JsValue calls, JsValue thisArg) {
+  if (!isArray(calls)) {
+    return;
+  }
+  JS.invoke(calls, "forEach", (JsValue item) => {
+    try {
+      if (isArray(item[0])) {
+        JsValue caller = thisArg;
+        each(item, (JsValue call, JsValue index) => {
+          caller = JS.invoke(caller[JS.string(call[0])], "apply", caller, JS.invoke(call, "slice", 1));
+        });
+      } else {
+        JS.invoke(thisArg[JS.string(item[0])], "apply", thisArg, JS.invoke(item, "slice", 1));
+      }
+    } catch (JsValue e) {
+      logger.error(JS.array("Error executing queued PostHog call", item, e));
+    }
+  });
+}
+
+void callOptional(JsValue target, string method) {
+  if (!JS.isNullish(target)) {
+    JS.invoke(target, method);
+  }
+}
+
+void identifyUser(PostHog ph, JsValue newDistinctIdArg, JsValue userPropertiesToSet, JsValue userPropertiesToSetOnce) {
+  JsValue client = ph;
+  PostHogPersistence? persistenceValue = ph.persistence;
+  if (!ph.__loaded || persistenceValue == null) {
+    logger.uninitializedWarning("posthog.identify");
+    return;
+  }
+  PostHogPersistence persistence = persistenceValue;
+  JsValue newDistinctId = newDistinctIdArg;
+  if (isNumber(newDistinctId)) {
+    newDistinctId = JS.invoke(newDistinctId, "toString");
+    logger.warn(JS.array("The first argument to posthog.identify was a number, but it should be a string. It has been converted to a string."));
+  }
+  if (!validateIdentifyId(newDistinctId)) {
+    return;
+  }
+  if (!requirePersonProcessing(ph, "posthog.identify")) {
+    return;
+  }
+  healCookielessSentinelDistinctId(ph);
+  // A sibling tab's cookie may have changed identity since the last read.
+  JsValue preSyncDistinctId = JS.invoke(client, "get_distinct_id");
+  bool identityChangedDuringSync = persistence.syncCookieProperties() && JS.strictNotEqual(JS.invoke(client, "get_distinct_id"), preSyncDistinctId);
+  bool processedCookieIdentityChange = processCookieIdentityChange(ph, false);
+  bool suppressionStarted = persistence._beginCookieSyncSuppression(false);
+  bool identifyCompleted = false;
+  try {
+    JsValue previousDistinctId = JS.invoke(client, "get_distinct_id");
+    JS.invoke(client, "register", JS.object("$user_id", newDistinctId));
+    if (!JS.invoke(client, "get_property", "$device_id").truthy()) {
+      // The anonymous id becomes the device id of a first-time identify.
+      JS.invoke(client, "register_once", JS.object("$had_persisted_distinct_id", true, "$device_id", previousDistinctId), "");
+    }
+    if (JS.strictNotEqual(newDistinctId, previousDistinctId) && JS.strictNotEqual(newDistinctId, JS.invoke(client, "get_property", "__alias"))) {
+      JS.invoke(client, "unregister", "__alias");
+      JS.invoke(client, "register", JS.object("distinct_id", newDistinctId));
+    }
+    bool isKnownAnonymous = JS.strictEqual(JS.or(persistence.get_property("$user_state"), "anonymous"), "anonymous");
+    bool identityDidChange = JS.strictNotEqual(newDistinctId, previousDistinctId);
+    bool shouldTransitionToIdentified = !identityDidChange && isKnownAnonymous;
+    if (identityDidChange && isKnownAnonymous) {
+      persistence.set_property("$user_state", "identified");
+      JS.invoke(client, "setPersonPropertiesForFlags", JS.object("$set", JS.or(userPropertiesToSet, JS.object()), "$set_once", JS.or(userPropertiesToSetOnce, JS.object())), false);
+      if (ph.config["cookieWinsOnConflict"].truthy()) {
+        persistence._publishSuppressedCookieSnapshot();
+      }
+      JS.invoke(client, "capture", "$identify", JS.object("distinct_id", newDistinctId, "$anon_distinct_id", previousDistinctId), JS.object("$set", JS.or(userPropertiesToSet, JS.object()), "$set_once", JS.or(userPropertiesToSetOnce, JS.object())));
+      ph._cachedPersonProperties = getPersonPropertiesHash(newDistinctId, userPropertiesToSet, userPropertiesToSetOnce);
+      if (!JS.isNullish(ph.featureFlags)) {
+        JS.invoke(ph.featureFlags, "setAnonymousDistinctId", previousDistinctId);
+      }
+    } else if (shouldTransitionToIdentified) {
+      persistence.set_property("$user_state", "identified");
+      JsValue setProperties = JS.or(userPropertiesToSet, JS.object());
+      JsValue setOnceProperties = JS.or(userPropertiesToSetOnce, JS.object());
+      JS.invoke(client, "setPersonPropertiesForFlags", JS.object("$set", setProperties, "$set_once", setOnceProperties), false);
+      if (ph.config["cookieWinsOnConflict"].truthy()) {
+        persistence._publishSuppressedCookieSnapshot();
+      }
+      JS.invoke(client, "capture", "$set", JS.object("$set", setProperties, "$set_once", setOnceProperties));
+      ph._cachedPersonProperties = getPersonPropertiesHash(newDistinctId, userPropertiesToSet, userPropertiesToSetOnce);
+    } else if (userPropertiesToSet.truthy() || userPropertiesToSetOnce.truthy()) {
+      JS.invoke(client, "setPersonProperties", userPropertiesToSet, userPropertiesToSetOnce);
+    }
+    if (identityDidChange || identityChangedDuringSync || processedCookieIdentityChange) {
+      JS.invoke(client, "reloadFeatureFlags");
+      if (ph.featureFlags.truthy()) {
+        JS.invoke(ph.featureFlags, "resetFlagCallReported");
+      } else {
+        JS.invoke(client, "unregister", "$flag_call_reported");
+      }
+    } else if (shouldTransitionToIdentified && (userPropertiesToSet.truthy() || userPropertiesToSetOnce.truthy())) {
+      JS.invoke(client, "reloadFeatureFlags");
+    }
+    identifyCompleted = true;
+  } finally {
+    if (suppressionStarted) {
+      persistence._endCookieSyncSuppression(identifyCompleted);
+    }
+  }
+}
+
+bool bootstrapSessionAccepted(PostHog ph, JsValue sessionID) {
+  SessionIdManager? manager = ph.sessionManager;
+  return manager != null && manager.setBootstrapSessionId(sessionID, true);
+}
+
+void resetClient(PostHog ph, JsValue resetDeviceId, bool isConsentTransition, JsValue bootstrap) {
+  JsValue client = ph;
+  logger.info(JS.array("reset"));
+  if (!ph.__loaded) {
+    logger.uninitializedWarning("posthog.reset");
+    return;
+  }
+  JsValue bootstrapSessionID = getProp(bootstrap, "sessionID");
+  ph.config["bootstrap"] = JS.or(JS.or(bootstrap, getProp(ph._originalUserConfig, "bootstrap")), JS.object());
+  JsValue flags = ph.featureFlags;
+  if (!JS.isNullish(flags) && !JS.isNullish(flags["updateConfig"])) {
+    JS.invoke(flags, "updateConfig", ph.config, JS.invoke(client, "_shouldDisableFlags"));
+  }
+  // The device survives a reset unless asked; its model and replay config too.
+  JsValue deviceId = JS.invoke(client, "get_property", "$device_id");
+  JsValue deviceModel = JS.invoke(client, "get_property", "$device_model");
+  JsValue recordingRemoteConfig = JS.invoke(client, "get_property", "$session_recording_remote_config");
+  bool wasCapturing = JS.invoke(client, "is_capturing").truthy();
+  ph.consent.reset();
+  if (!isConsentTransition && wasCapturing && !JS.invoke(client, "is_capturing").truthy()) {
+    JS.invoke(console, "warn", "[PostHog.js]", RESET_CONSENT_WARN);
+  }
+  PostHogPersistence? persistence = ph.persistence;
+  bool suppressionStarted = persistence != null && persistence._beginCookieSyncSuppression(false);
+  bool resetCompleted = false;
+  try {
+    if (persistence != null) {
+      persistence.clear();
+    }
+    PostHogPersistence? sessionPersistence = ph.sessionPersistence;
+    if (sessionPersistence != null) {
+      sessionPersistence.clear();
+    }
+    ph._sessionRegisteredPropKeys = [];
+    persistSessionRegisteredPropKeys(ph);
+    if (!JS.isUndefined(recordingRemoteConfig) && persistence != null) {
+      persistence.register(JS.object("$session_recording_remote_config", recordingRemoteConfig), JS.undefined());
+    }
+    callOptional(ph.surveys, "reset");
+    RemoteConfigLoader? loader = ph._remoteConfigLoader;
+    if (loader != null) {
+      loader.stop();
+    }
+    callOptional(ph.featureFlags, "reset");
+    callOptional(ph.conversations, "reset");
+    callOptional(ph.logs, "reset");
+    callOptional(ph.metrics, "reset");
+    if (persistence != null) {
+      persistence.set_property("$user_state", "anonymous");
+    }
+    SessionIdManager? sessionManager = ph.sessionManager;
+    if (sessionManager != null) {
+      sessionManager.resetSessionId();
+    }
+    ph._cachedPersonProperties = null;
+    if (JS.strictEqual(ph.config["cookieless_mode"], "always")) {
+      JS.invoke(client, "register_once", JS.object("distinct_id", "$posthog_cookieless", "$device_id", null), "");
+    } else {
+      JsValue uuid = JS.invoke(ph.config, "get_device_id", uuidv7());
+      JS.invoke(client, "register_once", JS.object("distinct_id", uuid, "$device_id", if (resetDeviceId.truthy()) { uuid } else { deviceId }), "");
+      if (!resetDeviceId.truthy() && !JS.isUndefined(deviceModel)) {
+        JS.invoke(client, "register", JS.object("$device_model", deviceModel));
+      }
+    }
+    JS.invoke(client, "register", JS.object("$last_posthog_reset", JS.invoke(JS.construct(Date), "toISOString")), 1);
+    if (bootstrap.truthy()) {
+      if (!JS.isUndefined(bootstrap["distinctID"]) && !inCookielessMode(ph)) {
+        if (persistence != null) {
+          persistence.set_property("$user_state", if (bootstrap["isIdentifiedID"].truthy()) { "identified" } else { "anonymous" });
+        }
+        JS.invoke(client, "register", JS.object("distinct_id", bootstrap["distinctID"]));
+      }
+      if (!JS.isNullish(ph.featureFlags)) {
+        JS.invoke(ph.featureFlags, "initialize");
+      }
+      if (!JS.isUndefined(bootstrapSessionID) && !bootstrapSessionAccepted(ph, bootstrapSessionID)) {
+        JsValue withoutSessionID = assign(JS.object(), bootstrap);
+        JS.delete(withoutSessionID, "sessionID");
+        ph.config["bootstrap"] = withoutSessionID;
+      }
+    }
+    JS.delete(ph.config, "identity_distinct_id");
+    JS.delete(ph.config, "identity_hash");
+    resetCompleted = true;
+  } finally {
+    if (suppressionStarted && persistence != null) {
+      persistence._endCookieSyncSuppression(resetCompleted);
+    }
+  }
+  JS.invoke(client, "reloadFeatureFlags");
+}
+
+async JsValue shutdownClient(PostHog ph) {
+  if (!ph.__loaded) {
+    logger.uninitializedWarning("posthog.shutdown");
+    return JS.undefined();
+  }
+  RemoteConfigLoader? loader = ph._remoteConfigLoader;
+  if (loader != null) {
+    loader.stop();
+  }
+  BrowserClientAdapter? adapter = ph._browserClientAdapter;
+  if (adapter != null) {
+    adapter.dispose();
+  }
+  if (!JS.isNullish(ph.sessionRecording)) {
+    JS.invoke(ph.sessionRecording, "dispose");
+  }
+  if (!JS.isNullish(ph.logs)) {
+    JS.invoke(ph.logs, "flushLogs", "sendBeacon");
+  }
+  if (!JS.isNullish(ph.metrics)) {
+    JS.invoke(ph.metrics, "flush", "sendBeacon");
+  }
+  RequestQueue? queue = ph._requestQueue;
+  if (queue != null) {
+    queue.unload();
+  }
+  RetryQueue? retries = ph._retryQueue;
+  if (retries != null) {
+    retries.unload();
+  }
+  try {
+    if (!JS.isNullish(ph.featureFlags)) {
+      JS.invoke(ph.featureFlags, "destroy");
+    }
+  } catch (JsValue error) {
+    logger.error(JS.array("Error while destroying feature flags", error));
+  }
+  return JS.undefined();
+}
+
+
+// ---- the client ----
+
+export class PostHog {
+  DeprecatedWebPerformanceObserver webPerformance;
+  bool _personProcessingSetOncePropertiesSent;
+  string version;
+  string[] _sessionRegisteredPropKeys;
+  string _sessionRegisteredPropertiesStorageKey;
+  EventEmitter _internalEventEmitter;
+  JsValue[] _extensions;
+  JsValue[] _extensionEventPropertyProducers;
+  JsValue _calculate_event_properties;
+  JsValue config;
+  JsValue SentryIntegration;
+  JsValue sentryIntegration;
+  JsValue __request_queue;
+  bool __loaded;
+  JsValue analyticsDefaultEndpoint;
+  bool _initialPageviewCaptured;
+  JsValue _visibilityStateListener;
+  JsValue _initialPersonProfilesConfig;
+  JsValue _cachedPersonProperties;
+  ScrollManager scrollManager;
+  PageViewManager pageViewManager;
+  RateLimiter rateLimiter;
+  RequestRouter requestRouter;
+  ConsentManager consent;
+  ExternalIntegrations externalIntegrations;
+  JsValue featureFlags;
+  JsValue toolbar;
+  JsValue surveys;
+  JsValue conversations;
+  JsValue logs;
+  JsValue metrics;
+  JsValue experiments;
+  JsValue exceptions;
+  JsValue people;
+  JsValue _originalUserConfig;
+  JsValue _triggered_notifs;
+  JsValue compression;
+  PostHogPersistence? persistence;
+  PostHogPersistence? sessionPersistence;
+  RequestQueue? _requestQueue;
+  RetryQueue? _retryQueue;
+  SessionIdManager? sessionManager;
+  SessionPropsManager? sessionPropsManager;
+  RemoteConfigLoader? _remoteConfigLoader;
+  JsValue _pendingRemoteConfig;
+  JsValue _lastRemoteConfig;
+  JsValue siteApps;
+  JsValue autocapture;
+  JsValue heatmaps;
+  JsValue tracingHeaders;
+  JsValue webVitalsAutocapture;
+  JsValue exceptionObserver;
+  JsValue deadClicksAutocapture;
+  JsValue historyAutocapture;
+  JsValue productTours;
+  JsValue sessionRecording;
+  BrowserClientAdapter? _browserClientAdapter;
+  JsValue _featureFlagsReloadingUnsubscribe;
+
+  init() {
+    JsValue client = this;
+    this.webPerformance = new DeprecatedWebPerformanceObserver();
+    this._personProcessingSetOncePropertiesSent = false;
+    this.version = Config.libVersion;
+    this._sessionRegisteredPropKeys = [];
+    this._sessionRegisteredPropertiesStorageKey = "";
+    this._internalEventEmitter = new EventEmitter();
+    this._extensions = [];
+    this._extensionEventPropertyProducers = [];
+    this._calculate_event_properties = JS.invoke(client["calculateEventProperties"], "bind", client);
+    this.config = defaultConfig(JS.undefined());
+    this.SentryIntegration = SentryIntegrationClass;
+    this.sentryIntegration = (JsValue options) => sentryIntegration(client, options);
+    this.__request_queue = JS.array();
+    this.__loaded = false;
+    this.analyticsDefaultEndpoint = "/e/";
+    this._initialPageviewCaptured = false;
+    this._visibilityStateListener = null;
+    this._initialPersonProfilesConfig = null;
+    this._cachedPersonProperties = null;
+    this.persistence = JS.assume(JS.undefined());
+    this.sessionPersistence = JS.assume(JS.undefined());
+    this._requestQueue = JS.assume(JS.undefined());
+    this._retryQueue = JS.assume(JS.undefined());
+    this.sessionManager = JS.assume(JS.undefined());
+    this.sessionPropsManager = JS.assume(JS.undefined());
+    this._remoteConfigLoader = JS.assume(JS.undefined());
+    this._browserClientAdapter = JS.assume(JS.undefined());
+    this._featureFlagsReloadingUnsubscribe = JS.undefined();
+    this.scrollManager = new ScrollManager(this);
+    this.pageViewManager = new PageViewManager(this);
+    this.rateLimiter = new RateLimiter(this);
+    this.requestRouter = new RequestRouter(this);
+    this.consent = new ConsentManager(this);
+    this.externalIntegrations = new ExternalIntegrations(this);
+    // Default extension classes are constructed eagerly; the slim bundle has none.
+    JsValue defaults = JS.get(PostHog, "__defaultExtensionClasses");
+    JsValue ext = if (JS.isNullish(defaults)) { JS.object() } else { defaults };
+    this.featureFlags = ext["featureFlags"];
+    if (ext["featureFlags"].truthy()) {
+      this.featureFlags = JS.construct(ext["featureFlags"], client);
+    }
+    this.toolbar = ext["toolbar"];
+    if (ext["toolbar"].truthy()) {
+      this.toolbar = JS.construct(ext["toolbar"], client);
+    }
+    this.surveys = ext["surveys"];
+    if (ext["surveys"].truthy()) {
+      this.surveys = JS.construct(ext["surveys"], client);
+    }
+    this.conversations = ext["conversations"];
+    if (ext["conversations"].truthy()) {
+      this.conversations = JS.construct(ext["conversations"], client);
+    }
+    this.logs = ext["logs"];
+    if (ext["logs"].truthy()) {
+      this.logs = JS.construct(ext["logs"], client);
+    }
+    this.metrics = ext["metrics"];
+    if (ext["metrics"].truthy()) {
+      this.metrics = JS.construct(ext["metrics"], client);
+    }
+    this.experiments = ext["experiments"];
+    if (ext["experiments"].truthy()) {
+      this.experiments = JS.construct(ext["experiments"], client);
+    }
+    this.exceptions = ext["exceptions"];
+    if (ext["exceptions"].truthy()) {
+      this.exceptions = JS.construct(ext["exceptions"], client);
+    }
+    // Deprecated: `posthog.people.set(...)` is `setPersonProperties`.
+    this.people = JS.object(
+      "set", (JsValue prop, JsValue to, JsValue callback) => {
+        JsValue setProps = prop;
+        if (isString(prop)) {
+          setProps = JS.object();
+          setProps[JS.string(prop)] = to;
+        }
+        JS.invoke(client, "setPersonProperties", setProps);
+        if (!JS.isNullish(callback)) {
+          JS.call(callback, JS.undefined(), JS.object());
+        }
+      },
+      "set_once", (JsValue prop, JsValue to, JsValue callback) => {
+        JsValue setProps = prop;
+        if (isString(prop)) {
+          setProps = JS.object();
+          setProps[JS.string(prop)] = to;
+        }
+        JS.invoke(client, "setPersonProperties", JS.undefined(), setProps);
+        if (!JS.isNullish(callback)) {
+          JS.call(callback, JS.undefined(), JS.object());
+        }
+      }
+    );
+    JS.invoke(client, "on", "eventCaptured", (JsValue data) => {
+      logger.info(JS.array(JS.add(JS.add("send \"", getProp(data, "event")), "\""), data));
+    });
+  }
+
+  JsValue init(JsValue token, JsValue config = JS.undefined(), JsValue name = JS.undefined()) {
+    JsValue client = this;
+    if (!name.truthy() || JS.strictEqual(name, PRIMARY_INSTANCE_NAME)) {
+      return JS.invoke(client, "_init", token, config, name);
+    }
+    JsValue existing = instances[JS.string(name)];
+    JsValue named = if (JS.isNullish(existing)) { new PostHog() } else { existing };
+    JS.invoke(named, "_init", token, config, name);
+    instances[JS.string(name)] = named;
+    instances[PRIMARY_INSTANCE_NAME][JS.string(name)] = named;
+    return named;
+  }
+
+  JsValue _init(JsValue token, JsValue userConfigArg = JS.undefined(), JsValue name = JS.undefined()) {
+    JsValue client = this;
+    JsValue config = if (JS.isUndefined(userConfigArg)) { JS.object() } else { userConfigArg };
+    string normalizedToken = if (isString(token)) { JS.string(JS.invoke(token, "trim")) } else { "" };
+    if (normalizedToken == "") {
+      logger.critical(JS.array("PostHog was initialized without a token. This likely indicates a misconfiguration. Please check the first argument passed to posthog.init()"));
+      return client;
+    }
+    if (this.__loaded) {
+      if (JS.strictNotEqual(normalizedToken, getProp(this.config, "token"))) {
+        JS.invoke(console, "warn", "[PostHog.js]", "You have already initialized PostHog with a different project token! Re-initializing is a no-op, so events will keep going to the project this instance was initialized with. To capture into a second project, load PostHog once, then initialize a named instance after the SDK has loaded, e.g. posthog.init('" + normalizedToken + "', { ... }, 'project2')");
+      } else {
+        JS.invoke(console, "warn", "[PostHog.js]", "You have already initialized PostHog! Re-initializing is a no-op");
+      }
+      return client;
+    }
+    this.__loaded = true;
+    this.config = defaultConfig(config["defaults"]);
+    config["debug"] = checkLocalStorageForDebug(config["debug"]);
+    this._originalUserConfig = config;
+    this._triggered_notifs = JS.array();
+    if (config["person_profiles"].truthy()) {
+      this._initialPersonProfilesConfig = config["person_profiles"];
+    } else if (config["process_person"].truthy()) {
+      this._initialPersonProfilesConfig = config["process_person"];
+    }
+    JsValue baseConfig = defaultConfig(config["defaults"]);
+    JsValue userConfig = configRenames(config);
+    JsValue mergedConfig = extend(extend(extend(JS.object(), baseConfig), userConfig), JS.object("name", name, "token", normalizedToken));
+    // A partial rageclick or session_recording object keeps the date-gated defaults.
+    if (isObject(baseConfig["rageclick"]) && isObject(userConfig["rageclick"])) {
+      mergedConfig["rageclick"] = extend(extend(JS.object(), baseConfig["rageclick"]), userConfig["rageclick"]);
+    }
+    if (isObject(baseConfig["session_recording"]) && isObject(userConfig["session_recording"])) {
+      mergedConfig["session_recording"] = extend(extend(JS.object(), baseConfig["session_recording"]), userConfig["session_recording"]);
+    }
+    JS.invoke(client, "set_config", mergedConfig);
+    if (this.config["on_xhr_error"].truthy()) {
+      logger.error(JS.array("on_xhr_error is deprecated. Use on_request_error instead"));
+    }
+    this.compression = if (config["disable_compression"].truthy()) { JS.undefined() } else { "gzip-js" };
+    bool persistenceDisabled = isPersistenceDisabled(this);
+    PostHogPersistence persistence = new PostHogPersistence(this.config, persistenceDisabled, true);
+    this.persistence = persistence;
+    JsValue persistenceMode = this.config["persistence"];
+    PostHogPersistence sessionPersistence = persistence;
+    if (!JS.strictEqual(persistenceMode, "sessionStorage") && !JS.strictEqual(persistenceMode, "memory")) {
+      sessionPersistence = new PostHogPersistence(assign(copy(this.config), JS.object("persistence", "sessionStorage")), persistenceDisabled, false);
+    }
+    this.sessionPersistence = sessionPersistence;
+    JsValue persistenceName = JS.or(this.config["persistence_name"], this.config["token"]);
+    this._sessionRegisteredPropertiesStorageKey = JS.string(JS.add(JS.add("ph_", persistenceName), "_session_registered_properties"));
+    if (JS.strictNotEqual(this.config["persistence"], "memory") && !persistenceDisabled && sessionStore.isSupported()) {
+      JsValue stored = sessionStore.parse(this._sessionRegisteredPropertiesStorageKey);
+      if (isArray(stored)) {
+        JS.invoke(stored, "forEach", (JsValue key) => {
+          if (isString(key)) {
+            addRegisteredKey(this, JS.string(key));
+          }
+        });
+      }
+    } else {
+      sessionStore.remove(this._sessionRegisteredPropertiesStorageKey, JS.undefined());
+    }
+    JsValue initialPersistenceProps = copy(persistence.props);
+    JsValue initialSessionProps = copy(sessionPersistence.props);
+    JS.invoke(client, "register", JS.object("$initialization_time", JS.invoke(JS.construct(Date), "toISOString")));
+    this._requestQueue = new RequestQueue((JsValue req) => {
+      this._send_retriable_request(req);
+    }, this.config["request_queue_config"]);
+    this._retryQueue = new RetryQueue(this);
+    this.__request_queue = JS.array();
+    bool startInCookielessMode = inCookielessMode(this);
+    if (!startInCookielessMode) {
+      SessionIdManager sessionManager = new SessionIdManager(this);
+      this.sessionManager = sessionManager;
+      this.sessionPropsManager = new SessionPropsManager(this, sessionManager, persistence);
+      // Session-scoped super properties end with the session.
+      sessionManager.onSessionId((JsValue sessionId, JsValue windowId, JsValue changeReason) => {
+        if (getProp(changeReason, "activityTimeout").truthy() || getProp(changeReason, "sessionPastMaximumLength").truthy() || getProp(changeReason, "crossTabAdoption").truthy()) {
+          this._clearSessionRegisteredProps();
+        }
+      });
+    }
+    enrollFeatureFlags(this);
+    if (this.config["__preview_deferred_init_extensions"].truthy()) {
+      logger.info(JS.array("Deferring extension initialization to improve startup performance"));
+      JS.call(setTimeout, JS.undefined(), () => {
+        initExtensions(this, startInCookielessMode);
+      }, 0);
+    } else {
+      logger.info(JS.array("Initializing extensions synchronously"));
+      initExtensions(this, startInCookielessMode);
+    }
+    Config.debug = Config.debug || this.config["debug"].truthy();
+    if (Config.debug) {
+      logger.info(JS.array("Starting in debug mode", JS.object("this", client, "config", config, "thisC", copy(this.config), "p", initialPersistenceProps, "s", initialSessionProps)));
+    }
+    // An identity given at init time seeds the bootstrap distinct id.
+    JsValue bootstrapConfig = config["bootstrap"];
+    if (this.config["identity_distinct_id"].truthy() && !getProp(bootstrapConfig, "distinctID").truthy()) {
+      config["bootstrap"] = assign(assign(JS.object(), config["bootstrap"]), JS.object("distinctID", this.config["identity_distinct_id"], "isIdentifiedID", true));
+    }
+    JsValue bootstrap = config["bootstrap"];
+    if (!JS.isUndefined(getProp(bootstrap, "distinctID"))) {
+      JsValue bootstrapDistinctId = bootstrap["distinctID"];
+      JsValue existingDistinctId = JS.invoke(client, "get_distinct_id");
+      JsValue existingUserState = persistence.get_property("$user_state");
+      if (bootstrap["isIdentifiedID"].truthy() && !JS.isNullish(existingDistinctId) && JS.strictNotEqual(existingDistinctId, bootstrapDistinctId) && JS.strictEqual(existingUserState, "anonymous")) {
+        JS.invoke(client, "identify", bootstrapDistinctId);
+      } else if (bootstrap["isIdentifiedID"].truthy() && !JS.isNullish(existingDistinctId) && JS.strictNotEqual(existingDistinctId, bootstrapDistinctId) && JS.strictEqual(existingUserState, "identified")) {
+        logger.warn(JS.array("Bootstrap distinctID differs from an already-identified user. The existing identity is preserved. Call reset() before reinitializing if you intend to switch users."));
+      } else {
+        JsValue uuid = JS.invoke(this.config, "get_device_id", uuidv7());
+        JsValue deviceID = if (bootstrap["isIdentifiedID"].truthy()) { uuid } else { bootstrapDistinctId };
+        persistence.set_property("$user_state", if (bootstrap["isIdentifiedID"].truthy()) { "identified" } else { "anonymous" });
+        JS.invoke(client, "register", JS.object("distinct_id", bootstrapDistinctId, "$device_id", deviceID));
+      }
+    }
+    if (startInCookielessMode) {
+      JS.invoke(client, "register_once", JS.object("distinct_id", "$posthog_cookieless", "$device_id", null), "");
+    } else if (!JS.invoke(client, "get_distinct_id").truthy()) {
+      JsValue uuid = JS.invoke(this.config, "get_device_id", uuidv7());
+      JS.invoke(client, "register_once", JS.object("distinct_id", uuid, "$device_id", uuid), "");
+      persistence.set_property("$user_state", "anonymous");
+    }
+    // `pagehide` where it exists: it fires reliably when a page is abandoned.
+    addEventListener(win, if (JS.in("onpagehide", self)) { "pagehide" } else { "unload" }, JS.invoke(client["_handle_unload"], "bind", client), false, false);
+    if (config["segment"].truthy()) {
+      setupSegmentIntegration(this, () => {
+        this._loaded();
+      });
+    } else {
+      this._loaded();
+    }
+    JsValue onCapture = this.config["_onCapture"];
+    if (isFunction(onCapture) && JS.strictNotEqual(onCapture, NOOP)) {
+      logger.warn(JS.array("onCapture is deprecated. Please use `before_send` instead"));
+      JS.invoke(client, "on", "eventCaptured", (JsValue data) => JS.invoke(this.config, "_onCapture", data["event"], data));
+    }
+    if (this.config["ip"].truthy()) {
+      logger.warn(JS.array("The `ip` config option has NO EFFECT AT ALL and has been deprecated. Use a custom transformation or \"Discard IP data\" project setting instead. See https://posthog.com/tutorials/web-redact-properties#hiding-customer-ip-address for more information."));
+    }
+    // Not awaited: the first event may go out without $device_model.
+    if (!this.config["disableDeviceModel"].truthy()) {
+      JsValue modelTask = getDeviceModel();
+      JS.invoke(JS.invoke(modelTask, "then", (JsValue model) => {
+        if (model.truthy()) {
+          JS.invoke(client, "register", JS.object("$device_model", model));
+        }
+      }), "catch", NOOP);
+    }
+    return client;
+  }
+
+  void _onRemoteConfig(JsValue result) {
+    if (!(document.truthy() && document["body"].truthy())) {
+      logger.info(JS.array("document not ready yet, trying again in 500 milliseconds..."));
+      JS.call(setTimeout, JS.undefined(), () => {
+        this._onRemoteConfig(result);
+      }, 500);
+      return;
+    }
+    if (this.config["__preview_deferred_init_extensions"].truthy()) {
+      this._pendingRemoteConfig = result;
+    }
+    this._lastRemoteConfig = result;
+    this.compression = JS.undefined();
+    if (result["ok"].truthy()) {
+      JsValue remote = result["config"];
+      JsValue supported = remote["supportedCompression"];
+      if (supported.truthy() && !this.config["disable_compression"].truthy()) {
+        this.compression = if (JS.number(JS.invoke(supported, "indexOf", "gzip-js")) != -1.0) { "gzip-js" } else { if (JS.number(JS.invoke(supported, "indexOf", "base64")) != -1.0) { "base64" } else { JS.undefined() } };
+      }
+      JsValue analytics = remote["analytics"];
+      if (!JS.isNullish(analytics) && analytics["endpoint"].truthy()) {
+        this.analyticsDefaultEndpoint = analytics["endpoint"];
+      }
+    }
+    JsValue client = this;
+    JS.invoke(client, "set_config", JS.object("person_profiles", if (this._initialPersonProfilesConfig.truthy()) { this._initialPersonProfilesConfig } else { "identified_only" }));
+    BrowserClientAdapter? adapter = this._browserClientAdapter;
+    if (adapter != null) {
+      adapter.handleRemoteConfig(result);
+    }
+    this._extensions.forEach((JsValue extension) => {
+      if (!JS.isNullish(extension["onRemoteConfig"])) {
+        JS.invoke(extension, "onRemoteConfig", result);
+      }
+    });
+  }
+
+  void _loaded() {
+    JsValue client = this;
+    try {
+      JS.invoke(this.config, "loaded", client);
+    } catch (JsValue err) {
+      logger.critical(JS.array("`loaded` function failed", err));
+    }
+    this._start_queue_if_opted_in();
+    // Mark internal or test users before any event goes out.
+    JsValue pattern = this.config["internal_or_test_user_hostname"];
+    if (pattern.truthy() && !JS.isNullish(location) && location["hostname"].truthy()) {
+      JsValue hostname = location["hostname"];
+      bool matches = if (JS.typeOf(pattern) == "string") { JS.strictEqual(hostname, pattern) } else { JS.invoke(pattern, "test", hostname).truthy() };
+      if (matches) {
+        JS.invoke(client, "setInternalOrTestUser");
+      }
+    }
+    // After `loaded`, so a page can identify before the first pageview.
+    if (this.config["capture_pageview"].truthy()) {
+      JS.call(setTimeout, JS.undefined(), () => {
+        if (this.consent.isOptedIn() || inCookielessMode(this)) {
+          this._captureInitialPageview();
+        }
+      }, 1);
+    }
+    RemoteConfigLoader loader = new RemoteConfigLoader(this);
+    this._remoteConfigLoader = loader;
+    loader.load();
+  }
+
+  void _start_queue_if_opted_in() {
+    JsValue client = this;
+    if (JS.invoke(client, "is_capturing").truthy()) {
+      RequestQueue? queue = this._requestQueue;
+      if (this.config["request_batching"].truthy() && queue != null) {
+        queue.enable();
+      }
+    }
+  }
+
+  void _dom_loaded() {
+    JsValue client = this;
+    if (JS.invoke(client, "is_capturing").truthy()) {
+      JsValue pending = this.__request_queue;
+      if (isArray(pending)) {
+        JS.invoke(pending, "forEach", (JsValue item) => {
+          this._send_retriable_request(item);
+        });
+      }
+    }
+    this.__request_queue = JS.array();
+    this._start_queue_if_opted_in();
+  }
+
+  void _handle_unload() {
+    JsValue client = this;
+    JsValue surveys = this.surveys;
+    if (!JS.isNullish(surveys) && !JS.isNullish(surveys["handlePageUnload"])) {
+      JS.invoke(surveys, "handlePageUnload");
+    }
+    if (!JS.isNullish(this.metrics)) {
+      JS.invoke(this.metrics, "flush", "sendBeacon");
+    }
+    if (!this.config["request_batching"].truthy()) {
+      if (shouldCapturePageleave(this)) {
+        JS.invoke(client, "capture", "$pageleave", null, JS.object("transport", "sendBeacon"));
+      }
+      return;
+    }
+    if (shouldCapturePageleave(this)) {
+      JS.invoke(client, "capture", "$pageleave");
+    }
+    if (!JS.isNullish(this.logs)) {
+      JS.invoke(this.logs, "flushLogs", "sendBeacon");
+    }
+    RequestQueue? queue = this._requestQueue;
+    if (queue != null) {
+      queue.unload();
+    }
+    RetryQueue? retries = this._retryQueue;
+    if (retries != null) {
+      retries.unload();
+    }
+  }
+
+  void _send_request(JsValue options) {
+    if (!this.__loaded) {
+      if (options["fireCallbackOnDrop"].truthy() && !JS.isNullish(options["callback"])) {
+        JS.invoke(options, "callback", JS.object("statusCode", 0));
+      }
+      return;
+    }
+    if (ENQUEUE_REQUESTS) {
+      JS.invoke(this.__request_queue, "push", options);
+      return;
+    }
+    if (this.rateLimiter.isServerRateLimited(options["batchKey"])) {
+      if (options["fireCallbackOnDrop"].truthy() && !JS.isNullish(options["callback"])) {
+        JS.invoke(options, "callback", JS.object("statusCode", 429));
+      }
+      return;
+    }
+    options["transport"] = JS.or(options["transport"], this.config["api_transport"]);
+    options["headers"] = assign(assign(JS.object(), this.config["request_headers"]), options["headers"]);
+    options["compression"] = if (JS.strictEqual(options["compression"], "best-available")) { this.compression } else { options["compression"] };
+    JsValue disableBeacon = if (JS.isUndefined(this.config["disable_beacon"])) { this.config["__preview_disable_beacon"] } else { this.config["disable_beacon"] };
+    if (disableBeacon.truthy()) {
+      options["disableTransport"] = JS.array("sendBeacon");
+    }
+    options["fetchOptions"] = JS.or(options["fetchOptions"], this.config["fetch_options"]);
+    request(assign(copy(options), JS.object("callback", (JsValue response) => {
+      JS.call(this.rateLimiter.checkForLimiting, JS.undefined(), response);
+      if (JS.greaterThanOrEqual(response["statusCode"], 400) && !JS.isNullish(this.config["on_request_error"])) {
+        JS.invoke(this.config, "on_request_error", response);
+      }
+      if (!JS.isNullish(options["callback"])) {
+        JS.invoke(options, "callback", response);
+      }
+    })));
+  }
+
+  void _send_retriable_request(JsValue options) {
+    RetryQueue? retries = this._retryQueue;
+    if (retries != null) {
+      retries.retriableRequest(options);
+    } else {
+      JsValue client = this;
+      JS.invoke(client, "_send_request", options);
+    }
+  }
+
+  // Calls queued by the snippet before the SDK loaded: aliases first, then everything
+  // else, then captures, so identity and config apply to the early events.
+  void _execute_array(JsValue array) {
+    executeArrayDepth++;
+    JsValue thisArg = this;
+    try {
+      JsValue aliasCalls = JS.array();
+      JsValue otherCalls = JS.array();
+      JsValue capturingCalls = JS.array();
+      if (isArray(array)) {
+        JS.invoke(array, "forEach", (JsValue item) => {
+          if (!item.truthy()) {
+            return;
+          }
+          JsValue fnName = item[0];
+          if (isArray(fnName)) {
+            JS.invoke(capturingCalls, "push", item);
+          } else if (isFunction(item)) {
+            try {
+              JS.invoke(item, "call", thisArg);
+            } catch (JsValue e) {
+              logger.error(JS.array("Error executing queued PostHog call", item, e));
+            }
+          } else if (isArray(item) && JS.strictEqual(fnName, "alias")) {
+            JS.invoke(aliasCalls, "push", item);
+          } else if (isArray(item) && JS.number(JS.invoke(fnName, "indexOf", "capture")) != -1.0 && isFunction(thisArg[JS.string(fnName)])) {
+            JS.invoke(capturingCalls, "push", item);
+          } else {
+            JS.invoke(otherCalls, "push", item);
+          }
+        });
+      }
+      executeCalls(aliasCalls, thisArg);
+      executeCalls(otherCalls, thisArg);
+      executeCalls(capturingCalls, thisArg);
+    } finally {
+      executeArrayDepth--;
+    }
+  }
+
+  void push(JsValue item) {
+    JsValue client = this;
+    // A proxy that turns method calls into push() (TikTok's in-app browser) would loop
+    // forever through _execute_array: dispatch from the prototype instead.
+    if (executeArrayDepth > 0 && isArray(item) && isString(item[0])) {
+      JsValue fn = JS.get(PostHog, "prototype")[JS.string(item[0])];
+      if (isFunction(fn)) {
+        JS.invoke(fn, "apply", client, JS.invoke(item, "slice", 1));
+      }
+      return;
+    }
+    JS.invoke(client, "_execute_array", JS.array(item));
+  }
+
+  JsValue capture(JsValue eventName, JsValue properties = JS.undefined(), JsValue options = JS.undefined()) {
+    JsValue client = this;
+    PostHogPersistence? persistenceValue = this.persistence;
+    PostHogPersistence? sessionValue = this.sessionPersistence;
+    RequestQueue? queueValue = this._requestQueue;
+    if (!this.__loaded || persistenceValue == null || sessionValue == null || queueValue == null) {
+      logger.uninitializedWarning("posthog.capture");
+      return JS.undefined();
+    }
+    PostHogPersistence persistence = persistenceValue;
+    PostHogPersistence sessionPersistence = sessionValue;
+    RequestQueue queue = queueValue;
+    if (!JS.invoke(client, "is_capturing").truthy()) {
+      return JS.undefined();
+    }
+    if (JS.isUndefined(eventName) || !isString(eventName)) {
+      logger.error(JS.array("No event name provided to posthog.capture"));
+      return JS.undefined();
+    }
+    healCookielessSentinelDistinctId(this);
+    bool isBot = !this.config["opt_out_useragent_filter"].truthy() && JS.invoke(client, "_is_bot").truthy();
+    if (isBot && !this.config["__preview_capture_bot_pageviews"].truthy()) {
+      return JS.undefined();
+    }
+    JsValue rateLimit = if (!getProp(options, "skip_client_rate_limiting").truthy()) { this.rateLimiter.clientRateLimitContext(false) } else { JS.undefined() };
+    if (getProp(rateLimit, "isRateLimited").truthy()) {
+      logger.critical(JS.array("This capture call is ignored due to client rate limiting."));
+      return JS.undefined();
+    }
+    if (getProp(properties, "$current_url").truthy() && !isString(getProp(properties, "$current_url"))) {
+      logger.error(JS.array("Invalid `$current_url` property provided to `posthog.capture`. Input must be a string. Ignoring provided value."));
+      if (!JS.isNullish(properties)) {
+        JS.delete(properties, "$current_url");
+      }
+    }
+    if (JS.strictEqual(eventName, "$exception") && !getProp(options, "_originatedFromCaptureException").truthy()) {
+      logger.warn(JS.array("Using `posthog.capture('$exception')` is unreliable because it does not attach required metadata. Use `posthog.captureException(error)` instead, which attaches required metadata automatically."));
+    }
+    // Initial campaign and referrer info mirrors person-initial properties, so it lives
+    // in the regular persistence; the per-event versions ride in the session store.
+    sessionPersistence.update_search_keyword();
+    if (this.config["save_campaign_params"].truthy()) {
+      sessionPersistence.update_campaign_params();
+    }
+    if (this.config["save_referrer"].truthy()) {
+      sessionPersistence.update_referrer_info();
+    }
+    if (this.config["save_campaign_params"].truthy() || this.config["save_referrer"].truthy()) {
+      persistence.set_initial_person_info();
+    }
+    JsValue systemTime = JS.construct(Date);
+    JsValue timestamp = JS.or(getProp(options, "timestamp"), systemTime);
+    JsValue uuid = getEventUuid(getProp(options, "uuid"));
+    JsValue data = JS.object("uuid", uuid, "event", eventName, "properties", JS.invoke(client, "calculateEventProperties", eventName, JS.or(properties, JS.object()), timestamp, uuid));
+    if (JS.strictEqual(eventName, "$pageview") && this.config["__preview_capture_bot_pageviews"].truthy() && isBot) {
+      data["event"] = "$bot_pageview";
+      data["properties"]["$browser_type"] = "bot";
+    }
+    if (rateLimit.truthy()) {
+      data["properties"]["$lib_rate_limit_remaining_tokens"] = rateLimit["remainingTokens"];
+    }
+    // Minimal $feature_flag_called events for flags outside experiments, when the
+    // server asks for them.
+    bool minimalFlagCalled = JS.strictEqual(eventName, "$feature_flag_called") && JS.strictEqual(data["properties"]["$feature_flag_has_experiment"], false) && JS.strictEqual(JS.invoke(client, "get_property", "$minimal_flag_called_events"), true);
+    if (getProp(options, "$set").truthy() && !minimalFlagCalled) {
+      data["$set"] = getProp(options, "$set");
+    }
+    JsValue unsetProperties = getProp(options, "$unset");
+    if (unsetProperties.truthy()) {
+      data["$unset"] = unsetProperties;
+    }
+    // $groupidentify does not create persons, so its $set_once is not "sent"; $identify
+    // always carries the initial properties.
+    bool markSetOnceAsSent = JS.strictNotEqual(eventName, "$groupidentify");
+    bool forceIncludeInitialProps = JS.strictEqual(eventName, "$identify");
+    JsValue setOnceProperties = if (minimalFlagCalled) { JS.undefined() } else { this._calculate_set_once_properties(getProp(options, "$set_once"), markSetOnceAsSent, forceIncludeInitialProps) };
+    if (setOnceProperties.truthy()) {
+      data["$set_once"] = setOnceProperties;
+    }
+    if (!getProp(options, "_noTruncate").truthy()) {
+      data = copyAndTruncateStrings(data, this.config["properties_string_max_length"]);
+    }
+    data["timestamp"] = timestamp;
+    if (!JS.isUndefined(getProp(options, "timestamp"))) {
+      data["properties"]["$event_time_override_provided"] = true;
+      data["properties"]["$event_time_override_system_time"] = systemTime;
+    }
+    if (minimalFlagCalled) {
+      data["properties"] = minimizeFlagCalledEventProperties(data["properties"], FLAG_CALLED_TRANSPORT_PROPERTY_KEYS);
+    }
+    if (JS.strictEqual(eventName, "survey dismissed") || JS.strictEqual(eventName, "survey sent")) {
+      JsValue surveyId = getProp(properties, "$survey_id");
+      JsValue surveyIteration = getProp(properties, "$survey_iteration");
+      setSurveySeenOnLocalStorage(surveyId, surveyIteration);
+      JsValue surveySet = assign(JS.object(), data["$set"]);
+      surveySet[JS.string(surveyInteractionProperty(surveyId, surveyIteration, if (JS.strictEqual(eventName, "survey sent")) { "responded" } else { "dismissed" }))] = true;
+      data["$set"] = surveySet;
+    } else if (JS.strictEqual(eventName, "survey shown")) {
+      data["$set"] = assign(assign(JS.object(), data["$set"]), JS.object("$survey_last_seen_date", JS.invoke(JS.construct(Date), "toISOString")));
+    }
+    if (JS.strictEqual(eventName, "product tour shown")) {
+      JsValue tourType = getProp(properties, "$product_tour_type");
+      if (tourType.truthy()) {
+        JsValue tourSet = assign(JS.object(), data["$set"]);
+        tourSet[JS.string(JS.add("$product_tour_last_seen_date/", tourType))] = JS.invoke(JS.construct(Date), "toISOString");
+        data["$set"] = tourSet;
+      }
+    }
+    // A top-level $set overrides properties.$set, as ingestion's normalizeEvent does.
+    JsValue finalSet = assign(assign(JS.object(), data["properties"]["$set"]), data["$set"]);
+    if (!isEmptyObject(finalSet)) {
+      JS.invoke(client, "setPersonPropertiesForFlags", finalSet);
+    }
+    if (!JS.isNullish(this.config["before_send"])) {
+      JsValue beforeSendResult = runBeforeSend(this, data);
+      if (!beforeSendResult.truthy()) {
+        return JS.undefined();
+      }
+      data = beforeSendResult;
+      data["uuid"] = getEventUuid(data["uuid"]);
+    }
+    this._internalEventEmitter.emit("eventCaptured", data);
+    JsValue explicitUrl = getProp(options, "_url");
+    JsValue url = if (JS.isNullish(explicitUrl)) { this.requestRouter.endpointFor("api", JS.string(this.analyticsDefaultEndpoint)) } else { explicitUrl };
+    JsValue batchKey = getProp(options, "_batchKey");
+    bool isSessionRecording = JS.strictEqual(batchKey, "recordings") || new Regex("\\/s\\/(?:\\?|$)").test(JS.string(url));
+    JsValue requestOptions = JS.object(
+      "method", "POST",
+      "url", url,
+      "data", data,
+      "compression", "best-available",
+      "timestampMode", if (isSessionRecording) { "body" } else { "capture-body" },
+      "batchKey", batchKey,
+      "transport", getProp(options, "transport")
+    );
+    if (this.config["request_batching"].truthy() && (!options.truthy() || batchKey.truthy()) && !getProp(options, "send_instantly").truthy()) {
+      queue.enqueue(requestOptions);
+    } else {
+      this._send_retriable_request(requestOptions);
+    }
+    return data;
+  }
+
+  JsValue _addCaptureHook(JsValue callback) {
+    JsValue client = this;
+    return JS.invoke(client, "on", "eventCaptured", (JsValue data) => JS.call(callback, JS.undefined(), data["event"], data));
+  }
+
+  BrowserClientAdapter _getBrowserClientAdapter() {
+    BrowserClientAdapter? existing = this._browserClientAdapter;
+    if (existing != null) {
+      return existing;
+    }
+    BrowserClientAdapter adapter = new BrowserClientAdapter(this);
+    this._browserClientAdapter = adapter;
+    return adapter;
+  }
+
+  JsValue _registerExtensionEventProperties(JsValue producer) {
+    this._extensionEventPropertyProducers.push(producer);
+    bool active = true;
+    return () => {
+      if (!active) {
+        return;
+      }
+      active = false;
+      int index = this._extensionEventPropertyProducers.indexOf(producer);
+      if (index != -1) {
+        this._extensionEventPropertyProducers.splice(index, 1);
+      }
+    };
+  }
+
+  JsValue calculateEventProperties(JsValue eventName, JsValue eventProperties, JsValue timestampArg = JS.undefined(), JsValue uuid = JS.undefined(), JsValue readOnly = JS.undefined()) {
+    JsValue client = this;
+    JsValue timestamp = JS.or(timestampArg, JS.construct(Date));
+    PostHogPersistence? persistenceValue = this.persistence;
+    PostHogPersistence? sessionValue = this.sessionPersistence;
+    if (persistenceValue == null || sessionValue == null) {
+      return eventProperties;
+    }
+    PostHogPersistence persistence = persistenceValue;
+    PostHogPersistence sessionPersistence = sessionValue;
+    // Cookies raise no cross-origin storage events: reconcile before reading.
+    persistence.syncCookieProperties();
+    processCookieIdentityChange(this, true);
+    JsValue startTimestamp = if (readOnly.truthy()) { JS.undefined() } else { persistence.remove_event_timer(JS.string(eventName)) };
+    JsValue properties = assign(JS.object(), eventProperties);
+    properties["token"] = this.config["token"];
+    properties["$config_defaults"] = this.config["defaults"];
+    if (inCookielessMode(this)) {
+      properties["$cookieless_mode"] = true;
+    }
+    if (JS.strictEqual(eventName, "$snapshot")) {
+      JsValue persistenceProps = assign(assign(JS.object(), persistence.properties()), sessionPersistence.properties());
+      properties["distinct_id"] = persistenceProps["distinct_id"];
+      JsValue distinctId = properties["distinct_id"];
+      if (!(isString(distinctId) || isNumber(distinctId)) || isEmptyString(distinctId)) {
+        logger.error(JS.array("Invalid distinct_id for replay event. This indicates a bug in your implementation"));
+      }
+      return properties;
+    }
+    JsValue infoProperties = getEventProperties(this.config["mask_personal_data_properties"], this.config["custom_personal_data_properties"], this.config["detect_google_search_app"], this.config["disable_capture_url_hashes"].truthy());
+    SessionIdManager? sessionManager = this.sessionManager;
+    if (sessionManager != null) {
+      JsValue ids = sessionManager.checkAndGetSessionAndWindowId(readOnly.truthy(), JS.invoke(timestamp, "getTime"), true);
+      properties["$session_id"] = ids["sessionId"];
+      properties["$window_id"] = ids["windowId"];
+    }
+    SessionPropsManager? sessionProps = this.sessionPropsManager;
+    if (sessionProps != null) {
+      extend(properties, sessionProps.getSessionProps());
+    }
+    try {
+      if (this.sessionRecording.truthy()) {
+        extend(properties, this.sessionRecording["sdkDebugProperties"]);
+      }
+      RetryQueue? retries = this._retryQueue;
+      properties["$sdk_debug_retry_queue_size"] = if (retries != null) { retries.length() } else { JS.undefined() };
+    } catch (JsValue e) {
+      properties["$sdk_debug_error_capturing_properties"] = JS.call(String, JS.undefined(), e);
+    }
+    if (regionOf(this.requestRouter) == "custom") {
+      properties["$lib_custom_api_host"] = this.config["api_host"];
+    }
+    JsValue pageviewProperties = JS.undefined();
+    if (JS.strictEqual(eventName, "$pageview") && !readOnly.truthy()) {
+      pageviewProperties = this.pageViewManager.doPageView(timestamp, uuid);
+    } else if (JS.strictEqual(eventName, "$pageleave") && !readOnly.truthy()) {
+      pageviewProperties = this.pageViewManager.doPageLeave(timestamp);
+    } else {
+      pageviewProperties = this.pageViewManager.doEvent();
+    }
+    properties = extend(properties, pageviewProperties);
+    if (JS.strictEqual(eventName, "$pageview") && document.truthy()) {
+      properties["title"] = document["title"];
+    }
+    if (!JS.isUndefined(startTimestamp)) {
+      number durationMs = JS.number(JS.invoke(timestamp, "getTime")) - JS.number(startTimestamp);
+      properties["$duration"] = JS.call(parseFloat, JS.undefined(), JS.invoke(durationMs / 1000.0, "toFixed", 3));
+    }
+    if (userAgent.truthy() && this.config["opt_out_useragent_filter"].truthy()) {
+      properties["$browser_type"] = if (JS.invoke(client, "_is_bot").truthy()) { "bot" } else { "browser" };
+    }
+    // A $referrer or $referring_domain registered by the page wins over the session's
+    // document.referrer, key by key.
+    JsValue persistenceProperties = persistence.properties();
+    JsValue sessionPersistenceProperties = sessionPersistence.properties();
+    for (string referrerKey of ["$referrer", "$referring_domain"]) {
+      if (JS.in(referrerKey, persistenceProperties)) {
+        JS.delete(sessionPersistenceProperties, referrerKey);
+      }
+    }
+    JsValue dynamicProperties = JS.object();
+    if (this._extensionEventPropertyProducers.length > 0) {
+      for (JsValue producer of this._extensionEventPropertyProducers.slice()) {
+        try {
+          extend(dynamicProperties, JS.call(producer, JS.undefined()));
+        } catch (JsValue error) {
+          logger.error(JS.array("Failed to produce browser extension event properties", error));
+        }
+      }
+    }
+    properties = extend(extend(extend(extend(JS.object(), infoProperties), persistenceProperties), sessionPersistenceProperties), assign(assign(JS.object(), dynamicProperties), properties));
+    properties["$is_identified"] = JS.invoke(client, "_isIdentified");
+    JsValue denylist = this.config["property_denylist"];
+    if (isArray(denylist)) {
+      JsValue finalProperties = properties;
+      each(denylist, (JsValue denylisted, JsValue index) => {
+        JS.delete(finalProperties, denylisted);
+      });
+    } else {
+      logger.error(JS.array(JS.add(JS.add(JS.add(DENYLIST_INVALID, denylist), " or property_blacklist config: "), this.config["property_blacklist"])));
+    }
+    JsValue sanitize = this.config["sanitize_properties"];
+    if (sanitize.truthy()) {
+      logger.error(JS.array(SANITIZE_DEPRECATED));
+      properties = JS.call(sanitize, JS.undefined(), properties, eventName);
+    }
+    // Last, so nothing can override it.
+    bool processPerson = hasPersonProcessing(this);
+    properties["$process_person_profile"] = processPerson;
+    if (processPerson && !readOnly.truthy()) {
+      requirePersonProcessing(this, "_calculate_event_properties");
+    }
+    return properties;
+  }
+
+  JsValue _calculate_set_once_properties(JsValue dataSetOnce = JS.undefined(), bool markAsSent = true, bool forceIncludeInitialProps = false) {
+    PostHogPersistence? persistenceValue = this.persistence;
+    if (persistenceValue == null || !hasPersonProcessing(this)) {
+      return dataSetOnce;
+    }
+    PostHogPersistence persistence = persistenceValue;
+    if (this._personProcessingSetOncePropertiesSent && !forceIncludeInitialProps) {
+      return dataSetOnce;
+    }
+    JsValue initialProps = persistence.get_initial_props();
+    SessionPropsManager? sessionProps = this.sessionPropsManager;
+    JsValue sessionSetOnce = if (sessionProps != null) { sessionProps.getSetOnceProps() } else { JS.undefined() };
+    JsValue setOnceProperties = extend(extend(extend(JS.object(), initialProps), JS.or(sessionSetOnce, JS.object())), JS.or(dataSetOnce, JS.object()));
+    JsValue sanitize = this.config["sanitize_properties"];
+    if (sanitize.truthy()) {
+      logger.error(JS.array(SANITIZE_DEPRECATED));
+      setOnceProperties = JS.call(sanitize, JS.undefined(), setOnceProperties, "$set_once");
+    }
+    if (markAsSent) {
+      this._personProcessingSetOncePropertiesSent = true;
+    }
+    if (isEmptyObject(setOnceProperties)) {
+      return JS.undefined();
+    }
+    return setOnceProperties;
+  }
+
+  void register(JsValue properties, JsValue days = JS.undefined()) {
+    PostHogPersistence? persistence = this.persistence;
+    if (persistence != null) {
+      persistence.register(properties, days);
+    }
+  }
+
+  void register_once(JsValue properties, JsValue defaultValue = JS.undefined(), JsValue days = JS.undefined()) {
+    PostHogPersistence? persistence = this.persistence;
+    if (persistence != null) {
+      persistence.register_once(properties, defaultValue, days);
+    }
+  }
+
+  void register_for_session(JsValue properties) {
+    PostHogPersistence? persistence = this.persistence;
+    if (persistence != null) {
+      persistence.syncCookieProperties();
+    }
+    processCookieIdentityChange(this, true);
+    PostHogPersistence? sessionPersistence = this.sessionPersistence;
+    if (sessionPersistence != null) {
+      sessionPersistence.register(properties, JS.undefined());
+    }
+    for (string key of keysOf(properties)) {
+      addRegisteredKey(this, key);
+    }
+    persistSessionRegisteredPropKeys(this);
+  }
+
+  void unregister(JsValue property) {
+    PostHogPersistence? persistence = this.persistence;
+    if (persistence != null) {
+      persistence.unregister(property);
+    }
+  }
+
+  void unregister_for_session(JsValue property) {
+    PostHogPersistence? sessionPersistence = this.sessionPersistence;
+    if (sessionPersistence != null) {
+      sessionPersistence.unregister(property);
+    }
+    int index = this._sessionRegisteredPropKeys.indexOf(JS.string(property));
+    if (index != -1) {
+      this._sessionRegisteredPropKeys.splice(index, 1);
+    }
+    persistSessionRegisteredPropKeys(this);
+  }
+
+  void _register_single(JsValue prop, JsValue value) {
+    JsValue client = this;
+    JsValue properties = JS.object();
+    properties[JS.string(prop)] = value;
+    JS.invoke(client, "register", properties);
+  }
+
+  void _clearSessionRegisteredProps() {
+    for (string property of this._sessionRegisteredPropKeys.slice()) {
+      PostHogPersistence? sessionPersistence = this.sessionPersistence;
+      if (sessionPersistence != null) {
+        sessionPersistence.unregister(property);
+      }
+    }
+    this._sessionRegisteredPropKeys = [];
+    persistSessionRegisteredPropKeys(this);
+  }
+
+  // ---- feature flags and surveys live in extensions ----
+
+  JsValue getFeatureFlag(JsValue key, JsValue options = JS.undefined()) {
+    return if (JS.isNullish(this.featureFlags)) { JS.undefined() } else { JS.invoke(this.featureFlags, "getFeatureFlag", key, options) };
+  }
+
+  JsValue getFeatureFlagPayload(JsValue key) {
+    return if (JS.isNullish(this.featureFlags)) { JS.undefined() } else { JS.invoke(this.featureFlags, "getFeatureFlagPayload", key) };
+  }
+
+  JsValue getFeatureFlagResult(JsValue key, JsValue options = JS.undefined()) {
+    return if (JS.isNullish(this.featureFlags)) { JS.undefined() } else { JS.invoke(this.featureFlags, "getFeatureFlagResult", key, options) };
+  }
+
+  JsValue getAllFeatureFlags() {
+    JsValue result = if (JS.isNullish(this.featureFlags)) { JS.undefined() } else { JS.invoke(this.featureFlags, "getAllFeatureFlags") };
+    return if (JS.isNullish(result)) { JS.array() } else { result };
+  }
+
+  JsValue isFeatureEnabled(JsValue key, JsValue options = JS.undefined()) {
+    JsValue result = if (JS.isNullish(this.featureFlags)) { JS.undefined() } else { JS.invoke(this.featureFlags, "isFeatureEnabled", key, options) };
+    return if (JS.isNullish(result)) { getProp(options, "defaultValue") } else { result };
+  }
+
+  void reloadFeatureFlags() {
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "reloadFeatureFlags");
+    }
+  }
+
+  void updateFlags(JsValue flags, JsValue payloads = JS.undefined(), JsValue options = JS.undefined()) {
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "updateFlags", flags, payloads, options);
+    }
+  }
+
+  void updateEarlyAccessFeatureEnrollment(JsValue key, JsValue isEnrolled, JsValue stage = JS.undefined()) {
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "updateEarlyAccessFeatureEnrollment", key, isEnrolled, stage);
+    }
+  }
+
+  JsValue getEarlyAccessFeatures(JsValue callback, JsValue forceReload = false, JsValue stages = JS.undefined()) {
+    return if (JS.isNullish(this.featureFlags)) { JS.undefined() } else { JS.invoke(this.featureFlags, "getEarlyAccessFeatures", callback, forceReload, stages) };
+  }
+
+  JsValue on(JsValue event, JsValue cb) {
+    return this._internalEventEmitter.on(JS.string(event), cb);
+  }
+
+  JsValue onFeatureFlags(JsValue callback) {
+    if (!this.featureFlags.truthy()) {
+      JS.call(callback, JS.undefined(), JS.array(), JS.object(), JS.object("errorsLoading", true));
+      return () => {};
+    }
+    return JS.invoke(this.featureFlags, "onFeatureFlags", callback);
+  }
+
+  JsValue onSurveysLoaded(JsValue callback) {
+    if (!this.surveys.truthy()) {
+      JS.call(callback, JS.undefined(), JS.array(), JS.object("isLoaded", false, "error", SURVEYS_NOT_AVAILABLE));
+      return () => {};
+    }
+    return JS.invoke(this.surveys, "onSurveysLoaded", callback);
+  }
+
+  JsValue onSessionId(JsValue callback) {
+    SessionIdManager? sessionManager = this.sessionManager;
+    JsValue unsubscribe = if (sessionManager != null) { sessionManager.onSessionId(callback) } else { JS.undefined() };
+    if (JS.isNullish(unsubscribe)) {
+      return () => {};
+    }
+    return unsubscribe;
+  }
+
+  void getSurveys(JsValue callback, JsValue forceReload = false) {
+    if (this.surveys.truthy()) {
+      JS.invoke(this.surveys, "getSurveys", callback, forceReload);
+    } else {
+      JS.call(callback, JS.undefined(), JS.array(), JS.object("isLoaded", false, "error", SURVEYS_NOT_AVAILABLE));
+    }
+  }
+
+  void getActiveMatchingSurveys(JsValue callback, JsValue forceReload = false) {
+    if (this.surveys.truthy()) {
+      JS.invoke(this.surveys, "getActiveMatchingSurveys", callback, forceReload);
+    } else {
+      JS.call(callback, JS.undefined(), JS.array(), JS.object("isLoaded", false, "error", SURVEYS_NOT_AVAILABLE));
+    }
+  }
+
+  void renderSurvey(JsValue surveyId, JsValue selector) {
+    if (!JS.isNullish(this.surveys)) {
+      JS.invoke(this.surveys, "renderSurvey", surveyId, selector);
+    }
+  }
+
+  void displaySurvey(JsValue surveyId, JsValue options = JS.undefined()) {
+    JsValue displayOptions = if (JS.isUndefined(options)) { DEFAULT_DISPLAY_SURVEY_OPTIONS } else { options };
+    if (!JS.isNullish(this.surveys)) {
+      JS.invoke(this.surveys, "displaySurvey", surveyId, displayOptions);
+    }
+  }
+
+  void cancelPendingSurvey(JsValue surveyId) {
+    if (!JS.isNullish(this.surveys)) {
+      JS.invoke(this.surveys, "cancelPendingSurvey", surveyId);
+    }
+  }
+
+  JsValue canRenderSurvey(JsValue surveyId) {
+    JsValue result = if (JS.isNullish(this.surveys)) { JS.undefined() } else { JS.invoke(this.surveys, "canRenderSurvey", surveyId) };
+    return if (JS.isNullish(result)) { JS.object("visible", false, "disabledReason", SURVEYS_NOT_AVAILABLE) } else { result };
+  }
+
+  JsValue canRenderSurveyAsync(JsValue surveyId, JsValue forceReload = false) {
+    JsValue result = if (JS.isNullish(this.surveys)) { JS.undefined() } else { JS.invoke(this.surveys, "canRenderSurveyAsync", surveyId, forceReload) };
+    return if (JS.isNullish(result)) { JS.invoke(Promise, "resolve", JS.object("visible", false, "disabledReason", SURVEYS_NOT_AVAILABLE)) } else { result };
+  }
+
+  // ---- identity ----
+
+  // Upstream wraps identify at load time (safewrapClass): a failure is reported, not thrown.
+  void identify(JsValue newDistinctId = JS.undefined(), JsValue userPropertiesToSet = JS.undefined(), JsValue userPropertiesToSetOnce = JS.undefined()) {
+    try {
+      identifyUser(this, newDistinctId, userPropertiesToSet, userPropertiesToSetOnce);
+    } catch (JsValue e) {
+      logger.critical(JS.array("Implementation error. Please turn on debug mode and open a ticket on https://app.posthog.com/home#panel=support%3Asupport%3A."));
+      logger.critical(JS.array(e));
+    }
+  }
+
+  void setPersonProperties(JsValue userPropertiesToSet = JS.undefined(), JsValue userPropertiesToSetOnce = JS.undefined()) {
+    JsValue client = this;
+    if (!userPropertiesToSet.truthy() && !userPropertiesToSetOnce.truthy()) {
+      return;
+    }
+    if (!requirePersonProcessing(this, "posthog.setPersonProperties")) {
+      return;
+    }
+    JsValue hash = getPersonPropertiesHash(JS.invoke(client, "get_distinct_id"), userPropertiesToSet, userPropertiesToSetOnce);
+    if (JS.strictEqual(this._cachedPersonProperties, hash)) {
+      logger.info(JS.array("A duplicate setPersonProperties call was made with the same properties. It has been ignored."));
+      return;
+    }
+    JS.invoke(client, "setPersonPropertiesForFlags", JS.object("$set", JS.or(userPropertiesToSet, JS.object()), "$set_once", JS.or(userPropertiesToSetOnce, JS.object())), true);
+    JS.invoke(client, "capture", "$set", JS.object("$set", JS.or(userPropertiesToSet, JS.object()), "$set_once", JS.or(userPropertiesToSetOnce, JS.object())));
+    this._cachedPersonProperties = hash;
+  }
+
+  void unsetPersonProperties(JsValue propertyNames) {
+    JsValue client = this;
+    JsValue names = JS.invoke(if (isArray(propertyNames)) { propertyNames } else { JS.array(propertyNames) }, "filter", (JsValue name) => isString(name) && JS.number(name["length"]) > 0.0);
+    if (JS.number(names["length"]) == 0.0) {
+      return;
+    }
+    if (!requirePersonProcessing(this, "posthog.unsetPersonProperties")) {
+      return;
+    }
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "unsetPersonPropertiesForFlags", names, true);
+    }
+    JS.invoke(client, "capture", "$set", JS.object("$unset", names));
+    this._cachedPersonProperties = null;
+  }
+
+  void group(JsValue groupType, JsValue groupKey, JsValue groupPropertiesToSet = JS.undefined()) {
+    JsValue client = this;
+    if (!groupType.truthy() || !groupKey.truthy()) {
+      logger.error(JS.array("posthog.group requires a group type and group key"));
+      return;
+    }
+    PostHogPersistence? persistence = this.persistence;
+    if (persistence != null) {
+      persistence.syncCookieProperties();
+    }
+    processCookieIdentityChange(this, true);
+    JsValue existingGroups = JS.invoke(client, "getGroups");
+    bool isNewGroup = JS.strictNotEqual(existingGroups[JS.string(groupType)], groupKey);
+    if (isNewGroup) {
+      JS.invoke(client, "resetGroupPropertiesForFlags", groupType);
+    }
+    JsValue groups = assign(JS.object(), existingGroups);
+    groups[JS.string(groupType)] = groupKey;
+    JS.invoke(client, "register", JS.object("$groups", groups));
+    if (isNewGroup || groupPropertiesToSet.truthy()) {
+      JsValue groupIdentify = JS.object("$group_type", groupType, "$group_key", groupKey);
+      if (groupPropertiesToSet.truthy()) {
+        groupIdentify["$group_set"] = groupPropertiesToSet;
+      }
+      JS.invoke(client, "capture", "$groupidentify", groupIdentify);
+    }
+    if (groupPropertiesToSet.truthy()) {
+      JsValue forFlags = JS.object();
+      forFlags[JS.string(groupType)] = groupPropertiesToSet;
+      JS.invoke(client, "setGroupPropertiesForFlags", forFlags);
+    }
+    if (isNewGroup && !groupPropertiesToSet.truthy()) {
+      JS.invoke(client, "reloadFeatureFlags");
+    }
+  }
+
+  void resetGroups() {
+    JsValue client = this;
+    JS.invoke(client, "register", JS.object("$groups", JS.object()));
+    JS.invoke(client, "resetGroupPropertiesForFlags");
+    JS.invoke(client, "reloadFeatureFlags");
+  }
+
+  void setPersonPropertiesForFlags(JsValue properties, JsValue reloadFeatureFlags = true) {
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "setPersonPropertiesForFlags", properties, reloadFeatureFlags);
+    }
+  }
+
+  void resetPersonPropertiesForFlags(JsValue reloadFeatureFlags = true) {
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "resetPersonPropertiesForFlags", reloadFeatureFlags);
+    }
+  }
+
+  void setGroupPropertiesForFlags(JsValue properties, JsValue reloadFeatureFlags = true) {
+    if (!requirePersonProcessing(this, "posthog.setGroupPropertiesForFlags")) {
+      return;
+    }
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "setGroupPropertiesForFlags", properties, reloadFeatureFlags);
+    }
+  }
+
+  void resetGroupPropertiesForFlags(JsValue groupType = JS.undefined()) {
+    if (!JS.isNullish(this.featureFlags)) {
+      JS.invoke(this.featureFlags, "resetGroupPropertiesForFlags", groupType);
+    }
+  }
+
+  void reset(JsValue options = JS.undefined()) {
+    JsValue resetDeviceId = if (isBoolean(options)) { options } else { getProp(options, "resetDeviceID") };
+    JsValue bootstrap = if (isBoolean(options)) { JS.undefined() } else { getProp(options, "bootstrap") };
+    resetClient(this, resetDeviceId, false, bootstrap);
+  }
+
+  JsValue shutdown(JsValue shutdownTimeoutMs = JS.undefined()) {
+    return shutdownClient(this);
+  }
+
+  void setIdentity(JsValue distinctId, JsValue hash) {
+    JsValue client = this;
+    this.config["identity_distinct_id"] = distinctId;
+    this.config["identity_hash"] = hash;
+    JS.invoke(client, "alias", distinctId);
+    if (!JS.isNullish(this.conversations)) {
+      JS.invoke(this.conversations, "_onIdentityChanged");
+    }
+  }
+
+  void clearIdentity() {
+    JS.delete(this.config, "identity_distinct_id");
+    JS.delete(this.config, "identity_hash");
+    if (!JS.isNullish(this.conversations)) {
+      JS.invoke(this.conversations, "_onIdentityCleared");
+    }
+  }
+
+  JsValue get_distinct_id() {
+    JsValue client = this;
+    return JS.invoke(client, "get_property", "distinct_id");
+  }
+
+  JsValue getGroups() {
+    JsValue client = this;
+    return JS.or(JS.invoke(client, "get_property", "$groups"), JS.object());
+  }
+
+  JsValue get_session_id() {
+    SessionIdManager? sessionManager = this.sessionManager;
+    JsValue sessionId = if (sessionManager != null) { sessionManager.checkAndGetSessionAndWindowId(true, null, false)["sessionId"] } else { JS.undefined() };
+    return if (JS.isNullish(sessionId)) { "" } else { sessionId };
+  }
+
+  JsValue get_session_replay_url(JsValue options = JS.undefined()) {
+    SessionIdManager? sessionManager = this.sessionManager;
+    if (sessionManager == null) {
+      return "";
+    }
+    JsValue current = sessionManager.checkAndGetSessionAndWindowId(true, null, false);
+    JsValue sessionStartTimestamp = current["sessionStartTimestamp"];
+    JsValue url = this.requestRouter.endpointFor("ui", JS.string(JS.add(JS.add(JS.add("/project/", this.config["token"]), "/replay/"), current["sessionId"])));
+    if (getProp(options, "withTimestamp").truthy() && sessionStartTimestamp.truthy()) {
+      JsValue lookBack = options["timestampLookBack"];
+      number LOOK_BACK = if (JS.isNullish(lookBack)) { 10.0 } else { JS.number(lookBack) };
+      JsValue recordingStartTime = JS.invoke(Math, "max", JS.number(JS.invoke(Math, "floor", (JS.number(JS.invoke(JS.construct(Date), "getTime")) - JS.number(sessionStartTimestamp)) / 1000.0)) - LOOK_BACK, 0);
+      url = JS.add(JS.add(url, "?t="), recordingStartTime);
+    }
+    return url;
+  }
+
+  JsValue alias(JsValue alias, JsValue original = JS.undefined()) {
+    JsValue client = this;
+    if (JS.strictEqual(alias, JS.invoke(client, "get_property", "$people_distinct_id"))) {
+      logger.critical(JS.array("Attempting to create alias for existing People user - aborting."));
+      return -2;
+    }
+    if (!requirePersonProcessing(this, "posthog.alias")) {
+      return JS.undefined();
+    }
+    JsValue originalId = if (JS.isUndefined(original)) { JS.invoke(client, "get_distinct_id") } else { original };
+    if (JS.strictNotEqual(alias, originalId)) {
+      this._register_single("__alias", alias);
+      return JS.invoke(client, "capture", "$create_alias", JS.object("alias", alias, "distinct_id", originalId));
+    }
+    logger.warn(JS.array("alias matches current distinct_id - skipping api call."));
+    JS.invoke(client, "identify", alias);
+    return -1;
+  }
+
+  void set_config(JsValue config) {
+    JsValue oldConfig = assign(JS.object(), this.config);
+    if (!isObject(config)) {
+      return;
+    }
+    extend(this.config, configRenames(config));
+    bool persistenceDisabled = isPersistenceDisabled(this);
+    PostHogPersistence? persistence = this.persistence;
+    if (persistence != null) {
+      persistence.update_config(this.config, oldConfig, persistenceDisabled);
+    }
+    JsValue persistenceMode = this.config["persistence"];
+    if (JS.strictEqual(persistenceMode, "sessionStorage") || JS.strictEqual(persistenceMode, "memory")) {
+      this.sessionPersistence = this.persistence;
+    } else {
+      this.sessionPersistence = new PostHogPersistence(assign(copy(this.config), JS.object("persistence", "sessionStorage")), persistenceDisabled, false);
+    }
+    JsValue debugFromLocalStorage = checkLocalStorageForDebug(this.config["debug"]);
+    if (isBoolean(debugFromLocalStorage)) {
+      this.config["debug"] = debugFromLocalStorage;
+    }
+    if (isBoolean(this.config["debug"])) {
+      if (this.config["debug"].truthy()) {
+        Config.debug = true;
+        if (localStore.isSupported()) {
+          localStore.set("ph_debug", true, JS.undefined(), JS.undefined(), JS.undefined());
+        }
+        logger.info(JS.array("set_config", JS.object("config", config, "oldConfig", oldConfig, "newConfig", assign(JS.object(), this.config))));
+      } else {
+        Config.debug = false;
+        if (localStore.isSupported()) {
+          localStore.remove("ph_debug", JS.undefined());
+        }
+      }
+    }
+    JsValue flags = this.featureFlags;
+    if (!JS.isNullish(flags) && !JS.isNullish(flags["updateConfig"])) {
+      JsValue client = this;
+      JS.invoke(flags, "updateConfig", this.config, JS.invoke(client, "_shouldDisableFlags"));
+    }
+    callOptional(this.exceptionObserver, "onConfigChange");
+    callOptional(this.exceptions, "onConfigChange");
+    callOptional(this.sessionRecording, "startIfEnabledOrStop");
+    callOptional(this.tracingHeaders, "startIfEnabledOrStop");
+    callOptional(this.autocapture, "startIfEnabled");
+    callOptional(this.heatmaps, "startIfEnabled");
+    callOptional(this.exceptionObserver, "startIfEnabledOrStop");
+    callOptional(this.deadClicksAutocapture, "startIfEnabledOrStop");
+    callOptional(this.surveys, "loadIfEnabled");
+    syncOptOutWithPersistence(this);
+    this.externalIntegrations.startIfEnabledOrStop();
+  }
+
+  void _overrideSDKInfo(JsValue sdkName, JsValue sdkVersion) {
+    Config.libName = JS.assume(sdkName);
+    Config.libVersion = JS.assume(sdkVersion);
+  }
+
+  void startSessionRecording(JsValue override = JS.undefined()) {
+    JsValue client = this;
+    bool overrideAll = JS.strictEqual(override, true);
+    bool sampling = overrideAll || getProp(override, "sampling").truthy();
+    bool linkedFlag = overrideAll || getProp(override, "linked_flag").truthy();
+    bool urlTrigger = overrideAll || getProp(override, "url_trigger").truthy();
+    bool eventTrigger = overrideAll || getProp(override, "event_trigger").truthy();
+    if (sampling || linkedFlag || urlTrigger || eventTrigger) {
+      SessionIdManager? sessionManager = this.sessionManager;
+      if (sessionManager != null) {
+        sessionManager.checkAndGetSessionAndWindowId(false, null, false);
+      }
+      if (sampling) {
+        callOptional(this.sessionRecording, "overrideSampling");
+      }
+      if (linkedFlag) {
+        callOptional(this.sessionRecording, "overrideLinkedFlag");
+      }
+      if (urlTrigger && !JS.isNullish(this.sessionRecording)) {
+        JS.invoke(this.sessionRecording, "overrideTrigger", "url");
+      }
+      if (eventTrigger && !JS.isNullish(this.sessionRecording)) {
+        JS.invoke(this.sessionRecording, "overrideTrigger", "event");
+      }
+    }
+    JS.invoke(client, "set_config", JS.object("disable_session_recording", false));
+  }
+
+  void stopSessionRecording() {
+    JsValue client = this;
+    JS.invoke(client, "set_config", JS.object("disable_session_recording", true));
+  }
+
+  bool sessionRecordingStarted() {
+    return !JS.isNullish(this.sessionRecording) && this.sessionRecording["started"].truthy();
+  }
+
+  JsValue captureException(JsValue error, JsValue additionalProperties = JS.undefined()) {
+    JsValue exceptions = this.exceptions;
+    if (!exceptions.truthy()) {
+      return JS.undefined();
+    }
+    JsValue syntheticException = JS.construct(Error, "PostHog syntheticException");
+    JsValue errorToProperties = JS.invoke(exceptions, "buildProperties", error, JS.object("handled", true, "syntheticException", syntheticException));
+    return JS.invoke(exceptions, "sendExceptionEvent", assign(assign(JS.object(), errorToProperties), additionalProperties));
+  }
+
+  void addExceptionStep(JsValue message, JsValue properties = JS.undefined()) {
+    if (!JS.isNullish(this.exceptions)) {
+      JS.invoke(this.exceptions, "addExceptionStep", message, properties);
+    }
+  }
+
+  void captureLog(JsValue options) {
+    if (!JS.isNullish(this.logs)) {
+      JS.invoke(this.logs, "captureLog", options);
+    }
+  }
+
+  void startExceptionAutocapture(JsValue config = JS.undefined()) {
+    JsValue client = this;
+    JS.invoke(client, "set_config", JS.object("capture_exceptions", if (JS.isNullish(config)) { true } else { config }));
+  }
+
+  void stopExceptionAutocapture() {
+    JsValue client = this;
+    JS.invoke(client, "set_config", JS.object("capture_exceptions", false));
+  }
+
+  JsValue loadToolbar(JsValue params) {
+    JsValue result = if (JS.isNullish(this.toolbar)) { JS.undefined() } else { JS.invoke(this.toolbar, "loadToolbar", params) };
+    return if (JS.isNullish(result)) { false } else { result };
+  }
+
+  JsValue get_property(JsValue propertyName) {
+    PostHogPersistence? persistence = this.persistence;
+    return if (persistence == null) { JS.undefined() } else { persistence.props[JS.string(propertyName)] };
+  }
+
+  JsValue getSessionProperty(JsValue propertyName) {
+    PostHogPersistence? sessionPersistence = this.sessionPersistence;
+    return if (sessionPersistence == null) { JS.undefined() } else { sessionPersistence.props[JS.string(propertyName)] };
+  }
+
+  string toString() {
+    JsValue configured = this.config["name"];
+    JsValue name = if (JS.isNullish(configured)) { PRIMARY_INSTANCE_NAME } else { configured };
+    if (JS.strictNotEqual(name, PRIMARY_INSTANCE_NAME)) {
+      return JS.string(JS.add(PRIMARY_INSTANCE_NAME + ".", name));
+    }
+    return JS.string(name);
+  }
+
+  bool _isIdentified() {
+    PostHogPersistence? persistence = this.persistence;
+    PostHogPersistence? sessionPersistence = this.sessionPersistence;
+    return (persistence != null && JS.strictEqual(persistence.get_property("$user_state"), "identified")) || (sessionPersistence != null && JS.strictEqual(sessionPersistence.get_property("$user_state"), "identified"));
+  }
+
+  void createPersonProfile() {
+    JsValue client = this;
+    if (hasPersonProcessing(this)) {
+      return;
+    }
+    if (!requirePersonProcessing(this, "posthog.createPersonProfile")) {
+      return;
+    }
+    JS.invoke(client, "setPersonProperties", JS.object(), JS.object());
+  }
+
+  void setInternalOrTestUser() {
+    JsValue client = this;
+    if (!requirePersonProcessing(this, "posthog.setInternalOrTestUser")) {
+      return;
+    }
+    JS.invoke(client, "setPersonProperties", JS.object("$internal_or_test_user", true));
+  }
+
+  void opt_in_capturing(JsValue options = JS.undefined()) {
+    JsValue client = this;
+    if (JS.strictEqual(this.config["cookieless_mode"], "always")) {
+      logger.warn(JS.array(CONSENT_COOKIELESS_WARN));
+      return;
+    }
+    if (inCookielessMode(this)) {
+      // Leaving cookieless mode: start a real identity and session.
+      resetClient(this, true, true, JS.undefined());
+      SessionIdManager? oldSessionManager = this.sessionManager;
+      if (oldSessionManager != null) {
+        oldSessionManager.destroy();
+      }
+      this.pageViewManager.destroy();
+      SessionIdManager sessionManager = new SessionIdManager(this);
+      this.sessionManager = sessionManager;
+      this.pageViewManager = new PageViewManager(this);
+      PostHogPersistence? persistence = this.persistence;
+      if (persistence != null) {
+        this.sessionPropsManager = new SessionPropsManager(this, sessionManager, persistence);
+      }
+      JsValue SessionRecordingClass = extensionClass(this, "sessionRecording");
+      if (SessionRecordingClass.truthy()) {
+        this.sessionRecording = replaceExtension(this, this.sessionRecording, JS.construct(SessionRecordingClass, client));
+        if (this._lastRemoteConfig.truthy()) {
+          JsValue recording = this.sessionRecording;
+          if (!JS.isNullish(recording) && !JS.isNullish(recording["onRemoteConfig"])) {
+            JS.invoke(recording, "onRemoteConfig", this._lastRemoteConfig);
+          }
+        }
+      }
+    }
+    this.consent.optInOut(true);
+    syncOptOutWithPersistence(this);
+    this._start_queue_if_opted_in();
+    callOptional(this.sessionRecording, "startIfEnabledOrStop");
+    if (JS.strictEqual(this.config["cookieless_mode"], "on_reject")) {
+      callOptional(this.surveys, "loadIfEnabled");
+    }
+    JsValue captureEventName = getProp(options, "captureEventName");
+    if (JS.isUndefined(captureEventName) || captureEventName.truthy()) {
+      JS.invoke(client, "capture", if (JS.isNullish(captureEventName)) { "$opt_in" } else { captureEventName }, getProp(options, "captureProperties"), JS.object("send_instantly", true));
+    }
+    if (this.config["capture_pageview"].truthy()) {
+      this._captureInitialPageview();
+    }
+  }
+
+  void opt_out_capturing() {
+    JsValue client = this;
+    if (JS.strictEqual(this.config["cookieless_mode"], "always")) {
+      logger.warn(JS.array(CONSENT_COOKIELESS_WARN));
+      return;
+    }
+    if (JS.strictEqual(this.config["cookieless_mode"], "on_reject") && this.consent.isOptedIn()) {
+      resetClient(this, true, true, JS.undefined());
+    }
+    this.consent.optInOut(false);
+    syncOptOutWithPersistence(this);
+    if (JS.strictEqual(this.config["cookieless_mode"], "on_reject")) {
+      JS.invoke(client, "register", JS.object("distinct_id", "$posthog_cookieless", "$device_id", null));
+      callOptional(this.sessionRecording, "stopRecording");
+      this.sessionRecording = JS.undefined();
+      SessionIdManager? sessionManager = this.sessionManager;
+      if (sessionManager != null) {
+        sessionManager.destroy();
+      }
+      this.pageViewManager.destroy();
+      this.sessionManager = JS.assume(JS.undefined());
+      this.sessionPropsManager = JS.assume(JS.undefined());
+      if (this.config["capture_pageview"].truthy()) {
+        this._captureInitialPageview();
+      }
+      this._start_queue_if_opted_in();
+    }
+  }
+
+  bool has_opted_in_capturing() {
+    return this.consent.isOptedIn();
+  }
+
+  bool has_opted_out_capturing() {
+    return this.consent.isOptedOut();
+  }
+
+  string get_explicit_consent_status() {
+    int consent = consentOf(this.consent);
+    return if (consent == CONSENT_GRANTED) { "granted" } else { if (consent == CONSENT_DENIED) { "denied" } else { "pending" } };
+  }
+
+  bool is_capturing() {
+    JsValue mode = this.config["cookieless_mode"];
+    if (JS.strictEqual(mode, "always")) {
+      return true;
+    }
+    if (JS.strictEqual(mode, "on_reject")) {
+      return this.consent.isRejected() || this.consent.isOptedIn();
+    }
+    JsValue client = this;
+    return !JS.invoke(client, "has_opted_out_capturing").truthy();
+  }
+
+  void clear_opt_in_out_capturing() {
+    this.consent.reset();
+    syncOptOutWithPersistence(this);
+  }
+
+  JsValue _is_bot() {
+    if (navigator.truthy()) {
+      return isLikelyBot(navigator, this.config["custom_blocked_useragents"]);
+    }
+    return JS.undefined();
+  }
+
+  void _captureInitialPageview() {
+    JsValue client = this;
+    if (!document.truthy()) {
+      return;
+    }
+    // A prerendered or background tab captures its first pageview when it is shown.
+    if (JS.strictNotEqual(document["visibilityState"], "visible")) {
+      if (!this._visibilityStateListener.truthy()) {
+        this._visibilityStateListener = JS.invoke(client["_captureInitialPageview"], "bind", client);
+        addEventListener(document, "visibilitychange", this._visibilityStateListener, false, true);
+      }
+      return;
+    }
+    if (!this._initialPageviewCaptured) {
+      this._initialPageviewCaptured = true;
+      JS.invoke(client, "capture", "$pageview", JS.object("title", document["title"]), JS.object("send_instantly", true));
+      if (this._visibilityStateListener.truthy()) {
+        JS.invoke(document, "removeEventListener", "visibilitychange", this._visibilityStateListener);
+        this._visibilityStateListener = null;
+      }
+    }
+  }
+
+  void debug(JsValue debug = JS.undefined()) {
+    JsValue client = this;
+    if (JS.strictEqual(debug, false)) {
+      if (!JS.isNullish(win)) {
+        JS.invoke(win["console"], "log", "You've disabled debug mode.");
+      }
+      JS.invoke(client, "set_config", JS.object("debug", false));
+    } else {
+      if (!JS.isNullish(win)) {
+        JS.invoke(win["console"], "log", "You're now in debug mode. All calls to PostHog will be logged in your console.\nYou can disable this with `posthog.debug(false)`.");
+      }
+      JS.invoke(client, "set_config", JS.object("debug", true));
+    }
+  }
+
+  bool _shouldDisableFlags() {
+    JsValue originalConfig = JS.or(this._originalUserConfig, JS.object());
+    if (JS.in("advanced_disable_flags", originalConfig)) {
+      return originalConfig["advanced_disable_flags"].truthy();
+    }
+    if (JS.strictNotEqual(this.config["advanced_disable_flags"], false)) {
+      return this.config["advanced_disable_flags"].truthy();
+    }
+    if (JS.strictEqual(this.config["advanced_disable_decide"], true)) {
+      logger.warn(JS.array("Config field 'advanced_disable_decide' is deprecated. Please use 'advanced_disable_flags' instead. The old field will be removed in a future major version."));
+      return true;
+    }
+    return migrateConfigField(originalConfig, "advanced_disable_flags", "advanced_disable_decide", false).truthy();
+  }
+
+  JsValue getPageViewId() {
+    return this.pageViewManager.doEvent()["$pageview_id"];
+  }
+
+  void captureTraceFeedback(JsValue traceId, JsValue userFeedback) {
+    JsValue client = this;
+    JS.invoke(client, "capture", "$ai_feedback", JS.object("$ai_trace_id", JS.call(String, JS.undefined(), traceId), "$ai_feedback_text", userFeedback));
+  }
+
+  void captureTraceMetric(JsValue traceId, JsValue metricName, JsValue metricValue) {
+    JsValue client = this;
+    JS.invoke(client, "capture", "$ai_metric", JS.object("$ai_trace_id", JS.call(String, JS.undefined(), traceId), "$ai_metric_name", metricName, "$ai_metric_value", JS.call(String, JS.undefined(), metricValue)));
+  }
+}
+
+bool flagsLoaded(JsValue client) {
+  JsValue flags = client["featureFlags"];
+  JsValue loaded = if (JS.isNullish(flags)) { JS.undefined() } else { flags["hasLoadedFlags"] };
+  return if (JS.isNullish(loaded)) { false } else { loaded.truthy() };
+}
+
+JsValue installClientShape() {
+  JS.set(PostHog, "__defaultExtensionClasses", JS.object());
+  defineGetter(PostHog, "decideEndpointWasHit", JS.method0((JsValue client) => {
+    JsValue flags = client["featureFlags"];
+    JsValue loaded = if (JS.isNullish(flags)) { JS.undefined() } else { flags["hasLoadedFlags"] };
+    return if (JS.isNullish(loaded)) { false } else { loaded };
+  }));
+  defineGetter(PostHog, "flagsEndpointWasHit", JS.method0((JsValue client) => {
+    JsValue flags = client["featureFlags"];
+    JsValue loaded = if (JS.isNullish(flags)) { JS.undefined() } else { flags["hasLoadedFlags"] };
+    return if (JS.isNullish(loaded)) { false } else { loaded };
+  }));
+  defineGetter(PostHog, "logger", JS.method0((JsValue client) => {
+    JsValue logs = client["logs"];
+    JsValue logsLogger = if (JS.isNullish(logs)) { JS.undefined() } else { logs["logger"] };
+    return if (JS.isNullish(logsLogger)) { NOOP_LOGGER } else { logsLogger };
+  }));
+  return JS.undefined();
+}
+
+JsValue clientShape = installClientShape();
+
+// Every instance learns when the DOM is ready; requests queued before then go out.
+void addDomLoadedHandler() {
+  bool done = false;
+  func(JsValue)->void domLoadedHandler = (JsValue event) => {
+    if (done) {
+      return;
+    }
+    done = true;
+    ENQUEUE_REQUESTS = false;
+    each(instances, (JsValue instance, JsValue name) => {
+      JS.invoke(instance, "_dom_loaded");
+    });
+  };
+  if (!JS.isNullish(document) && document["addEventListener"].truthy()) {
+    if (JS.strictEqual(document["readyState"], "complete")) {
+      domLoadedHandler(JS.undefined());
+    } else {
+      addEventListener(document, "DOMContentLoaded", domLoadedHandler, false, true);
+    }
+    return;
+  }
+  if (win.truthy()) {
+    logger.error(JS.array("Browser doesn't support `document.addEventListener` so PostHog couldn't be initialized"));
+  }
+}
+
+export JsValue initAsModule() {
+  Config.distChannel = "npm";
+  JsValue posthogMain = new PostHog();
+  instances[PRIMARY_INSTANCE_NAME] = posthogMain;
+  addDomLoadedHandler();
+  return posthogMain;
+}
+
+export constructor PostHog;
+
+// The class as a value, for the module export.
+export JsValue PostHogClass = PostHog;

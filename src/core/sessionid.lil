@@ -1,0 +1,419 @@
+// browser/src/sessionid.ts: the session and window ids, rotated after 30 idle minutes
+// (configurable) or 24 hours, persisted as `$sesid` = [activity, session id, start].
+// `_sessionActivityTimestamp`, `_sessionStartTimestamp` and `_sessionTimeoutMs` keep
+// upstream's names and raw values: upstream reserves them from mangling.
+
+import { PostHogPersistence } from "./persistence.lil";
+import { PostHog } from "./posthog-core.lil";
+import { sessionStore } from "./storage.lil";
+import { EventEmitter } from "./event-emitter.lil";
+import { createLogger, Logger } from "./logger.lil";
+import { uuidv7, uuid7ToTimestampMs } from "./uuidv7.lil";
+import { win } from "./globals.lil";
+import { addEventListener, clampToRange, isPositiveNumber } from "./utils.lil";
+
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue Error;
+extern JsValue Object;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+Logger sessionLogger = createLogger("[SessionId]");
+
+number SESSION_LENGTH_LIMIT_MILLISECONDS = 86400000.0;
+number BOOTSTRAP_SESSION_CLOCK_SKEW_TOLERANCE_MILLISECONDS = 60000.0;
+number ACTIVITY_TIMESTAMP_PERSIST_GRANULARITY_MS = 5000.0;
+number SESSION_COOKIE_SYNC_INTERVAL_MS = 1000.0;
+
+number now() {
+  return JS.number(JS.invoke(JS.construct(Date), "getTime"));
+}
+
+// The start time a bootstrapped UUIDv7 session id encodes, or -1 when unusable.
+number parseBootstrapSessionId(JsValue sessionID) {
+  number timestamp = now();
+  try {
+    number sessionStartTimestamp = uuid7ToTimestampMs(JS.assume(sessionID));
+    if (sessionStartTimestamp > timestamp + BOOTSTRAP_SESSION_CLOCK_SKEW_TOLERANCE_MILLISECONDS) {
+      sessionLogger.error(JS.array("Bootstrap sessionID cannot be in the future"));
+      return -1.0;
+    }
+    return sessionStartTimestamp;
+  } catch (JsValue e) {
+    sessionLogger.error(JS.array("Invalid sessionID in bootstrap", e));
+    return -1.0;
+  }
+}
+
+class PendingBootstrapSession {
+  JsValue sessionId;
+  number sessionStartTimestamp;
+
+  init(JsValue sessionId, number sessionStartTimestamp) {
+    this.sessionId = sessionId;
+    this.sessionStartTimestamp = sessionStartTimestamp;
+  }
+}
+
+export class SessionIdManager {
+  JsValue _config;
+  PostHogPersistence _persistence;
+  JsValue _windowId;
+  JsValue _sessionId;
+  string _window_id_storage_key;
+  string _primary_window_exists_storage_key;
+  JsValue _sessionStartTimestamp;
+  PendingBootstrapSession? _pendingBootstrapSession;
+  JsValue _sessionActivityTimestamp;
+  JsValue _lastPersistedActivityTimestamp;
+  number? _lastCookieSyncTimestamp;
+  JsValue[] _sessionIdChangedHandlers;
+  number _sessionTimeoutMs;
+  JsValue _enforceIdleTimeout;
+  JsValue _beforeUnloadListener;
+  bool _destroyed;
+  EventEmitter _eventEmitter;
+
+  init(PostHog instance) {
+    PostHogPersistence? instancePersistence = instance.persistence;
+    if (instancePersistence == null) {
+      throw JS.construct(Error, "SessionIdManager requires a PostHogPersistence instance");
+    }
+    JsValue config = instance.config;
+    if (JS.strictEqual(config["cookieless_mode"], "always")) {
+      throw JS.construct(Error, "SessionIdManager cannot be used with cookieless_mode=\"always\"");
+    }
+    PostHogPersistence persistence = instancePersistence;
+    this._lastPersistedActivityTimestamp = null;
+    this._lastCookieSyncTimestamp = null;
+    this._sessionIdChangedHandlers = [];
+    this._beforeUnloadListener = JS.undefined();
+    this._destroyed = false;
+    this._eventEmitter = new EventEmitter();
+    this._enforceIdleTimeout = JS.undefined();
+    this._config = config;
+    this._persistence = persistence;
+    this._windowId = JS.undefined();
+    this._sessionId = JS.undefined();
+    this._sessionStartTimestamp = null;
+    this._pendingBootstrapSession = null;
+    this._sessionActivityTimestamp = null;
+    JsValue persistenceName = JS.or(config["persistence_name"], config["token"]);
+    JsValue desiredTimeout = JS.or(config["session_idle_timeout_seconds"], 1800);
+    this._sessionTimeoutMs = clampToRange(desiredTimeout, 60.0, 36000.0, sessionLogger.child("session_idle_timeout_seconds"), 1800) * 1000.0;
+    JsValue client = instance;
+    JS.invoke(client, "register", JS.object("$configured_session_timeout_ms", this._sessionTimeoutMs));
+    this._resetIdleTimer();
+    this._window_id_storage_key = JS.string(JS.add(JS.add("ph_", persistenceName), "_window_id"));
+    this._primary_window_exists_storage_key = JS.string(JS.add(JS.add("ph_", persistenceName), "_primary_window_exists"));
+    // A window id survives a reload of the same tab, but not a duplicated tab: the
+    // primary-window flag in sessionStorage tells the two apart.
+    if (this._canUseSessionStorage()) {
+      JsValue lastWindowId = sessionStore.parse(this._window_id_storage_key);
+      JsValue primaryWindowExists = sessionStore.parse(this._primary_window_exists_storage_key);
+      if (lastWindowId.truthy() && !primaryWindowExists.truthy()) {
+        this._windowId = lastWindowId;
+      } else {
+        sessionStore.remove(this._window_id_storage_key, JS.undefined());
+      }
+      sessionStore.set(this._primary_window_exists_storage_key, true, JS.undefined(), JS.undefined(), JS.undefined());
+    }
+    JsValue bootstrap = config["bootstrap"];
+    if (!JS.isNullish(bootstrap) && bootstrap["sessionID"].truthy()) {
+      this.setBootstrapSessionId(bootstrap["sessionID"], false);
+    }
+    this._listenToReloadWindow();
+  }
+
+  JsValue on(string event, JsValue handler) {
+    return this._eventEmitter.on(event, handler);
+  }
+
+  JsValue onSessionId(JsValue callback) {
+    this._sessionIdChangedHandlers.push(callback);
+    if (this._sessionId.truthy()) {
+      JS.call(callback, JS.undefined(), this._sessionId, this._windowId);
+    }
+    return () => {
+      this._sessionIdChangedHandlers = this._sessionIdChangedHandlers.filter((JsValue h) => !JS.strictEqual(h, callback));
+    };
+  }
+
+  bool _canUseSessionStorage() {
+    return JS.strictNotEqual(this._config["persistence"], "memory") && !this._persistence._disabled && sessionStore.isSupported();
+  }
+
+  void _setWindowId(JsValue windowId) {
+    if (JS.strictNotEqual(windowId, this._windowId)) {
+      this._windowId = windowId;
+      if (this._canUseSessionStorage()) {
+        sessionStore.set(this._window_id_storage_key, windowId, JS.undefined(), JS.undefined(), JS.undefined());
+      }
+    }
+  }
+
+  JsValue _getWindowId() {
+    if (this._windowId.truthy()) {
+      return this._windowId;
+    }
+    if (this._canUseSessionStorage()) {
+      return sessionStore.parse(this._window_id_storage_key);
+    }
+    return null;
+  }
+
+  bool _isActivityChangeBelowGranularity(JsValue newActivityTimestamp) {
+    JsValue lastPersisted = this._lastPersistedActivityTimestamp;
+    if (JS.strictEqual(lastPersisted, null) || JS.strictEqual(newActivityTimestamp, null)) {
+      return false;
+    }
+    return JS.number(JS.invoke(Math, "abs", JS.number(newActivityTimestamp) - JS.number(lastPersisted))) < ACTIVITY_TIMESTAMP_PERSIST_GRANULARITY_MS;
+  }
+
+  // Activity-only moves persist at most every five seconds, so an active tab does not
+  // rewrite storage (and its cookie) on every event.
+  void _setSessionId(JsValue sessionId, JsValue sessionActivityTimestamp, JsValue sessionStartTimestamp) {
+    bool idChanged = JS.strictNotEqual(sessionId, this._sessionId);
+    bool startChanged = JS.strictNotEqual(sessionStartTimestamp, this._sessionStartTimestamp);
+    bool activityChanged = JS.strictNotEqual(sessionActivityTimestamp, this._sessionActivityTimestamp);
+    bool isActivityOnlyChange = !idChanged && !startChanged;
+    this._sessionStartTimestamp = sessionStartTimestamp;
+    this._sessionActivityTimestamp = sessionActivityTimestamp;
+    this._sessionId = sessionId;
+    if (isActivityOnlyChange && !activityChanged) {
+      return;
+    }
+    if (isActivityOnlyChange && this._isActivityChangeBelowGranularity(sessionActivityTimestamp)) {
+      return;
+    }
+    this._lastPersistedActivityTimestamp = sessionActivityTimestamp;
+    this._persistence.register(JS.object("$sesid", JS.array(sessionActivityTimestamp, sessionId, sessionStartTimestamp)), JS.undefined());
+  }
+
+  bool _useCrossTabRefreshHardening() {
+    JsValue debounce = if (JS.isNullish(this._config)) { JS.undefined() } else { this._config["persistence_save_debounce_ms"] };
+    return isPositiveNumber(debounce) && JS.number(debounce) > 0.0;
+  }
+
+  void _refreshSessionIdFromStorage() {
+    if (this._useCrossTabRefreshHardening()) {
+      this._persistence.refreshKey("$sesid");
+    } else {
+      this._persistence.flush();
+      this._persistence.load(false);
+    }
+  }
+
+  void _flushPendingActivityTimestamp() {
+    if (JS.strictEqual(this._sessionActivityTimestamp, null) || JS.strictEqual(this._sessionActivityTimestamp, this._lastPersistedActivityTimestamp)) {
+      return;
+    }
+    this._refreshSessionIdFromStorage();
+    JsValue persisted = this._getSessionId();
+    if (JS.strictNotEqual(persisted[1], this._sessionId) || JS.strictNotEqual(persisted[2], this._sessionStartTimestamp)) {
+      return;
+    }
+    this._lastPersistedActivityTimestamp = this._sessionActivityTimestamp;
+    JsValue sessionId = if (JS.isNullish(this._sessionId)) { null } else { this._sessionId };
+    this._persistence.register(JS.object("$sesid", JS.array(this._sessionActivityTimestamp, sessionId, this._sessionStartTimestamp)), JS.undefined());
+    this._persistence.flush();
+  }
+
+  number _freshestActivityTimestamp() {
+    JsValue persistedActivity = this._getSessionId()[0];
+    number persisted = if (isPositiveNumber(persistedActivity)) { JS.number(persistedActivity) } else { 0.0 };
+    number inMemory = if (isPositiveNumber(this._sessionActivityTimestamp)) { JS.number(this._sessionActivityTimestamp) } else { 0.0 };
+    return JS.number(JS.invoke(Math, "max", persisted, inMemory));
+  }
+
+  bool _isSessionIdleAfterCrossTabRefresh(number timestamp) {
+    this._refreshSessionIdFromStorage();
+    return this._sessionHasBeenIdleTooLong(timestamp, this._freshestActivityTimestamp());
+  }
+
+  // `[activity, id, start]`; a legacy two-item entry gains its start from its activity.
+  JsValue _getSessionId() {
+    JsValue sessionIdInfo = this._persistence.props["$sesid"];
+    if (sessionIdInfo.isArray() && JS.number(sessionIdInfo["length"]) == 2.0) {
+      JS.invoke(sessionIdInfo, "push", sessionIdInfo[0]);
+    }
+    return JS.or(sessionIdInfo, JS.array(0, null, 0));
+  }
+
+  void resetSessionId() {
+    this._lastPersistedActivityTimestamp = null;
+    this._pendingBootstrapSession = null;
+    JS.call(clearTimeout, JS.undefined(), this._enforceIdleTimeout);
+    this._enforceIdleTimeout = JS.undefined();
+    this._setSessionId(null, null, null);
+  }
+
+  bool setBootstrapSessionId(JsValue sessionID, bool deferUntilNextSession = false) {
+    number sessionStartTimestamp = parseBootstrapSessionId(sessionID);
+    if (sessionStartTimestamp == -1.0) {
+      return false;
+    }
+    if (deferUntilNextSession) {
+      this._pendingBootstrapSession = new PendingBootstrapSession(sessionID, sessionStartTimestamp);
+    } else {
+      this._setSessionId(sessionID, now(), sessionStartTimestamp);
+    }
+    return true;
+  }
+
+  void destroy() {
+    this._destroyed = true;
+    this._flushPendingActivityTimestamp();
+    JS.call(clearTimeout, JS.undefined(), this._enforceIdleTimeout);
+    this._enforceIdleTimeout = JS.undefined();
+    if (this._beforeUnloadListener.truthy() && win.truthy()) {
+      JS.invoke(win, "removeEventListener", "beforeunload", this._beforeUnloadListener, JS.object("capture", false));
+      this._beforeUnloadListener = JS.undefined();
+    }
+    this._sessionIdChangedHandlers = [];
+  }
+
+  void _listenToReloadWindow() {
+    this._beforeUnloadListener = () => {
+      this._flushPendingActivityTimestamp();
+      if (this._canUseSessionStorage()) {
+        sessionStore.remove(this._primary_window_exists_storage_key, JS.undefined());
+      }
+    };
+    addEventListener(win, "beforeunload", this._beforeUnloadListener, false, true);
+  }
+
+  bool _sessionHasBeenIdleTooLong(JsValue timestamp, JsValue lastActivityTimestamp) {
+    if (!isPositiveNumber(timestamp) || !isPositiveNumber(lastActivityTimestamp)) {
+      return false;
+    }
+    return JS.number(JS.invoke(Math, "abs", JS.number(timestamp) - JS.number(lastActivityTimestamp))) > this._sessionTimeoutMs;
+  }
+
+  JsValue checkAndGetSessionAndWindowId(bool readOnly = false, JsValue timestampArg = null, bool persistenceAlreadySynced = false) {
+    if (JS.strictEqual(this._config["cookieless_mode"], "always")) {
+      throw JS.construct(Error, "checkAndGetSessionAndWindowId should not be called with cookieless_mode=\"always\"");
+    }
+    number timestamp = if (timestampArg.truthy()) { JS.number(timestampArg) } else { now() };
+    JsValue managedSessionIdBeforeCookieSync = this._sessionId;
+    number? lastSync = this._lastCookieSyncTimestamp;
+    if (persistenceAlreadySynced) {
+      this._lastCookieSyncTimestamp = timestamp;
+    } else if (lastSync == null || timestamp < lastSync || timestamp - lastSync >= SESSION_COOKIE_SYNC_INTERVAL_MS) {
+      this._persistence.syncCookieProperties();
+      this._lastCookieSyncTimestamp = timestamp;
+    }
+    JsValue info = this._getSessionId();
+    JsValue sessionId = info[1];
+    JsValue startTimestamp = info[2];
+    bool cookieSessionAdoption = !JS.isUndefined(managedSessionIdBeforeCookieSync) && JS.strictNotEqual(sessionId, managedSessionIdBeforeCookieSync);
+    number lastActivityTimestamp = this._freshestActivityTimestamp();
+    JsValue windowId = this._getWindowId();
+    PendingBootstrapSession? pending = this._pendingBootstrapSession;
+    bool pendingPastMaximumLength = false;
+    bool sessionPastMaximumLength = false;
+    if (pending != null) {
+      pendingPastMaximumLength = pending.sessionStartTimestamp > timestamp + BOOTSTRAP_SESSION_CLOCK_SKEW_TOLERANCE_MILLISECONDS || timestamp - pending.sessionStartTimestamp > SESSION_LENGTH_LIMIT_MILLISECONDS;
+      sessionPastMaximumLength = pendingPastMaximumLength;
+    } else {
+      sessionPastMaximumLength = isPositiveNumber(startTimestamp) && JS.number(JS.invoke(Math, "abs", timestamp - JS.number(startTimestamp))) > SESSION_LENGTH_LIMIT_MILLISECONDS;
+    }
+    bool valuesChanged = false;
+    bool crossTabAdoption = cookieSessionAdoption;
+    bool noSessionId = !sessionId.truthy() || pending != null;
+    JsValue preRefreshSessionId = sessionId;
+    bool activityTimeout = !noSessionId && !readOnly && this._sessionHasBeenIdleTooLong(timestamp, lastActivityTimestamp);
+    if (activityTimeout) {
+      // Another tab may have kept the session alive: re-read before rotating.
+      activityTimeout = this._isSessionIdleAfterCrossTabRefresh(timestamp);
+      if (!activityTimeout) {
+        sessionLogger.info(JS.array("cross-tab refresh kept the session alive", JS.object("sessionId", sessionId)));
+      }
+      info = this._getSessionId();
+      sessionId = info[1];
+      startTimestamp = info[2];
+    }
+    if (noSessionId || activityTimeout || sessionPastMaximumLength) {
+      crossTabAdoption = false;
+      bool usePending = pending != null && !pendingPastMaximumLength;
+      sessionId = if (usePending && pending != null) { pending.sessionId } else { uuidv7() };
+      windowId = uuidv7();
+      sessionLogger.info(JS.array("new session ID assigned", JS.object(
+        "sessionId", sessionId,
+        "windowId", windowId,
+        "bootstrapped", usePending,
+        "changeReason", JS.object("noSessionId", noSessionId, "activityTimeout", activityTimeout, "sessionPastMaximumLength", sessionPastMaximumLength)
+      )));
+      startTimestamp = if (usePending && pending != null) { pending.sessionStartTimestamp } else { timestamp };
+      this._pendingBootstrapSession = null;
+      valuesChanged = true;
+    } else {
+      if (!windowId.truthy()) {
+        windowId = uuidv7();
+        valuesChanged = true;
+      }
+      crossTabAdoption = crossTabAdoption || JS.strictNotEqual(sessionId, preRefreshSessionId);
+      if (crossTabAdoption) {
+        sessionLogger.info(JS.array("adopted cross-tab session id", JS.object("sessionId", sessionId, "windowId", windowId)));
+        valuesChanged = true;
+      }
+    }
+    bool noActivityTimestamp = !isPositiveNumber(lastActivityTimestamp);
+    bool shouldPreserveActivityTimestamp = !noActivityTimestamp && readOnly && !sessionPastMaximumLength;
+    number newActivityTimestamp = if (shouldPreserveActivityTimestamp) { lastActivityTimestamp } else { timestamp };
+    JsValue sessionStartTimestamp = if (isPositiveNumber(startTimestamp)) { startTimestamp } else { now() };
+    this._setWindowId(windowId);
+    this._setSessionId(sessionId, newActivityTimestamp, sessionStartTimestamp);
+    if (!readOnly) {
+      this._resetIdleTimer();
+    }
+    JsValue changeReason = JS.object("noSessionId", noSessionId, "activityTimeout", activityTimeout, "sessionPastMaximumLength", sessionPastMaximumLength, "crossTabAdoption", crossTabAdoption);
+    if (valuesChanged) {
+      JsValue finalSessionId = sessionId;
+      JsValue finalWindowId = windowId;
+      this._sessionIdChangedHandlers.forEach((JsValue handler) => {
+        JS.call(handler, JS.undefined(), finalSessionId, finalWindowId, changeReason);
+      });
+    }
+    return JS.object(
+      "sessionId", sessionId,
+      "windowId", windowId,
+      "sessionStartTimestamp", sessionStartTimestamp,
+      "changeReason", if (valuesChanged) { changeReason } else { JS.undefined() },
+      "lastActivityTimestamp", lastActivityTimestamp
+    );
+  }
+
+  void _resetIdleTimer() {
+    if (this._destroyed) {
+      return;
+    }
+    JS.call(clearTimeout, JS.undefined(), this._enforceIdleTimeout);
+    this._enforceIdleTimeout = JS.call(setTimeout, JS.undefined(), () => {
+      if (this._destroyed) {
+        return;
+      }
+      if (this._isSessionIdleAfterCrossTabRefresh(now())) {
+        JsValue idleSessionId = this._sessionId;
+        this.resetSessionId();
+        this._eventEmitter.emit("forcedIdleReset", JS.object("idleSessionId", idleSessionId));
+      } else {
+        this._resetIdleTimer();
+      }
+    }, this._sessionTimeoutMs * 1.1);
+  }
+}
+
+// Upstream exposes the timeout through a getter on the prototype.
+JsValue installSessionTimeoutGetter() {
+  JS.invoke(Object, "defineProperty", JS.get(SessionIdManager, "prototype"), "sessionTimeoutMs", JS.object(
+    "get", JS.method0((JsValue self) => self["_sessionTimeoutMs"]),
+    "configurable", true
+  ));
+  return JS.undefined();
+}
+
+JsValue sessionTimeoutGetter = installSessionTimeoutGetter();
+
+export constructor SessionIdManager;

@@ -1,0 +1,98 @@
+// browser/src/scroll-manager.ts: scroll depth and content depth of the current page,
+// read by page-view properties and by heatmaps.
+
+import { PostHog } from "./posthog-core.lil";
+import { win } from "./globals.lil";
+import { addEventListener } from "./utils.lil";
+
+extern JsValue Math;
+extern JsValue setTimeout;
+
+JsValue zeroIfNullish(JsValue value) {
+  return if (JS.isNullish(value)) { 0 } else { value };
+}
+
+export class ScrollManager {
+  PostHog _instance;
+  JsValue _context;
+  JsValue _updateScrollData;
+
+  init(PostHog instance) {
+    this._context = JS.undefined();
+    this._updateScrollData = () => {
+      if (!this._context.truthy()) {
+        this._context = JS.object();
+      }
+      JsValue el = this.scrollElement();
+      JsValue scrollY = this.scrollY();
+      JsValue scrollHeight = if (el.truthy()) { JS.invoke(Math, "max", 0, JS.number(el["scrollHeight"]) - JS.number(el["clientHeight"])) } else { 0 };
+      JsValue contentY = JS.add(scrollY, if (JS.isNullish(el)) { 0 } else { JS.or(el["clientHeight"], 0) });
+      JsValue contentHeight = if (JS.isNullish(el)) { 0 } else { JS.or(el["scrollHeight"], 0) };
+      JsValue context = this._context;
+      context["lastScrollY"] = JS.invoke(Math, "ceil", scrollY);
+      context["maxScrollY"] = JS.invoke(Math, "max", scrollY, zeroIfNullish(context["maxScrollY"]));
+      context["maxScrollHeight"] = JS.invoke(Math, "max", scrollHeight, zeroIfNullish(context["maxScrollHeight"]));
+      context["lastContentY"] = contentY;
+      context["maxContentY"] = JS.invoke(Math, "max", contentY, zeroIfNullish(context["maxContentY"]));
+      context["maxContentHeight"] = JS.invoke(Math, "max", contentHeight, zeroIfNullish(context["maxContentHeight"]));
+    };
+    this._instance = instance;
+  }
+
+  JsValue getContext() {
+    return this._context;
+  }
+
+  JsValue resetContext() {
+    JsValue ctx = this._context;
+    JS.call(setTimeout, JS.undefined(), this._updateScrollData, 0);
+    return ctx;
+  }
+
+  void startMeasuringScrollPosition() {
+    addEventListener(win, "scroll", this._updateScrollData, true, true);
+    addEventListener(win, "scrollend", this._updateScrollData, true, true);
+    addEventListener(win, "resize", this._updateScrollData, false, true);
+  }
+
+  JsValue scrollElement() {
+    JsValue root = this._instance.config["scroll_root_selector"];
+    if (root.truthy()) {
+      JsValue selectors = if (root.isArray()) { root } else { JS.array(root) };
+      int count = JS.number(selectors["length"]).toInt();
+      for (int i = 0; i < count; i++) {
+        JsValue element = if (JS.isNullish(win)) { JS.undefined() } else { JS.invoke(win["document"], "querySelector", selectors[i]) };
+        if (element.truthy()) {
+          return element;
+        }
+      }
+      return JS.undefined();
+    }
+    return if (JS.isNullish(win)) { JS.undefined() } else { win["document"]["documentElement"] };
+  }
+
+  JsValue _scrollPosition(bool vertical) {
+    string elementKey = if (vertical) { "scrollTop" } else { "scrollLeft" };
+    if (this._instance.config["scroll_root_selector"].truthy()) {
+      JsValue element = this.scrollElement();
+      return JS.or(JS.and(element, element[elementKey]), 0);
+    }
+    if (!win.truthy()) {
+      return 0;
+    }
+    if (vertical) {
+      return JS.or(JS.or(JS.or(win["scrollY"], win["pageYOffset"]), win["document"]["documentElement"]["scrollTop"]), 0);
+    }
+    return JS.or(JS.or(JS.or(win["scrollX"], win["pageXOffset"]), win["document"]["documentElement"]["scrollLeft"]), 0);
+  }
+
+  JsValue scrollY() {
+    return this._scrollPosition(true);
+  }
+
+  JsValue scrollX() {
+    return this._scrollPosition(false);
+  }
+}
+
+export constructor ScrollManager;

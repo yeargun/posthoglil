@@ -1,0 +1,156 @@
+// browser/src/utils/request-router.ts: endpoint URLs for the API, UI, assets and flags
+// hosts, the region a host belongs to, and paths rewritten by `rewriteRequestPath`.
+
+import { PostHog } from "./posthog-core.lil";
+import { convertToURL } from "./event-utils.lil";
+import { defineGetter } from "./utils.lil";
+
+extern JsValue URL;
+
+Regex trailingSlash = new Regex("\\/$");
+Regex usHost = new Regex("https:\\/\\/(app|us|us-assets)(\\.i)?\\.posthog\\.com", "i");
+Regex euHost = new Regex("https:\\/\\/(eu|eu-assets)(\\.i)?\\.posthog\\.com", "i");
+
+JsValue trimHost(JsValue host) {
+  return JS.invoke(JS.invoke(host, "trim"), "replace", trailingSlash, "");
+}
+
+export string apiHostOf(RequestRouter router) {
+  string host = JS.string(trimHost(router.instance.config["api_host"]));
+  return if (host == "https://app.posthog.com") { "https://us.i.posthog.com" } else { host };
+}
+
+string flagsApiHostOf(RequestRouter router) {
+  JsValue customHost = router.instance.config["flags_api_host"];
+  if (customHost.truthy()) {
+    return JS.string(trimHost(customHost));
+  }
+  return apiHostOf(router);
+}
+
+JsValue uiHostOf(RequestRouter router) {
+  JsValue configured = router.instance.config["ui_host"];
+  JsValue host = if (JS.isNullish(configured)) { JS.undefined() } else { JS.invoke(configured, "replace", trailingSlash, "") };
+  if (!host.truthy()) {
+    host = JS.invoke(apiHostOf(router), "replace", ".i.posthog.com", ".posthog.com");
+  }
+  if (JS.strictEqual(host, "https://app.posthog.com")) {
+    return "https://us.posthog.com";
+  }
+  return host;
+}
+
+export string regionOf(RequestRouter router) {
+  string apiHost = apiHostOf(router);
+  string? cached = router._regionCache.get(apiHost);
+  if (cached != null) {
+    return cached;
+  }
+  string region = if (usHost.test(apiHost)) { "us" } else { if (euHost.test(apiHost)) { "eu" } else { "custom" } };
+  router._regionCache.set(apiHost, region);
+  return region;
+}
+
+JsValue urlKey(string url) {
+  JsValue parsed = convertToURL(url);
+  return if (parsed.truthy()) { JS.add(JS.add(JS.add(parsed["protocol"], "//"), parsed["host"]), parsed["pathname"]) } else { JS.undefined() };
+}
+
+class IngestionEndpoints {
+  string apiHost;
+  JsValue rewriteRequestPath;
+  Set<string> urls;
+
+  init(string apiHost, JsValue rewriteRequestPath) {
+    this.apiHost = apiHost;
+    this.rewriteRequestPath = rewriteRequestPath;
+    this.urls = new Set<string>();
+  }
+}
+
+JsValue prepareEndpoint(RequestRouter router, string target, string path, JsValue url) {
+  if (target == "ui") {
+    return url;
+  }
+  JsValue rewritten = url;
+  JsValue rewriteRequestPath = router.instance.config["rewriteRequestPath"];
+  if (rewriteRequestPath.truthy()) {
+    JsValue anchor = convertToURL(JS.string(url));
+    JsValue resolved = JS.or(if (JS.isNullish(anchor)) { JS.undefined() } else { anchor["href"] }, url);
+    rewritten = JS.invoke(JS.call(rewriteRequestPath, JS.undefined(), JS.construct(URL, resolved)), "toString");
+  }
+  if (rewriteRequestPath.truthy() && target == "api" && (path.indexOf("/s/") == 0 || path.indexOf("/e/") == 0 || path.indexOf("/i/") == 0)) {
+    JsValue key = urlKey(JS.string(rewritten));
+    if (key.truthy()) {
+      string apiHost = apiHostOf(router);
+      IngestionEndpoints? endpoints = router._ingestionEndpoints;
+      IngestionEndpoints current = if (endpoints != null && endpoints.apiHost == apiHost && JS.strictEqual(endpoints.rewriteRequestPath, rewriteRequestPath)) { endpoints } else { new IngestionEndpoints(apiHost, rewriteRequestPath) };
+      router._ingestionEndpoints = current;
+      current.urls.add(JS.string(key));
+    }
+  }
+  return rewritten;
+}
+
+export class RequestRouter {
+  PostHog instance;
+  Map<string, string> _regionCache;
+  IngestionEndpoints? _ingestionEndpoints;
+
+  init(PostHog instance) {
+    this._regionCache = new Map<string, string>();
+    this._ingestionEndpoints = null;
+    this.instance = instance;
+  }
+
+  bool isIngestionEndpoint(string url) {
+    IngestionEndpoints? endpoints = this._ingestionEndpoints;
+    JsValue key = urlKey(url);
+    return endpoints != null && endpoints.apiHost == apiHostOf(this) && JS.strictEqual(endpoints.rewriteRequestPath, this.instance.config["rewriteRequestPath"]) && key.truthy() && endpoints.urls.has(JS.string(key));
+  }
+
+  JsValue endpointFor(string target, string path = "") {
+    string normalized = path;
+    if (normalized != "") {
+      normalized = if (normalized.charAt(0) == "/") { normalized } else { "/" + normalized };
+    }
+    if (target == "ui") {
+      return prepareEndpoint(this, target, normalized, JS.add(uiHostOf(this), normalized));
+    }
+    if (target == "flags") {
+      return prepareEndpoint(this, target, normalized, flagsApiHostOf(this) + normalized);
+    }
+    if (target == "assets") {
+      JsValue override = this.instance.config["asset_host"];
+      if (normalized.startsWith("/static/") && JS.typeOf(override) == "string") {
+        string normalizedOverride = JS.string(trimHost(override));
+        if (normalizedOverride != "") {
+          return prepareEndpoint(this, target, normalized, normalizedOverride + normalized);
+        }
+      }
+    }
+    if (regionOf(this) == "custom") {
+      return prepareEndpoint(this, target, normalized, apiHostOf(this) + normalized);
+    }
+    string suffix = "i.posthog.com" + normalized;
+    if (target == "assets") {
+      return prepareEndpoint(this, target, normalized, "https://" + regionOf(this) + "-assets." + suffix);
+    }
+    if (target == "api") {
+      return prepareEndpoint(this, target, normalized, "https://" + regionOf(this) + "." + suffix);
+    }
+    return JS.undefined();
+  }
+}
+
+JsValue installRouterGetters() {
+  defineGetter(RequestRouter, "apiHost", JS.method0((JsValue self) => apiHostOf(JS.assume(self))));
+  defineGetter(RequestRouter, "flagsApiHost", JS.method0((JsValue self) => flagsApiHostOf(JS.assume(self))));
+  defineGetter(RequestRouter, "uiHost", JS.method0((JsValue self) => uiHostOf(JS.assume(self))));
+  defineGetter(RequestRouter, "region", JS.method0((JsValue self) => regionOf(JS.assume(self))));
+  return JS.undefined();
+}
+
+JsValue routerGetters = installRouterGetters();
+
+export constructor RequestRouter;

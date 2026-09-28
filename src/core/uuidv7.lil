@@ -119,3 +119,16 @@ export string uuidv7() {
   }
   return retried;
 }
+
+extern JsValue parseInt;
+
+export number uuid7ToTimestampMs(string uuid) {
+  string hex = uuid.replace(new Regex("-", "g"), "");
+  if (hex.length != 32) {
+    throw JS.construct(Error, "Not a valid UUID");
+  }
+  if (hex.charAt(12) != "7") {
+    throw JS.construct(Error, "Not a UUIDv7");
+  }
+  return JS.number(JS.call(parseInt, JS.undefined(), hex.slice(0, 12), 16));
+}

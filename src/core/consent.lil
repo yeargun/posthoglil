@@ -1,0 +1,111 @@
+// browser/src/consent.ts: opt-in/opt-out state, stored in a cookie or localStorage
+// (migrated between the two when the configured store changes), and Do Not Track.
+
+import { PostHog } from "./posthog-core.lil";
+import { navigator, assignableWindow } from "./globals.lil";
+import { Store, cookieStore, localStore } from "./storage.lil";
+import { defineGetter, isNoLike, isYesLike } from "./utils.lil";
+
+export int CONSENT_PENDING = -1;
+export int CONSENT_DENIED = 0;
+export int CONSENT_GRANTED = 1;
+
+JsValue storageKey(ConsentManager manager) {
+  JsValue config = manager._instance.config;
+  JsValue consentName = config["consent_persistence_name"];
+  if (consentName.truthy()) {
+    return consentName;
+  }
+  JsValue prefix = config["opt_out_capturing_cookie_prefix"];
+  if (prefix.truthy()) {
+    return JS.add(prefix, config["token"]);
+  }
+  return JS.add("__ph_opt_in_out_", config["token"]);
+}
+
+// The configured store; a value left in the other store is moved over once.
+Store consentStorage(ConsentManager manager) {
+  JsValue config = manager._instance.config;
+  bool useLocal = JS.strictEqual(config["opt_out_capturing_persistence_type"], "localStorage");
+  Store expected = if (useLocal) { localStore } else { cookieStore };
+  Store? current = manager._persistentStore;
+  if (current == null || current != expected) {
+    manager._persistentStore = expected;
+    Store other = if (useLocal) { cookieStore } else { localStore };
+    if (other.get(JS.string(storageKey(manager))).truthy()) {
+      if (!expected.get(JS.string(storageKey(manager))).truthy()) {
+        manager.optInOut(isYesLike(other.get(JS.string(storageKey(manager)))));
+      }
+      other.remove(JS.string(storageKey(manager)), config["cross_subdomain_cookie"]);
+    }
+  }
+  return expected;
+}
+
+int storedConsent(ConsentManager manager) {
+  JsValue value = consentStorage(manager).get(JS.string(storageKey(manager)));
+  return if (isYesLike(value)) { CONSENT_GRANTED } else { if (isNoLike(value)) { CONSENT_DENIED } else { CONSENT_PENDING } };
+}
+
+bool doNotTrack(ConsentManager manager) {
+  if (!manager._instance.config["respect_dnt"].truthy()) {
+    return false;
+  }
+  JsValue standard = if (JS.isNullish(navigator)) { JS.undefined() } else { navigator["doNotTrack"] };
+  JsValue microsoft = if (JS.isNullish(navigator)) { JS.undefined() } else { navigator["msDoNotTrack"] };
+  JsValue legacy = assignableWindow["doNotTrack"];
+  return isYesLike(standard) || isYesLike(microsoft) || isYesLike(legacy);
+}
+
+export int consentOf(ConsentManager manager) {
+  if (doNotTrack(manager)) {
+    return CONSENT_DENIED;
+  }
+  return storedConsent(manager);
+}
+
+export class ConsentManager {
+  PostHog _instance;
+  Store? _persistentStore;
+
+  init(PostHog instance) {
+    this._persistentStore = null;
+    this._instance = instance;
+  }
+
+  bool isOptedOut() {
+    JsValue config = this._instance.config;
+    if (JS.strictEqual(config["cookieless_mode"], "always")) {
+      return true;
+    }
+    return this.isRejected() || (consentOf(this) == CONSENT_PENDING && JS.strictEqual(config["cookieless_mode"], "on_reject"));
+  }
+
+  bool isOptedIn() {
+    return !this.isOptedOut();
+  }
+
+  bool isExplicitlyOptedOut() {
+    return consentOf(this) == CONSENT_DENIED;
+  }
+
+  bool isRejected() {
+    return consentOf(this) == CONSENT_DENIED || (consentOf(this) == CONSENT_PENDING && this._instance.config["opt_out_capturing_by_default"].truthy());
+  }
+
+  void optInOut(bool isOptedIn) {
+    JsValue config = this._instance.config;
+    consentStorage(this).set(JS.string(storageKey(this)), if (isOptedIn) { 1 } else { 0 }, config["cookie_expiration"], config["cross_subdomain_cookie"], config["secure_cookie"]);
+  }
+
+  void reset() {
+    consentStorage(this).remove(JS.string(storageKey(this)), this._instance.config["cross_subdomain_cookie"]);
+  }
+}
+
+JsValue consentGetter = defineGetter(ConsentManager, "consent", JS.method0((JsValue self) => {
+  ConsentManager manager = JS.assume(self);
+  return consentOf(manager);
+}));
+
+export constructor ConsentManager;

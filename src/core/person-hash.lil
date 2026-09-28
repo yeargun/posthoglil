@@ -1,0 +1,28 @@
+// @posthog/core getPersonPropertiesHash: distinct id and person properties with keys
+// sorted at every depth, so equal payloads built in different orders hash the same.
+
+extern JsValue JSON;
+extern JsValue Object;
+
+JsValue deepSortKeys(JsValue value) {
+  if (JS.strictEqual(value, null) || JS.typeOf(value) != "object") {
+    return value;
+  }
+  if (value.isArray()) {
+    return JS.invoke(value, "map", (JsValue item) => deepSortKeys(item));
+  }
+  JsValue sorted = JS.object();
+  JsValue keys = JS.invoke(JS.invoke(Object, "keys", value), "sort");
+  JS.invoke(keys, "forEach", (JsValue key) => {
+    sorted[JS.string(key)] = deepSortKeys(value[JS.string(key)]);
+  });
+  return sorted;
+}
+
+export JsValue getPersonPropertiesHash(JsValue distinctId, JsValue userPropertiesToSet, JsValue userPropertiesToSetOnce) {
+  return JS.invoke(JSON, "stringify", JS.object(
+    "distinct_id", distinctId,
+    "userPropertiesToSet", if (userPropertiesToSet.truthy()) { deepSortKeys(userPropertiesToSet) } else { JS.undefined() },
+    "userPropertiesToSetOnce", if (userPropertiesToSetOnce.truthy()) { deepSortKeys(userPropertiesToSetOnce) } else { JS.undefined() }
+  ));
+}

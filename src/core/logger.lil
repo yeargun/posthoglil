@@ -10,13 +10,15 @@ extern JsValue console;
 
 export class Logger {
   string prefix;
+  bool debugEnabled;
 
-  init(string prefix) {
+  init(string prefix, bool debugEnabled = false) {
     this.prefix = prefix;
+    this.debugEnabled = debugEnabled;
   }
 
   void log(string level, JsValue args) {
-    if (win.truthy() && (Config.debug || win["POSTHOG_DEBUG"].truthy()) && !JS.isUndefined(win["console"]) && win["console"].truthy()) {
+    if (win.truthy() && (Config.debug || win["POSTHOG_DEBUG"].truthy() || this.debugEnabled) && !JS.isUndefined(win["console"]) && win["console"].truthy()) {
       JsValue method = win["console"][level];
       JsValue target = if (JS.in("__rrweb_original__", method)) { method["__rrweb_original__"] } else { method };
       JS.apply(target, JS.undefined(), JS.invoke(JS.array(this.prefix), "concat", args));
@@ -47,9 +49,46 @@ export class Logger {
     this.error(JS.array("You must initialize PostHog before calling " + methodName));
   }
 
-  Logger child(string prefix) {
-    return new Logger(this.prefix + " " + prefix);
+  Logger child(string prefix, bool debugEnabled = false) {
+    return new Logger(this.prefix + " " + prefix, debugEnabled);
   }
+}
+
+extern JsValue Array;
+
+// The logger object extensions receive (`client.logger`): upstream's variadic API.
+export JsValue loggerObject(Logger target) {
+  func(JsValue)->JsValue list = (JsValue args) => JS.invoke(JS.get(Array, "prototype")["slice"], "call", args);
+  JsValue api = JS.object();
+  api["_log"] = JS.staticRest((JsValue args) => {
+    target.log(JS.string(args[0]), JS.invoke(list(args), "slice", 1));
+    return JS.undefined();
+  });
+  api["debug"] = JS.staticRest((JsValue args) => {
+    target.debug(list(args));
+    return JS.undefined();
+  });
+  api["info"] = JS.staticRest((JsValue args) => {
+    target.info(list(args));
+    return JS.undefined();
+  });
+  api["warn"] = JS.staticRest((JsValue args) => {
+    target.warn(list(args));
+    return JS.undefined();
+  });
+  api["error"] = JS.staticRest((JsValue args) => {
+    target.error(list(args));
+    return JS.undefined();
+  });
+  api["critical"] = JS.staticRest((JsValue args) => {
+    target.critical(list(args));
+    return JS.undefined();
+  });
+  api["uninitializedWarning"] = (JsValue methodName) => {
+    target.uninitializedWarning(JS.string(methodName));
+  };
+  api["createLogger"] = (JsValue additionalPrefix, JsValue options) => loggerObject(target.child(JS.string(additionalPrefix), !JS.isNullish(options) && options["debugEnabled"].truthy()));
+  return api;
 }
 
 export Logger logger = new Logger("[PostHog.js]");

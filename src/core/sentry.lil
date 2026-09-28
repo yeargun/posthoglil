@@ -1,0 +1,98 @@
+// browser/src/extensions/sentry-integration.ts: links Sentry events to the PostHog
+// person and replay, and forwards them as $exception events.
+
+import { PostHog } from "./posthog-core.lil";
+import { assign, copy } from "./utils.lil";
+
+JsValue getOpt(JsValue options, string key) {
+  return if (JS.isNullish(options)) { JS.undefined() } else { options[key] };
+}
+
+JsValue createEventProcessor(JsValue posthog, JsValue options) {
+  JsValue organization = getOpt(options, "organization");
+  JsValue projectId = getOpt(options, "projectId");
+  JsValue prefix = getOpt(options, "prefix");
+  JsValue severityAllowList = if (JS.isUndefined(getOpt(options, "severityAllowList"))) { JS.array("error") } else { getOpt(options, "severityAllowList") };
+  JsValue sendExceptionsToPostHog = if (JS.isUndefined(getOpt(options, "sendExceptionsToPostHog"))) { true } else { getOpt(options, "sendExceptionsToPostHog") };
+  return (JsValue event) => {
+    bool shouldProcessLevel = JS.strictEqual(severityAllowList, "*") || JS.invoke(severityAllowList, "includes", event["level"]).truthy();
+    if (!shouldProcessLevel || !posthog["__loaded"].truthy()) {
+      return event;
+    }
+    if (!event["tags"].truthy()) {
+      event["tags"] = JS.object();
+    }
+    JsValue personUrl = JS.invoke(posthog["requestRouter"], "endpointFor", "ui", JS.add(JS.add(JS.add("/project/", posthog["config"]["token"]), "/person/"), JS.invoke(posthog, "get_distinct_id")));
+    event["tags"]["PostHog Person URL"] = personUrl;
+    if (JS.invoke(posthog, "sessionRecordingStarted").truthy()) {
+      event["tags"]["PostHog Recording URL"] = JS.invoke(posthog, "get_session_replay_url", JS.object("withTimestamp", true));
+    }
+    JsValue exceptionValues = if (JS.isNullish(event["exception"])) { JS.undefined() } else { event["exception"]["values"] };
+    JsValue exceptions = JS.or(exceptionValues, JS.array());
+    JsValue exceptionList = JS.invoke(exceptions, "map", (JsValue exception) => {
+      JsValue stacktrace = exception["stacktrace"];
+      JsValue mapped = JS.undefined();
+      if (stacktrace.truthy()) {
+        mapped = assign(copy(stacktrace), JS.object(
+          "type", "raw",
+          "frames", JS.invoke(JS.or(stacktrace["frames"], JS.array()), "map", (JsValue frame) => assign(copy(frame), JS.object("platform", "web:javascript")))
+        ));
+      }
+      return assign(copy(exception), JS.object("stacktrace", mapped));
+    });
+    JsValue first = exceptions[0];
+    JsValue firstValue = if (JS.isNullish(first)) { JS.undefined() } else { first["value"] };
+    JsValue firstType = if (JS.isNullish(first)) { JS.undefined() } else { first["type"] };
+    JsValue data = JS.object(
+      "$exception_message", JS.or(firstValue, event["message"]),
+      "$exception_type", firstType,
+      "$exception_level", event["level"],
+      "$exception_list", exceptionList,
+      "$sentry_event_id", event["event_id"],
+      "$sentry_exception", event["exception"],
+      "$sentry_exception_message", JS.or(firstValue, event["message"]),
+      "$sentry_exception_type", firstType,
+      "$sentry_tags", event["tags"]
+    );
+    if (organization.truthy() && projectId.truthy()) {
+      data["$sentry_url"] = JS.add(JS.add(JS.add(JS.add(JS.add(JS.or(prefix, "https://sentry.io/organizations/"), organization), "/issues/?project="), projectId), "&query="), event["event_id"]);
+    }
+    if (sendExceptionsToPostHog.truthy()) {
+      JsValue exceptionsExtension = posthog["exceptions"];
+      if (!JS.isNullish(exceptionsExtension)) {
+        JS.invoke(exceptionsExtension, "sendExceptionEvent", data);
+      }
+    }
+    return event;
+  };
+}
+
+export JsValue sentryIntegration(JsValue posthog, JsValue options) {
+  JsValue processor = createEventProcessor(posthog, options);
+  return JS.object("name", "posthog-js", "processEvent", JS.method1((JsValue self, JsValue event) => JS.call(processor, JS.undefined(), event)));
+}
+
+// The Sentry v7 integration class: `new posthog.SentryIntegration(posthog, org, project)`.
+export class SentryIntegration {
+  string name;
+  JsValue setupOnce;
+
+  init(JsValue posthog = JS.undefined(), JsValue organization = JS.undefined(), JsValue projectId = JS.undefined(), JsValue prefix = JS.undefined(), JsValue severityAllowList = JS.undefined(), JsValue sendExceptionsToPostHog = JS.undefined()) {
+    this.name = "posthog-js";
+    this.setupOnce = JS.method1((JsValue self, JsValue addGlobalEventProcessor) => {
+      JS.call(addGlobalEventProcessor, JS.undefined(), createEventProcessor(posthog, JS.object(
+        "organization", organization,
+        "projectId", projectId,
+        "prefix", prefix,
+        "severityAllowList", severityAllowList,
+        "sendExceptionsToPostHog", if (JS.isNullish(sendExceptionsToPostHog)) { true } else { sendExceptionsToPostHog }
+      )));
+      return JS.undefined();
+    });
+  }
+}
+
+export constructor SentryIntegration;
+
+// The class as a value, for `posthog.SentryIntegration`.
+export JsValue SentryIntegrationClass = SentryIntegration;

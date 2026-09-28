@@ -227,7 +227,7 @@ export JsValue getPersonInfo(JsValue maskPersonalData, JsValue customPersonalDat
   return JS.object("r", getReferrer().slice(0, 1000), "u", if (url.truthy()) { maskQueryParams(url, paramsToMask, MASKED) } else { JS.undefined() });
 }
 
-JsValue personPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
+export JsValue personPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
   JsValue referrer = info["r"];
   JsValue url = if (disableCaptureUrlHashes) { stripUrlHash(info["u"]) } else { info["u"] };
   JsValue referringDomain = JS.undefined();

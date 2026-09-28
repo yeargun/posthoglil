@@ -1,0 +1,320 @@
+// browser/src/extensions/browser-client.ts with browser-common's ExtensionRuntime and
+// createDisposable: the `Client` a new-style extension's `setup(client)` receives.
+
+import { PostHog } from "./posthog-core.lil";
+import { PostHogPersistence } from "./persistence.lil";
+import { SessionIdManager } from "./sessionid.lil";
+import { Config } from "./config.lil";
+import { Logger, logger, loggerObject } from "./logger.lil";
+import { extendURLParams } from "./request.lil";
+import { defineGetter, isFunction } from "./utils.lil";
+
+extern JsValue Error;
+extern JsValue Promise;
+extern JsValue Array;
+
+JsValue createDisposable(JsValue dispose) {
+  bool active = true;
+  return JS.object("dispose", () => {
+    if (active) {
+      active = false;
+      JsValue result = JS.call(dispose, JS.undefined());
+      if (result.truthy() && isFunction(result["then"])) {
+        JS.invoke(result, "then", JS.undefined(), () => {});
+      }
+    }
+  });
+}
+
+// Registered extensions in registration order, looked up by name.
+class ExtensionRuntime {
+  Logger _logger;
+  JsValue _client;
+  string[] _names;
+  JsValue[] _extensions;
+  bool _disposed;
+
+  init(Logger runtimeLogger, JsValue client) {
+    this._names = [];
+    this._extensions = [];
+    this._disposed = false;
+    this._logger = runtimeLogger;
+    this._client = client;
+  }
+
+  JsValue add(JsValue extension) {
+    return addExtension(this, extension);
+  }
+
+  void dispose() {
+    if (this._disposed) {
+      return;
+    }
+    this._disposed = true;
+    JsValue[] extensions = this._extensions.slice();
+    extensions.reverse();
+    this._names = [];
+    this._extensions = [];
+    for (JsValue extension of extensions) {
+      this._disposeExtension(extension);
+    }
+  }
+
+  void _disposeExtension(JsValue extension) {
+    try {
+      JsValue result = if (JS.isNullish(extension["dispose"])) { JS.undefined() } else { JS.invoke(extension, "dispose") };
+      if (result.truthy() && isFunction(result["then"])) {
+        JS.invoke(result, "then", JS.undefined(), (JsValue error) => {
+          this._logger.error(JS.array(JS.add(JS.add("Failed to dispose browser extension \"", extension["name"]), "\""), error));
+        });
+      }
+    } catch (JsValue error) {
+      this._logger.error(JS.array(JS.add(JS.add("Failed to dispose browser extension \"", extension["name"]), "\""), error));
+    }
+  }
+}
+
+async JsValue addExtension(ExtensionRuntime runtime, JsValue extension) {
+  if (runtime._disposed) {
+    throw JS.construct(Error, "Cannot add an extension to a disposed ExtensionRuntime");
+  }
+  string name = JS.string(extension["name"]);
+  if (runtime._names.includes(name)) {
+    throw JS.construct(Error, "Browser extension \"" + name + "\" is already registered");
+  }
+  runtime._names.push(name);
+  runtime._extensions.push(extension);
+  try {
+    JsValue setup = JS.invoke(extension, "setup", runtime._client);
+    if (setup.truthy()) {
+      Task<JsValue> pending = JS.assume(setup);
+      await pending;
+    }
+  } catch (JsValue error) {
+    int index = runtime._names.indexOf(name);
+    bool active = index != -1 && JS.strictEqual(runtime._extensions[index], extension);
+    if (active) {
+      runtime._names.splice(index, 1);
+      runtime._extensions.splice(index, 1);
+    }
+    runtime._logger.error(JS.array("Failed to set up browser extension \"" + name + "\"", error));
+    if (active) {
+      runtime._disposeExtension(extension);
+    }
+  }
+  return JS.undefined();
+}
+
+
+export class BrowserClientKeyValueStore {
+  PostHog _instance;
+
+  init(PostHog instance) {
+    this._instance = instance;
+  }
+
+  void initialize() {
+  }
+
+  JsValue get(JsValue keyOrKeys) {
+    PostHogPersistence? persistence = this._instance.persistence;
+    if (JS.typeOf(keyOrKeys) == "string") {
+      return if (persistence != null) { persistence.get_property(JS.string(keyOrKeys)) } else { JS.undefined() };
+    }
+    JsValue values = JS.object();
+    int count = JS.number(keyOrKeys["length"]).toInt();
+    for (int i = 0; i < count; i++) {
+      string key = JS.string(keyOrKeys[i]);
+      JsValue value = if (persistence != null) { persistence.get_property(key) } else { JS.undefined() };
+      if (!JS.isUndefined(value)) {
+        values[key] = value;
+      }
+    }
+    return values;
+  }
+
+  void set(JsValue properties, JsValue value = JS.undefined()) {
+    PostHogPersistence? persistence = this._instance.persistence;
+    if (persistence != null) {
+      JsValue props = properties;
+      if (JS.typeOf(properties) == "string") {
+        props = JS.object();
+        props[JS.string(properties)] = value;
+      }
+      persistence.register(props, JS.undefined());
+    }
+  }
+
+  void remove(JsValue keyOrKeys) {
+    PostHogPersistence? persistence = this._instance.persistence;
+    if (persistence != null) {
+      persistence.unregister(keyOrKeys);
+    }
+  }
+}
+
+export constructor BrowserClientKeyValueStore;
+
+export class BrowserClientAdapter {
+  PostHog instance;
+  JsValue kv;
+  JsValue onEvent;
+  JsValue onRemoteConfig;
+  JsValue _logger;
+  ExtensionRuntime _runtime;
+  JsValue _latestRemoteConfigResult;
+  bool _disposed;
+
+  init(PostHog instance) {
+    JsValue client = instance;
+    JsValue self = this;
+    this._disposed = false;
+    this.instance = instance;
+    this._logger = loggerObject(logger);
+    this._latestRemoteConfigResult = instance._lastRemoteConfig;
+    this.kv = new BrowserClientKeyValueStore(instance);
+    this.onEvent = (JsValue handler) => {
+      JsValue unsubscribe = JS.invoke(client, "on", "eventCaptured", (JsValue event) => {
+        try {
+          JS.call(handler, JS.undefined(), JS.object("event", event["event"], "properties", event["properties"]));
+        } catch (JsValue error) {
+          JS.invoke(this._logger, "error", "Browser extension event listener failed", error);
+        }
+      });
+      return createDisposable(unsubscribe);
+    };
+    this.onRemoteConfig = (JsValue handler) => {
+      if (this._disposed) {
+        return createDisposable(() => {});
+      }
+      func(JsValue)->void invoke = (JsValue result) => {
+        try {
+          JS.call(handler, JS.undefined(), result);
+        } catch (JsValue error) {
+          JS.invoke(this._logger, "error", "Browser extension remote config listener failed", error);
+        }
+      };
+      JsValue unsubscribe = this.instance._internalEventEmitter.on("extensionsRemoteConfig", invoke);
+      if (this._latestRemoteConfigResult.truthy()) {
+        invoke(this._latestRemoteConfigResult);
+      }
+      return createDisposable(unsubscribe);
+    };
+    this._runtime = new ExtensionRuntime(logger.child("[BrowserExtensions]", false), self);
+  }
+
+  JsValue add(JsValue extension) {
+    return this._runtime.add(extension);
+  }
+
+  JsValue capture(JsValue event, JsValue properties = JS.undefined(), JsValue options = JS.undefined()) {
+    return adapterCapture(this, event, properties, options);
+  }
+
+  JsValue registerDynamicEventProperties(JsValue producer) {
+    return createDisposable(this.instance._registerExtensionEventProperties(producer));
+  }
+
+  void handleRemoteConfig(JsValue result) {
+    if (this._disposed) {
+      return;
+    }
+    this._latestRemoteConfigResult = result;
+    this.instance._internalEventEmitter.emit("extensionsRemoteConfig", result);
+  }
+
+  JsValue sendRequest(JsValue path, JsValue requestInit = JS.undefined()) {
+    return adapterSendRequest(this, path, requestInit);
+  }
+
+  void dispose() {
+    if (this._disposed) {
+      return;
+    }
+    this._disposed = true;
+    this._runtime.dispose();
+  }
+}
+
+async JsValue adapterCapture(BrowserClientAdapter adapter, JsValue event, JsValue properties, JsValue options) {
+  JsValue client = adapter.instance;
+  if (!options.truthy()) {
+    JS.invoke(client, "capture", event, properties);
+    return JS.undefined();
+  }
+  JsValue captureOptions = JS.object("timestamp", options["timestamp"], "uuid", options["uuid"], "$set", options["set"], "$set_once", options["setOnce"]);
+  JS.invoke(client, "capture", event, properties, captureOptions);
+  return JS.undefined();
+}
+
+
+async JsValue adapterSendRequest(BrowserClientAdapter adapter, JsValue path, JsValue requestInit) {
+  JsValue client = adapter.instance;
+  JsValue options = if (JS.isUndefined(requestInit)) { JS.object() } else { requestInit };
+  JsValue target = if (JS.isNullish(options["target"])) { "api" } else { options["target"] };
+  JsValue endpoint = adapter.instance.requestRouter.endpointFor(JS.string(target), JS.string(path));
+  JsValue requestOptions = JS.object(
+    "method", options["method"],
+    "url", if (options["query"].truthy()) { extendURLParams(JS.string(endpoint), options["query"]) } else { endpoint },
+    "data", options["body"],
+    "headers", options["headers"],
+    "timeout", options["timeoutMs"],
+    "fireCallbackOnDrop", true,
+    "transport", options["transport"],
+    "compression", options["compression"],
+    "timestampMode", options["sentAt"]
+  );
+  if (JS.strictEqual(options["transport"], "sendBeacon")) {
+    JS.invoke(client, "_send_request", requestOptions);
+    return JS.object("statusCode", 202);
+  }
+  Task<JsValue> response = JS.assume(JS.construct(Promise, (JsValue resolve) => {
+    requestOptions["callback"] = resolve;
+    JS.invoke(client, "_send_request", requestOptions);
+  }));
+  return await response;
+}
+
+
+string distinctIdOf(BrowserClientAdapter adapter) {
+  JsValue client = adapter.instance;
+  return JS.assume(JS.invoke(client, "get_distinct_id"));
+}
+
+JsValue installClientGetters() {
+  defineGetter(BrowserClientAdapter, "logger", JS.method0((JsValue self) => self["_logger"]));
+  defineGetter(BrowserClientAdapter, "distinctId", JS.method0((JsValue self) => JS.invoke(self["instance"], "get_distinct_id")));
+  defineGetter(BrowserClientAdapter, "anonymousId", JS.method0((JsValue self) => {
+    JsValue deviceId = JS.invoke(self["instance"], "get_property", "$device_id");
+    return if (JS.isNullish(deviceId)) { self["distinctId"] } else { deviceId };
+  }));
+  defineGetter(BrowserClientAdapter, "deviceId", JS.method0((JsValue self) => {
+    JsValue value = JS.invoke(self["instance"], "get_property", "$device_id");
+    return if (JS.typeOf(value) == "string") { value } else { JS.undefined() };
+  }));
+  defineGetter(BrowserClientAdapter, "library", JS.method0((JsValue self) => JS.object("name", Config.libName, "version", Config.libVersion)));
+  defineGetter(BrowserClientAdapter, "initialPersonProperties", JS.method0((JsValue self) => {
+    JsValue persistence = self["instance"]["persistence"];
+    JsValue props = if (JS.isNullish(persistence)) { JS.undefined() } else { JS.invoke(persistence, "get_initial_props") };
+    return if (JS.isNullish(props)) { JS.object() } else { props };
+  }));
+  defineGetter(BrowserClientAdapter, "groups", JS.method0((JsValue self) => JS.invoke(self["instance"], "getGroups")));
+  defineGetter(BrowserClientAdapter, "session", JS.method0((JsValue self) => {
+    try {
+      JsValue sessionManager = self["instance"]["sessionManager"];
+      JsValue current = if (JS.isNullish(sessionManager)) { JS.undefined() } else { JS.invoke(sessionManager, "checkAndGetSessionAndWindowId", true) };
+      JsValue sessionId = if (JS.isNullish(current)) { JS.undefined() } else { current["sessionId"] };
+      JsValue windowId = if (JS.isNullish(current)) { JS.undefined() } else { current["windowId"] };
+      JsValue start = if (JS.isNullish(current)) { JS.undefined() } else { current["sessionStartTimestamp"] };
+      return JS.object("sessionId", if (JS.isNullish(sessionId)) { "" } else { sessionId }, "windowId", if (JS.isNullish(windowId)) { "" } else { windowId }, "sessionStartTimestamp", if (JS.isNullish(start)) { 0 } else { start });
+    } catch {
+      return JS.object("sessionId", "", "windowId", "", "sessionStartTimestamp", 0);
+    }
+  }));
+  defineGetter(BrowserClientAdapter, "projectToken", JS.method0((JsValue self) => self["instance"]["config"]["token"]));
+  return JS.undefined();
+}
+
+JsValue clientGetters = installClientGetters();
+
+export constructor BrowserClientAdapter;

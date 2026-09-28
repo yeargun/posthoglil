@@ -1,0 +1,114 @@
+// browser/src/request-queue.ts: batches captured events per batch key (or URL) and
+// flushes them every `flush_interval_ms` (3 s by default, clamped to 250 ms..5 s);
+// on unload the batches go out by sendBeacon, event batches first.
+
+import { logger } from "./logger.lil";
+import { assign, clampToRange, copy, each, keysOf } from "./utils.lil";
+
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+export class RequestQueue {
+  bool _isPaused;
+  JsValue[] _queue;
+  JsValue _flushTimeout;
+  number _flushTimeoutMs;
+  func(JsValue)->void _sendRequest;
+
+  init(func(JsValue)->void sendRequest, JsValue config) {
+    this._isPaused = true;
+    this._queue = [];
+    this._flushTimeout = JS.undefined();
+    JsValue interval = if (JS.isNullish(config)) { JS.undefined() } else { config["flush_interval_ms"] };
+    this._flushTimeoutMs = clampToRange(JS.or(interval, 3000), 250.0, 5000.0, logger.child("flush interval"), 3000);
+    this._sendRequest = sendRequest;
+  }
+
+  void enqueue(JsValue req) {
+    this._queue.push(req);
+    if (!this._flushTimeout.truthy()) {
+      this._setFlushTimeout();
+    }
+  }
+
+  void unload() {
+    this._clearFlushTimeout();
+    JsValue requests = if (this._queue.length > 0) { this._formatQueue() } else { JS.object() };
+    JsValue[] values = [];
+    for (string key of keysOf(requests)) {
+      values.push(requests[key]);
+    }
+    for (JsValue req of values) {
+      if (JS.number(JS.invoke(req["url"], "indexOf", "/e")) == 0.0) {
+        this._sendRequestSafely(assign(copy(req), JS.object("transport", "sendBeacon")));
+      }
+    }
+    for (JsValue req of values) {
+      if (JS.number(JS.invoke(req["url"], "indexOf", "/e")) != 0.0) {
+        this._sendRequestSafely(assign(copy(req), JS.object("transport", "sendBeacon")));
+      }
+    }
+  }
+
+  void enable() {
+    this._isPaused = false;
+    this._setFlushTimeout();
+  }
+
+  void _setFlushTimeout() {
+    if (this._isPaused) {
+      return;
+    }
+    this._flushTimeout = JS.call(setTimeout, JS.undefined(), () => {
+      this._clearFlushTimeout();
+      if (this._queue.length > 0) {
+        JsValue requests = this._formatQueue();
+        for (string key in requests) {
+          JsValue req = requests[key];
+          number now = JS.number(JS.invoke(JS.construct(Date), "getTime"));
+          JsValue data = req["data"];
+          if (data.truthy() && data.isArray()) {
+            each(data, (JsValue item, JsValue index) => {
+              item["offset"] = JS.invoke(Math, "abs", JS.number(item["timestamp"]) - now);
+              JS.delete(item, "timestamp");
+            });
+          }
+          this._sendRequestSafely(req);
+        }
+      }
+    }, this._flushTimeoutMs);
+  }
+
+  void _sendRequestSafely(JsValue req) {
+    try {
+      this._sendRequest(req);
+    } catch (JsValue error) {
+      logger.error(JS.array(error));
+    }
+  }
+
+  void _clearFlushTimeout() {
+    JS.call(clearTimeout, JS.undefined(), this._flushTimeout);
+    this._flushTimeout = JS.undefined();
+  }
+
+  // Requests grouped by batch key or URL, in first-seen order.
+  JsValue _formatQueue() {
+    JsValue requests = JS.object();
+    for (JsValue req of this._queue) {
+      JsValue batchKey = if (req.truthy()) { req["batchKey"] } else { null };
+      JsValue key = JS.or(batchKey, req["url"]);
+      if (JS.isUndefined(requests[JS.string(key)])) {
+        requests[JS.string(key)] = assign(copy(req), JS.object("data", JS.array()));
+      }
+      JsValue target = requests[JS.string(key)]["data"];
+      if (!JS.isNullish(target)) {
+        JS.invoke(target, "push", req["data"]);
+      }
+    }
+    this._queue = [];
+    return requests;
+  }
+}

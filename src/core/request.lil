@@ -1,0 +1,569 @@
+// browser/src/request.ts with browser-common's request and encode utilities and
+// @posthog/core's native gzip: transport choice (fetch, XHR, sendBeacon), body
+// encoding (gzip-js via fflate or the platform's CompressionStream, base64, JSON),
+// and the URL parameters every request carries. Request options stay host objects:
+// `_send_request` is part of the SDK's cross-bundle ABI.
+
+import extern { instanceOf } from "./host.js";
+extern bool instanceOf(JsValue value, JsValue ctor);
+
+import { logger } from "./logger.lil";
+import { AbortController, CompressionStream, fetch, navigator, XMLHttpRequest } from "./globals.lil";
+import { crc32, gzipSync, strToU8 } from "./gzip.lil";
+import { assign, copy, each, isFile } from "./utils.lil";
+import { getQueryParam } from "./event-utils.lil";
+
+extern JsValue JSON;
+extern JsValue Blob;
+extern JsValue Headers;
+extern JsValue Date;
+extern JsValue Error;
+extern JsValue Math;
+extern JsValue Promise;
+extern JsValue String;
+extern JsValue Response;
+extern JsValue TextEncoder;
+extern JsValue DataView;
+extern JsValue ArrayBuffer;
+extern JsValue Uint8Array;
+extern JsValue globalThis;
+extern JsValue btoa;
+extern JsValue parseInt;
+extern JsValue encodeURIComponent;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+export bool SUPPORTS_REQUEST = XMLHttpRequest.truthy() || fetch.truthy();
+
+bool nativeAsyncGzipDisabled = false;
+
+// ---- serialisation ----
+
+// @posthog/core safeJsonStringify: true cycles become "[Circular]", errors their
+// name/message/stack, bigints strings; functions and symbols vanish.
+JsValue safeJsonStringify(JsValue value) {
+  JsValue[] ancestors = [];
+  JsValue json = JS.invoke(JSON, "stringify", value, JS.method2((JsValue holder, JsValue key, JsValue replacement) => {
+    string kind = JS.typeOf(replacement);
+    if (kind == "bigint") {
+      return JS.invoke(replacement, "toString");
+    }
+    if (kind == "function" || kind == "symbol") {
+      return JS.undefined();
+    }
+    if (instanceOf(replacement, Error)) {
+      return JS.object("name", replacement["name"], "message", replacement["message"], "stack", replacement["stack"]);
+    }
+    if (replacement.truthy() && kind == "object") {
+      while (ancestors.length > 0 && !JS.strictEqual(ancestors[ancestors.length - 1], holder)) {
+        ancestors.pop();
+      }
+      if (ancestors.includes(replacement)) {
+        return "[Circular]";
+      }
+      ancestors.push(replacement);
+    }
+    return replacement;
+  }));
+  return if (JS.isNullish(json)) { "null" } else { json };
+}
+
+export JsValue jsonStringify(JsValue data) {
+  try {
+    return JS.invoke(JSON, "stringify", data, (JsValue key, JsValue value) => if (JS.typeOf(value) == "bigint") { JS.invoke(value, "toString") } else { value });
+  } catch {
+    return safeJsonStringify(data);
+  }
+}
+
+Regex percentEscape = new Regex("%([0-9A-F]{2})", "g");
+
+JsValue base64Encode(JsValue data) {
+  if (!data.truthy()) {
+    return data;
+  }
+  JsValue binary = JS.invoke(JS.call(encodeURIComponent, JS.undefined(), data), "replace", percentEscape, (JsValue whole, JsValue hex) => JS.invoke(String, "fromCharCode", JS.call(parseInt, JS.undefined(), hex, 16)));
+  return JS.call(btoa, JS.undefined(), binary);
+}
+
+// ---- URL parameters ----
+
+string removeURLParam(string url, string param) {
+  string[] hashParts = url.split("#");
+  string[] queryParts = hashParts[0].split("?");
+  string? search = if (queryParts.length > 1) { queryParts[1] } else { null };
+  if (search == null || search == "") {
+    return url;
+  }
+  string updatedSearch = search.split("&").filter((string pair) => pair.split("=")[0] != param).join("&");
+  string result = queryParts[0];
+  if (updatedSearch != "") {
+    result = result + "?" + updatedSearch;
+  }
+  if (hashParts.length > 1 && hashParts[1] != "") {
+    result = result + "#" + hashParts[1];
+  }
+  return result;
+}
+
+string formDataToQuery(JsValue formdata) {
+  string[] pairs = [];
+  each(formdata, (JsValue value, JsValue key) => {
+    if (JS.isUndefined(value) || JS.isUndefined(key) || JS.strictEqual(key, "undefined")) {
+      return;
+    }
+    JsValue text = if (isFile(value)) { value["name"] } else { JS.invoke(value, "toString") };
+    pairs.push(JS.string(JS.call(encodeURIComponent, JS.undefined(), key)) + "=" + JS.string(JS.call(encodeURIComponent, JS.undefined(), text)));
+  });
+  return pairs.join("&");
+}
+
+export string extendURLParams(string url, JsValue params) {
+  string[] parts = url.split("?");
+  JsValue newParams = copy(params);
+  string[] updatedSearch = [];
+  if (parts.length > 1) {
+    for (string pair of parts[1].split("&")) {
+      string[] kv = pair.split("=");
+      string key = kv[0];
+      JsValue origValue = if (kv.length > 1) { kv[1] } else { JS.undefined() };
+      JsValue override = newParams[key];
+      JsValue value = if (JS.isNullish(override)) { origValue } else { override };
+      JS.delete(newParams, key);
+      updatedSearch.push(JS.string(JS.add(key + "=", value)));
+    }
+  }
+  string remaining = formDataToQuery(newParams);
+  if (remaining != "") {
+    updatedSearch.push(remaining);
+  }
+  return if (updatedSearch.length > 0) { parts[0] + "?" + updatedSearch.join("&") } else { parts[0] };
+}
+
+// ---- body encoding ----
+
+JsValue encodePostData(JsValue options) {
+  if (options["_encodedBody"].truthy()) {
+    return options["_encodedBody"];
+  }
+  JsValue data = options["data"];
+  JsValue compression = options["compression"];
+  if (!data.truthy()) {
+    return JS.undefined();
+  }
+  if (JS.strictEqual(compression, "gzip-js")) {
+    Uint8Array gzipData = gzipSync(strToU8(JS.string(jsonStringify(data))));
+    JsValue view = gzipData;
+    return JS.object(
+      "contentType", "text/plain",
+      "body", JS.invoke(view["buffer"], "slice", view["byteOffset"], JS.number(view["byteOffset"]) + JS.number(view["byteLength"])),
+      "estimatedSize", view["byteLength"]
+    );
+  }
+  if (JS.strictEqual(compression, "base64")) {
+    JsValue b64 = base64Encode(jsonStringify(data));
+    string encodedBody = "data=" + JS.string(JS.call(encodeURIComponent, JS.undefined(), if (JS.typeOf(b64) == "string") { b64 } else { jsonStringify(b64) }));
+    return JS.object("contentType", "application/x-www-form-urlencoded", "body", encodedBody, "estimatedSize", JS.construct(Blob, JS.array(encodedBody))["size"]);
+  }
+  JsValue jsonBody = jsonStringify(data);
+  return JS.object("contentType", "application/json", "body", jsonBody, "estimatedSize", JS.construct(Blob, JS.array(jsonBody))["size"]);
+}
+
+bool hasGzipMagic(JsValue bytes) {
+  return JS.number(bytes["length"]) >= 2.0 && JS.strictEqual(bytes[0], 31) && JS.strictEqual(bytes[1], 139);
+}
+
+bool isGzipData(JsValue body) {
+  if (instanceOf(body, ArrayBuffer)) {
+    return hasGzipMagic(JS.construct(Uint8Array, body));
+  }
+  if (JS.invoke(ArrayBuffer, "isView", body).truthy()) {
+    return hasGzipMagic(JS.construct(Uint8Array, body["buffer"], body["byteOffset"], body["byteLength"]));
+  }
+  return false;
+}
+
+bool isGzipRequest(JsValue compression, string urlCompression) {
+  return JS.strictEqual(compression, "gzip-js") || urlCompression == "gzip-js" || urlCompression == "gzip";
+}
+
+JsValue encodedRequest(JsValue url, JsValue encodedBody) {
+  return JS.object("url", url, "encodedBody", encodedBody);
+}
+
+JsValue fallbackToUncompressed(JsValue options) {
+  if (JS.strictEqual(options["transport"], "sendBeacon")) {
+    JsValue beaconOptions = assign(copy(options), JS.object("compression", "base64", "_encodedBody", JS.undefined()));
+    return encodedRequest(extendURLParams(JS.string(options["url"]), JS.object("compression", "base64")), encodePostData(beaconOptions));
+  }
+  JsValue plainOptions = assign(copy(options), JS.object("compression", JS.undefined(), "_encodedBody", JS.undefined()));
+  return encodedRequest(removeURLParam(JS.string(options["url"]), "compression"), encodePostData(plainOptions));
+}
+
+JsValue encodePostDataSafely(JsValue options) {
+  JsValue encodedBody = JS.undefined();
+  try {
+    encodedBody = encodePostData(options);
+  } catch (JsValue error) {
+    if (isGzipRequest(options["compression"], getQueryParam(JS.string(options["url"]), "compression"))) {
+      logger.error(JS.array("Failed to gzip request body, sending uncompressed payload", error));
+      return fallbackToUncompressed(options);
+    }
+    throw error;
+  }
+  if (!encodedBody.truthy() || !isGzipRequest(options["compression"], getQueryParam(JS.string(options["url"]), "compression")) || isGzipData(encodedBody["body"])) {
+    return encodedRequest(options["url"], encodedBody);
+  }
+  nativeAsyncGzipDisabled = true;
+  return fallbackToUncompressed(options);
+}
+
+void answer(JsValue options, JsValue response) {
+  if (!JS.isNullish(options["callback"])) {
+    JS.invoke(options, "callback", response);
+  }
+}
+
+JsValue encodeRequest(JsValue options) {
+  try {
+    return encodePostDataSafely(options);
+  } catch (JsValue error) {
+    logger.error(JS.array(error));
+    answer(options, JS.object("statusCode", 0, "error", error));
+    return JS.undefined();
+  }
+}
+
+// ---- native async gzip (@posthog/core gzip.ts) ----
+
+JsValue validationError(string reason) {
+  JsValue error = JS.construct(Error, "Native gzip produced invalid output: " + reason);
+  error["name"] = "NativeGzipValidationError";
+  return error;
+}
+
+async JsValue validateNativeGzip(JsValue compressed, JsValue inputBytes) {
+  if (JS.number(compressed["size"]) < 18.0) {
+    throw validationError("too-short");
+  }
+  Task<JsValue> headerRead = JS.assume(JS.invoke(JS.invoke(compressed, "slice", 0, 10), "arrayBuffer"));
+  JsValue header = JS.construct(Uint8Array, await headerRead);
+  if (!hasGzipMagic(header) || JS.strictNotEqual(header[2], 8)) {
+    throw validationError("invalid-header");
+  }
+  Task<JsValue> trailerRead = JS.assume(JS.invoke(JS.invoke(compressed, "slice", JS.number(compressed["size"]) - 8.0), "arrayBuffer"));
+  JsValue trailer = JS.construct(DataView, await trailerRead);
+  if (JS.number(JS.invoke(trailer, "getUint32", 0, true)) != crc32(JS.assume(inputBytes))) {
+    throw validationError("invalid-crc");
+  }
+  if (JS.number(JS.invoke(trailer, "getUint32", 4, true)) != JS.number(inputBytes["length"])) {
+    throw validationError("invalid-size");
+  }
+  return JS.undefined();
+}
+
+async JsValue abortAndRethrow(JsValue writer, JsValue err) {
+  try {
+    Task<JsValue> aborted = JS.assume(JS.invoke(writer, "abort", err));
+    await aborted;
+  } catch {
+  }
+  throw err;
+}
+
+// With `rethrow`, as request.ts calls it: failures reject.
+async JsValue gzipCompress(JsValue input) {
+  JsValue inputBytes = JS.invoke(JS.construct(TextEncoder), "encode", input);
+  JsValue compressedStream = JS.construct(globalThis["CompressionStream"], "gzip");
+  JsValue writer = JS.invoke(compressedStream["writable"], "getWriter");
+  JsValue writePromise = JS.invoke(JS.invoke(JS.invoke(writer, "write", inputBytes), "then", () => JS.invoke(writer, "close")), "catch", (JsValue err) => abortAndRethrow(writer, err));
+  JsValue responsePromise = JS.invoke(JS.construct(Response, compressedStream["readable"]), "blob");
+  Task<JsValue> both = JS.assume(JS.invoke(Promise, "all", JS.array(responsePromise, writePromise)));
+  JsValue compressed = (await both)[0];
+  await validateNativeGzip(compressed, inputBytes);
+  return compressed;
+}
+
+async JsValue preEncodeAsync(JsValue options) {
+  JsValue jsonData = jsonStringify(options["data"]);
+  JsValue compressed = await gzipCompress(jsonData);
+  if (!compressed.truthy()) {
+    return options;
+  }
+  Task<JsValue> read = JS.assume(JS.invoke(compressed, "arrayBuffer"));
+  JsValue body = await read;
+  return assign(copy(options), JS.object("_encodedBody", JS.object("contentType", "text/plain", "body", body, "estimatedSize", body["byteLength"])));
+}
+
+bool errorNamed(JsValue error, string name) {
+  if (!error.truthy() || JS.typeOf(error) != "object") {
+    return false;
+  }
+  string actual = if (JS.in("name", error)) { JS.string(JS.call(String, JS.undefined(), error["name"])) } else { "" };
+  return actual == name;
+}
+
+// ---- transports ----
+
+JsValue timeoutAbortReason(JsValue timeout) {
+  JsValue reason = JS.construct(Error, JS.add("PostHog request timed out", if (timeout.truthy()) { JS.add(" after ", JS.add(timeout, "ms")) } else { "" }));
+  reason["name"] = "AbortError";
+  return reason;
+}
+
+Regex networkErrorMessages = new Regex("Failed to fetch|NetworkError|Load failed", "i");
+
+bool isExpectedNetworkError(JsValue error) {
+  return !JS.isNullish(error) && JS.strictEqual(error["name"], "TypeError") && networkErrorMessages.test(JS.string(JS.or(error["message"], "")));
+}
+
+JsValue orEmpty(JsValue value) {
+  return if (JS.isNullish(value)) { JS.object() } else { value };
+}
+
+void xhrTransport(JsValue options) {
+  JsValue encoded = encodeRequest(options);
+  if (!encoded.truthy()) {
+    return;
+  }
+  JsValue req = JS.construct(XMLHttpRequest);
+  JS.invoke(req, "open", JS.or(options["method"], "GET"), encoded["url"], true);
+  JsValue body = orEmpty(encoded["encodedBody"]);
+  JsValue contentType = body["contentType"];
+  each(options["headers"], (JsValue headerValue, JsValue headerName) => {
+    JS.invoke(req, "setRequestHeader", headerName, headerValue);
+  });
+  if (contentType.truthy()) {
+    JS.invoke(req, "setRequestHeader", "Content-Type", contentType);
+  }
+  if (options["timeout"].truthy()) {
+    req["timeout"] = options["timeout"];
+  }
+  req["onreadystatechange"] = () => {
+    if (JS.strictEqual(req["readyState"], 4)) {
+      JsValue response = JS.object("statusCode", req["status"], "text", req["responseText"]);
+      if (JS.strictEqual(req["status"], 200)) {
+        try {
+          response["json"] = JS.invoke(JSON, "parse", req["responseText"]);
+        } catch {
+        }
+      }
+      answer(options, response);
+    }
+  };
+  JS.invoke(req, "send", body["body"]);
+}
+
+void fetchTransport(JsValue options) {
+  JsValue encoded = encodeRequest(options);
+  if (!encoded.truthy()) {
+    return;
+  }
+  JsValue body = orEmpty(encoded["encodedBody"]);
+  JsValue contentType = body["contentType"];
+  JsValue headers = JS.construct(Headers);
+  each(options["headers"], (JsValue headerValue, JsValue headerName) => {
+    JS.invoke(headers, "append", headerName, headerValue);
+  });
+  if (contentType.truthy()) {
+    JS.invoke(headers, "append", "Content-Type", contentType);
+  }
+  JsValue signal = JS.undefined();
+  JsValue timeoutHandle = JS.undefined();
+  bool hasAborter = false;
+  bool timedOut = false;
+  if (AbortController.truthy()) {
+    JsValue controller = JS.construct(AbortController);
+    signal = controller["signal"];
+    hasAborter = true;
+    timeoutHandle = JS.call(setTimeout, JS.undefined(), () => {
+      timedOut = true;
+      JS.invoke(controller, "abort", timeoutAbortReason(options["timeout"]));
+    }, options["timeout"]);
+  }
+  func(JsValue)->void handleError = (JsValue error) => {
+    if ((timedOut && !JS.isNullish(error) && JS.strictEqual(error["name"], "AbortError")) || isExpectedNetworkError(error)) {
+      logger.warn(JS.array(error));
+    } else {
+      logger.error(JS.array(error));
+    }
+    answer(options, JS.object("statusCode", 0, "error", error));
+  };
+  try {
+    bool keepalive = JS.strictEqual(options["method"], "POST") && !options["_keepaliveDisabled"].truthy() && JS.number(JS.or(body["estimatedSize"], 0)) < 52428.8;
+    JsValue requestInit = assign(JS.object(
+      "method", JS.or(if (JS.isNullish(options)) { JS.undefined() } else { options["method"] }, "GET"),
+      "headers", headers,
+      "keepalive", keepalive,
+      "body", body["body"],
+      "signal", signal
+    ), orEmpty(options["fetchOptions"]));
+    JsValue pending = JS.call(fetch, JS.undefined(), encoded["url"], requestInit);
+    JsValue handled = JS.invoke(pending, "then", (JsValue response) => JS.invoke(JS.invoke(response, "text"), "then", (JsValue responseText) => {
+      JsValue res = JS.object("statusCode", response["status"], "text", responseText);
+      if (JS.strictEqual(response["status"], 200)) {
+        try {
+          res["json"] = JS.invoke(JSON, "parse", responseText);
+        } catch (JsValue e) {
+          logger.error(JS.array(e));
+        }
+      }
+      answer(options, res);
+    }));
+    JS.invoke(JS.invoke(handled, "catch", handleError), "finally", () => if (hasAborter) { JS.call(clearTimeout, JS.undefined(), timeoutHandle) } else { null });
+  } catch (JsValue error) {
+    if (hasAborter) {
+      JS.call(clearTimeout, JS.undefined(), timeoutHandle);
+    }
+    handleError(error);
+  }
+}
+
+void beaconTransport(JsValue options) {
+  try {
+    JsValue encoded = encodePostDataSafely(options);
+    JsValue encodedBody = orEmpty(encoded["encodedBody"]);
+    JsValue body = encodedBody["body"];
+    if (!body.truthy()) {
+      return;
+    }
+    JsValue beaconBody = if (instanceOf(body, Blob)) { body } else { JS.construct(Blob, JS.array(body), JS.object("type", encodedBody["contentType"])) };
+    if (JS.invoke(navigator, "sendBeacon", encoded["url"], beaconBody).truthy()) {
+      return;
+    }
+    JsValue data = options["data"];
+    JsValue batch = if (data.isArray()) { data } else { if (JS.isNullish(data)) { JS.undefined() } else { data["batch"] } };
+    JsValue estimatedSize = encodedBody["estimatedSize"];
+    number size = if (JS.isNullish(estimatedSize)) { 0.0 } else { JS.number(estimatedSize) };
+    if (batch.isArray() && JS.number(batch["length"]) > 1.0 && size > 16384.0) {
+      JsValue mid = JS.invoke(Math, "ceil", JS.number(batch["length"]) / 2.0);
+      func(JsValue)->JsValue splitData = (JsValue events) => if (data.isArray()) { events } else { assign(copy(data), JS.object("batch", events)) };
+      beaconTransport(assign(copy(options), JS.object("data", splitData(JS.invoke(batch, "slice", 0, mid)))));
+      beaconTransport(assign(copy(options), JS.object("data", splitData(JS.invoke(batch, "slice", mid)))));
+      return;
+    }
+    logger.warn(JS.array(JS.add(JS.add("Beacon of ~", if (JS.isNullish(estimatedSize)) { 0 } else { estimatedSize }), " bytes was rejected by the browser, falling back to fetch")));
+    fetchTransport(assign(copy(options), JS.object("_keepaliveDisabled", true)));
+  } catch (JsValue error) {
+    logger.warn(JS.array("Beacon send failed", error));
+  }
+}
+
+string[] availableTransports() {
+  string[] names = [];
+  if (fetch.truthy()) {
+    names.push("fetch");
+  }
+  if (XMLHttpRequest.truthy()) {
+    names.push("XHR");
+  }
+  if (!JS.isNullish(navigator) && navigator["sendBeacon"].truthy()) {
+    names.push("sendBeacon");
+  }
+  return names;
+}
+
+string[] AVAILABLE_TRANSPORTS = availableTransports();
+
+void runTransport(string name, JsValue options) {
+  if (name == "fetch") {
+    fetchTransport(options);
+  } else if (name == "XHR") {
+    xhrTransport(options);
+  } else {
+    beaconTransport(options);
+  }
+}
+
+// ---- timestamps and the request entry point ----
+
+JsValue addSentAtToBody(JsValue data) {
+  JsValue sentAt = JS.invoke(JS.construct(Date), "toISOString");
+  if (!data.isArray()) {
+    return assign(copy(data), JS.object("sent_at", sentAt));
+  }
+  return JS.invoke(data, "map", (JsValue item) => assign(copy(item), JS.object("sent_at", sentAt)));
+}
+
+JsValue addSentAtToCaptureBody(JsValue data) {
+  JsValue events = if (data.isArray()) { data } else { JS.array(data) };
+  JsValue batch = JS.invoke(events, "map", (JsValue event) => {
+    JsValue copied = copy(event);
+    JsValue timestamp = event["timestamp"];
+    if (instanceOf(timestamp, Date) && !JS.invoke(globalThis, "isNaN", JS.invoke(timestamp, "getTime")).truthy()) {
+      assign(copied, JS.object("timestamp", JS.invoke(timestamp, "toISOString")));
+    }
+    return copied;
+  });
+  JsValue firstEvent = batch[0];
+  JsValue properties = if (JS.isNullish(firstEvent)) { JS.undefined() } else { firstEvent["properties"] };
+  JsValue token = if (JS.isNullish(properties)) { JS.undefined() } else { properties["token"] };
+  JsValue apiKey = if (JS.isNullish(token)) { if (JS.isNullish(firstEvent)) { JS.undefined() } else { firstEvent["token"] } } else { token };
+  return JS.object("api_key", apiKey, "batch", batch, "sent_at", JS.invoke(JS.construct(Date), "toISOString"));
+}
+
+string buildRequestURL(JsValue url, JsValue method, JsValue compression, JsValue timestampMode) {
+  bool gzip = JS.strictEqual(compression, "gzip-js");
+  JsValue params = JS.object();
+  if (JS.strictEqual(timestampMode, "query")) {
+    params[if (JS.strictEqual(method, "POST")) { "sent_at" } else { "_" }] = JS.invoke(JS.invoke(Date, "now"), "toString");
+  }
+  if (!gzip) {
+    params["compression"] = compression;
+  }
+  return extendURLParams(if (gzip) { removeURLParam(JS.string(url), "compression") } else { JS.string(url) }, params);
+}
+
+export void request(JsValue originalOptions) {
+  JsValue options = copy(originalOptions);
+  options["timeout"] = JS.or(options["timeout"], 60000);
+  JsValue transport = if (JS.isNullish(options["transport"])) { "fetch" } else { options["transport"] };
+  if (JS.strictEqual(transport, "sendBeacon") && JS.isUndefined(options["compression"]) && options["data"].truthy()) {
+    options["compression"] = "base64";
+  }
+  if (JS.strictEqual(options["method"], "POST") && options["data"].truthy()) {
+    if (JS.strictEqual(options["timestampMode"], "capture-body")) {
+      options["data"] = addSentAtToCaptureBody(options["data"]);
+    } else if (JS.strictEqual(options["timestampMode"], "body")) {
+      options["data"] = addSentAtToBody(options["data"]);
+    }
+  }
+  options["url"] = buildRequestURL(options["url"], options["method"], options["compression"], options["timestampMode"]);
+  JsValue disabled = options["disableTransport"];
+  string[] candidates = AVAILABLE_TRANSPORTS.filter((string name) => !disabled.truthy() || !JS.invoke(disabled, "includes", name).truthy());
+  if (!candidates.includes(JS.string(transport)) && candidates.length == 0) {
+    // Upstream reads `availableTransports[0].method`: the engine's own TypeError.
+    JsValue missing = JS.undefined();
+    missing["method"];
+  }
+  string chosen = if (candidates.includes(JS.string(transport))) { JS.string(transport) } else { candidates[0] };
+  func(JsValue)->void safeTransport = (JsValue opts) => {
+    try {
+      runTransport(chosen, opts);
+    } catch (JsValue error) {
+      if (isExpectedNetworkError(error)) {
+        logger.warn(JS.array(error));
+      } else {
+        logger.error(JS.array(error));
+      }
+      answer(options, JS.object("statusCode", 0, "error", error));
+    }
+  };
+  if (JS.strictNotEqual(transport, "sendBeacon") && options["data"].truthy() && JS.strictEqual(options["compression"], "gzip-js") && CompressionStream.truthy() && JS.typeOf(Promise) != "undefined" && !nativeAsyncGzipDisabled) {
+    Task<JsValue> encoding = preEncodeAsync(options);
+    JsValue pending = encoding;
+    JS.invoke(JS.invoke(pending, "then", (JsValue encodedOptions) => safeTransport(encodedOptions)), "catch", (JsValue error) => {
+      if (errorNamed(error, "NotReadableError")) {
+        nativeAsyncGzipDisabled = true;
+        safeTransport(assign(copy(options), JS.object("compression", JS.undefined(), "url", buildRequestURL(originalOptions["url"], originalOptions["method"], JS.undefined(), originalOptions["timestampMode"]))));
+        return;
+      }
+      if (errorNamed(error, "NativeGzipValidationError")) {
+        nativeAsyncGzipDisabled = true;
+      }
+      safeTransport(options);
+    });
+  } else {
+    runTransport(chosen, options);
+  }
+}
