@@ -1,0 +1,14 @@
+[javascript]
+priority = "size-first"
+optimization_level = 8
+cost_model = "brotli"
+assume_pristine_builtins = true
+candidate_search = "off"
+
+[mangle]
+identifiers = true
+properties = true
+pool_strings = true
+
+[delivery]
+host_modules = "embed"

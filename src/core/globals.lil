@@ -1,0 +1,58 @@
+// Host globals, read once when the module is evaluated, in the order upstream's
+// browser-common/src/utils/globals.ts and browser/src/utils/globals.ts read them.
+// Every binding may be absent: the SDK loads in SSR, workers and React Native too.
+
+import extern { noop } from "./host.js";
+extern JsValue noop;
+
+extern JsValue window;
+extern JsValue globalThis;
+extern JsValue self;
+extern JsValue File;
+
+export JsValue win = if (JS.typeOf(window) != "undefined") { window } else { JS.undefined() };
+JsValue scope = if (JS.typeOf(globalThis) != "undefined") { globalThis } else { win };
+
+JsValue fromScope(string name) {
+  if (JS.isNullish(scope)) {
+    return JS.undefined();
+  }
+  return scope[name];
+}
+
+export JsValue navigator = fromScope("navigator");
+export JsValue document = fromScope("document");
+export JsValue location = fromScope("location");
+export JsValue fetch = fromScope("fetch");
+
+// Upstream constructs one request here to probe CORS support.
+JsValue probeXhr() {
+  JsValue ctor = fromScope("XMLHttpRequest");
+  if (ctor.truthy() && JS.in("withCredentials", JS.construct(ctor))) {
+    return ctor;
+  }
+  return JS.undefined();
+}
+
+export JsValue XMLHttpRequest = probeXhr();
+export JsValue AbortController = fromScope("AbortController");
+export JsValue CompressionStream = fromScope("CompressionStream");
+export JsValue userAgent = if (JS.isNullish(navigator)) { JS.undefined() } else { navigator["userAgent"] };
+
+export bool isBrowserOnline() {
+  return win.truthy() && JS.strictNotEqual(win["navigator"]["onLine"], false);
+}
+
+// React Native polyfills kept by browser-v1, then the window the SDK's extension
+// contract lives on.
+JsValue installPolyfills() {
+  if (scope.truthy() && JS.typeOf(self) == "undefined") {
+    scope["self"] = scope;
+  }
+  if (scope.truthy() && JS.typeOf(File) == "undefined") {
+    scope["File"] = noop;
+  }
+  return if (JS.isNullish(win)) { JS.object() } else { win };
+}
+
+export JsValue assignableWindow = installPolyfills();

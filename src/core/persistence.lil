@@ -1,0 +1,991 @@
+// browser/src/posthog-persistence.ts and persistence-key-policy.ts. `props` is the SDK's
+// super-property store, mirrored into the configured storage; with split storage the
+// flag and survey groups live in their own localStorage entries. With
+// cookie-wins-on-conflict the shared cookie is reconciled before every read and write.
+
+import { document, win } from "./globals.lil";
+import { logger } from "./logger.lil";
+import {
+  COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES,
+  COOKIE_PERSISTED_PROPERTIES,
+  Store,
+  cookieStore,
+  createLocalPlusCookieStore,
+  getCookiePersistedProperties,
+  getCookiePersistedPropertiesMetadata,
+  getCookiePersistedPropertiesMetadataState,
+  getCookiePropertiesFingerprint,
+  getSafeCookieProperties,
+  localStore,
+  memoryStore,
+  sessionStore,
+  MetadataState
+} from "./storage.lil";
+import {
+  ALIAS_ID_KEY,
+  DISTINCT_ID,
+  ENABLED_FEATURE_FLAGS,
+  EVENT_TIMERS_KEY,
+  FLAG_CALL_REPORTED,
+  INITIAL_CAMPAIGN_PARAMS,
+  INITIAL_PERSON_INFO,
+  INITIAL_REFERRER_INFO,
+  PERSISTENCE_ACTIVE_FEATURE_FLAGS,
+  PERSISTENCE_FEATURE_FLAG_DETAILS,
+  PERSISTENCE_FEATURE_FLAG_ERRORS,
+  PERSISTENCE_FEATURE_FLAG_EVALUATED_AT,
+  PERSISTENCE_FEATURE_FLAG_PAYLOADS,
+  PERSISTENCE_FEATURE_FLAG_REQUEST_ID,
+  STORED_GROUP_PROPERTIES_KEY,
+  STORED_PERSON_PROPERTIES_KEY,
+  USER_STATE,
+  USER_STATE_ANONYMOUS,
+  USER_STATE_IDENTIFIED
+} from "./constants.lil";
+import {
+  getCampaignParams,
+  getInitialPersonPropsFromInfo,
+  getPersonInfo,
+  getReferrerInfo,
+  getSearchInfo,
+  stripLeadingDollar
+} from "./event-utils.lil";
+import { addEventListener, copy, each, extend, hasOwn, isArray, isEmptyObject, isNumber, isObject, keysOf, stripEmptyProperties } from "./utils.lil";
+
+extern JsValue JSON;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+// ---- key policy ----
+// Codes: 1 hidden from events, 2 flags group, 4 surveys group, 8 volatile (not a write
+// trigger), 16 event key skipped when null. A plain object on purpose: upstream's table
+// is an object literal, so an inherited `Object.prototype` name counts as a hidden key.
+
+int HIDDEN = 1;
+int FLAGS = 2;
+int SURVEYS = 4;
+int VOLATILE = 8;
+int SKIP_NULL = 16;
+
+JsValue policyTable = JS.object(
+  "$people_distinct_id", 1,
+  "__alias", 1,
+  "__cmpns", 1,
+  "__timers", 1,
+  "$heatmaps_enabled_server_side", 1,
+  "$error_tracking_suppression_rules", 1,
+  "$product_tours_enabled_server_side", 1,
+  "$session_recording_remote_config", 1,
+  "$session_recording_enabled_server_side", 1,
+  "$sesid", 1,
+  "$replay_sample_rate", 16,
+  "$sess_rec_flush_size", 1,
+  "$enabled_feature_flags", 3,
+  "$active_feature_flags", 3,
+  "$early_access_features", 1,
+  "$feature_flag_details", 3,
+  "$feature_flag_payloads", 3,
+  "$feature_flag_request_id", 11,
+  "$minimal_flag_called_events", 3,
+  "$override_feature_flags", 1,
+  "$override_feature_flag_payloads", 1,
+  "$stored_person_properties", 1,
+  "$stored_group_properties", 1,
+  "$surveys", 5,
+  "$surveys_loaded_at", 13,
+  "$surveys_activated_session", 1,
+  "$surveys_activated_timestamps", 1,
+  "ph_product_tours", 1,
+  "$product_tours_activated", 1,
+  "$product_tours_activated_session", 1,
+  "$flag_call_reported", 1,
+  "$flag_call_reported_session_id", 1,
+  "$feature_flag_errors", 1,
+  "$feature_flag_evaluated_at", 11,
+  "$user_state", 1,
+  "$client_session_props", 1,
+  "$capture_rate_limit", 1,
+  "$initial_campaign_params", 1,
+  "$initial_referrer_info", 1,
+  "$initial_person_info", 1,
+  "$epp", 1
+);
+
+int policyOf(string key) {
+  JsValue entry = policyTable[key];
+  if (JS.typeOf(entry) == "number") {
+    return JS.number(entry).toInt();
+  }
+  if (entry.truthy()) {
+    return HIDDEN;
+  }
+  if (key.indexOf("$posthog_sr_group_event_trigger_") == 0 || key.indexOf("$posthog_sr_group_url_trigger_") == 0 || key.indexOf("$posthog_sr_group_sampling_") == 0) {
+    return HIDDEN;
+  }
+  return 0;
+}
+
+bool exposedAsEvent(int code) {
+  return (code & HIDDEN) == 0;
+}
+
+// 0 main, FLAGS or SURVEYS.
+int groupOf(int code) {
+  return code & (FLAGS | SURVEYS);
+}
+
+string groupName(int group) {
+  return if (group == FLAGS) { "flags" } else { "surveys" };
+}
+
+int[] STORAGE_GROUPS = [2, 4];
+
+void clearStaleEventProperties(JsValue props, JsValue cookieProperties) {
+  each(props, (JsValue value, JsValue key) => {
+    string name = JS.string(key);
+    if (exposedAsEvent(policyOf(name)) && !hasOwn(cookieProperties, name)) {
+      JS.delete(props, name);
+    }
+  });
+}
+
+bool sameMembers(string[] left, string[] right) {
+  if (left.length != right.length) {
+    return false;
+  }
+  string[] a = left.slice();
+  string[] b = right.slice();
+  JS.sort(a);
+  JS.sort(b);
+  for (int i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+string[] stringList(JsValue value) {
+  return if (value.truthy()) { JS.assume(value) } else { [] };
+}
+
+string lower(JsValue value) {
+  return JS.string(JS.invoke(value, "toLowerCase"));
+}
+
+string pendingChangeName(string name) {
+  return name + "_cookie_identity_change_pending";
+}
+
+Regex plusSign = new Regex("\\+", "g");
+Regex slash = new Regex("\\/", "g");
+Regex equals = new Regex("=", "g");
+
+string persistenceName(JsValue config) {
+  string token = "";
+  if (config["token"].truthy()) {
+    token = JS.string(JS.invoke(JS.invoke(JS.invoke(config["token"], "replace", plusSign, "PL"), "replace", slash, "SL"), "replace", equals, "EQ"));
+  }
+  if (config["persistence_name"].truthy()) {
+    return JS.string(JS.add("ph_", config["persistence_name"]));
+  }
+  return "ph_" + token + "_posthog";
+}
+
+// Where a storage entry stands: the fingerprint of what was last written, whether a
+// write is owed, and whether the entry exists at all. Absent and fresh are the same.
+class SlotState {
+  string? fingerprint;
+  bool dirty;
+  bool persisted;
+
+  init() {
+    this.fingerprint = null;
+    this.dirty = false;
+    this.persisted = false;
+  }
+}
+
+export class PostHogPersistence {
+  JsValue _config;
+  JsValue props;
+  Store _storage;
+  JsValue _campaign_params_url;
+  string _name;
+  bool _disabled;
+  JsValue _secure;
+  JsValue _expire_days;
+  JsValue _default_expiry;
+  JsValue _cross_subdomain;
+  SlotState _mainSlot;
+  SlotState _flagsSlot;
+  SlotState _surveysSlot;
+  bool _splitStorageEligible;
+  bool _splitStorage;
+  bool _ownsSplitStorage;
+  JsValue _pendingSaveTimer;
+  JsValue _lastSeenMainCookieValue;
+  bool _cookieIdentityChangePending;
+  bool _cookieSyncSuppressed;
+
+  init(JsValue config, bool isDisabled = false, bool ownsSplitStorage = true) {
+    this._mainSlot = new SlotState();
+    this._flagsSlot = new SlotState();
+    this._surveysSlot = new SlotState();
+    this._splitStorageEligible = false;
+    this._splitStorage = false;
+    this._pendingSaveTimer = JS.undefined();
+    this._lastSeenMainCookieValue = JS.undefined();
+    this._cookieIdentityChangePending = false;
+    this._cookieSyncSuppressed = false;
+    this._disabled = false;
+    this._secure = JS.undefined();
+    this._expire_days = JS.undefined();
+    this._default_expiry = JS.undefined();
+    this._cross_subdomain = JS.undefined();
+    this._config = config;
+    this._ownsSplitStorage = ownsSplitStorage;
+    this.props = JS.object();
+    this._campaign_params_url = JS.undefined();
+    this._name = persistenceName(config);
+    this._storage = this._buildStorage(config);
+    this._splitStorage = this._resolveSplitStorage(config);
+    this.load();
+    if (config["debug"].truthy()) {
+      logger.info(JS.array("Persistence loaded", config["persistence"], copy(this.props)));
+    }
+    this.update_config(config, config, isDisabled);
+    this.save();
+    // Flush a debounced save before the page goes away.
+    if (win.truthy()) {
+      func(JsValue)->void flush = (JsValue event) => this.flush();
+      addEventListener(win, "beforeunload", flush, false);
+      addEventListener(win, "pagehide", flush, false);
+    }
+  }
+
+  SlotState _slot(int group) {
+    if (group == FLAGS) {
+      return this._flagsSlot;
+    }
+    return if (group == SURVEYS) { this._surveysSlot } else { this._mainSlot };
+  }
+
+  void _resetSlot(int group) {
+    if (group == FLAGS) {
+      this._flagsSlot = new SlotState();
+    } else if (group == SURVEYS) {
+      this._surveysSlot = new SlotState();
+    } else {
+      this._mainSlot = new SlotState();
+    }
+  }
+
+  bool _cookieReconciled(JsValue config) {
+    return config["cookieWinsOnConflict"].truthy() && lower(config["persistence"]) == "localstorage+cookie";
+  }
+
+  number _saveDebounceMs() {
+    JsValue value = if (JS.isNullish(this._config)) { JS.undefined() } else { this._config["persistence_save_debounce_ms"] };
+    return if (isNumber(value) && JS.number(value) > 0.0) { JS.number(value) } else { 0.0 };
+  }
+
+  // Remember the main cookie this instance wrote, so the next sync skips its own write.
+  void _rememberCurrentCookieProperties(JsValue props) {
+    if (!this._cookieReconciled(this._config)) {
+      return;
+    }
+    try {
+      string[] custom = stringList(this._config["cookie_persisted_properties"]);
+      JsValue cookieProperties = getCookiePersistedProperties(props, custom);
+      JsValue metadata = getCookiePersistedPropertiesMetadata(cookieProperties, custom);
+      string expected = JS.string(JS.invoke(JSON, "stringify", cookieProperties)) + "|" + JS.string(JS.invoke(JSON, "stringify", metadata));
+      JsValue current = JS.or(cookieStore.get(this._name), JS.undefined());
+      if (current.truthy() && getCookiePropertiesFingerprint(this._name, JS.string(current)) == expected) {
+        this._lastSeenMainCookieValue = current;
+      }
+    } catch {
+    }
+  }
+
+  bool syncCookieProperties() {
+    return this._syncCookieProperties(this._config, false);
+  }
+
+  bool _syncCookieProperties(JsValue config, bool ignoreDisabled) {
+    if ((this._disabled && !ignoreDisabled) || this._cookieSyncSuppressed || !this._cookieReconciled(config)) {
+      return false;
+    }
+    JsValue cookieValue = JS.undefined();
+    try {
+      cookieValue = JS.or(cookieStore.get(this._name), JS.undefined());
+    } catch {
+    }
+    if (!cookieValue.truthy() || JS.strictEqual(cookieValue, this._lastSeenMainCookieValue)) {
+      return false;
+    }
+    string cookieText = JS.string(cookieValue);
+    JsValue cookieProperties = JS.undefined();
+    try {
+      cookieProperties = getSafeCookieProperties(JS.invoke(JSON, "parse", cookieText));
+    } catch {
+      return false;
+    }
+    if (JS.strictNotEqual(JS.or(cookieStore.get(this._name), JS.undefined()), cookieValue)) {
+      return false;
+    }
+    this._lastSeenMainCookieValue = cookieValue;
+    MetadataState metadataState = getCookiePersistedPropertiesMetadataState(this._name, cookieText);
+    string[] authoritative = [...COOKIE_PERSISTED_PROPERTIES, ...metadataState.properties];
+    JsValue invalid = JS.object();
+    for (string key of keysOf(cookieProperties)) {
+      JsValue value = cookieProperties[key];
+      if (JS.isNullish(value) || JS.strictEqual(value, "") || (key == USER_STATE && JS.strictNotEqual(value, USER_STATE_ANONYMOUS) && JS.strictNotEqual(value, USER_STATE_IDENTIFIED))) {
+        invalid[key] = true;
+        JS.delete(cookieProperties, key);
+      }
+    }
+    if (isEmptyObject(cookieProperties)) {
+      return false;
+    }
+    bool hasValidCookieIdentity = JS.in(DISTINCT_ID, cookieProperties) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_ANONYMOUS) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_IDENTIFIED);
+    JsValue previousDistinctId = this.props[DISTINCT_ID];
+    JsValue previousUserState = this.props[USER_STATE];
+    JsValue nextProps = extend(JS.object(), this.props);
+    for (string key of [...COOKIE_PERSISTED_PROPERTIES, ...stringList(config["cookie_persisted_properties"])]) {
+      if (authoritative.indexOf(key) != -1 && !JS.in(key, cookieProperties) && !invalid[key].truthy() && (hasValidCookieIdentity || (key != DISTINCT_ID && key != USER_STATE))) {
+        JsValue localValue = nextProps[key];
+        bool legacyFalsyBuiltIn = !metadataState.isValid && COOKIE_PERSISTED_PROPERTIES.indexOf(key) != -1 && (JS.strictEqual(localValue, false) || JS.strictEqual(localValue, 0));
+        if (!legacyFalsyBuiltIn) {
+          JS.delete(nextProps, key);
+        }
+      }
+    }
+    this.props = extend(nextProps, cookieProperties);
+    if (hasValidCookieIdentity && !JS.in(USER_STATE, cookieProperties) && !JS.in(USER_STATE, this.props)) {
+      this._setProp(USER_STATE, USER_STATE_ANONYMOUS);
+    }
+    JsValue nextDistinctId = this.props[DISTINCT_ID];
+    JsValue nextUserState = this.props[USER_STATE];
+    if (hasValidCookieIdentity && (JS.strictNotEqual(nextDistinctId, previousDistinctId) || JS.strictNotEqual(nextUserState, previousUserState))) {
+      this._cookieIdentityChangePending = true;
+      sessionStore.set(pendingChangeName(this._name), true, JS.undefined(), JS.undefined(), JS.undefined());
+      this._deleteProp(STORED_PERSON_PROPERTIES_KEY);
+      this._deleteProp(PERSISTENCE_ACTIVE_FEATURE_FLAGS);
+      this._deleteProp(ENABLED_FEATURE_FLAGS);
+      this._deleteProp(PERSISTENCE_FEATURE_FLAG_DETAILS);
+      this._deleteProp(PERSISTENCE_FEATURE_FLAG_PAYLOADS);
+      this._deleteProp(PERSISTENCE_FEATURE_FLAG_REQUEST_ID);
+      this._deleteProp(PERSISTENCE_FEATURE_FLAG_EVALUATED_AT);
+      this._deleteProp(PERSISTENCE_FEATURE_FLAG_ERRORS);
+      this._deleteProp(FLAG_CALL_REPORTED);
+      bool siblingReset = JS.strictEqual(nextUserState, USER_STATE_ANONYMOUS) && (JS.strictEqual(previousUserState, USER_STATE_IDENTIFIED) || JS.strictEqual(cookieProperties[USER_STATE], USER_STATE_ANONYMOUS) || (!JS.isUndefined(previousDistinctId) && JS.strictNotEqual(nextDistinctId, previousDistinctId)));
+      if (siblingReset) {
+        clearStaleEventProperties(this.props, cookieProperties);
+        this._deleteProp(STORED_GROUP_PROPERTIES_KEY);
+      }
+      if (JS.strictEqual(nextUserState, USER_STATE_IDENTIFIED)) {
+        this.props["$user_id"] = nextDistinctId;
+      } else {
+        JS.delete(this.props, "$user_id");
+      }
+      this._deleteProp(ALIAS_ID_KEY);
+    }
+    return true;
+  }
+
+  bool consumeCookieIdentityChange() {
+    string pendingName = pendingChangeName(this._name);
+    bool changed = this._cookieIdentityChangePending || sessionStore.get(pendingName).truthy();
+    this._cookieIdentityChangePending = false;
+    if (changed) {
+      sessionStore.remove(pendingName, JS.undefined());
+    }
+    return changed;
+  }
+
+  bool _beginCookieSyncSuppression(bool ignoreDisabled = false) {
+    if (!this._cookieSyncSuppressed && (!this._disabled || ignoreDisabled) && this._cookieReconciled(this._config)) {
+      this._cookieSyncSuppressed = true;
+      return true;
+    }
+    return false;
+  }
+
+  void _publishSuppressedCookieSnapshot() {
+    if (!this._cookieSyncSuppressed) {
+      return;
+    }
+    this._cancelPendingSave();
+    this._resetSlot(0);
+    this._writeNow(true);
+  }
+
+  void _endCookieSyncSuppression(bool publish = true) {
+    if (!this._cookieSyncSuppressed) {
+      return;
+    }
+    try {
+      if (publish) {
+        this._publishSuppressedCookieSnapshot();
+      } else {
+        this._cancelPendingSave();
+      }
+    } finally {
+      this._cookieSyncSuppressed = false;
+    }
+  }
+
+  bool isDisabled() {
+    return this._disabled;
+  }
+
+  void _cancelPendingSave() {
+    if (!JS.isUndefined(this._pendingSaveTimer)) {
+      JS.call(clearTimeout, JS.undefined(), this._pendingSaveTimer);
+      this._pendingSaveTimer = JS.undefined();
+    }
+  }
+
+  Store _buildStorage(JsValue config) {
+    string persistence = lower(config["persistence"]);
+    if (persistence != "cookie" && persistence != "localstorage" && persistence != "localstorage+cookie" && persistence != "sessionstorage" && persistence != "memory") {
+      logger.critical(JS.array(JS.add(JS.add("Unknown persistence type ", config["persistence"]), "; falling back to localStorage+cookie")));
+      config["persistence"] = "localStorage+cookie";
+    }
+    Store localPlusCookie = createLocalPlusCookieStore(stringList(config["cookie_persisted_properties"]), config["cookieWinsOnConflict"].truthy());
+    string storageType = lower(config["persistence"]);
+    Store store = cookieStore;
+    bool splitEligible = false;
+    if (storageType == "localstorage" && localStore.isSupported()) {
+      store = localStore;
+      splitEligible = true;
+    } else if (storageType == "localstorage+cookie" && localPlusCookie.isSupported()) {
+      store = localPlusCookie;
+      splitEligible = true;
+    } else if (storageType == "sessionstorage" && sessionStore.isSupported()) {
+      store = sessionStore;
+    } else if (storageType == "memory") {
+      store = memoryStore;
+    } else if (storageType == "cookie") {
+      store = cookieStore;
+    } else if (localPlusCookie.isSupported()) {
+      store = localPlusCookie;
+      splitEligible = true;
+    }
+    this._splitStorageEligible = splitEligible;
+    return store;
+  }
+
+  string _groupEntryName(int group) {
+    return this._name + "__" + groupName(group);
+  }
+
+  bool _resolveSplitStorage(JsValue config) {
+    return this._splitStorageEligible && config["split_storage"].truthy();
+  }
+
+  JsValue properties() {
+    JsValue p = JS.object();
+    each(this.props, (JsValue value, JsValue key) => {
+      int code = policyOf(JS.string(key));
+      if (exposedAsEvent(code)) {
+        if ((code & SKIP_NULL) != 0 && JS.strictEqual(value, null)) {
+          return;
+        }
+        p[JS.string(key)] = value;
+      }
+    });
+    return p;
+  }
+
+  void load(bool allowDisabled = false) {
+    if (this._disabled && !allowDisabled) {
+      return;
+    }
+    bool reconcileCookieIdentity = this._cookieReconciled(this._config);
+    JsValue localEntryBeforeMerge = if (reconcileCookieIdentity) { localStore.parse(this._name) } else { null };
+    JsValue cookieEntryBeforeMerge = JS.object();
+    if (reconcileCookieIdentity) {
+      try {
+        cookieEntryBeforeMerge = getSafeCookieProperties(cookieStore.parse(this._name));
+        JsValue cookieEntry = cookieEntryBeforeMerge;
+        each(cookieEntry, (JsValue value, JsValue key) => {
+          if (JS.isNullish(value) || JS.strictEqual(value, "")) {
+            JS.delete(cookieEntry, key);
+          }
+        });
+      } catch {
+      }
+    }
+    JsValue entry = this._storage.parse(this._name);
+    if (entry.truthy()) {
+      this.props = extend(JS.object(), entry);
+    }
+    if (this._splitStorage) {
+      this._loadGroupEntries();
+    }
+    if (reconcileCookieIdentity && entry.truthy()) {
+      JsValue previousDistinctId = if (JS.isNullish(localEntryBeforeMerge)) { JS.undefined() } else { localEntryBeforeMerge[DISTINCT_ID] };
+      JsValue previousUserState = if (JS.isNullish(localEntryBeforeMerge)) { JS.undefined() } else { localEntryBeforeMerge[USER_STATE] };
+      if (JS.isNullish(previousUserState)) {
+        previousUserState = USER_STATE_ANONYMOUS;
+      }
+      JsValue nextDistinctId = entry[DISTINCT_ID];
+      JsValue nextUserState = entry[USER_STATE];
+      if (JS.isNullish(nextUserState)) {
+        nextUserState = USER_STATE_ANONYMOUS;
+      }
+      if (JS.strictNotEqual(nextDistinctId, previousDistinctId) || JS.strictNotEqual(nextUserState, previousUserState)) {
+        this._cookieIdentityChangePending = true;
+        sessionStore.set(pendingChangeName(this._name), true, JS.undefined(), JS.undefined(), JS.undefined());
+        JsValue nextProps = extend(JS.object(), this.props);
+        for (string key of COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES) {
+          JS.delete(nextProps, key);
+        }
+        bool siblingReset = JS.strictEqual(nextUserState, USER_STATE_ANONYMOUS) && (JS.strictEqual(previousUserState, USER_STATE_IDENTIFIED) || JS.strictEqual(cookieEntryBeforeMerge[USER_STATE], USER_STATE_ANONYMOUS) || (!JS.isUndefined(previousDistinctId) && JS.strictNotEqual(nextDistinctId, previousDistinctId)));
+        if (siblingReset) {
+          clearStaleEventProperties(nextProps, cookieEntryBeforeMerge);
+          JS.delete(nextProps, STORED_GROUP_PROPERTIES_KEY);
+        }
+        this.props = nextProps;
+        // Rewrite the identity-bound group entry (only flags keys are identity-bound)
+        // so a reload cannot resurrect it.
+        for (int group of [FLAGS]) {
+          JsValue groupProps = JS.object();
+          each(this.props, (JsValue value, JsValue key) => {
+            if (groupOf(policyOf(JS.string(key))) == group) {
+              groupProps[JS.string(key)] = value;
+            }
+          });
+          if (isEmptyObject(groupProps)) {
+            localStore.remove(this._groupEntryName(group), JS.undefined());
+            this._resetSlot(group);
+          } else if (localStore.set(this._groupEntryName(group), groupProps, JS.undefined(), JS.undefined(), JS.undefined())) {
+            this._resetSlot(group);
+            SlotState state = this._slot(group);
+            state.persisted = true;
+            state.fingerprint = this._entryFingerprint(groupProps, group);
+          }
+        }
+      }
+    }
+    if (sessionStore.get(pendingChangeName(this._name)).truthy()) {
+      this._cookieIdentityChangePending = true;
+    }
+  }
+
+  void _loadGroupEntries() {
+    for (int group of STORAGE_GROUPS) {
+      JsValue groupEntry = localStore.parse(this._groupEntryName(group));
+      if (groupEntry.truthy() && !isEmptyObject(groupEntry)) {
+        SlotState state = this._slot(group);
+        state.persisted = true;
+        if (!this._mainCarriesGroupKey(group)) {
+          state.fingerprint = this._entryFingerprint(groupEntry, group);
+        }
+        if (!this._groupEntryIsStale(group, groupEntry)) {
+          extend(this.props, groupEntry);
+        }
+      }
+    }
+  }
+
+  bool _mainCarriesGroupKey(int group) {
+    for (string key of keysOf(this.props)) {
+      if (groupOf(policyOf(key)) == group) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _groupEntryIsStale(int group, JsValue groupEntry) {
+    string freshnessKey = if (group == FLAGS) { PERSISTENCE_FEATURE_FLAG_EVALUATED_AT } else { "$surveys_loaded_at" };
+    JsValue groupLoadedAt = groupEntry[freshnessKey];
+    JsValue mainLoadedAt = this.props[freshnessKey];
+    return isNumber(groupLoadedAt) && isNumber(mainLoadedAt) && JS.number(mainLoadedAt) > JS.number(groupLoadedAt);
+  }
+
+  void refreshKey(string prop) {
+    if (this._disabled) {
+      return;
+    }
+    int group = if (this._splitStorage) { groupOf(policyOf(prop)) } else { 0 };
+    JsValue entry = if (group != 0) { localStore.parse(this._groupEntryName(group)) } else { this._storage.parse(this._name) };
+    if (entry.truthy() && JS.in(prop, entry)) {
+      this._setProp(prop, entry[prop]);
+      return;
+    }
+    if (group != 0) {
+      JsValue mainEntry = this._storage.parse(this._name);
+      if (mainEntry.truthy() && JS.in(prop, mainEntry)) {
+        this._setProp(prop, mainEntry[prop]);
+        return;
+      }
+    }
+    this._deleteProp(prop);
+  }
+
+  void save() {
+    if (this._disabled) {
+      return;
+    }
+    number debounce = this._saveDebounceMs();
+    if (debounce <= 0.0) {
+      this._writeNow(false);
+      return;
+    }
+    if (!JS.isUndefined(this._pendingSaveTimer)) {
+      return;
+    }
+    this._pendingSaveTimer = JS.call(setTimeout, JS.undefined(), () => {
+      this._pendingSaveTimer = JS.undefined();
+      this._writeNow(false);
+    }, debounce);
+  }
+
+  void flush() {
+    if (JS.isUndefined(this._pendingSaveTimer)) {
+      return;
+    }
+    JS.call(clearTimeout, JS.undefined(), this._pendingSaveTimer);
+    this._pendingSaveTimer = JS.undefined();
+    this._writeNow(false);
+  }
+
+  void _writeNow(bool forceSuppressedSnapshot) {
+    if (this._disabled || (this._cookieSyncSuppressed && !forceSuppressedSnapshot)) {
+      return;
+    }
+    if (!forceSuppressedSnapshot) {
+      this.syncCookieProperties();
+    }
+    if (this._splitStorage) {
+      JsValue main = JS.object();
+      JsValue flags = JS.object();
+      JsValue surveys = JS.object();
+      each(this.props, (JsValue value, JsValue key) => {
+        int group = groupOf(policyOf(JS.string(key)));
+        JsValue target = if (group == FLAGS) { flags } else { if (group == SURVEYS) { surveys } else { main } };
+        target[JS.string(key)] = value;
+      });
+      if (this._writeEntry(this._storage, this._name, main, 0)) {
+        this._rememberCurrentCookieProperties(main);
+      }
+      for (int group of STORAGE_GROUPS) {
+        JsValue groupProps = if (group == FLAGS) { flags } else { surveys };
+        if (isEmptyObject(groupProps) && !this._slot(group).persisted) {
+          continue;
+        }
+        this._writeEntry(localStore, this._groupEntryName(group), groupProps, group);
+      }
+      return;
+    }
+    if (this._writeEntry(this._storage, this._name, this.props, 0)) {
+      this._rememberCurrentCookieProperties(this.props);
+    }
+  }
+
+  string _entryFingerprint(JsValue props, int group) {
+    if (group == 0) {
+      return JS.string(JS.add(JS.add(JS.add(JS.add(JS.add(JS.add(JS.invoke(JSON, "stringify", props), "|"), this._expire_days), "|"), this._cross_subdomain), "|"), this._secure));
+    }
+    JsValue stable = JS.object();
+    each(props, (JsValue value, JsValue key) => {
+      stable[JS.string(key)] = if ((policyOf(JS.string(key)) & VOLATILE) != 0) { "__volatile__" } else { value };
+    });
+    return JS.string(JS.invoke(JSON, "stringify", stable));
+  }
+
+  bool _writeEntry(Store storage, string name, JsValue props, int group) {
+    SlotState state = this._slot(group);
+    // A group entry is rewritten only when a non-volatile key changed.
+    if (group != 0 && !state.dirty && state.fingerprint != null) {
+      return false;
+    }
+    string? fingerprint = null;
+    try {
+      string computed = this._entryFingerprint(props, group);
+      fingerprint = computed;
+      if (state.fingerprint != null && computed == state.fingerprint) {
+        state.dirty = false;
+        return false;
+      }
+    } catch {
+      fingerprint = null;
+    }
+    if (storage.set(name, props, this._expire_days, this._cross_subdomain, this._secure)) {
+      state.dirty = false;
+      if (group != 0) {
+        state.persisted = true;
+      }
+      if (fingerprint != null) {
+        state.fingerprint = fingerprint;
+      }
+      return true;
+    } else if (this._config["debug"].truthy()) {
+      logger.warn(JS.array("failed to persist storage entry \"" + name + "\"; will retry on next save"));
+    }
+    return false;
+  }
+
+  void remove(JsValue options = JS.undefined()) {
+    bool keepGroupEntries = !JS.isNullish(options) && options["keepGroupEntries"].truthy();
+    this._cancelPendingSave();
+    this._storage.remove(this._name, false);
+    this._storage.remove(this._name, true);
+    if (!keepGroupEntries && this._ownsSplitStorage) {
+      for (int group of STORAGE_GROUPS) {
+        localStore.remove(this._groupEntryName(group), JS.undefined());
+      }
+    }
+    if (keepGroupEntries) {
+      this._resetSlot(0);
+    } else {
+      this._resetSlot(0);
+      this._resetSlot(FLAGS);
+      this._resetSlot(SURVEYS);
+    }
+    this._lastSeenMainCookieValue = JS.undefined();
+  }
+
+  void clear() {
+    this.remove(JS.undefined());
+    this.props = JS.object();
+  }
+
+  bool register_once(JsValue props, JsValue defaultValue = JS.undefined(), JsValue days = JS.undefined()) {
+    if (isObject(props)) {
+      this.syncCookieProperties();
+      JsValue overridable = if (JS.isUndefined(defaultValue)) { "None" } else { defaultValue };
+      this._expire_days = if (JS.isUndefined(days)) { this._default_expiry } else { days };
+      bool hasChanges = false;
+      each(props, (JsValue value, JsValue prop) => {
+        if (!JS.invoke(this.props, "hasOwnProperty", prop).truthy() || JS.strictEqual(this.props[JS.string(prop)], overridable)) {
+          this._setProp(JS.string(prop), value);
+          hasChanges = true;
+        }
+      });
+      if (hasChanges) {
+        this.save();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool register(JsValue props, JsValue days = JS.undefined()) {
+    if (isObject(props)) {
+      this.syncCookieProperties();
+      this._expire_days = if (JS.isUndefined(days)) { this._default_expiry } else { days };
+      bool hasChanges = false;
+      each(props, (JsValue value, JsValue prop) => {
+        if (JS.invoke(props, "hasOwnProperty", prop).truthy() && (JS.strictNotEqual(this.props[JS.string(prop)], value) || isObject(value) || isArray(value))) {
+          this._setProp(JS.string(prop), value);
+          hasChanges = true;
+        }
+      });
+      if (hasChanges) {
+        this.save();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void unregister(JsValue propOrProps) {
+    this.syncCookieProperties();
+    JsValue list = if (JS.typeOf(propOrProps) == "string") { JS.array(propOrProps) } else { propOrProps };
+    bool hasChanges = false;
+    int count = JS.number(list["length"]).toInt();
+    for (int i = 0; i < count; i++) {
+      JsValue prop = list[i];
+      if (JS.in(prop, this.props)) {
+        this._deleteProp(JS.string(prop));
+        hasChanges = true;
+      }
+    }
+    if (hasChanges) {
+      this.save();
+    }
+  }
+
+  void update_campaign_params() {
+    JsValue currentUrl = if (JS.isNullish(document)) { JS.undefined() } else { document["URL"] };
+    if (JS.strictEqual(currentUrl, this._campaign_params_url)) {
+      return;
+    }
+    JsValue campaignParams = getCampaignParams(this._config["custom_campaign_params"], this._config["mask_personal_data_properties"], this._config["custom_personal_data_properties"]);
+    if (!isEmptyObject(stripEmptyProperties(campaignParams))) {
+      this.register(campaignParams, JS.undefined());
+    }
+    this._campaign_params_url = currentUrl;
+  }
+
+  void update_search_keyword() {
+    this.register(getSearchInfo(), JS.undefined());
+  }
+
+  void update_referrer_info() {
+    this.register_once(getReferrerInfo(), JS.undefined(), JS.undefined());
+  }
+
+  void set_initial_person_info() {
+    if (this.props[INITIAL_CAMPAIGN_PARAMS].truthy() || this.props[INITIAL_REFERRER_INFO].truthy()) {
+      return;
+    }
+    JsValue info = getPersonInfo(this._config["mask_personal_data_properties"], this._config["custom_personal_data_properties"], this._config["disable_capture_url_hashes"].truthy());
+    this.register_once(JS.object("$initial_person_info", info), JS.undefined(), JS.undefined());
+  }
+
+  JsValue get_initial_props() {
+    JsValue p = JS.object();
+    for (string key of [INITIAL_REFERRER_INFO, INITIAL_CAMPAIGN_PARAMS]) {
+      JsValue initialInfo = this.props[key];
+      if (initialInfo.truthy()) {
+        each(initialInfo, (JsValue value, JsValue k) => {
+          p["$initial_" + stripLeadingDollar(JS.string(k))] = value;
+        });
+      }
+    }
+    JsValue initialPersonInfo = this.props[INITIAL_PERSON_INFO];
+    if (initialPersonInfo.truthy()) {
+      extend(p, getInitialPersonPropsFromInfo(initialPersonInfo, this._config["disable_capture_url_hashes"].truthy()));
+    }
+    return p;
+  }
+
+  JsValue safe_merge(JsValue props) {
+    each(this.props, (JsValue value, JsValue prop) => {
+      if (!JS.in(prop, props)) {
+        props[JS.string(prop)] = value;
+      }
+    });
+    return props;
+  }
+
+  void update_config(JsValue config, JsValue oldConfig, bool isDisabled = false) {
+    bool persistenceModeChanged = JS.strictNotEqual(config["persistence"], oldConfig["persistence"]);
+    bool cookiePersistedPropertiesChanged = !sameMembers(stringList(config["cookie_persisted_properties"]), stringList(oldConfig["cookie_persisted_properties"]));
+    bool persistenceChanged = persistenceModeChanged || cookiePersistedPropertiesChanged;
+    bool cookiePrecedenceChanged = JS.strictNotEqual(config["cookieWinsOnConflict"], oldConfig["cookieWinsOnConflict"]);
+    bool disabled = config["disable_persistence"].truthy() || isDisabled;
+    bool reEnabling = this._disabled && !disabled;
+    // Take in a sibling's cookie under the old rules before switching.
+    if (!disabled) {
+      this._syncCookieProperties(oldConfig, reEnabling);
+    }
+    this._config = config;
+    if (!disabled && (persistenceModeChanged || cookiePersistedPropertiesChanged || cookiePrecedenceChanged)) {
+      this._lastSeenMainCookieValue = JS.undefined();
+      JsValue syncConfig = copy(config);
+      syncConfig["cookie_persisted_properties"] = oldConfig["cookie_persisted_properties"];
+      this._syncCookieProperties(syncConfig, reEnabling);
+    }
+    Store newStore = if (persistenceChanged || cookiePrecedenceChanged) { this._buildStorage(config) } else { this._storage };
+    bool wantSplit = this._resolveSplitStorage(config);
+    bool storageMigration = persistenceChanged || wantSplit != this._splitStorage;
+    bool cookieOptionsChanged = JS.strictNotEqual(config["cross_subdomain_cookie"], this._cross_subdomain) || JS.strictNotEqual(config["secure_cookie"], this._secure);
+    bool suppressionStarted = !disabled && (storageMigration || cookieOptionsChanged) && this._beginCookieSyncSuppression(reEnabling);
+    try {
+      this._expire_days = config["cookie_expiration"];
+      this._default_expiry = this._expire_days;
+      this.set_disabled(disabled);
+      this.set_cross_subdomain(config["cross_subdomain_cookie"]);
+      this.set_secure(config["secure_cookie"]);
+      if (storageMigration) {
+        JsValue props = this.props;
+        this.clear();
+        this._storage = newStore;
+        this._splitStorage = wantSplit;
+        this.props = props;
+        this.save();
+      } else if (cookiePrecedenceChanged) {
+        this._storage = newStore;
+        if (!disabled) {
+          this._resetSlot(0);
+          this._writeNow(false);
+        }
+      }
+    } finally {
+      if (suppressionStarted) {
+        this._endCookieSyncSuppression(true);
+      }
+    }
+  }
+
+  void set_disabled(bool disabled) {
+    this._disabled = disabled;
+    if (this._disabled) {
+      this.remove(JS.undefined());
+    } else {
+      this.save();
+    }
+  }
+
+  void set_cross_subdomain(JsValue crossSubdomain) {
+    if (JS.strictNotEqual(crossSubdomain, this._cross_subdomain)) {
+      this._cross_subdomain = crossSubdomain;
+      this.remove(JS.object("keepGroupEntries", true));
+      this.save();
+    }
+  }
+
+  void set_secure(JsValue secure) {
+    if (JS.strictNotEqual(secure, this._secure)) {
+      this._secure = secure;
+      this.remove(JS.object("keepGroupEntries", true));
+      this.save();
+    }
+  }
+
+  void set_event_timer(string eventName, JsValue timestamp) {
+    JsValue timers = JS.or(this.props[EVENT_TIMERS_KEY], JS.object());
+    timers[eventName] = timestamp;
+    this._setProp(EVENT_TIMERS_KEY, timers);
+    this.save();
+  }
+
+  JsValue remove_event_timer(string eventName) {
+    JsValue timers = JS.or(this.props[EVENT_TIMERS_KEY], JS.object());
+    JsValue timestamp = timers[eventName];
+    if (!JS.isUndefined(timestamp)) {
+      JS.delete(timers, eventName);
+      this._setProp(EVENT_TIMERS_KEY, timers);
+      this.save();
+    }
+    return timestamp;
+  }
+
+  JsValue get_property(string prop) {
+    return this.props[prop];
+  }
+
+  void set_property(string prop, JsValue to) {
+    this._setProp(prop, to);
+    this.save();
+  }
+
+  void _setProp(string prop, JsValue to) {
+    this.props[prop] = to;
+    // Volatile keys ride along with the next real write instead of forcing one.
+    int code = policyOf(prop);
+    if ((code & VOLATILE) == 0) {
+      this._markGroupDirty(code);
+    }
+  }
+
+  void _deleteProp(string prop) {
+    JS.delete(this.props, prop);
+    this._markGroupDirty(policyOf(prop));
+  }
+
+  void _markGroupDirty(int code) {
+    int group = groupOf(code);
+    if (group != 0) {
+      this._slot(group).dirty = true;
+    }
+  }
+}
+export constructor PostHogPersistence;

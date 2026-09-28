@@ -1,0 +1,298 @@
+// @posthog/core user-agent-utils: browser, version, OS and device from a user agent.
+// Pure string logic, so it is typed end to end.
+
+export class OsInfo {
+  string name;
+  string version;
+
+  init(string name, string version) {
+    this.name = name;
+    this.version = version;
+  }
+}
+
+Regex blackberry = new Regex("BlackBerry|PlayBook|BB10", "i");
+Regex versionDefault = new Regex("Version/(\\d+(\\.\\d+)?)");
+
+bool has(string text, string needle) {
+  return text.indexOf(needle) != -1;
+}
+
+bool isSafari(string ua) {
+  return has(ua, "Safari") && !has(ua, "Chrome") && !has(ua, "Android");
+}
+
+export string detectBrowser(string ua, string vendor, bool brave, bool detectGoogleSearchApp) {
+  if (brave) {
+    return "Brave";
+  }
+  if (detectGoogleSearchApp && has(ua, "GSA/")) {
+    return "Google Search App";
+  }
+  if (has(ua, " OPR/") && has(ua, "Mini")) {
+    return "Opera Mini";
+  } else if (has(ua, " OPR/")) {
+    return "Opera";
+  } else if (blackberry.test(ua)) {
+    return "BlackBerry";
+  } else if (has(ua, "IEMobile") || has(ua, "WPDesktop")) {
+    return "Internet Explorer Mobile";
+  } else if (has(ua, "OculusBrowser")) {
+    return "Oculus Browser";
+  } else if (has(ua, "SamsungBrowser")) {
+    return "Samsung Internet";
+  } else if (has(ua, "Edge") || has(ua, "Edg/")) {
+    return "Microsoft Edge";
+  } else if (has(ua, "Vivaldi/")) {
+    return "Vivaldi";
+  } else if (has(ua, "YaBrowser/")) {
+    return "Yandex";
+  } else if (has(ua, "Whale/")) {
+    return "Whale";
+  } else if (has(ua, "DuckDuckGo/") || has(ua, "Ddg/")) {
+    return "DuckDuckGo";
+  } else if (has(ua, "FBIOS")) {
+    return "Facebook Mobile";
+  } else if (has(ua, "UCWEB") || has(ua, "UCBrowser")) {
+    return "UC Browser";
+  } else if (has(ua, "CriOS")) {
+    return "Chrome iOS";
+  } else if (has(ua, "CrMo")) {
+    return "Chrome";
+  } else if (has(ua, "Chrome")) {
+    return "Chrome";
+  } else if (has(ua, "Android") && has(ua, "Safari")) {
+    return "Android Mobile";
+  } else if (has(ua, "FxiOS")) {
+    return "Firefox iOS";
+  } else if (has(ua.toLowerCase(), "konqueror")) {
+    return "Konqueror";
+  } else if (has(ua, "Brave/")) {
+    return "Brave";
+  } else if ((vendor != "" && has(vendor, "Apple")) || isSafari(ua)) {
+    return if (has(ua, "Mobile")) { "Mobile Safari" } else { "Safari" };
+  } else if (has(ua, "PaleMoon/")) {
+    return "Pale Moon";
+  } else if (has(ua, "Waterfox/")) {
+    return "Waterfox";
+  } else if (has(ua, "Firefox")) {
+    return "Firefox";
+  } else if (has(ua, "MSIE") || has(ua, "Trident/")) {
+    return "Internet Explorer";
+  } else if (has(ua, "Gecko")) {
+    return "Firefox";
+  }
+  return "";
+}
+
+Regex[] versionRegexes(string browser) {
+  return match (browser) {
+    "Internet Explorer Mobile" => [new Regex("rv:(\\d+(\\.\\d+)?)")],
+    "Microsoft Edge" => [new Regex("Edge?\\/(\\d+(\\.\\d+)?)")],
+    "Chrome" => [new Regex("(Chrome|CrMo)\\/(\\d+(\\.\\d+)?)")],
+    "Chrome iOS" => [new Regex("CriOS\\/(\\d+(\\.\\d+)?)")],
+    "UC Browser" => [new Regex("(UCBrowser|UCWEB)\\/(\\d+(\\.\\d+)?)")],
+    "Safari" => [versionDefault],
+    "Mobile Safari" => [versionDefault],
+    "Opera" => [new Regex("(Opera|OPR)\\/(\\d+(\\.\\d+)?)")],
+    "Firefox" => [new Regex("Firefox\\/(\\d+(\\.\\d+)?)")],
+    "Firefox iOS" => [new Regex("FxiOS\\/(\\d+(\\.\\d+)?)")],
+    "Konqueror" => [new Regex("Konqueror[:/]?(\\d+(\\.\\d+)?)", "i")],
+    "BlackBerry" => [new Regex("BlackBerry (\\d+(\\.\\d+)?)"), versionDefault],
+    "Android Mobile" => [new Regex("android\\s(\\d+(\\.\\d+)?)", "i")],
+    "Samsung Internet" => [new Regex("SamsungBrowser\\/(\\d+(\\.\\d+)?)")],
+    "Oculus Browser" => [new Regex("OculusBrowser\\/(\\d+(\\.\\d+)?)")],
+    "Vivaldi" => [new Regex("Vivaldi\\/(\\d+(\\.\\d+)?)")],
+    "Yandex" => [new Regex("YaBrowser\\/(\\d+(\\.\\d+)?)")],
+    "Whale" => [new Regex("Whale\\/(\\d+(\\.\\d+)?)")],
+    "Brave" => [new Regex("Brave\\/(\\d+(\\.\\d+)?)")],
+    "DuckDuckGo" => [new Regex("(DuckDuckGo|Ddg)\\/(\\d+(\\.\\d+)?)")],
+    "Pale Moon" => [new Regex("PaleMoon\\/(\\d+(\\.\\d+)?)")],
+    "Waterfox" => [new Regex("Waterfox\\/(\\d+(\\.\\d+)?)")],
+    "Google Search App" => [new Regex("GSA\\/(\\d+(\\.\\d+)?)")],
+    "Internet Explorer" => [new Regex("(rv:|MSIE )(\\d+(\\.\\d+)?)")],
+    _ => []
+  };
+}
+
+extern JsValue parseFloat;
+
+// The version is the second-to-last group of the first matching pattern.
+export JsValue detectBrowserVersion(string ua, string vendor, bool brave, bool detectGoogleSearchApp) {
+  Regex[] regexes = versionRegexes(detectBrowser(ua, vendor, brave, detectGoogleSearchApp));
+  if (regexes.length == 0) {
+    return null;
+  }
+  for (Regex regex of regexes) {
+    JsValue matches = JS.invoke(ua, "match", regex);
+    if (matches.truthy()) {
+      return JS.call(parseFloat, JS.undefined(), matches[JS.number(matches["length"]) - 2.0]);
+    }
+  }
+  return null;
+}
+
+string windowsVersion(string version) {
+  return match (version) {
+    "NT3.51" => "NT 3.11",
+    "NT4.0" => "NT 4.0",
+    "5.0" => "2000",
+    "5.1" => "XP",
+    "5.2" => "XP",
+    "6.0" => "Vista",
+    "6.1" => "7",
+    "6.2" => "8",
+    "6.3" => "8.1",
+    "6.4" => "10",
+    "10.0" => "10",
+    _ => ""
+  };
+}
+
+string groupOr(JsValue found, int index, string fallback) {
+  JsValue group = found[index];
+  return if (group.truthy()) { JS.string(group) } else { fallback };
+}
+
+Regex osXbox = new Regex("Xbox; Xbox (.*?)[);]", "i");
+Regex osNintendo = new Regex("Nintendo", "i");
+Regex osPlaystation = new Regex("PlayStation", "i");
+Regex osWindows = new Regex("Windows", "i");
+Regex osIos = new Regex("((iPhone|iPad|iPod).*?OS (\\d+)_(\\d+)_?(\\d+)?|iPhone)");
+Regex osWatch = new Regex("(watch.*\\/(\\d+\\.\\d+\\.\\d+)|watch os,(\\d+\\.\\d+),)", "i");
+Regex osAndroid = new Regex("(Android (\\d+)\\.(\\d+)\\.?(\\d+)?|Android)", "i");
+Regex osMacVersion = new Regex("Mac OS X (\\d+)[_.](\\d+)[_.]?(\\d+)?", "i");
+
+export OsInfo detectOS(string ua) {
+  JsValue m = osXbox.exec(ua);
+  if (m.truthy()) {
+    return new OsInfo("Xbox", groupOr(m, 1, ""));
+  }
+  if (osNintendo.test(ua)) {
+    return new OsInfo("Nintendo", "");
+  }
+  if (osPlaystation.test(ua)) {
+    return new OsInfo("PlayStation", "");
+  }
+  if (blackberry.test(ua)) {
+    return new OsInfo("BlackBerry", "");
+  }
+  if (osWindows.test(ua)) {
+    if (new Regex("Phone").test(ua) || new Regex("WPDesktop").test(ua)) {
+      return new OsInfo("Windows Phone", "");
+    }
+    if (new Regex("Mobile").test(ua) && !new Regex("IEMobile\\b").test(ua)) {
+      return new OsInfo("Windows Mobile", "");
+    }
+    JsValue nt = new Regex("Windows NT ([0-9.]+)", "i").exec(ua);
+    if (nt.truthy() && nt[1].truthy()) {
+      string osVersion = windowsVersion(JS.string(nt[1]));
+      if (new Regex("arm", "i").test(ua)) {
+        osVersion = "RT";
+      }
+      return new OsInfo("Windows", osVersion);
+    }
+    return new OsInfo("Windows", "");
+  }
+  m = osIos.exec(ua);
+  if (m.truthy()) {
+    if (m[3].truthy()) {
+      return new OsInfo("iOS", JS.string(m[3]) + "." + JS.string(m[4]) + "." + groupOr(m, 5, "0"));
+    }
+    return new OsInfo("iOS", "");
+  }
+  m = osWatch.exec(ua);
+  if (m.truthy()) {
+    return new OsInfo("watchOS", JS.string(if (JS.isUndefined(m[2])) { m[3] } else { m[2] }));
+  }
+  m = osAndroid.exec(ua);
+  if (m.truthy()) {
+    if (m[2].truthy()) {
+      return new OsInfo("Android", JS.string(m[2]) + "." + JS.string(m[3]) + "." + groupOr(m, 4, "0"));
+    }
+    return new OsInfo("Android", "");
+  }
+  m = osMacVersion.exec(ua);
+  if (m.truthy()) {
+    if (m[1].truthy()) {
+      return new OsInfo("Mac OS X", JS.string(m[1]) + "." + JS.string(m[2]) + "." + groupOr(m, 3, "0"));
+    }
+    return new OsInfo("Mac OS X", "");
+  }
+  if (new Regex("Mac", "i").test(ua)) {
+    return new OsInfo("Mac OS X", "");
+  }
+  if (new Regex("CrOS").test(ua)) {
+    return new OsInfo("Chrome OS", "");
+  }
+  if (new Regex("Linux|debian", "i").test(ua)) {
+    return new OsInfo("Linux", "");
+  }
+  return new OsInfo("", "");
+}
+
+export string detectDevice(string ua) {
+  if (new Regex("Nintendo \\w+", "i").test(ua)) {
+    return "Nintendo";
+  } else if (new Regex("PlayStation \\w+", "i").test(ua)) {
+    return "PlayStation";
+  } else if (new Regex("Xbox", "i").test(ua)) {
+    return "Xbox";
+  } else if (new Regex("Ouya", "i").test(ua)) {
+    return "Ouya";
+  } else if (new Regex("(Windows Phone|WPDesktop)", "i").test(ua)) {
+    return "Windows Phone";
+  } else if (new Regex("iPad").test(ua)) {
+    return "iPad";
+  } else if (new Regex("iPod").test(ua)) {
+    return "iPod Touch";
+  } else if (new Regex("iPhone").test(ua)) {
+    return "iPhone";
+  } else if (new Regex("(watch)(?: ?os[,/]|\\d,\\d\\/)[\\d.]+", "i").test(ua)) {
+    return "Apple Watch";
+  } else if (blackberry.test(ua)) {
+    return "BlackBerry";
+  } else if (new Regex("(kobo)\\s(ereader|touch)", "i").test(ua)) {
+    return "Kobo";
+  } else if (new Regex("Nokia", "i").test(ua)) {
+    return "Nokia";
+  } else if (new Regex("(kf[a-z]{2}wi|aeo[c-r]{2})( bui|\\))", "i").test(ua) || new Regex("(kf[a-z]+)( bui|\\)).+silk\\/", "i").test(ua)) {
+    return "Kindle Fire";
+  } else if (new Regex("(Android|ZTE)", "i").test(ua)) {
+    if (!new Regex("Mobile").test(ua) || new Regex("(9138B|TB782B|Nexus [97]|pixel c|HUAWEISHT|BTV|noble nook|smart ultra 6)", "i").test(ua)) {
+      if ((new Regex("pixel[\\daxl ]{1,6}", "i").test(ua) && !new Regex("pixel c", "i").test(ua)) || new Regex("(huaweimed-al00|tah-|APA|SM-G92|i980|zte|U304AA)", "i").test(ua) || (new Regex("lmy47v", "i").test(ua) && !new Regex("QTAQZ3", "i").test(ua))) {
+        return "Android";
+      }
+      return "Android Tablet";
+    }
+    return "Android";
+  } else if (new Regex("(pda|Mobile)", "i").test(ua)) {
+    return "Generic mobile";
+  } else if (new Regex("Tablet", "i").test(ua) && !new Regex("Tablet pc", "i").test(ua)) {
+    return "Generic tablet";
+  }
+  return "";
+}
+
+extern JsValue Math;
+
+// Without a device in the user agent, an Android client-hints platform with touch is a
+// tablet when its short side is at least 600 CSS pixels.
+export string detectDeviceType(string ua, JsValue platform, JsValue maxTouchPoints, JsValue screenWidth, JsValue screenHeight, JsValue devicePixelRatio) {
+  string device = detectDevice(ua);
+  if (device == "iPad" || device == "Android Tablet" || device == "Kobo" || device == "Kindle Fire" || device == "Generic tablet") {
+    return "Tablet";
+  } else if (device == "Nintendo" || device == "Xbox" || device == "PlayStation" || device == "Ouya") {
+    return "Console";
+  } else if (device == "Apple Watch") {
+    return "Wearable";
+  } else if (device != "") {
+    return "Mobile";
+  }
+  if (JS.strictEqual(platform, "Android") && JS.greaterThan(if (JS.isNullish(maxTouchPoints)) { 0 } else { maxTouchPoints }, 0)) {
+    JsValue shortSide = JS.invoke(Math, "min", if (JS.isNullish(screenWidth)) { 0 } else { screenWidth }, if (JS.isNullish(screenHeight)) { 0 } else { screenHeight });
+    number shortSideDp = JS.number(shortSide) / JS.number(if (JS.isNullish(devicePixelRatio)) { 1 } else { devicePixelRatio });
+    return if (shortSideDp >= 600.0) { "Tablet" } else { "Mobile" };
+  }
+  return "Desktop";
+}

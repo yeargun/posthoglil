@@ -1,0 +1,121 @@
+// browser-common/src/utils/uuidv7.ts (LiosK uuidv7): a monotonic UUIDv7 generator fed
+// by `crypto.getRandomValues` through an 8-word buffer, falling back to Math.random.
+// The random words are drawn in upstream's order, so a seeded host yields the same ids.
+
+import { win } from "./globals.lil";
+
+extern JsValue crypto;
+extern JsValue Uint32Array;
+extern JsValue UUIDV7_DENY_WEAK_RNG;
+extern JsValue Date;
+extern JsValue Number;
+extern JsValue Math;
+extern JsValue Error;
+extern JsValue RangeError;
+
+bool strongRandom = win.truthy() && !JS.isUndefined(win["crypto"]) && crypto["getRandomValues"].truthy();
+
+JsValue buffer = JS.construct(Uint32Array, 8);
+int cursor = 8;
+
+void refill() {
+  if (strongRandom) {
+    JS.invoke(crypto, "getRandomValues", buffer);
+    return;
+  }
+  if (JS.typeOf(UUIDV7_DENY_WEAK_RNG) != "undefined" && UUIDV7_DENY_WEAK_RNG.truthy()) {
+    throw JS.construct(Error, "no cryptographically strong RNG available");
+  }
+  for (int i = 0; i < 8; i++) {
+    number high = (JS.number(JS.invoke(Math, "random")) * 65536.0).floor();
+    number low = (JS.number(JS.invoke(Math, "random")) * 65536.0).floor();
+    buffer[i] = high * 65536.0 + low;
+  }
+}
+
+number nextUint32() {
+  if (cursor >= 8) {
+    refill();
+    cursor = 0;
+  }
+  number value = JS.number(buffer[cursor]);
+  cursor++;
+  return value;
+}
+
+number timestamp = 0.0;
+number counter = 0.0;
+
+void resetCounter() {
+  number high = nextUint32() * 1024.0;
+  counter = high + (nextUint32().toInt() & 1023);
+}
+
+string hex(Uint8Array bytes) {
+  string text = "";
+  for (int i = 0; i < 16; i++) {
+    text = text + (bytes[i] >>> 4).toString(16) + (bytes[i] & 15).toString(16);
+    if (i == 3 || i == 5 || i == 7 || i == 9) {
+      text = text + "-";
+    }
+  }
+  return text;
+}
+
+string fromFields(number unixTsMs, number randA, number randBHi, number randBLo) {
+  if (!JS.invoke(Number, "isInteger", unixTsMs).truthy() || unixTsMs < 0.0 || unixTsMs > 281474976710655.0) {
+    throw JS.construct(RangeError, "invalid field value");
+  }
+  Uint8Array bytes = new Uint8Array(16);
+  bytes[0] = (unixTsMs / 1099511627776.0).toInt();
+  bytes[1] = (unixTsMs / 4294967296.0).toInt();
+  bytes[2] = (unixTsMs / 16777216.0).toInt();
+  bytes[3] = (unixTsMs / 65536.0).toInt();
+  bytes[4] = (unixTsMs / 256.0).toInt();
+  bytes[5] = unixTsMs.toInt();
+  int a = randA.toInt();
+  int bHi = randBHi.toInt();
+  int bLo = randBLo.toInt();
+  bytes[6] = 112 | (a >>> 8);
+  bytes[7] = a;
+  bytes[8] = 128 | (bHi >>> 24);
+  bytes[9] = bHi >>> 16;
+  bytes[10] = bHi >>> 8;
+  bytes[11] = bHi;
+  bytes[12] = bLo >>> 24;
+  bytes[13] = bLo >>> 16;
+  bytes[14] = bLo >>> 8;
+  bytes[15] = bLo;
+  return hex(bytes);
+}
+
+// "" when the clock went back ten seconds or more.
+string generateOrAbort() {
+  number now = JS.number(JS.invoke(Date, "now"));
+  if (now > timestamp) {
+    timestamp = now;
+    resetCounter();
+  } else if (now + 10000.0 > timestamp) {
+    counter = counter + 1.0;
+    if (counter > 4398046511103.0) {
+      timestamp = timestamp + 1.0;
+      resetCounter();
+    }
+  } else {
+    return "";
+  }
+  return fromFields(timestamp, (counter / 1073741824.0).floor(), counter.toInt() & 1073741823, nextUint32());
+}
+
+export string uuidv7() {
+  string value = generateOrAbort();
+  if (value != "") {
+    return value;
+  }
+  timestamp = 0.0;
+  string retried = generateOrAbort();
+  if (retried == "") {
+    throw JS.construct(Error, "Could not generate UUID after timestamp reset");
+  }
+  return retried;
+}

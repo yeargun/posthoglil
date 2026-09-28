@@ -1,0 +1,62 @@
+import { uuidv7 } from "./uuidv7.lil";
+import { cookieStore, localStore, sessionStore, memoryStore, createLocalPlusCookieStore, Store, getCookieValue, chooseCookieDomain, resetSubDomainCache } from "./storage.lil";
+import { copyAndTruncateStrings, isCrossDomainCookie, extend, isEmptyObject, isString, isNumber, isObject, stripEmptyProperties } from "./utils.lil";
+import { logger } from "./logger.lil";
+import { Config } from "./config.lil";
+
+Store storeFor(string kind, JsValue custom, bool prefer) {
+  if (kind == "cookie") { return cookieStore; }
+  if (kind == "local") { return localStore; }
+  if (kind == "session") { return sessionStore; }
+  if (kind == "memory") { return memoryStore; }
+  return createLocalPlusCookieStore(JS.assume(custom), prefer);
+}
+
+export JsValue storeOp(string kind, JsValue custom, bool prefer, string op, string name, JsValue value, JsValue days, JsValue cross, JsValue secure) {
+  Store store = storeFor(kind, custom, prefer);
+  if (op == "supported") { return store.isSupported(); }
+  if (op == "get") { return store.get(name); }
+  if (op == "parse") { return store.parse(name); }
+  if (op == "set") { return store.set(name, value, days, cross, secure); }
+  store.remove(name, cross);
+  return JS.undefined();
+}
+
+export JsValue utilOp(string op, JsValue a, JsValue b) {
+  if (op == "truncate") { return copyAndTruncateStrings(a, b); }
+  if (op == "crossDomain") { return isCrossDomainCookie(a); }
+  if (op == "extend") { return extend(a, b); }
+  if (op == "emptyObject") { return isEmptyObject(a); }
+  if (op == "isString") { return isString(a); }
+  if (op == "isNumber") { return isNumber(a); }
+  if (op == "isObject") { return isObject(a); }
+  if (op == "strip") { return stripEmptyProperties(a); }
+  if (op == "cookieDomain") { return chooseCookieDomain(JS.string(a), b); }
+  if (op == "resetDomain") { resetSubDomainCache(); return JS.undefined(); }
+  if (op == "cookie") { return getCookieValue(JS.string(a)); }
+  if (op == "uuid") { return uuidv7(); }
+  if (op == "debug") { Config.debug = a.truthy(); return JS.undefined(); }
+  if (op == "log") { logger.info(JS.array("hello", a)); logger.critical(JS.array("crit", b)); return JS.undefined(); }
+  return JS.undefined();
+}
+
+import { PostHogPersistence } from "./persistence.lil";
+import { getEventProperties, getCampaignParams, getPersonInfo, getInitialPersonPropsFromInfo, getReferrerInfo, getSearchInfo, getQueryParam, maskQueryParams } from "./event-utils.lil";
+
+export JsValue newPersistence(JsValue config, bool disabled, bool owns) {
+  return new PostHogPersistence(config, disabled, owns);
+}
+
+export JsValue eventOp(string op, JsValue a, JsValue b, JsValue c, JsValue d) {
+  if (op == "eventProps") { return getEventProperties(a, b, c, d.truthy()); }
+  if (op == "campaign") { return getCampaignParams(a, b, c); }
+  if (op == "personInfo") { return getPersonInfo(a, b, c.truthy()); }
+  if (op == "initialPerson") { return getInitialPersonPropsFromInfo(a, b.truthy()); }
+  if (op == "referrer") { return getReferrerInfo(); }
+  if (op == "search") { return getSearchInfo(); }
+  if (op == "query") { return getQueryParam(JS.string(a), JS.string(b)); }
+  if (op == "mask") { return maskQueryParams(a, JS.assume(b), JS.string(c)); }
+  return JS.undefined();
+}
+
+

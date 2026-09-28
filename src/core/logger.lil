@@ -1,0 +1,59 @@
+// browser-common/src/utils/logger.ts. Debug output goes through `window.console`
+// (rrweb's unwrapped original when replay patched it) and only when debug is on;
+// `critical` always reaches the global console. Arguments travel as one array because
+// the console receives them spread, exactly as upstream passes them.
+
+import { Config } from "./config.lil";
+import { win } from "./globals.lil";
+
+extern JsValue console;
+
+export class Logger {
+  string prefix;
+
+  init(string prefix) {
+    this.prefix = prefix;
+  }
+
+  void log(string level, JsValue args) {
+    if (win.truthy() && (Config.debug || win["POSTHOG_DEBUG"].truthy()) && !JS.isUndefined(win["console"]) && win["console"].truthy()) {
+      JsValue method = win["console"][level];
+      JsValue target = if (JS.in("__rrweb_original__", method)) { method["__rrweb_original__"] } else { method };
+      JS.apply(target, JS.undefined(), JS.invoke(JS.array(this.prefix), "concat", args));
+    }
+  }
+
+  void debug(JsValue args) {
+    this.log("debug", args);
+  }
+
+  void info(JsValue args) {
+    this.log("log", args);
+  }
+
+  void warn(JsValue args) {
+    this.log("warn", args);
+  }
+
+  void error(JsValue args) {
+    this.log("error", args);
+  }
+
+  void critical(JsValue args) {
+    JS.apply(console["error"], console, JS.invoke(JS.array(this.prefix), "concat", args));
+  }
+
+  void uninitializedWarning(string methodName) {
+    this.error(JS.array("You must initialize PostHog before calling " + methodName));
+  }
+
+  Logger child(string prefix) {
+    return new Logger(this.prefix + " " + prefix);
+  }
+}
+
+export Logger logger = new Logger("[PostHog.js]");
+
+export Logger createLogger(string prefix) {
+  return logger.child(prefix);
+}

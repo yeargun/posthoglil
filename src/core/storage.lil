@@ -1,0 +1,547 @@
+// browser/src/storage.ts and browser-common's cookie-utils. Upstream's five store
+// objects become one `Store` whose kind selects the behaviour; the local-plus-cookie
+// store carries its custom cookie keys and conflict rule. Every host call, message and
+// cookie string is upstream's, in upstream's order.
+
+import { document, win } from "./globals.lil";
+import { logger } from "./logger.lil";
+import { uuidv7 } from "./uuidv7.lil";
+import { isObject, extend, keysOf } from "./utils.lil";
+import {
+  DISTINCT_ID,
+  GROUPS,
+  STORED_GROUP_PROPERTIES_KEY,
+  USER_STATE,
+  USER_STATE_ANONYMOUS,
+  USER_STATE_IDENTIFIED
+} from "./constants.lil";
+
+extern JsValue JSON;
+extern JsValue Date;
+extern JsValue encodeURIComponent;
+extern JsValue decodeURIComponent;
+
+// Identity-bound localStorage keys a cookie identity change invalidates.
+export string[] COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES = [
+  "$stored_person_properties",
+  "$active_feature_flags",
+  "$enabled_feature_flags",
+  "$feature_flag_details",
+  "$feature_flag_payloads",
+  "$feature_flag_request_id",
+  "$feature_flag_evaluated_at",
+  "$feature_flag_errors",
+  "$flag_call_reported"
+];
+
+export string[] COOKIE_PERSISTED_PROPERTIES = [
+  "$device_id",
+  "distinct_id",
+  "$sesid",
+  "$session_is_sampled",
+  "$epp",
+  "$initial_person_info",
+  "$user_state"
+];
+
+JsValue memoryStorage = JS.object();
+bool? localStorageSupported = null;
+bool? sessionStorageSupported = null;
+string firstNonPublicSubDomain = "";
+Regex domainMatch = new Regex("[a-z0-9][a-z0-9-]+\\.[a-z]{2,}$", "i");
+
+export void resetLocalStorageSupported() {
+  localStorageSupported = null;
+}
+
+export void resetSessionStorageSupported() {
+  sessionStorageSupported = null;
+}
+
+export void resetSubDomainCache() {
+  firstNonPublicSubDomain = "";
+}
+
+// ---- cookies ----
+
+export JsValue getCookieValue(string name) {
+  if (!document.truthy()) {
+    return JS.undefined();
+  }
+  try {
+    string nameEQ = name + "=";
+    JsValue cookies = JS.invoke(JS.invoke(document["cookie"], "split", ";"), "filter", (JsValue cookie) => cookie["length"]);
+    int count = JS.number(cookies["length"]).toInt();
+    for (int i = 0; i < count; i++) {
+      string cookie = JS.string(cookies[i]);
+      while (cookie.charAt(0) == " ") {
+        cookie = cookie.slice(1);
+      }
+      if (cookie.indexOf(nameEQ) == 0) {
+        return JS.call(decodeURIComponent, JS.undefined(), cookie.slice(nameEQ.length));
+      }
+    }
+  } catch {
+  }
+  return null;
+}
+
+JsValue parseCookie(string name) {
+  JsValue cookie = JS.undefined();
+  try {
+    cookie = JS.or(JS.invoke(JSON, "parse", getCookieValue(name)), JS.object());
+  } catch {
+  }
+  return cookie;
+}
+
+// Browsers refuse cookies on public suffixes, so set a probe cookie on ever longer
+// suffixes of the hostname until one sticks.
+string seekFirstNonPublicSubDomain(string hostname) {
+  if (firstNonPublicSubDomain != "") {
+    return firstNonPublicSubDomain;
+  }
+  if (!document.truthy()) {
+    return "";
+  }
+  if (hostname == "localhost" || hostname == "127.0.0.1") {
+    return "";
+  }
+  string[] list = hostname.split(".");
+  int len = if (list.length < 8) { list.length } else { 8 };
+  string key = "dmn_chk_" + uuidv7();
+  while (firstNonPublicSubDomain == "" && len-- != 0) {
+    string candidate = list.slice(len).join(".");
+    string candidateCookieValue = key + "=1;domain=." + candidate + ";path=/";
+    document["cookie"] = candidateCookieValue + ";max-age=3";
+    if (JS.invoke(document["cookie"], "includes", key).truthy()) {
+      document["cookie"] = candidateCookieValue + ";max-age=0";
+      firstNonPublicSubDomain = candidate;
+    }
+  }
+  return firstNonPublicSubDomain;
+}
+
+export string chooseCookieDomain(string hostname, JsValue crossSubdomain) {
+  if (crossSubdomain.truthy()) {
+    string matchedSubDomain = seekFirstNonPublicSubDomain(hostname);
+    if (matchedSubDomain == "") {
+      JsValue matches = JS.invoke(hostname, "match", domainMatch);
+      string originalMatch = if (matches.truthy()) { JS.string(matches[0]) } else { "" };
+      if (originalMatch != matchedSubDomain) {
+        logger.info(JS.array("Warning: cookie subdomain discovery mismatch", originalMatch, matchedSubDomain));
+      }
+      matchedSubDomain = originalMatch;
+    }
+    return if (matchedSubDomain != "") { "; domain=." + matchedSubDomain } else { "" };
+  }
+  return "";
+}
+
+bool setCookie(string name, JsValue value, JsValue days, JsValue crossSubdomain, JsValue secure) {
+  if (!document.truthy()) {
+    return false;
+  }
+  try {
+    string expires = "";
+    string secureFlag = "";
+    string cdomain = chooseCookieDomain(JS.string(document["location"]["hostname"]), crossSubdomain);
+    if (days.truthy()) {
+      JsValue date = JS.construct(Date);
+      JS.invoke(date, "setTime", JS.number(JS.invoke(date, "getTime")) + JS.number(days) * 24.0 * 60.0 * 60.0 * 1000.0);
+      expires = "; expires=" + JS.string(JS.invoke(date, "toUTCString"));
+    }
+    if (secure.truthy()) {
+      secureFlag = "; secure";
+    }
+    string cookie = name + "=" + JS.string(JS.call(encodeURIComponent, JS.undefined(), JS.invoke(JSON, "stringify", value))) + expires + "; SameSite=Lax; path=/" + cdomain + secureFlag;
+    // 4096 bytes is where some browsers stop storing a cookie; warn a little before.
+    if (cookie.length > 3686) {
+      logger.warn(JS.array("cookieStore warning: large cookie, len=" + cookie.length.toString()));
+    }
+    document["cookie"] = cookie;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+void removeCookie(string name, JsValue crossSubdomain) {
+  if (JS.isNullish(document) || !document["cookie"].truthy()) {
+    return;
+  }
+  try {
+    setCookie(name, "", -1, crossSubdomain, JS.undefined());
+  } catch {
+  }
+}
+
+// ---- localStorage and sessionStorage ----
+
+void webStorageError(bool session, JsValue message) {
+  if (session) {
+    logger.error(JS.array("sessionStorage error: ", message));
+  } else {
+    logger.error(JS.array(JS.add("localStorage error: ", message)));
+  }
+}
+
+JsValue webStorage(bool session) {
+  return win[if (session) { "sessionStorage" } else { "localStorage" }];
+}
+
+JsValue webGet(bool session, string name) {
+  try {
+    if (JS.isNullish(win)) {
+      return JS.undefined();
+    }
+    return JS.invoke(webStorage(session), "getItem", name);
+  } catch (JsValue err) {
+    webStorageError(session, err);
+  }
+  return null;
+}
+
+bool webSet(bool session, string name, JsValue value) {
+  try {
+    if (!JS.isNullish(win)) {
+      JS.invoke(webStorage(session), "setItem", name, JS.invoke(JSON, "stringify", value));
+    }
+    return true;
+  } catch (JsValue err) {
+    webStorageError(session, err);
+  }
+  return false;
+}
+
+void webRemove(bool session, string name) {
+  try {
+    if (!JS.isNullish(win)) {
+      JS.invoke(webStorage(session), "removeItem", name);
+    }
+  } catch (JsValue err) {
+    webStorageError(session, err);
+  }
+}
+
+bool localSupported() {
+  bool? known = localStorageSupported;
+  if (known != null) {
+    return known;
+  }
+  bool supported = true;
+  if (!JS.isUndefined(win)) {
+    try {
+      webSet(false, "__mplssupport__", "xyz");
+      if (JS.strictNotEqual(webGet(false, "__mplssupport__"), "\"xyz\"")) {
+        supported = false;
+      }
+      webRemove(false, "__mplssupport__");
+    } catch {
+      supported = false;
+    }
+  } else {
+    supported = false;
+  }
+  if (!supported) {
+    logger.error(JS.array("localStorage unsupported; falling back to cookie store"));
+  }
+  localStorageSupported = supported;
+  return supported;
+}
+
+bool sessionSupported() {
+  bool? known = sessionStorageSupported;
+  if (known != null) {
+    return known;
+  }
+  sessionStorageSupported = true;
+  bool supported = true;
+  if (!JS.isUndefined(win)) {
+    try {
+      webSet(true, "__support__", "xyz");
+      if (JS.strictNotEqual(webGet(true, "__support__"), "\"xyz\"")) {
+        supported = false;
+      }
+      webRemove(true, "__support__");
+    } catch {
+      supported = false;
+    }
+  } else {
+    supported = false;
+  }
+  sessionStorageSupported = supported;
+  return supported;
+}
+
+// ---- snapshot metadata for cookie-wins-on-conflict ----
+
+export string getCookiePersistedPropertiesMetadataName(string name) {
+  return name + "_cpm";
+}
+
+export JsValue getSafeCookieProperties(JsValue value) {
+  JsValue safe = JS.object();
+  if (!isObject(value)) {
+    return safe;
+  }
+  for (string key of keysOf(value)) {
+    if (key != "__proto__" && key != "constructor" && key != "prototype") {
+      safe[key] = value[key];
+    }
+  }
+  return safe;
+}
+
+export JsValue getCookiePersistedProperties(JsValue value, string[] customCookieProperties) {
+  JsValue persisted = JS.object();
+  for (string key of [...COOKIE_PERSISTED_PROPERTIES, ...customCookieProperties]) {
+    JsValue persistedValue = value[key];
+    if (!JS.isNullish(persistedValue) && JS.strictNotEqual(persistedValue, "")) {
+      persisted[key] = persistedValue;
+    }
+  }
+  return persisted;
+}
+
+// Two 32-bit hashes and the length keep the sidecar small near the 4 KB limit.
+string cookieSnapshotFingerprint(string cookieValue) {
+  int first = 5381;
+  int second = -2128831035;
+  for (int i = 0; i < cookieValue.length; i++) {
+    int code = cookieValue.charCodeAt(i);
+    first = (first * 33) ^ code;
+    second = Math.imul(second ^ code, 16777619);
+  }
+  return cookieValue.length.toString(36) + "." + first.toUnsignedString(36) + "." + second.toUnsignedString(36);
+}
+
+export JsValue getCookiePersistedPropertiesMetadata(JsValue cookieProperties, string[] customCookieProperties) {
+  return JS.object("p", customCookieProperties, "f", cookieSnapshotFingerprint(JS.string(JS.invoke(JSON, "stringify", cookieProperties))));
+}
+
+export class MetadataState {
+  string[] properties;
+  bool isValid;
+
+  init(string[] properties, bool isValid) {
+    this.properties = properties;
+    this.isValid = isValid;
+  }
+}
+
+export MetadataState getCookiePersistedPropertiesMetadataState(string name, string? cookieValue) {
+  if (cookieValue == null || cookieValue == "") {
+    return new MetadataState([], false);
+  }
+  try {
+    JsValue metadata = parseCookie(getCookiePersistedPropertiesMetadataName(name));
+    bool isValid = !JS.isNullish(metadata) && JS.strictEqual(metadata["f"], cookieSnapshotFingerprint(cookieValue)) && metadata["p"].isArray();
+    string[] properties = if (isValid) { JS.assume(metadata["p"]) } else { [] };
+    return new MetadataState(properties, isValid);
+  } catch {
+    return new MetadataState([], false);
+  }
+}
+
+export string getCookiePropertiesFingerprint(string name, string cookieValue) {
+  return cookieValue + "|" + JS.string(JS.or(getCookieValue(getCookiePersistedPropertiesMetadataName(name)), ""));
+}
+
+// localStorage merged with the cookie's identity keys; with cookie-wins-on-conflict
+// the cookie is the shared snapshot and stale local keys are dropped.
+JsValue parseLocalPlusCookie(string name, string[] persistKeys, bool preferCookieOnConflict) {
+  try {
+    string? cookieValue = null;
+    JsValue cookieProperties = JS.object();
+    try {
+      JsValue raw = getCookieValue(name);
+      cookieValue = if (raw.truthy()) { JS.string(raw) } else { null };
+      cookieProperties = if (cookieValue != null) { getSafeCookieProperties(JS.invoke(JSON, "parse", cookieValue)) } else { JS.object() };
+    } catch {
+    }
+    JsValue localStorageData = JS.invoke(JSON, "parse", JS.or(webGet(false, name), "{}"));
+    JsValue value = JS.undefined();
+    if (preferCookieOnConflict) {
+      MetadataState metadataState = getCookiePersistedPropertiesMetadataState(name, cookieValue);
+      string[] authoritative = [...COOKIE_PERSISTED_PROPERTIES, ...metadataState.properties];
+      // Null or empty cookie values never override valid localStorage data.
+      JsValue safeCookieProperties = JS.object();
+      for (string key of keysOf(cookieProperties)) {
+        JsValue v = cookieProperties[key];
+        if (!JS.strictEqual(v, null) && JS.strictNotEqual(v, "") && (key != USER_STATE || JS.strictEqual(v, USER_STATE_ANONYMOUS) || JS.strictEqual(v, USER_STATE_IDENTIFIED))) {
+          safeCookieProperties[key] = v;
+        }
+      }
+      bool hasValidCookieIdentity = JS.in(DISTINCT_ID, safeCookieProperties) || JS.strictEqual(safeCookieProperties[USER_STATE], USER_STATE_ANONYMOUS) || JS.strictEqual(safeCookieProperties[USER_STATE], USER_STATE_IDENTIFIED);
+      // A non-empty cookie is the whole shared snapshot for the keys its writer knew.
+      if (keysOf(safeCookieProperties).length > 0) {
+        JsValue previousDistinctId = localStorageData[DISTINCT_ID];
+        JsValue previousUserState = localStorageData[USER_STATE];
+        if (JS.isNullish(previousUserState)) {
+          previousUserState = USER_STATE_ANONYMOUS;
+        }
+        for (string key of persistKeys) {
+          if (authoritative.indexOf(key) != -1 && !JS.in(key, cookieProperties) && (hasValidCookieIdentity || (key != DISTINCT_ID && key != USER_STATE))) {
+            JsValue localValue = localStorageData[key];
+            bool legacyFalsyBuiltIn = !metadataState.isValid && COOKIE_PERSISTED_PROPERTIES.indexOf(key) != -1 && (JS.strictEqual(localValue, false) || JS.strictEqual(localValue, 0));
+            if (!legacyFalsyBuiltIn) {
+              JS.delete(localStorageData, key);
+            }
+          }
+        }
+        if (hasValidCookieIdentity && !JS.in(USER_STATE, cookieProperties) && !JS.in(USER_STATE, localStorageData)) {
+          localStorageData[USER_STATE] = USER_STATE_ANONYMOUS;
+        }
+        JsValue nextDistinctId = if (JS.in(DISTINCT_ID, safeCookieProperties)) { safeCookieProperties[DISTINCT_ID] } else { localStorageData[DISTINCT_ID] };
+        JsValue nextUserState = if (JS.in(USER_STATE, safeCookieProperties)) { safeCookieProperties[USER_STATE] } else { localStorageData[USER_STATE] };
+        if (hasValidCookieIdentity && (JS.strictNotEqual(nextDistinctId, previousDistinctId) || JS.strictNotEqual(nextUserState, previousUserState))) {
+          for (string key of COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES) {
+            JS.delete(localStorageData, key);
+          }
+          if (JS.strictEqual(safeCookieProperties[USER_STATE], USER_STATE_IDENTIFIED) && JS.in(DISTINCT_ID, safeCookieProperties)) {
+            localStorageData["$user_id"] = safeCookieProperties[DISTINCT_ID];
+          } else {
+            JS.delete(localStorageData, "$user_id");
+          }
+          if (JS.strictNotEqual(safeCookieProperties[USER_STATE], USER_STATE_IDENTIFIED)) {
+            JS.delete(localStorageData, GROUPS);
+            JS.delete(localStorageData, STORED_GROUP_PROPERTIES_KEY);
+          }
+          JS.delete(localStorageData, "__alias");
+        }
+      }
+      value = extend(localStorageData, safeCookieProperties);
+    } else {
+      value = extend(cookieProperties, localStorageData);
+    }
+    webSet(false, name, value);
+    return value;
+  } catch {
+  }
+  return null;
+}
+
+// The localStorage write is the durable one; the cookie mirror is best effort and
+// never turns a landed write into a failure.
+bool setLocalPlusCookie(string name, JsValue value, JsValue days, JsValue crossSubdomain, JsValue secure, string[] customCookieProperties, bool preferCookieOnConflict) {
+  bool stored = webSet(false, name, value);
+  try {
+    JsValue cookiePersisted = getCookiePersistedProperties(value, customCookieProperties);
+    if (keysOf(cookiePersisted).length != 0) {
+      if (preferCookieOnConflict) {
+        string metadataName = getCookiePersistedPropertiesMetadataName(name);
+        JsValue metadata = getCookiePersistedPropertiesMetadata(cookiePersisted, customCookieProperties);
+        // Publish and verify the sidecar before the snapshot it describes.
+        setCookie(metadataName, metadata, days, crossSubdomain, secure);
+        if (JS.strictNotEqual(getCookieValue(metadataName), JS.invoke(JSON, "stringify", metadata))) {
+          removeCookie(metadataName, crossSubdomain);
+          setCookie(name, getCookiePersistedProperties(value, []), days, crossSubdomain, secure);
+          return stored;
+        }
+      }
+      setCookie(name, cookiePersisted, days, crossSubdomain, secure);
+    }
+  } catch (JsValue err) {
+    webStorageError(false, err);
+  }
+  return stored;
+}
+
+// ---- stores ----
+
+enum StoreKind { Cookie, Local, LocalPlusCookie, Memory, Session }
+
+export class Store {
+  StoreKind kind;
+  string[] customCookieProperties;
+  string[] persistKeys;
+  bool preferCookieOnConflict;
+
+  init(StoreKind kind, string[] customCookieProperties, bool preferCookieOnConflict) {
+    this.kind = kind;
+    this.customCookieProperties = customCookieProperties;
+    this.persistKeys = [...COOKIE_PERSISTED_PROPERTIES, ...customCookieProperties];
+    this.preferCookieOnConflict = preferCookieOnConflict;
+  }
+
+  bool isSupported() {
+    return match (this.kind) {
+      StoreKind.Cookie => document.truthy(),
+      StoreKind.Memory => true,
+      StoreKind.Session => sessionSupported(),
+      _ => localSupported()
+    };
+  }
+
+  JsValue get(string name) {
+    return match (this.kind) {
+      StoreKind.Cookie => getCookieValue(name),
+      StoreKind.Memory => JS.or(memoryStorage[name], null),
+      StoreKind.Session => webGet(true, name),
+      _ => webGet(false, name)
+    };
+  }
+
+  JsValue parse(string name) {
+    if (this.kind == StoreKind.Cookie) {
+      return parseCookie(name);
+    }
+    if (this.kind == StoreKind.Memory) {
+      return JS.or(memoryStorage[name], null);
+    }
+    if (this.kind == StoreKind.LocalPlusCookie) {
+      return parseLocalPlusCookie(name, this.persistKeys, this.preferCookieOnConflict);
+    }
+    bool session = this.kind == StoreKind.Session;
+    try {
+      JsValue parsed = JS.invoke(JSON, "parse", webGet(session, name));
+      return if (session) { JS.or(parsed, null) } else { JS.or(parsed, JS.object()) };
+    } catch {
+    }
+    return null;
+  }
+
+  bool set(string name, JsValue value, JsValue days, JsValue crossSubdomain, JsValue secure) {
+    if (this.kind == StoreKind.Cookie) {
+      return setCookie(name, value, days, crossSubdomain, secure);
+    }
+    if (this.kind == StoreKind.Memory) {
+      memoryStorage[name] = value;
+      return true;
+    }
+    if (this.kind == StoreKind.LocalPlusCookie) {
+      return setLocalPlusCookie(name, value, days, crossSubdomain, secure, this.customCookieProperties, this.preferCookieOnConflict);
+    }
+    return webSet(this.kind == StoreKind.Session, name, value);
+  }
+
+  void remove(string name, JsValue crossSubdomain) {
+    if (this.kind == StoreKind.Cookie) {
+      removeCookie(name, crossSubdomain);
+    } else if (this.kind == StoreKind.Memory) {
+      JS.delete(memoryStorage, name);
+    } else if (this.kind == StoreKind.LocalPlusCookie) {
+      try {
+        if (!JS.isNullish(win)) {
+          JS.invoke(webStorage(false), "removeItem", name);
+        }
+        removeCookie(name, crossSubdomain);
+        removeCookie(getCookiePersistedPropertiesMetadataName(name), crossSubdomain);
+      } catch (JsValue err) {
+        webStorageError(false, err);
+      }
+    } else {
+      webRemove(this.kind == StoreKind.Session, name);
+    }
+  }
+}
+
+export Store cookieStore = new Store(StoreKind.Cookie, [], false);
+export Store localStore = new Store(StoreKind.Local, [], false);
+export Store memoryStore = new Store(StoreKind.Memory, [], false);
+export Store sessionStore = new Store(StoreKind.Session, [], false);
+
+export Store createLocalPlusCookieStore(string[] customCookieProperties, bool preferCookieOnConflict) {
+  return new Store(StoreKind.LocalPlusCookie, customCookieProperties, preferCookieOnConflict);
+}

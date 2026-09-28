@@ -1,0 +1,19 @@
+// The SDK-wide settings upstream keeps in browser-common's `Config` object and that
+// browser/src/config.ts overrides: debug output, the library identity reported with
+// every event, and the channel the SDK was delivered through.
+
+class SdkConfig {
+  bool debug;
+  string libVersion;
+  string libName;
+  string? distChannel;
+
+  init() {
+    this.debug = false;
+    this.libVersion = "1.418.10";
+    this.libName = "web";
+    this.distChannel = null;
+  }
+}
+
+export SdkConfig Config = new SdkConfig();

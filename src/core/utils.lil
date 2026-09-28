@@ -1,0 +1,311 @@
+// @posthog/core type-utils and string-utils, and browser-common general-utils, as the
+// slim core uses them. Checks on host values keep upstream's exact runtime tests
+// (`Object.prototype.toString` captured when the module loads, `instanceof`), so a
+// String object or a cross-realm array classify the same way.
+
+import extern { instanceOf } from "./host.js";
+extern bool instanceOf(JsValue value, JsValue ctor);
+
+import { logger } from "./logger.lil";
+
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue FormData;
+extern JsValue File;
+extern JsValue Set;
+
+JsValue objectToString = Object["prototype"]["toString"];
+JsValue hasOwnProperty = Object["prototype"]["hasOwnProperty"];
+
+export string tagOf(JsValue value) {
+  return JS.string(JS.invoke(objectToString, "call", value));
+}
+
+export bool hasOwn(JsValue target, string key) {
+  return JS.invoke(hasOwnProperty, "call", target, key).truthy();
+}
+
+export bool isArray(JsValue value) {
+  return value.isArray();
+}
+
+export bool isFunction(JsValue value) {
+  return JS.typeOf(value) == "function";
+}
+
+export bool isObject(JsValue value) {
+  return JS.strictEqual(value, JS.call(Object, JS.undefined(), value)) && !value.isArray();
+}
+
+export bool isEmptyObject(JsValue value) {
+  if (isObject(value)) {
+    for (string key in value) {
+      if (hasOwn(value, key)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+export bool isUndefined(JsValue value) {
+  return JS.isUndefined(value);
+}
+
+export bool isNull(JsValue value) {
+  return JS.strictEqual(value, null);
+}
+
+export bool isNullish(JsValue value) {
+  return JS.isNullish(value);
+}
+
+export bool isString(JsValue value) {
+  return tagOf(value) == "[object String]";
+}
+
+export bool isEmptyString(JsValue value) {
+  return isString(value) && JS.invoke(value, "trim")["length"].truthy() == false;
+}
+
+export bool isNumber(JsValue value) {
+  return tagOf(value) == "[object Number]" && JS.strictEqual(value, value);
+}
+
+export bool isBoolean(JsValue value) {
+  return tagOf(value) == "[object Boolean]";
+}
+
+export bool isFormData(JsValue value) {
+  return instanceOf(value, FormData);
+}
+
+export bool isFile(JsValue value) {
+  return instanceOf(value, File);
+}
+
+export bool includes(JsValue haystack, JsValue needle) {
+  return JS.number(JS.invoke(haystack, "indexOf", needle)) != -1.0;
+}
+
+string[] knownUnsafeEditableEvents = [
+  "$snapshot",
+  "$pageview",
+  "$pageleave",
+  "$set",
+  "survey dismissed",
+  "survey sent",
+  "survey shown",
+  "$identify",
+  "$groupidentify",
+  "$create_alias",
+  "$$client_ingestion_warning",
+  "$web_experiment_applied",
+  "$feature_enrollment_update",
+  "$feature_flag_called"
+];
+
+export bool isKnownUnsafeEditableEvent(JsValue event) {
+  return includes(knownUnsafeEditableEvents, event);
+}
+
+export bool isKnownUnsafeEditableEventProperty(JsValue key) {
+  return JS.strictEqual(key, "token");
+}
+
+export bool isDistinctIdStringLike(string value) {
+  string lower = value.toLowerCase();
+  return lower == "distinct_id" || lower == "distinctid";
+}
+
+// `each`: arrays by index, FormData by its own iterator, anything else by own keys.
+export void each(JsValue target, func(JsValue, JsValue)->void iterator) {
+  if (JS.isNullish(target)) {
+    return;
+  }
+  if (target.isArray()) {
+    JS.invoke(target, "forEach", iterator);
+    return;
+  }
+  if (isFormData(target)) {
+    JS.invoke(target, "forEach", (JsValue value, JsValue key) => iterator(value, key));
+    return;
+  }
+  for (string key in target) {
+    if (hasOwn(target, key)) {
+      iterator(target[key], key);
+    }
+  }
+}
+
+// `extend(target, source)`: copies every defined enumerable key, own or inherited.
+export JsValue extend(JsValue target, JsValue source) {
+  for (string key in source) {
+    if (!JS.isUndefined(source[key])) {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+// `{...a, ...b}` over host objects: own enumerable keys, undefined values kept.
+export JsValue assign(JsValue target, JsValue source) {
+  return JS.invoke(Object, "assign", target, source);
+}
+
+export JsValue copy(JsValue source) {
+  return JS.invoke(Object, "assign", JS.object(), source);
+}
+
+export string[] keysOf(JsValue target) {
+  return JS.assume(JS.invoke(Object, "keys", target));
+}
+
+export JsValue trySafe(func()->JsValue body) {
+  try {
+    return body();
+  } catch {
+    return JS.undefined();
+  }
+}
+
+export JsValue stripEmptyProperties(JsValue properties) {
+  JsValue out = JS.object();
+  each(properties, (JsValue value, JsValue key) => {
+    if ((isString(value) && JS.number(value["length"]) > 0.0) || isNumber(value)) {
+      out[JS.string(key)] = value;
+    }
+  });
+  return out;
+}
+
+// Deep copy that drops cycles (a node already being copied becomes undefined) and
+// truncates every string to `maxLength`.
+JsValue copyTruncating(JsValue value, JsValue inProgress, JsValue maxLength) {
+  if (JS.strictNotEqual(value, JS.call(Object, JS.undefined(), value))) {
+    if (isString(value)) {
+      return JS.invoke(value, "slice", 0, maxLength);
+    }
+    return value;
+  }
+  if (JS.invoke(inProgress, "has", value).truthy()) {
+    return JS.undefined();
+  }
+  JS.invoke(inProgress, "add", value);
+  if (value.isArray()) {
+    JsValue result = JS.array();
+    JS.invoke(value, "forEach", (JsValue item) => {
+      JS.invoke(result, "push", copyTruncating(item, inProgress, maxLength));
+    });
+    return result;
+  }
+  JsValue result = JS.object();
+  each(value, (JsValue item, JsValue key) => {
+    if (!JS.invoke(inProgress, "has", item).truthy()) {
+      result[JS.string(key)] = copyTruncating(item, inProgress, maxLength);
+    }
+  });
+  return result;
+}
+
+export JsValue copyAndTruncateStrings(JsValue value, JsValue maxLength) {
+  return copyTruncating(value, JS.construct(Set), maxLength);
+}
+
+string[] excludedFromCrossSubdomainCookie = ["herokuapp.com", "vercel.app", "netlify.app"];
+
+export bool isCrossDomainCookie(JsValue documentLocation) {
+  JsValue hostname = if (JS.isNullish(documentLocation)) { JS.undefined() } else { documentLocation["hostname"] };
+  if (!isString(hostname)) {
+    return false;
+  }
+  JsValue parts = JS.invoke(JS.invoke(hostname, "split", "."), "slice", -2);
+  JsValue lastTwoParts = JS.invoke(parts, "join", ".");
+  for (string excluded of excludedFromCrossSubdomainCookie) {
+    if (JS.strictEqual(lastTwoParts, excluded)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export void addEventListener(JsValue element, string event, JsValue callback, bool capture = false, bool passive = true) {
+  if (!JS.isNullish(element)) {
+    JS.invoke(element, "addEventListener", event, callback, JS.object("capture", capture, "passive", passive));
+  }
+}
+
+export JsValue migrateConfigField(JsValue config, string newField, string oldField, JsValue defaultValue) {
+  bool hasNewField = JS.in(newField, config) && !JS.isNullish(config[newField]);
+  bool hasOldField = JS.in(oldField, config) && !JS.isNullish(config[oldField]);
+  if (hasNewField) {
+    return config[newField];
+  }
+  if (hasOldField) {
+    logger.warn(JS.array("Config field '" + oldField + "' is deprecated. Please use '" + newField + "' instead. The old field will be removed in a future major version."));
+    return config[oldField];
+  }
+  return defaultValue;
+}
+
+string[] minimalFlagCalledEventProperties = [
+  "$feature_flag",
+  "$feature_flag_response",
+  "$feature_flag_has_experiment",
+  "$feature_flag_id",
+  "$feature_flag_version",
+  "$feature_flag_reason",
+  "$feature_flag_request_id",
+  "$feature_flag_evaluated_at",
+  "$feature_flag_error",
+  "locally_evaluated",
+  "$groups",
+  "$process_person_profile",
+  "$geoip_disable",
+  "$current_url",
+  "$pathname",
+  "$referring_domain",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "gad_source",
+  "mc_cid",
+  "gclid",
+  "gclsrc",
+  "dclid",
+  "gbraid",
+  "wbraid",
+  "fbclid",
+  "msclkid",
+  "twclid",
+  "li_fat_id",
+  "igshid",
+  "ttclid",
+  "rdt_cid",
+  "epik",
+  "qclid",
+  "sccid",
+  "irclid",
+  "_kx",
+  "$session_id",
+  "$window_id",
+  "$lib",
+  "$lib_version",
+  "$device_id",
+  "$is_server"
+];
+
+export JsValue minimizeFlagCalledEventProperties(JsValue properties, string[] transportKeys) {
+  JsValue minimal = JS.object();
+  func(string)->void copyKey = (string key) => {
+    if (!JS.isUndefined(properties[key])) {
+      minimal[key] = properties[key];
+    }
+  };
+  minimalFlagCalledEventProperties.forEach(copyKey);
+  transportKeys.forEach(copyKey);
+  return minimal;
+}

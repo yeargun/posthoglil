@@ -1,0 +1,341 @@
+// browser-common request-utils (query and URL helpers) and event-utils (campaign,
+// referrer and person info, and the property bag every event starts from). Host reads
+// happen in upstream's order: the bag's two `Math.random` draws and its clock read
+// line up with upstream's under a seeded host.
+
+import { Config } from "./config.lil";
+import { document, location, userAgent, win } from "./globals.lil";
+import { logger } from "./logger.lil";
+import { getCookieValue } from "./storage.lil";
+import { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS, OsInfo } from "./user-agent.lil";
+import { each, extend, isUndefined, stripEmptyProperties } from "./utils.lil";
+
+extern JsValue navigator;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue Intl;
+extern JsValue decodeURIComponent;
+
+export string MASKED = "<masked>";
+string DIRECT = "$direct";
+
+export string[] PERSONAL_DATA_CAMPAIGN_PARAMS = [
+  "gclid",
+  "gclsrc",
+  "dclid",
+  "gbraid",
+  "wbraid",
+  "fbclid",
+  "msclkid",
+  "twclid",
+  "li_fat_id",
+  "igshid",
+  "ttclid",
+  "rdt_cid",
+  "epik",
+  "qclid",
+  "sccid",
+  "irclid",
+  "_kx"
+];
+
+export string[] CAMPAIGN_PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "gad_source", "mc_cid", ...PERSONAL_DATA_CAMPAIGN_PARAMS];
+
+Regex queryPrefix = new Regex("\\?(.*)");
+Regex leadingQuestionMarks = new Regex("^\\?+", "g");
+Regex plus = new Regex("\\+", "g");
+
+// ---- request-utils ----
+
+export string getQueryParam(string url, string param) {
+  string withoutHash = url.split("#")[0];
+  JsValue afterQuery = JS.invoke(withoutHash, "split", queryPrefix)[1];
+  string queryParams = if (afterQuery.truthy()) { JS.string(afterQuery) } else { "" };
+  string[] queryParts = queryParams.replace(leadingQuestionMarks, "").split("&");
+  string[]? keyValuePair = null;
+  for (string part of queryParts) {
+    string[] parts = part.split("=");
+    if (parts[0] == param) {
+      keyValuePair = parts;
+      break;
+    }
+  }
+  if (keyValuePair == null || keyValuePair.length < 2) {
+    return "";
+  }
+  string result = keyValuePair[1];
+  try {
+    result = JS.string(JS.call(decodeURIComponent, JS.undefined(), result));
+  } catch {
+    logger.error(JS.array("Skipping decoding for malformed query param: " + result));
+  }
+  return result.replace(plus, " ");
+}
+
+export JsValue maskQueryParams(JsValue url, string[] maskedParams, string mask) {
+  if (!url.truthy() || maskedParams.length == 0) {
+    return url;
+  }
+  string[] splitHash = JS.string(url).split("#");
+  string withoutHash = splitHash[0];
+  string[] splitQuery = withoutHash.split("?");
+  string? queryString = if (splitQuery.length > 1) { splitQuery[1] } else { null };
+  string[] queryParts = (queryString ?? "").split("&");
+  string[] paramStrings = [];
+  for (string part of queryParts) {
+    string[] keyValuePair = part.split("=");
+    if (maskedParams.includes(keyValuePair[0])) {
+      paramStrings.push(keyValuePair[0] + "=" + mask);
+    } else {
+      paramStrings.push(part);
+    }
+  }
+  string result = splitQuery[0];
+  if (queryString != null) {
+    result = result + "?" + paramStrings.join("&");
+  }
+  if (splitHash.length > 1) {
+    result = result + "#" + splitHash[1];
+  }
+  return result;
+}
+
+// An anchor element parses a URL the way the page would.
+export JsValue convertToURL(string url) {
+  JsValue anchor = if (JS.isNullish(document)) { JS.undefined() } else { JS.invoke(document, "createElement", "a") };
+  if (JS.isUndefined(anchor)) {
+    return null;
+  }
+  anchor["href"] = url;
+  return anchor;
+}
+
+JsValue anchorPart(string url, string part) {
+  JsValue anchor = convertToURL(url);
+  return if (JS.isNullish(anchor)) { JS.undefined() } else { anchor[part] };
+}
+
+export JsValue stripUrlHash(JsValue url) {
+  if (!url.truthy()) {
+    return url;
+  }
+  return JS.string(url).split("#")[0];
+}
+
+export string stripLeadingDollar(string key) {
+  return if (key.startsWith("$")) { key.slice(1) } else { key };
+}
+
+// ---- event-utils ----
+
+string[] masked(JsValue maskPersonalData, JsValue customPersonalData) {
+  if (!maskPersonalData.truthy()) {
+    return [];
+  }
+  string[] custom = if (customPersonalData.truthy()) { JS.assume(customPersonalData) } else { [] };
+  return [...PERSONAL_DATA_CAMPAIGN_PARAMS, ...custom];
+}
+
+JsValue campaignParamsFromUrl(string url, string[] customParams) {
+  JsValue params = JS.object();
+  for (string key of CAMPAIGN_PARAMS.concat(customParams)) {
+    string value = getQueryParam(url, key);
+    params[key] = if (value != "") { value } else { null };
+  }
+  return params;
+}
+
+export JsValue getCampaignParams(JsValue customTrackedParams, JsValue maskPersonalData, JsValue customPersonalData) {
+  if (!document.truthy()) {
+    return JS.object();
+  }
+  string[] paramsToMask = masked(maskPersonalData, customPersonalData);
+  string[] custom = if (customTrackedParams.truthy()) { JS.assume(customTrackedParams) } else { [] };
+  JsValue urlParams = campaignParamsFromUrl(JS.string(maskQueryParams(document["URL"], paramsToMask, MASKED)), custom);
+  JsValue cookieParams = JS.object();
+  JsValue cookieValue = getCookieValue("li_fat_id");
+  cookieParams["li_fat_id"] = if (cookieValue.truthy()) { cookieValue } else { null };
+  return extend(cookieParams, urlParams);
+}
+
+JsValue searchEngine(string referrer) {
+  if (referrer == "") {
+    return null;
+  }
+  if (referrer.search(new Regex("https?://(.*)google.([^/?]*)")) == 0) {
+    return "google";
+  } else if (referrer.search(new Regex("https?://(.*)bing.com")) == 0) {
+    return "bing";
+  } else if (referrer.search(new Regex("https?://(.*)yahoo.com")) == 0) {
+    return "yahoo";
+  } else if (referrer.search(new Regex("https?://(.*)duckduckgo.com")) == 0) {
+    return "duckduckgo";
+  }
+  return null;
+}
+
+// The keyword is read from the page's current referrer, whichever referrer named the
+// engine; upstream does the same for stored initial person info.
+JsValue searchInfoFromReferrer(string referrer) {
+  JsValue search = searchEngine(referrer);
+  string param = if (JS.strictNotEqual(search, "yahoo")) { "q" } else { "p" };
+  JsValue info = JS.object();
+  if (!JS.strictEqual(search, null)) {
+    info["$search_engine"] = search;
+    string keyword = if (document.truthy()) { getQueryParam(JS.string(document["referrer"]), param) } else { "" };
+    if (keyword.length != 0) {
+      info["ph_keyword"] = keyword;
+    }
+  }
+  return info;
+}
+
+export JsValue getSearchInfo() {
+  JsValue referrer = if (JS.isNullish(document)) { JS.undefined() } else { document["referrer"] };
+  if (!referrer.truthy()) {
+    return JS.object();
+  }
+  return searchInfoFromReferrer(JS.string(referrer));
+}
+
+JsValue browserLanguage() {
+  return JS.or(navigator["language"], navigator["userLanguage"]);
+}
+
+string getReferrer() {
+  JsValue referrer = if (JS.isNullish(document)) { JS.undefined() } else { document["referrer"] };
+  return if (referrer.truthy()) { JS.string(referrer) } else { DIRECT };
+}
+
+export JsValue getReferrerInfo() {
+  string referrer = getReferrer();
+  JsValue domain = DIRECT;
+  if (!JS.isNullish(document) && document["referrer"].truthy()) {
+    JsValue host = anchorPart(JS.string(document["referrer"]), "host");
+    domain = if (host.truthy()) { host } else { DIRECT };
+  }
+  return JS.object("$referrer", referrer, "$referring_domain", domain);
+}
+
+export JsValue getPersonInfo(JsValue maskPersonalData, JsValue customPersonalData, bool disableCaptureUrlHashes) {
+  string[] paramsToMask = masked(maskPersonalData, customPersonalData);
+  JsValue href = if (JS.isNullish(location)) { JS.undefined() } else { location["href"] };
+  if (disableCaptureUrlHashes) {
+    href = stripUrlHash(href);
+  }
+  JsValue url = if (JS.isNullish(href)) { JS.undefined() } else { JS.invoke(href, "substring", 0, 1000) };
+  return JS.object("r", getReferrer().slice(0, 1000), "u", if (url.truthy()) { maskQueryParams(url, paramsToMask, MASKED) } else { JS.undefined() });
+}
+
+JsValue personPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
+  JsValue referrer = info["r"];
+  JsValue url = if (disableCaptureUrlHashes) { stripUrlHash(info["u"]) } else { info["u"] };
+  JsValue referringDomain = JS.undefined();
+  if (!JS.isNullish(referrer)) {
+    if (referrer == DIRECT) {
+      referringDomain = DIRECT;
+    } else {
+      referringDomain = anchorPart(JS.string(referrer), "host");
+    }
+  }
+  JsValue props = JS.object("$referrer", referrer, "$referring_domain", referringDomain);
+  if (url.truthy()) {
+    string urlText = JS.string(url);
+    props["$current_url"] = url;
+    JsValue anchor = convertToURL(urlText);
+    props["$host"] = if (JS.isNullish(anchor)) { JS.undefined() } else { anchor["host"] };
+    props["$pathname"] = if (JS.isNullish(anchor)) { JS.undefined() } else { anchor["pathname"] };
+    extend(props, campaignParamsFromUrl(urlText, []));
+  }
+  if (referrer.truthy()) {
+    extend(props, searchInfoFromReferrer(JS.string(referrer)));
+  }
+  return props;
+}
+
+export JsValue getInitialPersonPropsFromInfo(JsValue info, bool disableCaptureUrlHashes) {
+  JsValue props = JS.object();
+  each(personPropsFromInfo(info, disableCaptureUrlHashes), (JsValue value, JsValue key) => {
+    props["$initial_" + stripLeadingDollar(JS.string(key))] = value;
+  });
+  return props;
+}
+
+JsValue timezone() {
+  try {
+    return JS.invoke(JS.invoke(Intl, "DateTimeFormat"), "resolvedOptions")["timeZone"];
+  } catch {
+    return JS.undefined();
+  }
+}
+
+JsValue timezoneOffset() {
+  try {
+    return JS.invoke(JS.construct(Date), "getTimezoneOffset");
+  } catch {
+    return JS.undefined();
+  }
+}
+
+JsValue randomChunk() {
+  return JS.invoke(JS.invoke(JS.invoke(Math, "random"), "toString", 36), "substring", 2, 10);
+}
+
+JsValue orUndefined(JsValue holder, string key) {
+  return if (JS.isNullish(holder)) { JS.undefined() } else { holder[key] };
+}
+
+export JsValue getEventProperties(JsValue maskPersonalData, JsValue customPersonalData, JsValue detectGoogleSearchApp, bool disableCaptureUrlHashes) {
+  if (!userAgent.truthy()) {
+    return JS.object();
+  }
+  string ua = JS.string(userAgent);
+  string[] paramsToMask = masked(maskPersonalData, customPersonalData);
+  OsInfo os = detectOS(ua);
+  bool brave = JS.typeOf(navigator) != "undefined" && navigator["brave"].truthy();
+  bool detectGsa = !JS.isUndefined(detectGoogleSearchApp) && detectGoogleSearchApp.truthy();
+  JsValue userAgentData = orUndefined(navigator, "userAgentData");
+  JsValue platform = orUndefined(userAgentData, "platform");
+  JsValue maxTouchPoints = orUndefined(navigator, "maxTouchPoints");
+  JsValue screen = orUndefined(win, "screen");
+  JsValue screenWidth = orUndefined(screen, "width");
+  JsValue screenHeight = orUndefined(screen, "height");
+  JsValue devicePixelRatio = orUndefined(win, "devicePixelRatio");
+  JsValue vendorValue = navigator["vendor"];
+  string vendor = if (vendorValue.truthy()) { JS.string(vendorValue) } else { "" };
+  JsValue properties = stripEmptyProperties(JS.object(
+    "$os", os.name,
+    "$os_version", os.version,
+    "$browser", detectBrowser(ua, vendor, brave, detectGsa),
+    "$device", detectDevice(ua),
+    "$device_type", detectDeviceType(ua, platform, maxTouchPoints, screenWidth, screenHeight, devicePixelRatio),
+    "$timezone", timezone(),
+    "$timezone_offset", timezoneOffset()
+  ));
+  JsValue href = orUndefined(location, "href");
+  JsValue vendorAgain = navigator["vendor"];
+  string versionVendor = if (vendorAgain.truthy()) { JS.string(vendorAgain) } else { "" };
+  JsValue language = browserLanguage();
+  extend(properties, JS.object(
+    "$current_url", maskQueryParams(if (disableCaptureUrlHashes) { stripUrlHash(href) } else { href }, paramsToMask, MASKED),
+    "$host", orUndefined(location, "host"),
+    "$pathname", orUndefined(location, "pathname"),
+    "$raw_user_agent", if (ua.length > 1000) { ua.slice(0, 997) + "..." } else { ua },
+    "$browser_version", detectBrowserVersion(ua, versionVendor, brave, detectGsa),
+    "$browser_language", language,
+    "$browser_language_prefix", if (JS.typeOf(browserLanguage()) == "string") { JS.invoke(browserLanguage(), "split", "-")[0] } else { JS.undefined() },
+    "$screen_height", if (win.truthy()) { win["screen"]["height"] } else { JS.undefined() },
+    "$screen_width", if (win.truthy()) { win["screen"]["width"] } else { JS.undefined() },
+    "$viewport_height", orUndefined(win, "innerHeight"),
+    "$viewport_width", orUndefined(win, "innerWidth"),
+    "$lib", Config.libName,
+    "$lib_version", Config.libVersion,
+    "$insert_id", JS.add(randomChunk(), randomChunk()),
+    "$time", JS.number(JS.invoke(Date, "now")) / 1000.0
+  ));
+  string? channel = Config.distChannel;
+  if (channel != null && channel != "") {
+    properties["$sdk_dist_channel"] = channel;
+  }
+  return properties;
+}
