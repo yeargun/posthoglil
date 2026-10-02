@@ -1,22 +1,56 @@
+# Compiler-owned delivery; no JavaScript post-minifier or export rewriting.
+[policy]
+version = 3
 [javascript]
 priority = "size-first"
-optimization_level = 15
-cost_model = "brotli"
+# Assumes unpatched platform builtins; disable when consumers replace them.
 assume_pristine_builtins = true
-strip_console = true
-candidate_search = "always"
-# Beam width is not monotone: 12 gives 5668 brotli, 22-26 give 5621, and 32/48/64/96
-# all regress to 5720-5755. It selects which basin the terminal search lands in, so it
-# is tuned, not raised. 22, 24 and 26 all reach the same artifact, so 24 sits in the
-# middle of a stable plateau rather than on a spike.
-candidate_beam_width = 24
-# 8.20 (measured on the shipped artifact): the candidate byte budget is another
-# basin dial, not a depth dial -- 1 MiB (the default) 5623, 4 MiB 5662, 16 MiB
-# 5606, 64 MiB 5649. At 16 MiB this port passes Oxc's 5622. The same bump is
-# neutral on six of the other nine and costs remarklil 619, so it is declared here.
-candidate_byte_budget = 16777216
+# Remove debugLog instrumentation; ordinary print and host console effects remain.
+strip_debug = true
 
+# Preserved effort setting. 13 favors size; 14/15 allow more expensive marginal searches.
+[effort]
+level = 15
+
+# Optimize the delivered files for this codec, independently of raw/gzip objectives.
+[objective]
+codecs = "brotli"
 [mangle]
 identifiers = true
 properties = true
 pool_strings = true
+
+[delivery]
+mode = "single"
+directory = "."
+select = ["index"]
+entry_names = "posthog.esm.js"
+[delivery.entries]
+index = "src/entry.lil"
+browser = "src/browser.lil"
+[[delivery.also]]
+name = "cjs"
+entries = ["index"]
+format = "cjs"
+es_module_marker = "always"
+entry_names = "posthog.cjs"
+[[delivery.also]]
+name = "browser"
+entries = ["browser"]
+format = "iife"
+exports = "default"
+global = "posthogLil"
+global_binding = "property"
+entry_names = "posthog.umd.js"
+
+# Separate winners for codec-specific public ESM artifacts, sharing source work.
+[[delivery.also]]
+name = "gzip"
+entries = ["index"]
+codecs = "gzip"
+entry_names = "posthog.gzip.js"
+[[delivery.also]]
+name = "bytes"
+entries = ["index"]
+codecs = "raw"
+entry_names = "posthog.bytes.js"

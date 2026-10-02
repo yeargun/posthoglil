@@ -78,7 +78,14 @@
     "NOTICE.md",
     "README.md"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/posthog.bytes.js",
+    "./dist/posthog.cjs",
+    "./dist/posthog.esm.js",
+    "./dist/posthog.gzip.js",
+    "./dist/posthog.raw.js",
+    "./dist/posthog.umd.js"
+  ],
   "engines": {
     "node": ">=18"
   },
