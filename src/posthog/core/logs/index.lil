@@ -1,7 +1,8 @@
 // packages/core/src/logs/index.ts — the core logs pipeline. The SDKs keep a `PostHogLogs` in a
 // private field (the browser wraps it), so its own calls to `flush` are static and its private
 // members are typed fields and module functions. The host, config, logger and callbacks are JS
-// values called through their objects; `_retryAfter` keeps upstream's name (upstream's tests read it).
+// values called through their objects; `_retryAfter` and `_flushPromise` keep upstream's names
+// (upstream's tests read them).
 import { buildOtlpLogRecord, buildOtlpLogsPayload, buildResourceAttributes } from "./logs-utils.lil";
 import { PostHogPersistedProperty } from "../types.lil";
 import { isArray } from "../utils/type-utils.lil";
@@ -23,7 +24,7 @@ export class PostHogLogs {
   // The FlushTimer (its callback captures this instance, so it is stored once construction is done).
   JsValue flushTimerValue = undefined;
   // Serializes concurrent flushes: the second caller awaits the first.
-  JsValue flushPromise = null;
+  JsValue _flushPromise = null;
   // Head records evicted (FIFO) while a batch is in flight.
   float evictedSinceAdvance = 0.0;
   // A batch captures this when assembled, to tell that the queue was cleared under it.
@@ -83,7 +84,7 @@ export class PostHogLogs {
   // Clears the flush timer and rate-cap state; the host owns the record queue.
   void reset() {
     flushTimerOf(this).clear();
-    // `flushPromise` is left alone: clearing it would let a second flush run alongside.
+    // `_flushPromise` is left alone: clearing it would let a second flush run alongside.
     this.intervalWindowStart = 0.0;
     this.intervalLogCount = 0.0;
     this.droppedWarned = false;
@@ -149,14 +150,14 @@ export class PostHogLogs {
     if (this.instance.isDisabled.truthy()) {
       return undefined;
     }
-    if (this.flushPromise.truthy()) {
-      return this.flushPromise;
+    if (this._flushPromise.truthy()) {
+      return this._flushPromise;
     }
     PostHogLogs self = this;
-    this.flushPromise = (flushInner(this) as JsValue).finally(() => {
-      self.flushPromise = null;
+    this._flushPromise = (flushInner(this) as JsValue).finally(() => {
+      self._flushPromise = null;
     });
-    return this.flushPromise;
+    return this._flushPromise;
   }
 
   // Stops the timer-based flush and sends what is queued, swallowing errors; `timeoutMs` bounds it.
