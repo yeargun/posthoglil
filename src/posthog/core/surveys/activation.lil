@@ -1,0 +1,33 @@
+// packages/core/src/surveys/activation.ts — surveys are server JSON (JsValue); the optional chains
+// are spelled out as null checks.
+import { SurveySchedule } from "../types.lil";
+
+JsValue surveyEvents(JsValue survey) {
+  JsValue conditions = survey.conditions;
+  return if (conditions == null) { undefined } else { conditions.events };
+}
+
+export bool doesSurveyActivateByEvent(JsValue survey) {
+  JsValue events = surveyEvents(survey);
+  if (events == null) {
+    return false;
+  }
+  JsValue values = events.values;
+  return values != null && values["length"].truthy();
+}
+
+// Event-repeated activation or an 'always' schedule.
+export bool canSurveyActivateRepeatedly(JsValue survey) {
+  if (doesSurveyActivateByEvent(survey)) {
+    JsValue events = surveyEvents(survey);
+    if (events != null && events.repeatedActivation.truthy()) {
+      return true;
+    }
+  }
+  return survey.schedule === SurveySchedule.Always;
+}
+
+// A recurring schedule, or an iteration already under way.
+export bool isSurveyIterationBased(JsValue survey) {
+  return survey.schedule === SurveySchedule.Recurring || (survey.current_iteration ?? 0) > 0;
+}

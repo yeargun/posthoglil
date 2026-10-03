@@ -1,0 +1,75 @@
+// packages/core/src/surveys/property-matching.ts
+// `propertyComparisons` is exported, so it stays a plain mutable object of functions; the matcher
+// looks operators up in it by key, as upstream does.
+extern JsValue Object;
+extern JsValue String;
+extern JsValue parseFloat;
+extern JsValue isNaN;
+
+export bool isValidRegex(string pattern) {
+  try {
+    new Regex(pattern);
+  } catch (JsValue error) {
+    return false;
+  }
+  return true;
+}
+
+export bool isMatchingRegex(string value, string pattern) {
+  if (!isValidRegex(pattern)) {
+    return false;
+  }
+  try {
+    return new Regex(pattern).test(value);
+  } catch (JsValue error) {
+    return false;
+  }
+}
+
+string toLowerCase(string value) {
+  return value.toLowerCase();
+}
+
+bool greaterThanAny(string[] targets, string value) {
+  float numValue = parseFloat(value) as float;
+  return !isNaN(numValue).truthy() && targets.some((string target) => numValue > (parseFloat(target) as float));
+}
+
+bool lessThanAny(string[] targets, string value) {
+  float numValue = parseFloat(value) as float;
+  return !isNaN(numValue).truthy() && targets.some((string target) => numValue < (parseFloat(target) as float));
+}
+
+export JsValue propertyComparisons = object {
+  // Strict equality: suppression-rule targets come from server JSON and need not be strings.
+  exact: (JsValue targets, JsValue values) => values.some((JsValue value) => targets.some((JsValue target) => value === target)),
+  is_not: (JsValue targets, JsValue values) => values.every((JsValue value) => targets.every((JsValue target) => value !== target)),
+  regex: (string[] targets, string[] values) => values.some((string value) => targets.some((string target) => isMatchingRegex(value, target))),
+  not_regex: (string[] targets, string[] values) => values.every((string value) => targets.every((string target) => !isMatchingRegex(value, target))),
+  icontains: (string[] targets, string[] values) =>
+    values.map(toLowerCase).some((string value) => targets.map(toLowerCase).some((string target) => value.includes(target))),
+  not_icontains: (string[] targets, string[] values) =>
+    values.map(toLowerCase).every((string value) => targets.map(toLowerCase).every((string target) => !value.includes(target))),
+  gt: (string[] targets, string[] values) => values.some((string value) => greaterThanAny(targets, value)),
+  lt: (string[] targets, string[] values) => values.some((string value) => lessThanAny(targets, value))
+};
+
+// Matches every configured filter against event properties. Missing and null properties never
+// match, including for negative operators.
+export bool matchPropertyFilters(JsValue propertyFilters, JsValue eventProperties) {
+  if (!propertyFilters.truthy()) {
+    return true;
+  }
+  return Object.entries(propertyFilters).every((JsValue entry) => {
+    JsValue filter = entry[1];
+    JsValue eventPropertyValue = if (eventProperties == null) { undefined } else { eventProperties[entry[0]] };
+    if (eventPropertyValue === undefined || eventPropertyValue === null) {
+      return false;
+    }
+    JsValue comparisonFunction = propertyComparisons[filter.operator];
+    if (!comparisonFunction.truthy()) {
+      return false;
+    }
+    return comparisonFunction(filter.values.map(String), [String(eventPropertyValue)]);
+  }).truthy();
+}

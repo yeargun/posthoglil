@@ -1,0 +1,15 @@
+// packages/core/src/surveys/keys.ts — surveys are server JSON (JsValue).
+
+// True when a stored display-state key belongs to the given survey: its bare id or any
+// iteration-qualified `id_n` key.
+export bool isSurveyKeyForSurvey(string key, string surveyId) {
+  return key == surveyId || key.startsWith(`${surveyId}_`);
+}
+
+// Iteration-qualified survey identifier ('id' or 'id_iteration'), keying per-survey display state.
+export string getSurveyIterationKey(JsValue survey) {
+  if (survey.current_iteration.truthy() && survey.current_iteration > 0) {
+    return `${survey.id}_${survey.current_iteration}`;
+  }
+  return survey.id as string;
+}

@@ -1,0 +1,127 @@
+// packages/core/src/surveys/events.ts — survey response properties. Responses, snapshots and
+// surveys are caller and server data (JsValue). Object spreads of caller data go through
+// `spreadInto`, which copies own enumerable keys (strings, then symbols) as data properties,
+// exactly as `{...source}` does (a `__proto__` key stays an own property).
+import { isArray, isNullish, isUndefined } from "../utils/type-utils.lil";
+extern JsValue Object;
+extern JsValue Array;
+
+export string SURVEY_LANGUAGE_PROPERTY = "$survey_language";
+
+JsValue defineValue(JsValue target, JsValue key, JsValue value) {
+  return Object.defineProperty(target, key, object { value: value, writable: true, enumerable: true, configurable: true });
+}
+
+JsValue spreadInto(JsValue target, JsValue source) {
+  if (source == null) {
+    return target;
+  }
+  JsValue from = Object(source);
+  JsValue keys = Object.keys(from);
+  JsValue symbols = Object.getOwnPropertySymbols(from);
+  for (int i = 0; i < symbols.length; i += 1) {
+    if (Object.getOwnPropertyDescriptor(from, symbols[i]).enumerable.truthy()) {
+      keys.push(symbols[i]);
+    }
+  }
+  for (int i = 0; i < keys.length; i += 1) {
+    defineValue(target, keys[i], from[keys[i]]);
+  }
+  return target;
+}
+
+export string getSurveyResponseKey(string questionId) {
+  return `$survey_response_${questionId}`;
+}
+
+export string getSurveyOldResponseKey(float originalQuestionIndex) {
+  return if (originalQuestionIndex == 0.0) { "$survey_response" } else { `$survey_response_${originalQuestionIndex}` };
+}
+
+export JsValue getSurveyResponseValue(JsValue responses, JsValue questionId) {
+  if (!questionId.truthy()) {
+    return null;
+  }
+  JsValue response = responses[getSurveyResponseKey(questionId as string)];
+  if (isArray(response)) {
+    return Array.from(response);
+  }
+  return response;
+}
+
+export JsValue buildSurveyResponseProperties(JsValue responses, JsValue survey, JsValue questionSnapshots) {
+  JsValue answers = if (responses === undefined) { object {} } else { responses };
+  JsValue oldFormatResponses = object {};
+  survey.questions.forEach((JsValue question) => {
+    if (isUndefined(question.originalQuestionIndex)) {
+      return;
+    }
+    string oldResponseKey = getSurveyOldResponseKey(question.originalQuestionIndex as float);
+    JsValue response = getSurveyResponseValue(answers, question.id);
+    if (!isUndefined(response)) {
+      oldFormatResponses[oldResponseKey] = response;
+    }
+  });
+  JsValue properties = object {
+    $survey_questions: survey.questions.map((JsValue question) => object {
+      id: question.id,
+      question: (if (questionSnapshots == null) { undefined } else { questionSnapshots[question.id ?? ""] }) ?? question.question,
+      response: getSurveyResponseValue(answers, question.id)
+    })
+  };
+  return spreadInto(spreadInto(properties, answers), oldFormatResponses);
+}
+
+export JsValue recordSurveyAnswer(JsValue state, string questionId, JsValue response, JsValue question) {
+  JsValue responses = state.responses;
+  JsValue givenSnapshots = state.questionSnapshots;
+  JsValue questionSnapshots = if (givenSnapshots === undefined) { object {} } else { givenSnapshots };
+  // Snapshot the question text as the user saw it when answering.
+  JsValue nextResponses = spreadInto(object {}, responses);
+  defineValue(nextResponses, getSurveyResponseKey(questionId), response);
+  JsValue nextSnapshots = questionSnapshots;
+  if (question != null && question.id.truthy()) {
+    nextSnapshots = spreadInto(object {}, questionSnapshots);
+    defineValue(nextSnapshots, question.id, question.question);
+  }
+  return object { responses: nextResponses, questionSnapshots: nextSnapshots };
+}
+
+export JsValue buildSurveyResponseEventProperties(JsValue options) {
+  JsValue event = options.event;
+  JsValue survey = options.survey;
+  JsValue givenResponses = options.responses;
+  JsValue responses = if (givenResponses === undefined) { object {} } else { givenResponses };
+  JsValue submissionId = options.submissionId;
+  JsValue completed = options.completed;
+  JsValue surveyLanguage = options.surveyLanguage;
+  JsValue questionSnapshots = options.questionSnapshots;
+  JsValue properties = object {};
+  if (!isUndefined(submissionId)) {
+    properties.$survey_submission_id = submissionId;
+  }
+  if (event === "sent") {
+    if (!isUndefined(completed)) {
+      properties.$survey_completed = completed;
+    }
+  } else {
+    properties.$survey_partially_completed = surveyHasResponses(responses);
+  }
+  if (surveyLanguage.truthy()) {
+    properties[SURVEY_LANGUAGE_PROPERTY] = surveyLanguage;
+  }
+  return spreadInto(properties, buildSurveyResponseProperties(responses, survey, questionSnapshots));
+}
+
+export bool surveyHasResponses(JsValue responses) {
+  JsValue answers = if (responses === undefined) { object {} } else { responses };
+  return Object.values(answers).some((JsValue response) => !isNullish(response)).truthy();
+}
+
+export string getSurveyInteractionProperty(JsValue survey, string action) {
+  string surveyProperty = `$survey_${action}/${survey.id}`;
+  if (survey.current_iteration.truthy() && survey.current_iteration > 0) {
+    surveyProperty = `$survey_${action}/${survey.id}/${survey.current_iteration}`;
+  }
+  return surveyProperty;
+}
