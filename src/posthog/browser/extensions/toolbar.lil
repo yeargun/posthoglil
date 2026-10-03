@@ -1,0 +1,195 @@
+// packages/browser/src/extensions/toolbar.ts
+// `posthog.toolbar` keeps upstream's public members (`instance`, `initialize`, `maybeLoadToolbar`,
+// `loadToolbar`, `maybeLoadEditor`); the deprecated `_loadEditor` is mangled away in upstream's
+// npm build, so it is not part of the port. The toolbar state lives on the window
+// (`ph_toolbar_state`: 0 uninitialized, 1 loading, 2 loaded) so several SDK instances load the
+// toolbar once; the bundle loads lazily through `window.__PosthogExtensions__`.
+import { isFunction, isNullish } from "../../core/utils/type-utils.lil";
+import extern { addEventListener, trySafe, isToolbarInstance } from "@upstream/browser-common/utils/general-utils";
+import extern { _getHashParam } from "@upstream/browser-common/utils/request-utils";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { window, document } from "@upstream/browser-common/utils/globals";
+import extern { assignableWindow } from "@upstream/browser/utils/globals";
+import extern { TOOLBAR_ID } from "@upstream/browser-common/constants";
+extern JsValue addEventListener;
+extern JsValue trySafe;
+extern bool isToolbarInstance(JsValue config);
+extern JsValue _getHashParam(JsValue hash, string param);
+extern JsValue createLogger;
+extern JsValue window;
+extern JsValue document;
+extern JsValue assignableWindow;
+extern string TOOLBAR_ID;
+extern JsValue location;
+extern JsValue JSON;
+extern JsValue Object;
+extern JsValue atob;
+extern JsValue decodeURIComponent;
+
+// TRICKY: many web frameworks modify the route on load, possibly before posthog is initialized,
+// so the state is read as soon as the module is evaluated (upstream reads the global `location`
+// for the legacy `state` param).
+JsValue STATE_FROM_WINDOW = if ((if (window == null) { undefined } else { window.location }).truthy()) {
+  _getHashParam(window.location.hash, "__posthog") || _getHashParam(location.hash, "state")
+} else {
+  null
+};
+
+string LOCALSTORAGE_KEY = "_postHogToolbarParams";
+
+JsValue logger = createLogger("[Toolbar]");
+
+float UNINITIALIZED = 0.0;
+float LOADING = 1.0;
+float LOADED = 2.0;
+
+// The state is global so that several SDK instances load the toolbar once.
+void setToolbarState(float state) {
+  assignableWindow.ph_toolbar_state = state;
+}
+
+JsValue toolbarState() {
+  return assignableWindow.ph_toolbar_state ?? UNINITIALIZED;
+}
+
+export class Toolbar {
+  JsValue instance;
+
+  init(JsValue instance) {
+    this.instance = instance;
+  }
+
+  JsValue initialize() {
+    return (this as JsValue).maybeLoadToolbar();
+  }
+
+  // The toolbar needs an access token and other state, from the URL hash params or from
+  // localStorage (`_postHogToolbarParams`) when it was initialized on a previous page.
+  bool maybeLoadToolbar(JsValue location = undefined, JsValue localStorage = undefined, JsValue history = undefined) {
+    // don't load the toolbar on the toolbar :)
+    if (isToolbarInstance(this.instance.config)) {
+      return false;
+    }
+    if (!window.truthy() || !document.truthy()) {
+      return false;
+    }
+    JsValue currentLocation = location ?? window.location;
+    JsValue currentHistory = history ?? window.history;
+    JsValue storage = localStorage;
+    try {
+      // localStorage must be accessible, otherwise the toolbar opts out
+      if (!storage.truthy()) {
+        try {
+          window.localStorage.setItem("test", "test");
+          window.localStorage.removeItem("test");
+        } catch {
+          return false;
+        }
+        storage = if (window == null) { undefined } else { window.localStorage };
+      }
+
+      // The state is a JSON object: legacy `state={}` (urlencoded), or `__posthog={}`, base64 or
+      // urlencoded.
+      JsValue stateHash = STATE_FROM_WINDOW || _getHashParam(currentLocation.hash, "__posthog") || _getHashParam(currentLocation.hash, "state");
+      JsValue toolbarParams = undefined;
+      JsValue state = if (stateHash.truthy()) {
+        trySafe(() => JSON.parse(atob(decodeURIComponent(stateHash)))) || trySafe(() => JSON.parse(decodeURIComponent(stateHash)))
+      } else {
+        null
+      };
+
+      if (state.truthy() && state.action === "ph_authorize") {
+        // initialized through an old snippet
+        toolbarParams = state;
+        toolbarParams.source = "url";
+        if (toolbarParams.truthy() && Object.keys(toolbarParams)["length"] > 0) {
+          if (state.desiredHash.truthy()) {
+            // hash that was in the url before the redirect
+            currentLocation.hash = state.desiredHash;
+          } else if (currentHistory.truthy()) {
+            // removes the hash completely
+            currentHistory.replaceState(currentHistory.state, "", currentLocation.pathname + currentLocation.search);
+          } else {
+            // clears the hash (but leaves # unfortunately)
+            currentLocation.hash = "";
+          }
+        }
+      } else {
+        // credentials from a previous initialization
+        toolbarParams = JSON.parse(storage.getItem(LOCALSTORAGE_KEY) || "{}");
+        toolbarParams.source = "localstorage";
+        // the intent ("add-action" …) is dropped, or it would repeat on every page visit
+        JS.delete(toolbarParams, "userIntent");
+      }
+
+      if (toolbarParams.token.truthy() && this.instance.config.token === toolbarParams.token) {
+        (this as JsValue).loadToolbar(toolbarParams);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  bool loadToolbar(JsValue params) {
+    bool toolbarRunning = (if (document == null) { undefined } else { document.getElementById(TOOLBAR_ID) }).truthy();
+    if (!window.truthy() || toolbarRunning) {
+      // The toolbar clears the localStorage key when it is done with it; a present key means the
+      // toolbar is already open and running.
+      return false;
+    }
+
+    bool disableToolbarMetrics = this.instance.requestRouter.region === "custom" && this.instance.config.advanced_disable_toolbar_metrics.truthy();
+    JsValue toolbarParams = object { token: this.instance.config.token };
+    Object.assign(toolbarParams, params);
+    toolbarParams.apiURL = this.instance.requestRouter.endpointFor("ui");
+    if (disableToolbarMetrics) {
+      toolbarParams.instrument = false;
+    }
+    window.localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(Object.assign(object {}, toolbarParams, object { source: undefined })));
+
+    JsValue instance = this.instance;
+    Toolbar self = this;
+    if (toolbarState() === LOADED) {
+      callLoadToolbar(instance, toolbarParams);
+    } else if (toolbarState() === UNINITIALIZED) {
+      // only loaded once, even with several instances of PostHogLib
+      setToolbarState(LOADING);
+      JsValue extensions = assignableWindow.__PosthogExtensions__;
+      JsValue loader = if (extensions == null) { undefined } else { extensions.loadExternalDependency };
+      if (loader != null) {
+        loader.call(extensions, this.instance, "toolbar", (JsValue err) => {
+          if (err.truthy()) {
+            logger.error("[Toolbar] Failed to load", err);
+            setToolbarState(UNINITIALIZED);
+            return;
+          }
+          setToolbarState(LOADED);
+          callLoadToolbar(self.instance, toolbarParams);
+        });
+      }
+      // Turbolinks fires no onload event but replaces the entire body, toolbar included: the
+      // toolbar reloads on turbolinks:load.
+      addEventListener(window, "turbolinks:load", () => {
+        setToolbarState(UNINITIALIZED);
+        (self as JsValue).loadToolbar(toolbarParams);
+      });
+    }
+    return true;
+  }
+
+  JsValue maybeLoadEditor(JsValue location = undefined, JsValue localStorage = undefined, JsValue history = undefined) {
+    return (this as JsValue).maybeLoadToolbar(location, localStorage, history);
+  }
+}
+export constructor Toolbar;
+
+void callLoadToolbar(JsValue instance, JsValue params) {
+  JsValue loadFn = assignableWindow.ph_load_toolbar || assignableWindow.ph_load_editor;
+  if (isNullish(loadFn) || !isFunction(loadFn)) {
+    logger.warn("No toolbar load function found");
+    return;
+  }
+  loadFn(params, instance);
+}
