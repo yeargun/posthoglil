@@ -1,0 +1,114 @@
+// packages/browser/src/request-queue.ts
+// Batches queued requests per batch key (and batch group) and flushes them on an interval, or
+// with sendBeacon on unload. Every member except the three public methods is private in
+// upstream's npm build; the private methods are module functions.
+import { clampToRange } from "../core/utils/number-utils.lil";
+import extern { each } from "@upstream/browser-common/utils/general-utils";
+import extern { logger } from "@upstream/browser-common/utils/logger";
+extern JsValue each(JsValue obj, JsValue iterator);
+extern JsValue logger;
+extern JsValue Object;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+export float DEFAULT_FLUSH_INTERVAL_MS = 3000;
+
+export class RequestQueue {
+  // We start in a paused state and only start flushing when enabled by the parent
+  bool _isPaused = true;
+  JsValue[] _queue = [];
+  JsValue _flushTimeout = undefined;
+  float _flushTimeoutMs;
+  JsValue _sendRequest;
+
+  init(JsValue sendRequest, JsValue config) {
+    JsValue interval = if (config == null) { undefined } else { config.flush_interval_ms };
+    this._flushTimeoutMs = clampToRange(
+      interval || DEFAULT_FLUSH_INTERVAL_MS,
+      250.0,
+      5000.0,
+      logger.createLogger("flush interval"),
+      DEFAULT_FLUSH_INTERVAL_MS
+    );
+    this._sendRequest = sendRequest;
+  }
+
+  void enqueue(JsValue req) {
+    this._queue.push(req);
+    if (!this._flushTimeout.truthy()) {
+      setFlushTimeout(this);
+    }
+  }
+
+  void unload() {
+    clearFlushTimeout(this);
+    JsValue requests = if (this._queue.length > 0) { formatQueue(this) } else { object {} };
+    JsValue requestValues = Object.values(requests);
+    // Always send events before recordings: events are more important, and recordings are bigger
+    // and thus less likely to arrive
+    JsValue events = requestValues.filter((JsValue r) => r.url.indexOf("/e") === 0);
+    JsValue others = requestValues.filter((JsValue r) => r.url.indexOf("/e") !== 0);
+    for (int i = 0; i < events.length; i++) {
+      sendRequestSafely(this, events[i], "sendBeacon");
+    }
+    for (int i = 0; i < others.length; i++) {
+      sendRequestSafely(this, others[i], "sendBeacon");
+    }
+  }
+
+  void enable() {
+    this._isPaused = false;
+    setFlushTimeout(this);
+  }
+}
+export constructor RequestQueue;
+
+void setFlushTimeout(RequestQueue self) {
+  if (self._isPaused) {
+    return;
+  }
+  self._flushTimeout = setTimeout(() => {
+    clearFlushTimeout(self);
+    if (self._queue.length > 0) {
+      JsValue requests = formatQueue(self);
+      for (string key in requests) {
+        sendRequestSafely(self, requests[key], undefined);
+      }
+    }
+  }, self._flushTimeoutMs);
+}
+
+void sendRequestSafely(RequestQueue self, JsValue req, JsValue transportOverride) {
+  try {
+    (self as JsValue)._sendRequest(req, transportOverride);
+  } catch (JsValue error) {
+    logger.error(error);
+  }
+}
+
+void clearFlushTimeout(RequestQueue self) {
+  clearTimeout(self._flushTimeout);
+  self._flushTimeout = undefined;
+}
+
+JsValue formatQueue(RequestQueue self) {
+  JsValue requests = object {};
+  each(self._queue, (JsValue req) => {
+    JsValue batchKey = undefined;
+    if (req.truthy()) {
+      batchKey = req.batchKey;
+    }
+    JsValue key = (batchKey || req.url) + (if (req.batchGroup.truthy()) { `:${req.batchGroup}` } else { "" });
+    if (requests[key] === undefined) {
+      JsValue batched = Object.assign(object {}, req);
+      batched.data = [];
+      requests[key] = batched;
+    }
+    JsValue data = requests[key].data;
+    if (data != null) {
+      data.push(req.data);
+    }
+  });
+  self._queue = [];
+  return requests;
+}
