@@ -2,12 +2,12 @@
 // PostHogLogs consumes. Config values are page-supplied, so they stay dynamic.
 import { isUndefined } from "../core/utils/type-utils.lil";
 import { navigator } from "../browser-common/utils/globals.lil";
+import { copyDataProperties } from "../lil/object.lil";
 import extern { detectOS } from "@upstream/core/utils/user-agent-utils";
 import extern { osResourceAttributes } from "@upstream/core/utils/otlp-resource";
 extern JsValue detectOS;
 extern JsValue osResourceAttributes;
 extern JsValue Math;
-extern JsValue Object;
 
 int DEFAULT_FLUSH_INTERVAL_MS = 3000;
 int DEFAULT_MAX_BUFFER_SIZE = 100;
@@ -62,7 +62,9 @@ export JsValue resolveLogsConfig(JsValue config, JsValue opts) {
     Math.max(maxBufferSize, maxLogsPerInterval)
   };
   // OTLP keys in `resourceAttributes` take precedence over the named config fields.
-  JsValue resourceAttributes = Object.assign(object {}, defaultResourceAttributes(), if (hasConfig) { config.resourceAttributes } else { undefined });
+  // `{ ...defaultResourceAttributes(), ...config?.resourceAttributes }`: each spread is evaluated, then copied.
+  JsValue resourceAttributes = copyDataProperties(object {}, defaultResourceAttributes());
+  copyDataProperties(resourceAttributes, if (hasConfig) { config.resourceAttributes } else { undefined });
   JsValue serviceName = resourceAttributes["service.name"];
   if (serviceName == null) {
     serviceName = if (hasConfig) { config.serviceName } else { undefined };

@@ -9,7 +9,7 @@ import { logger } from "./logger.lil";
 import { window } from "./globals.lil";
 import { getTargetingUrl } from "./url-targeting-utils.lil";
 import { isElementNode, isShadowRoot, isTag, isTextNode } from "./element-utils.lil";
-extern JsValue Object;
+import { copyDataProperties } from "../../lil/object.lil";
 
 // Real DOM trees are at most a few hundred nodes deep; a patched parentNode
 // chain could otherwise trap ancestor walks in an unbounded loop.
@@ -655,22 +655,25 @@ string elementsToString(JsValue elements) {
         el_string += `.${single_class.replace(new Regex("\"", "g"), "")}`;
       }
     }
-    // { ...(text ? { text } : {}), 'nth-child', 'nth-of-type', ...(href ? { href } : {}), ...(attr_id ? { attr_id } : {}), ...attributes }
+    // { ...(text ? { text } : {}), 'nth-child', 'nth-of-type', ...(href ? { href } : {}), ...(attr_id ? { attr_id } : {}), ...attributes }:
+    // every entry becomes an own data property, in this order (spread semantics).
     JsValue attributes = object {};
     if (element.text.truthy()) {
-      attributes.text = element.text;
+      copyDataProperties(attributes, object { text: element.text });
     }
     JsValue nthChild = element.nth_child;
-    attributes["nth-child"] = if (nthChild == null) { 0 as JsValue } else { nthChild };
     JsValue nthOfType = element.nth_of_type;
-    attributes["nth-of-type"] = if (nthOfType == null) { 0 as JsValue } else { nthOfType };
+    copyDataProperties(attributes, object {
+      "nth-child": if (nthChild == null) { 0 as JsValue } else { nthChild },
+      "nth-of-type": if (nthOfType == null) { 0 as JsValue } else { nthOfType }
+    });
     if (element.href.truthy()) {
-      attributes.href = element.href;
+      copyDataProperties(attributes, object { href: element.href });
     }
     if (element.attr_id.truthy()) {
-      attributes.attr_id = element.attr_id;
+      copyDataProperties(attributes, object { attr_id: element.attr_id });
     }
-    Object.assign(attributes, element.attributes);
+    copyDataProperties(attributes, element.attributes);
     JsValue sortedAttributes = object {};
     entries(attributes)
       .sort((JsValue a, JsValue b) => lexicalCompare(a[0] as string, b[0] as string))

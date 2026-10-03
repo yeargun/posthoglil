@@ -1,37 +1,25 @@
-// packages/browser-common/src/utils/simple-event-emitter.ts — upstream's private `_events` object
-// becomes a Map: the event names are SDK strings, and listeners stay dynamic callbacks.
+// packages/browser-common/src/utils/simple-event-emitter.ts — listeners live in a plain object keyed by
+// event name, exactly as upstream: an inherited name ("toString", "constructor") throws as it does there.
 export class SimpleEventEmitter {
-  Map<string, JsValue[]> events = new Map<string, JsValue[]>();
+  JsValue events = object {};
 
   func()->void on(string event, JsValue listener) {
-    JsValue[]? listeners = this.events.get(event);
-    if (listeners == null) {
-      JsValue[] created = [listener];
-      this.events.set(event, created);
-    } else {
-      listeners.push(listener);
+    if (!this.events[event].truthy()) {
+      this.events[event] = [];
     }
+    this.events[event].push(listener);
     SimpleEventEmitter self = this;
     return () => {
-      JsValue[]? current = self.events.get(event);
-      if (current != null) {
-        self.events.set(event, current.filter((JsValue x) => x !== listener));
-      }
+      self.events[event] = self.events[event].filter((JsValue x) => x !== listener);
     };
   }
 
   void emit(string event, JsValue payload) {
-    JsValue[]? listeners = this.events.get(event);
-    if (listeners != null) {
-      for (JsValue listener of listeners) {
-        listener(payload);
-      }
+    for (JsValue listener of this.events[event] || []) {
+      listener(payload);
     }
-    JsValue[]? wildcard = this.events.get("*");
-    if (wildcard != null) {
-      for (JsValue listener of wildcard) {
-        listener(event, payload);
-      }
+    for (JsValue listener of this.events["*"] || []) {
+      listener(event, payload);
     }
   }
 }

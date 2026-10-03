@@ -1,6 +1,7 @@
 // packages/browser-common/src/extension-runtime.ts — the class keeps its public methods; the private
 // fields keep upstream's creation order (parameter properties first) and `_disposeExtension` is a
-// module function. Extensions, the logger and the client are other bundles' objects: dynamic.
+// module function. Extensions, the logger and the client are other bundles' objects: dynamic. The
+// registry is upstream's own `Map`, driven through the same operations (raw `get`, `values()` snapshot).
 import { isFunction } from "../core/utils/type-utils.lil";
 extern JsValue Error;
 extern JsValue Array;
@@ -8,7 +9,7 @@ extern JsValue Array;
 export class ExtensionRuntime {
   JsValue logger;
   JsValue client;
-  Map<string, JsValue> extensions = new Map<string, JsValue>();
+  JsValue extensions = new Map<string, JsValue>();
   bool disposed = false;
 
   init(JsValue logger, JsValue client) {
@@ -20,19 +21,19 @@ export class ExtensionRuntime {
     if (this.disposed) {
       throw new Error("Cannot add an extension to a disposed ExtensionRuntime");
     }
-    if (this.extensions.has(extension.name as string)) {
+    if (this.extensions.has(extension.name).truthy()) {
       throw new Error(`Browser extension "${extension.name}" is already registered`);
     }
-    this.extensions.set(extension.name as string, extension);
+    this.extensions.set(extension.name, extension);
     try {
       JsValue setup = extension.setup(this.client);
       if (setup.truthy()) {
         await (setup as Task<JsValue>);
       }
     } catch (JsValue error) {
-      bool active = this.extensions.get(extension.name as string) == extension;
+      bool active = this.extensions.get(extension.name) === extension;
       if (active) {
-        this.extensions.delete(extension.name as string);
+        this.extensions.delete(extension.name);
       }
       this.logger.error(`Failed to set up browser extension "${extension.name}"`, error);
       if (active) {
@@ -41,7 +42,7 @@ export class ExtensionRuntime {
     }
   }
 
-  JsValue | undefined getExtension(string name) {
+  JsValue getExtension(string name) {
     return this.extensions.get(name);
   }
 
@@ -50,14 +51,10 @@ export class ExtensionRuntime {
       return;
     }
     this.disposed = true;
-    // Array.from(values()).reverse(): a snapshot, released last-registered first.
-    JsValue[] snapshot = [];
-    for (string name, JsValue extension of this.extensions) {
-      snapshot.push(extension);
-    }
+    JsValue extensions = Array.from(this.extensions.values()).reverse();
     this.extensions.clear();
-    for (int i = snapshot.length - 1; i >= 0; i--) {
-      disposeExtension(this, snapshot[i]);
+    for (JsValue extension of extensions) {
+      disposeExtension(this, extension);
     }
   }
 }

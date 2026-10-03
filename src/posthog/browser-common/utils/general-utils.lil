@@ -3,6 +3,7 @@
 // customizer (string truncation), so the copy applies it directly.
 import { hasOwnProperty, isArray, isError, isFormData, isNullish, isNumber, isString } from "../../core/utils/type-utils.lil";
 import { logger } from "./logger.lil";
+import { copyDataProperties } from "../../lil/object.lil";
 import extern { trySafe } from "@upstream/core/utils/index";
 extern JsValue trySafe;
 extern JsValue Object;
@@ -99,8 +100,8 @@ export JsValue stripEmptyProperties(JsValue p) {
 string[] ERROR_DETAILS = ["name", "message", "stack", "cause", "errors"];
 
 export JsValue errorToProperties(JsValue error) {
-  // `{ ...error }`: own enumerable properties.
-  JsValue copy = Object.assign(object {}, error);
+  // `{ ...error }`: own enumerable properties, created as data properties.
+  JsValue copy = copyDataProperties(object {}, error);
   for (string detail of ERROR_DETAILS) {
     try {
       if (detail in error) {
