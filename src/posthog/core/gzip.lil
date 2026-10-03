@@ -1,0 +1,152 @@
+// packages/core/src/gzip.ts — native gzip (CompressionStream) with output validation. The CRC table
+// is typed int32: upstream stores `crc >>> 0`, but only each entry's int32 bits are ever used.
+import { Compression } from "./types.lil";
+import { createNamedError } from "./utils/index.lil";
+extern JsValue globalThis;
+extern JsValue Response;
+extern JsValue ArrayBuffer;
+extern JsValue Uint8Array;
+extern JsValue DataView;
+extern JsValue TextEncoder;
+extern JsValue Promise;
+extern JsValue String;
+extern JsValue console;
+
+// Older browsers and some runtimes (React Native) don't support this yet.
+export bool isGzipSupported() {
+  return JS.in("CompressionStream", globalThis) &&
+    JS.in("TextEncoder", globalThis) &&
+    JS.in("Response", globalThis) &&
+    JS.typeOf(Response.prototype.blob) == "function";
+}
+
+string NATIVE_GZIP_VALIDATION_ERROR = "NativeGzipValidationError";
+
+bool hasGzipMagic(JsValue bytes) {
+  return bytes.length >= 2.0 && bytes[0] === 31 && bytes[1] === 139;
+}
+
+export bool isGzipData(JsValue body) {
+  if (body instanceof ArrayBuffer) {
+    return hasGzipMagic(JS.construct(Uint8Array, body));
+  }
+  if (ArrayBuffer.isView(body).truthy()) {
+    return hasGzipMagic(JS.construct(Uint8Array, body.buffer, body.byteOffset, body.byteLength));
+  }
+  return false;
+}
+
+export bool isGzipRequest(JsValue compression, JsValue urlCompression) {
+  return compression === Compression.GZipJS || urlCompression === Compression.GZipJS || urlCompression === "gzip";
+}
+
+JsValue errorName(JsValue error) {
+  return if (JS.in("name", error)) { String(error.name) } else { "" };
+}
+
+export bool isNativeAsyncGzipReadError(JsValue error) {
+  if (!error.truthy() || JS.typeOf(error) != "object") {
+    return false;
+  }
+  return errorName(error) === "NotReadableError";
+}
+
+export bool isNativeAsyncGzipError(JsValue error) {
+  if (!error.truthy() || JS.typeOf(error) != "object") {
+    return false;
+  }
+  JsValue name = errorName(error);
+  return isNativeAsyncGzipReadError(error) || name === NATIVE_GZIP_VALIDATION_ERROR;
+}
+
+int[]? crc32Table = null;
+
+int[] getCrc32Table() {
+  int[]? existing = crc32Table;
+  if (existing != null) {
+    return existing;
+  }
+  int[] table = [];
+  for (int i = 0; i < 256; i += 1) {
+    int crc = i;
+    for (int j = 0; j < 8; j += 1) {
+      // -306674912 is 0xedb88320 as int32
+      crc = if ((crc & 1) != 0) { -306674912 ^ (crc >>> 1) } else { crc >>> 1 };
+    }
+    table.push(crc);
+  }
+  crc32Table = table;
+  return table;
+}
+
+// The CRC-32 of `bytes`, as the unsigned number gzip's trailer stores.
+float crc32(Uint8Array bytes) {
+  int[] table = getCrc32Table();
+  int crc = -1;
+  for (int i = 0; i < bytes.length; i += 1) {
+    crc = table[(crc ^ bytes[i]) & 255] ^ (crc >>> 8);
+  }
+  int result = crc ^ -1;
+  float unsigned = result;
+  return if (result < 0) { unsigned + 4294967296.0 } else { unsigned };
+}
+
+void throwNativeGzipValidationError(string reason) {
+  throw createNamedError(NATIVE_GZIP_VALIDATION_ERROR, `Native gzip produced invalid output: ${reason}`);
+}
+
+async void validateNativeGzip(JsValue compressed, Uint8Array inputBytes) {
+  if (compressed.size < 18) {
+    throwNativeGzipValidationError("too-short");
+  }
+  Task<JsValue> headerBuffer = JS.assume(compressed.slice(0, 10).arrayBuffer());
+  JsValue header = JS.construct(Uint8Array, await headerBuffer);
+  if (!hasGzipMagic(header) || header[2] !== 8) {
+    throwNativeGzipValidationError("invalid-header");
+  }
+  Task<JsValue> trailerBuffer = JS.assume(compressed.slice(compressed.size - 8).arrayBuffer());
+  JsValue trailer = JS.construct(DataView, await trailerBuffer);
+  if (trailer.getUint32(0, true) !== crc32(inputBytes)) {
+    throwNativeGzipValidationError("invalid-crc");
+  }
+  float inputSize = inputBytes.length;
+  if (trailer.getUint32(4, true) !== inputSize) {
+    throwNativeGzipValidationError("invalid-size");
+  }
+}
+
+async JsValue abortAndRethrow(JsValue writer, JsValue err) {
+  try {
+    Task<JsValue> aborted = JS.assume(writer.abort(err));
+    await aborted;
+  } catch (JsValue ignored) {
+    // Ignore abort failures and rethrow the original compression error below.
+  }
+  throw err;
+}
+
+// Gzip a string using the Compression Streams API if it's available.
+export async JsValue gzipCompress(string input, bool isDebug = true, JsValue options = undefined) {
+  try {
+    Uint8Array inputBytes = JS.assume(JS.construct(TextEncoder).encode(input));
+    JsValue compressedStream = JS.construct(globalThis.CompressionStream, "gzip");
+    JsValue writer = compressedStream.writable.getWriter();
+    JsValue writePromise = writer
+      .write(inputBytes)
+      .then(() => writer.close())
+      .catch((JsValue err) => abortAndRethrow(writer, err));
+    JsValue responsePromise = JS.construct(Response, compressedStream.readable).blob();
+    Task<JsValue> settled = JS.assume(Promise.all([responsePromise, writePromise]));
+    JsValue compressed = (await settled)[0];
+    await validateNativeGzip(compressed, inputBytes);
+    return compressed;
+  } catch (JsValue error) {
+    if (options != null && options.rethrow.truthy()) {
+      throw error;
+    }
+    if (isDebug) {
+      console.error("Failed to gzip compress data", error);
+    }
+    return null;
+  }
+}
