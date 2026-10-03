@@ -9,7 +9,8 @@
 - G2 harness on 1.435.8: npm `module.js` vs upstream's source bundled by esbuild is identical
   (client 3/3, ABI 1/1, fuzz 40/40).
 - Ported and tested: `core/types`, `core/utils/{type,string,number}-utils`,
-  `browser/rate-limiter` (90/90 of their upstream tests).
+  `browser/rate-limiter` (90/90 of their upstream tests; full suite with them substituted:
+  6,235/6,235 gated tests pass).
 - In progress (agents, own worktrees): WP1 core (40 modules), WP2 browser-common + browser
   leaves (35), WP3 storage/persistence/transport (13), WP4 capture features and integrations
   (19).
