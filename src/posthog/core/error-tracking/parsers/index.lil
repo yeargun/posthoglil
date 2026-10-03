@@ -4,13 +4,9 @@
 import { UNKNOWN_FUNCTION } from "./base.lil";
 import { chromeStackLineParser } from "./chrome.lil";
 import { geckoStackLineParser } from "./gecko.lil";
-import extern { winjsStackLineParser } from "@upstream/core/error-tracking/parsers/winjs";
-import extern { opera10StackLineParser, opera11StackLineParser } from "@upstream/core/error-tracking/parsers/opera";
-import extern { nodeStackLineParser } from "@upstream/core/error-tracking/parsers/node";
-extern JsValue winjsStackLineParser;
-extern JsValue opera10StackLineParser;
-extern JsValue opera11StackLineParser;
-extern JsValue nodeStackLineParser;
+import { winjsStackLineParser } from "./winjs.lil";
+import { opera10StackLineParser, opera11StackLineParser } from "./opera.lil";
+import { nodeStackLineParser } from "./node.lil";
 extern JsValue Object;
 extern JsValue Array;
 

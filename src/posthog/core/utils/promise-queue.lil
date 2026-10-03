@@ -1,0 +1,54 @@
+// packages/core/src/utils/promise-queue.ts — tracked promises by uuid, in insertion order.
+import { uuidv7 } from "../vendor/uuidv7.lil";
+extern JsValue Object;
+extern JsValue Promise;
+extern JsValue Set;
+
+export class PromiseQueue {
+  JsValue promiseByIds = object {};
+  float nextId = 0.0;
+
+  init() {}
+
+  JsValue add(JsValue promise) {
+    string promiseUUID = uuidv7();
+    this.nextId = this.nextId + 1.0;
+    float id = this.nextId;
+    JsValue byIds = this.promiseByIds;
+    byIds[promiseUUID] = object { id: id, promise: promise };
+    PromiseQueue self = this;
+    promise.catch(() => {}).finally(() => {
+      JS.delete(self.promiseByIds, promiseUUID);
+    });
+    return promise;
+  }
+
+  async void join() {
+    JsValue promises = Object.values(this.promiseByIds).map((JsValue item) => item.promise);
+    float length = promises["length"] as float;
+    while (length > 0.0) {
+      await (Promise.all(promises) as Task<JsValue>);
+      promises = Object.values(this.promiseByIds).map((JsValue item) => item.promise);
+      length = promises["length"] as float;
+    }
+  }
+
+  JsValue getPromises(JsValue ignoredPromises = undefined, JsValue maxId = undefined) {
+    JsValue ignored = if (ignoredPromises === undefined) { [] as JsValue } else { ignoredPromises };
+    JsValue limit = if (maxId === undefined) { this.nextId as JsValue } else { maxId };
+    JsValue ignoredPromiseSet = JS.construct(Set, ignored);
+    return Object.values(this.promiseByIds)
+      .filter((JsValue item) => item.id <= limit && !ignoredPromiseSet.has(item.promise).truthy())
+      .map((JsValue item) => item.promise);
+  }
+}
+export constructor PromiseQueue;
+
+Object.defineProperty((PromiseQueue as JsValue).prototype, "maxId", object {
+  get: (this JsValue receiver) => (receiver as PromiseQueue).nextId,
+  configurable: true
+});
+Object.defineProperty((PromiseQueue as JsValue).prototype, "length", object {
+  get: (this JsValue receiver) => Object.keys((receiver as PromiseQueue).promiseByIds)["length"],
+  configurable: true
+});

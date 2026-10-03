@@ -1,0 +1,6 @@
+// packages/core/src/utils/browser-utils.ts
+import { includes } from "./string-utils.lil";
+
+export bool isWebKit(string userAgent) {
+  return includes(userAgent, "AppleWebKit") && !includes(userAgent, "Chrome");
+}

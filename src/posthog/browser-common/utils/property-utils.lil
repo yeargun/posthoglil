@@ -2,9 +2,7 @@
 // from the page, so both stay dynamic. The shared matchers live in @posthog/core/surveys.
 import { isArray, isNull, isUndefined } from "../../core/utils/type-utils.lil";
 import { jsonStringify } from "./request-utils.lil";
-import extern { matchPropertyFilters, propertyComparisons } from "@upstream/core/surveys/property-matching";
-extern JsValue matchPropertyFilters;
-extern JsValue propertyComparisons;
+import { matchPropertyFilters, propertyComparisons } from "../../core/surveys/property-matching.lil";
 extern JsValue String;
 
 export { matchPropertyFilters, propertyComparisons };

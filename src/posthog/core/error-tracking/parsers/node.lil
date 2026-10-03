@@ -1,0 +1,92 @@
+// packages/core/src/error-tracking/parsers/node.ts (derived from getsentry/sentry-javascript, MIT).
+// Match groups stay JsValue: an unmatched group is `undefined`, which the frame keeps.
+import { UNKNOWN_FUNCTION } from "./base.lil";
+extern JsValue decodeURI;
+extern JsValue parseInt;
+
+Regex FILENAME_MATCH = new Regex("^\\s*[-]{4,}$");
+Regex FULL_MATCH = new Regex("at (?:async )?(?:(.+?)\\s+\\()?(?:(.+):(\\d+):(\\d+)?|([^)]+))\\)?");
+Regex PROMISE_COMBINATOR = new Regex("^Promise\\.(?:all|any)$");
+Regex PROMISE_INDEX = new Regex("^index \\d+$");
+string PROMISE_FRAME_FILENAME = "node:internal/promise";
+Regex WINDOWS_DRIVE_PATH = new Regex("\\/[A-Z]:");
+Regex WINDOWS_ABSOLUTE = new Regex("^[A-Z]:");
+Regex URL_SCHEME = new Regex("^[a-zA-Z]([a-zA-Z0-9.\\-+])*:\\/\\/");
+
+export JsValue nodeStackLineParser(string line, JsValue platform) {
+  JsValue lineMatch = (line as JsValue).match(FULL_MATCH as JsValue);
+  if (lineMatch.truthy()) {
+    JsValue object = undefined;
+    JsValue method = undefined;
+    JsValue functionName = undefined;
+    JsValue typeName = undefined;
+    JsValue methodName = undefined;
+    if (lineMatch[1].truthy()) {
+      functionName = lineMatch[1];
+      JsValue methodStart = functionName.lastIndexOf(".");
+      if (functionName[methodStart - 1] === ".") {
+        methodStart = methodStart - 1;
+      }
+      if (methodStart > 0) {
+        object = functionName.slice(0, methodStart);
+        method = functionName.slice(methodStart + 1);
+        JsValue objectEnd = object.indexOf(".Module");
+        if (objectEnd > 0) {
+          functionName = functionName.slice(objectEnd + 1);
+          object = object.slice(0, objectEnd);
+        }
+      }
+      typeName = undefined;
+    }
+    if (method.truthy()) {
+      typeName = object;
+      methodName = method;
+    }
+    if (method === "<anonymous>") {
+      methodName = undefined;
+      functionName = undefined;
+    }
+    if (functionName === undefined) {
+      methodName = methodName || UNKNOWN_FUNCTION;
+      functionName = if (typeName.truthy()) { `${typeName}.${methodName}` as JsValue } else { methodName };
+    }
+    JsValue matchedFile = lineMatch[2];
+    JsValue filename = if (matchedFile != null && matchedFile.startsWith("file://").truthy()) { matchedFile.slice(7) } else { matchedFile };
+    bool isNative = lineMatch[5] === "native";
+    if (filename != null && filename.match(WINDOWS_DRIVE_PATH as JsValue).truthy()) {
+      filename = filename.slice(1);
+    }
+    if (!filename.truthy() && lineMatch[5].truthy() && !isNative) {
+      filename = lineMatch[5];
+    }
+    if ((PROMISE_COMBINATOR as JsValue).test(functionName).truthy() && (PROMISE_INDEX as JsValue).test(filename || "").truthy()) {
+      filename = PROMISE_FRAME_FILENAME;
+    }
+    return object {
+      filename: if (filename.truthy()) { decodeURI(filename) } else { undefined },
+      module: undefined,
+      function: functionName,
+      lineno: parseIntOrUndefined(lineMatch[3]),
+      colno: parseIntOrUndefined(lineMatch[4]),
+      in_app: filenameIsInApp(filename || "", isNative),
+      platform: platform
+    };
+  }
+  if ((line as JsValue).match(FILENAME_MATCH as JsValue).truthy()) {
+    return object { filename: line, platform: platform };
+  }
+  return undefined;
+}
+
+// Does this filename look like it's part of the app code?
+bool filenameIsInApp(JsValue filename, bool isNative) {
+  JsValue isInternal = if (isNative) { true as JsValue } else {
+    filename && !filename.startsWith("/").truthy() && !filename.match(WINDOWS_ABSOLUTE as JsValue).truthy()
+      && !filename.startsWith(".").truthy() && !filename.match(URL_SCHEME as JsValue).truthy()
+  };
+  return !isInternal.truthy() && filename !== undefined && !filename.includes("node_modules/").truthy();
+}
+
+JsValue parseIntOrUndefined(JsValue input) {
+  return parseInt(input || "", 10) || undefined;
+}

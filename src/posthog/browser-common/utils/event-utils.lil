@@ -9,16 +9,9 @@ import { SDK_DIST_CHANNEL } from "../constants.lil";
 import { each, extend, stripEmptyProperties } from "./general-utils.lil";
 import { document, location, userAgent, window } from "./globals.lil";
 import { getCookieValue } from "./cookie-utils.lil";
-import extern { stripUrlHash } from "@upstream/core/utils/index";
-import extern { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS } from "@upstream/core/utils/user-agent-utils";
-import extern { detectWebviewApp } from "@upstream/core/utils/webview-app-utils";
-extern JsValue stripUrlHash;
-extern JsValue detectBrowser;
-extern JsValue detectBrowserVersion;
-extern JsValue detectDevice;
-extern JsValue detectDeviceType;
-extern JsValue detectOS;
-extern JsValue detectWebviewApp;
+import { stripUrlHash } from "../../core/utils/index.lil";
+import { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS } from "../../core/utils/user-agent-utils.lil";
+import { detectWebviewApp } from "../../core/utils/webview-app-utils.lil";
 extern JsValue navigator;
 extern JsValue Intl;
 extern JsValue Date;
@@ -288,10 +281,10 @@ export JsValue getEventProperties(JsValue maskPersonalDataProperties, JsValue cu
     return object {};
   }
   string[] paramsToMask = paramsToMaskFor(maskPersonalDataProperties, customPersonalDataProperties);
-  JsValue os = detectOS(userAgent);
+  JsValue os = detectOS(userAgent as string) as JsValue;
   JsValue os_name = os[0];
   JsValue os_version = os[1];
-  JsValue webview = detectWebviewApp(userAgent);
+  JsValue webview = detectWebviewApp(userAgent as string) as JsValue;
   JsValue webviewApp = webview[0];
   JsValue webviewAppVersion = webview[1];
   JsValue browserHints = getBrowserDetectionHints();
@@ -329,11 +322,11 @@ export JsValue getEventProperties(JsValue maskPersonalDataProperties, JsValue cu
     stripEmptyProperties(object {
       $os: os_name,
       $os_version: os_version,
-      $browser: detectBrowser(userAgent, navigator.vendor, browserHints, browserOptions),
+      $browser: detectBrowser(userAgent as string, navigator.vendor as string?, browserHints, browserOptions),
       $webview_app: webviewApp,
       $webview_app_version: webviewAppVersion,
-      $device: detectDevice(userAgent),
-      $device_type: detectDeviceType(userAgent, deviceOptions),
+      $device: detectDevice(userAgent as string),
+      $device_type: detectDeviceType(userAgent as string, deviceOptions),
       $timezone: getTimezone(),
       $timezone_offset: getTimezoneOffset()
     }),
@@ -346,7 +339,7 @@ export JsValue getEventProperties(JsValue maskPersonalDataProperties, JsValue cu
       $host: if (location == null) { undefined } else { location.host },
       $pathname: if (location == null) { undefined } else { location.pathname },
       $raw_user_agent: if (userAgent.length > 1000.0) { userAgent.substring(0, 997) + "..." } else { userAgent },
-      $browser_version: detectBrowserVersion(userAgent, navigator.vendor, browserHints, browserOptions),
+      $browser_version: detectBrowserVersion(userAgent as string, navigator.vendor as string?, browserHints, browserOptions),
       $browser_language: getBrowserLanguage(),
       $browser_language_prefix: getBrowserLanguagePrefix(),
       $screen_height: if (window == null) { undefined } else { window.screen.height },

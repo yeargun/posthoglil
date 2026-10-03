@@ -1,9 +1,7 @@
 // packages/browser-common/src/utils/blocked-uas.ts — bot detection lives in @posthog/core; this module
 // re-exports it and adds the navigator checks. The navigator and its experimental userAgentData are
 // host objects, read defensively as upstream reads them.
-import extern { DEFAULT_BLOCKED_UA_STRS, isBlockedUA } from "@upstream/core/utils/bot-detection";
-extern JsValue DEFAULT_BLOCKED_UA_STRS;
-extern bool isBlockedUA(JsValue ua, JsValue customBlockedUserAgents);
+import { DEFAULT_BLOCKED_UA_STRS, isBlockedUA } from "../../core/utils/bot-detection.lil";
 
 export { DEFAULT_BLOCKED_UA_STRS, isBlockedUA };
 
@@ -13,13 +11,13 @@ export bool isLikelyBot(JsValue nav, JsValue customBlockedUserAgents) {
   }
   JsValue ua = nav.userAgent;
   if (ua.truthy()) {
-    if (isBlockedUA(ua, customBlockedUserAgents)) {
+    if (isBlockedUA(ua as string?, customBlockedUserAgents)) {
       return true;
     }
   }
   try {
     JsValue uaData = nav.userAgentData;
-    if (uaData != null && uaData.brands.truthy() && uaData.brands.some((JsValue brandObj) => isBlockedUA(if (brandObj == null) { undefined } else { brandObj.brand }, customBlockedUserAgents)).truthy()) {
+    if (uaData != null && uaData.brands.truthy() && uaData.brands.some((JsValue brandObj) => isBlockedUA((if (brandObj == null) { undefined } else { brandObj.brand }) as string?, customBlockedUserAgents)).truthy()) {
       return true;
     }
   } catch {

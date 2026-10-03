@@ -1,0 +1,25 @@
+// The exception-capture pipeline as posthog-js builds it (posthog-exceptions.ts).
+import { ErrorPropertiesBuilder } from "../../src/posthog/core/error-tracking/error-properties-builder.lil";
+import { DOMExceptionCoercer } from "../../src/posthog/core/error-tracking/coercers/dom-exception-coercer.lil";
+import { ErrorCoercer } from "../../src/posthog/core/error-tracking/coercers/error-coercer.lil";
+import { ErrorEventCoercer } from "../../src/posthog/core/error-tracking/coercers/error-event-coercer.lil";
+import { EventCoercer } from "../../src/posthog/core/error-tracking/coercers/event-coercer.lil";
+import { ObjectCoercer } from "../../src/posthog/core/error-tracking/coercers/object-coercer.lil";
+import { PrimitiveCoercer } from "../../src/posthog/core/error-tracking/coercers/primitive-coercer.lil";
+import { PromiseRejectionEventCoercer } from "../../src/posthog/core/error-tracking/coercers/promise-rejection-event.lil";
+import { StringCoercer } from "../../src/posthog/core/error-tracking/coercers/string-coercer.lil";
+import { createDefaultStackParser } from "../../src/posthog/core/error-tracking/parsers/index.lil";
+import { ExceptionStepsBuffer, resolveExceptionStepsConfig, stripReservedExceptionStepFields, EXCEPTION_STEP_INTERNAL_FIELDS } from "../../src/posthog/core/error-tracking/exception-steps.lil";
+import { getInjectedReleaseId } from "../../src/posthog/core/error-tracking/release.lil";
+export { ErrorPropertiesBuilder, DOMExceptionCoercer, ErrorCoercer, ErrorEventCoercer, EventCoercer, ObjectCoercer, PrimitiveCoercer, PromiseRejectionEventCoercer, StringCoercer };
+export { createDefaultStackParser, ExceptionStepsBuffer, resolveExceptionStepsConfig, stripReservedExceptionStepFields, EXCEPTION_STEP_INTERNAL_FIELDS, getInjectedReleaseId };
+export constructor ErrorPropertiesBuilder;
+export constructor DOMExceptionCoercer;
+export constructor ErrorCoercer;
+export constructor ErrorEventCoercer;
+export constructor EventCoercer;
+export constructor ObjectCoercer;
+export constructor PrimitiveCoercer;
+export constructor PromiseRejectionEventCoercer;
+export constructor StringCoercer;
+export constructor ExceptionStepsBuffer;

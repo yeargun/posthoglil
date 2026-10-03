@@ -1,0 +1,24 @@
+# Showcase build of one submodule for the raw objective (whole program, one file).
+[policy]
+version = 3
+[language]
+absence = "unified"
+field_initialization = "explicit"
+char_code_at = "number"
+[javascript]
+priority = "size-first"
+# upstream's npm output is ES2015-level syntax (no ?. or ??) for its browserslist
+ecmascript = "es2020"
+# upstream's own build compresses with Terser's unsafe_regexp/unsafe_methods/unsafe_math: the same assumption
+assume_pristine_builtins = true
+strip_debug = false
+# upstream's npm build mangles function and class names too
+keep_published_function_names = false
+[effort]
+level = 13
+[objective]
+codecs = "raw"
+[mangle]
+identifiers = true
+properties = true
+pool_strings = true

@@ -51,13 +51,9 @@ import {
 } from "./type-utils.lil";
 import { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS } from "./user-agent-utils.lil";
 import { detectWebviewApp } from "./webview-app-utils.lil";
-import extern { isWebKit } from "@upstream/core/utils/browser-utils";
-import extern { PromiseQueue } from "@upstream/core/utils/promise-queue";
-import extern { _createLogger, createLogger } from "@upstream/core/utils/logger";
-extern JsValue isWebKit;
-extern JsValue PromiseQueue;
-extern JsValue _createLogger;
-extern JsValue createLogger;
+import { isWebKit } from "./browser-utils.lil";
+import { PromiseQueue } from "./promise-queue.lil";
+import { _createLogger, createLogger } from "./logger.lil";
 extern JsValue Object;
 extern JsValue Error;
 extern JsValue Date;
@@ -108,6 +104,7 @@ export {
   yesLikeValues
 };
 export { PromiseQueue };
+export constructor PromiseQueue;
 export { _createLogger, createLogger };
 export { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS };
 export { detectWebviewApp };

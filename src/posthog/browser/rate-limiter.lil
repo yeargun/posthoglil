@@ -3,12 +3,9 @@
 // the fields (in upstream's key order), the two getters on the prototype and the public methods.
 // Private helpers are module functions.
 import { isArray, isNumber } from "../core/utils/type-utils.lil";
-import extern { CAPTURE_RATE_LIMIT } from "@upstream/browser/constants";
-import extern { createLogger } from "@upstream/browser-common/utils/logger";
-import extern { location } from "@upstream/browser-common/utils/globals";
-extern string CAPTURE_RATE_LIMIT;
-extern JsValue createLogger;
-extern JsValue location;
+import { CAPTURE_RATE_LIMIT } from "./constants.lil";
+import { createLogger } from "../browser-common/utils/logger.lil";
+import { location } from "../browser-common/utils/globals.lil";
 extern JsValue Date;
 extern JsValue Math;
 extern JsValue JSON;

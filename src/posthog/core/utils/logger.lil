@@ -1,0 +1,37 @@
+// packages/core/src/utils/logger.ts — loggers are plain objects called by name, as upstream.
+extern JsValue console;
+
+// The original console methods, bound as soon as a logger is created.
+JsValue createConsole(JsValue consoleLike) {
+  return object {
+    log: consoleLike.log.bind(consoleLike),
+    warn: consoleLike.warn.bind(consoleLike),
+    error: consoleLike.error.bind(consoleLike),
+    debug: consoleLike.debug.bind(consoleLike)
+  };
+}
+
+void log(string prefix, JsValue maybeCall, JsValue consoleLike, string level, JsValue[] args) {
+  maybeCall(() => {
+    JsValue consoleMethod = consoleLike[level];
+    consoleMethod(prefix, ...args);
+  });
+}
+
+export JsValue _createLogger(string prefix, JsValue maybeCall, JsValue consoleLike) {
+  return object {
+    debug: (JsValue... args) => { log(prefix, maybeCall, consoleLike, "debug", args); },
+    info: (JsValue... args) => { log(prefix, maybeCall, consoleLike, "log", args); },
+    warn: (JsValue... args) => { log(prefix, maybeCall, consoleLike, "warn", args); },
+    error: (JsValue... args) => { log(prefix, maybeCall, consoleLike, "error", args); },
+    // Critical errors are always logged to the console
+    critical: (JsValue... args) => { consoleLike["error"](prefix, ...args); },
+    createLogger: (string additionalPrefix) => _createLogger(`${prefix} ${additionalPrefix}`, maybeCall, consoleLike)
+  };
+}
+
+JsValue passThrough = (JsValue fn) => fn();
+
+export JsValue createLogger(string prefix, JsValue maybeCall = undefined) {
+  return _createLogger(prefix, if (maybeCall === undefined) { passThrough } else { maybeCall }, createConsole(console));
+}

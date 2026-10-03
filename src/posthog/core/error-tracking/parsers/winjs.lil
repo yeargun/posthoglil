@@ -1,0 +1,13 @@
+// packages/core/src/error-tracking/parsers/winjs.ts (derived from getsentry/sentry-javascript, MIT).
+import { createFrame, UNKNOWN_FUNCTION } from "./base.lil";
+extern JsValue Number;
+
+Regex winjsRegex = new Regex("^\\s*at (?:((?:\\[object object\\])?.+) )?\\(?((?:[-a-z]+):.*?):(\\d+)(?::(\\d+))?\\)?\\s*$", "i");
+
+export JsValue winjsStackLineParser(string line, JsValue platform) {
+  JsValue parts = JS.regexExec(winjsRegex, line);
+  if (!parts.truthy()) {
+    return undefined;
+  }
+  return createFrame(platform, parts[2], parts[1] || UNKNOWN_FUNCTION, Number(parts[3]), if (parts[4].truthy()) { Number(parts[4]) } else { undefined });
+}

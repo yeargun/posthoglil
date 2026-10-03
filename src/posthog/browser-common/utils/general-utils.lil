@@ -4,8 +4,7 @@
 import { hasOwnProperty, isArray, isError, isFormData, isNullish, isNumber, isString } from "../../core/utils/type-utils.lil";
 import { logger } from "./logger.lil";
 import { copyDataProperties } from "../../lil/object.lil";
-import extern { trySafe } from "@upstream/core/utils/index";
-extern JsValue trySafe;
+import { trySafe } from "../../core/utils/index.lil";
 extern JsValue Object;
 extern JsValue Array;
 

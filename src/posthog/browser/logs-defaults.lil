@@ -3,10 +3,8 @@
 import { isUndefined } from "../core/utils/type-utils.lil";
 import { navigator } from "../browser-common/utils/globals.lil";
 import { copyDataProperties } from "../lil/object.lil";
-import extern { detectOS } from "@upstream/core/utils/user-agent-utils";
-import extern { osResourceAttributes } from "@upstream/core/utils/otlp-resource";
-extern JsValue detectOS;
-extern JsValue osResourceAttributes;
+import { detectOS } from "../core/utils/user-agent-utils.lil";
+import { osResourceAttributes } from "../core/utils/otlp-resource.lil";
 extern JsValue Math;
 
 int DEFAULT_FLUSH_INTERVAL_MS = 3000;
@@ -24,13 +22,13 @@ JsValue defaultResourceAttributes() {
   try {
     JsValue userAgent = if (navigator == null) { undefined } else { navigator.userAgent };
     if (userAgent.truthy()) {
-      JsValue os = detectOS(userAgent);
+      JsValue os = detectOS(userAgent as string) as JsValue;
       osName = os[0];
       osVersion = os[1];
     }
   } catch {
   }
-  return osResourceAttributes(osName, osVersion);
+  return osResourceAttributes(osName as string?, osVersion as string?);
 }
 
 // `value ?? fallback` where the fallback is a constant.

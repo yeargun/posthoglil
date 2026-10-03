@@ -1,0 +1,279 @@
+// packages/core/src/vendor/uuidv7.ts — vendored from LiosK/uuidv7 (Apache-2.0). The random number
+// generator is caller-supplied, so it stays JsValue; bytes and counters are typed.
+extern JsValue Number;
+extern JsValue Math;
+extern JsValue Date;
+extern JsValue Object;
+extern JsValue Uint32Array;
+extern JsValue parseInt;
+extern JsValue TypeError;
+extern JsValue RangeError;
+extern JsValue SyntaxError;
+extern JsValue Error;
+float INFINITY = 1.0 / 0.0;
+JsValue Uint8ArrayCtor = (new Uint8Array(0) as JsValue).constructor;
+
+string DIGITS = "0123456789abcdef";
+
+export class UUID {
+  Uint8Array bytes;
+
+  init(Uint8Array bytes) {
+    this.bytes = bytes;
+  }
+
+  string toString() {
+    string text = "";
+    Uint8Array bytes = this.bytes;
+    for (int i = 0; i < bytes.length; i++) {
+      text += DIGITS.charAt(bytes[i] >>> 4);
+      text += DIGITS.charAt(bytes[i] & 15);
+      if (i == 3 || i == 5 || i == 7 || i == 9) {
+        text += "-";
+      }
+    }
+    return text;
+  }
+
+  string toHex() {
+    string text = "";
+    Uint8Array bytes = this.bytes;
+    for (int i = 0; i < bytes.length; i++) {
+      text += DIGITS.charAt(bytes[i] >>> 4);
+      text += DIGITS.charAt(bytes[i] & 15);
+    }
+    return text;
+  }
+
+  string toJSON() {
+    return this.toString();
+  }
+
+  string getVariant() {
+    int n = this.bytes[8] >>> 4;
+    JsValue bytes = this.bytes as JsValue;
+    if (n < 0) {
+      throw JS.construct(Error, "unreachable");
+    } else if (n <= 7) {
+      return if (bytes.every((JsValue e) => e === 0).truthy()) { "NIL" } else { "VAR_0" };
+    } else if (n <= 11) {
+      return "VAR_10";
+    } else if (n <= 13) {
+      return "VAR_110";
+    } else if (n <= 15) {
+      return if (bytes.every((JsValue e) => e === 255).truthy()) { "MAX" } else { "VAR_RESERVED" };
+    }
+    throw JS.construct(Error, "unreachable");
+  }
+
+  JsValue getVersion() {
+    return if (this.getVariant() == "VAR_10") { (this.bytes[6] >>> 4) as JsValue } else { undefined };
+  }
+
+  UUID clone() {
+    return new UUID((this.bytes as JsValue).slice(0) as Uint8Array);
+  }
+
+  bool equals(UUID other) {
+    return this.compareTo(other) === 0;
+  }
+
+  JsValue compareTo(UUID other) {
+    for (int i = 0; i < 16; i++) {
+      int diff = this.bytes[i] - other.bytes[i];
+      if (diff != 0) {
+        return Math.sign(diff);
+      }
+    }
+    return 0;
+  }
+}
+export constructor UUID;
+
+UUID ofInner(Uint8Array bytes) {
+  if (bytes.length != 16) {
+    throw JS.construct(TypeError, "not 128-bit length");
+  }
+  return new UUID(bytes);
+}
+
+UUID fromFieldsV7(JsValue unixTsMs, JsValue randA, JsValue randBHi, JsValue randBLo) {
+  if (!Number.isInteger(unixTsMs).truthy() || !Number.isInteger(randA).truthy() || !Number.isInteger(randBHi).truthy() || !Number.isInteger(randBLo).truthy()
+      || unixTsMs < 0 || randA < 0 || randBHi < 0 || randBLo < 0
+      || unixTsMs > 281474976710655.0 || randA > 4095 || randBHi > 1073741823 || randBLo > 4294967295.0) {
+    throw JS.construct(RangeError, "invalid field value");
+  }
+  // Stores into the byte array truncate (ToUint8), as upstream's do.
+  float ts = unixTsMs as float;
+  int a = randA as int;
+  int hi = randBHi as int;
+  int lo = randBLo as int;
+  Uint8Array bytes = new Uint8Array(16);
+  bytes[0] = (ts / 1099511627776.0) as JsValue as int;
+  bytes[1] = (ts / 4294967296.0) as JsValue as int;
+  bytes[2] = (ts / 16777216.0) as JsValue as int;
+  bytes[3] = (ts / 65536.0) as JsValue as int;
+  bytes[4] = (ts / 256.0) as JsValue as int;
+  bytes[5] = ts as JsValue as int;
+  bytes[6] = 112 | (a >>> 8);
+  bytes[7] = a;
+  bytes[8] = 128 | (hi >>> 24);
+  bytes[9] = hi >>> 16;
+  bytes[10] = hi >>> 8;
+  bytes[11] = hi;
+  bytes[12] = lo >>> 24;
+  bytes[13] = lo >>> 16;
+  bytes[14] = lo >>> 8;
+  bytes[15] = lo;
+  return new UUID(bytes);
+}
+
+Regex HEX32 = new Regex("^[0-9a-f]{32}$", "i");
+Regex HEX36 = new Regex("^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$", "i");
+Regex HEX38 = new Regex("^\\{([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})\\}$", "i");
+Regex HEX45 = new Regex("^urn:uuid:([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})$", "i");
+
+JsValue groups(Regex pattern, JsValue uuid) {
+  JsValue found = (pattern as JsValue).exec(uuid);
+  return if (found == null) { undefined } else { found.slice(1, 6).join("") };
+}
+
+UUID parse(JsValue uuid) {
+  JsValue hex = undefined;
+  JsValue length = uuid["length"];
+  if (length === 32) {
+    JsValue found = (HEX32 as JsValue).exec(uuid);
+    hex = if (found == null) { undefined } else { found[0] };
+  } else if (length === 36) {
+    hex = groups(HEX36, uuid);
+  } else if (length === 38) {
+    hex = groups(HEX38, uuid);
+  } else if (length === 45) {
+    hex = groups(HEX45, uuid);
+  }
+  if (hex.truthy()) {
+    Uint8Array inner = new Uint8Array(16);
+    for (int i = 0; i < 16; i += 4) {
+      int n = parseInt(hex.substring(2 * i, 2 * i + 8), 16) as int;
+      inner[i] = n >>> 24;
+      inner[i + 1] = n >>> 16;
+      inner[i + 2] = n >>> 8;
+      inner[i + 3] = n;
+    }
+    return new UUID(inner);
+  }
+  throw JS.construct(SyntaxError, "could not parse UUID string");
+}
+
+// `static` members of UUID: writable, configurable, non-enumerable data properties.
+JsValue uuidClass = UUID as JsValue;
+Object.defineProperty(uuidClass, "ofInner", object { value: (JsValue bytes) => ofInner(bytes as Uint8Array), writable: true, configurable: true });
+Object.defineProperty(uuidClass, "fromFieldsV7", object { value: (JsValue a, JsValue b, JsValue c, JsValue d) => fromFieldsV7(a, b, c, d), writable: true, configurable: true });
+Object.defineProperty(uuidClass, "parse", object { value: (JsValue uuid) => parse(uuid), writable: true, configurable: true });
+
+// ECMAScript ToUint32 (`n >>> 0`): LilScript's `int` is signed, so `>>> 0` cannot leave a value above
+// 2^31 - 1; the modulo is written out. A patched Math.random() can push the sum past 2^32.
+JsValue toUint32(JsValue n) {
+  float x = n as float;
+  if (x != x || x == INFINITY || x == -INFINITY) {
+    return 0;
+  }
+  float i = Math.trunc(x) as float;
+  return i - (Math.floor(i / 4294967296.0) as float) * 4294967296.0;
+}
+
+JsValue getDefaultRandom() {
+  return object {
+    nextUint32: () => toUint32(Math.trunc(Math.random() * 65536) * 65536 + Math.trunc(Math.random() * 65536))
+  };
+}
+
+export class V7Generator {
+  JsValue timestamp = 0;
+  JsValue counter = 0;
+  JsValue random;
+
+  init(JsValue randomNumberGenerator = undefined) {
+    this.random = randomNumberGenerator ?? getDefaultRandom();
+  }
+
+  UUID generate() {
+    return this.generateOrResetCore(Date.now(), 10000) as UUID;
+  }
+
+  JsValue generateOrAbort() {
+    return this.generateOrAbortCore(Date.now(), 10000);
+  }
+
+  JsValue generateOrResetCore(JsValue unixTsMs, JsValue rollbackAllowance) {
+    JsValue value = this.generateOrAbortCore(unixTsMs, rollbackAllowance);
+    if (value === undefined) {
+      this.timestamp = 0;
+      value = this.generateOrAbortCore(unixTsMs, rollbackAllowance);
+    }
+    return value;
+  }
+
+  JsValue generateOrAbortCore(JsValue unixTsMs, JsValue rollbackAllowance) {
+    JsValue MAX_COUNTER = 4398046511103.0;
+    if (!Number.isInteger(unixTsMs).truthy() || unixTsMs < 1 || unixTsMs > 281474976710655.0) {
+      throw JS.construct(RangeError, "`unixTsMs` must be a 48-bit positive integer");
+    } else if (rollbackAllowance < 0 || rollbackAllowance > 281474976710655.0) {
+      throw JS.construct(RangeError, "`rollbackAllowance` out of reasonable range");
+    }
+    if (unixTsMs > this.timestamp) {
+      this.timestamp = unixTsMs;
+      this.resetCounter();
+    } else if (unixTsMs + rollbackAllowance >= this.timestamp) {
+      this.counter = this.counter + 1;
+      if (this.counter > MAX_COUNTER) {
+        this.timestamp = this.timestamp + 1;
+        this.resetCounter();
+      }
+    } else {
+      return undefined;
+    }
+    return fromFieldsV7(this.timestamp, Math.trunc(this.counter / 1073741824), (this.counter as int) & 1073741823, this.random.nextUint32());
+  }
+
+  void resetCounter() {
+    this.counter = this.random.nextUint32() * 1024 + ((this.random.nextUint32() as int) & 1023);
+  }
+
+  UUID generateV4() {
+    JsValue words = Uint32Array.of(this.random.nextUint32(), this.random.nextUint32(), this.random.nextUint32(), this.random.nextUint32());
+    Uint8Array bytes = JS.construct(Uint8ArrayCtor, words.buffer) as Uint8Array;
+    bytes[6] = 64 | (bytes[6] >>> 4);
+    bytes[8] = 128 | (bytes[8] >>> 2);
+    return ofInner(bytes);
+  }
+}
+export constructor V7Generator;
+
+V7Generator? defaultGenerator = null;
+
+V7Generator defaultV7() {
+  V7Generator? current = defaultGenerator;
+  if (current == null) {
+    V7Generator created = new V7Generator();
+    defaultGenerator = created;
+    return created;
+  }
+  return current;
+}
+
+export string uuidv7() {
+  return uuidv7obj().toString();
+}
+
+export UUID uuidv7obj() {
+  return defaultV7().generate();
+}
+
+export string uuidv4() {
+  return uuidv4obj().toString();
+}
+
+export UUID uuidv4obj() {
+  return defaultV7().generateV4();
+}

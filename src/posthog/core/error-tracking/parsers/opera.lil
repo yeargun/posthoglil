@@ -1,0 +1,23 @@
+// packages/core/src/error-tracking/parsers/opera.ts (derived from getsentry/sentry-javascript, MIT).
+import { createFrame, UNKNOWN_FUNCTION } from "./base.lil";
+extern JsValue Number;
+
+Regex opera10Regex = new Regex(" line (\\d+).*script (?:in )?(\\S+)(?:: in function (\\S+))?$", "i");
+
+export JsValue opera10StackLineParser(string line, JsValue platform) {
+  JsValue parts = JS.regexExec(opera10Regex, line);
+  if (!parts.truthy()) {
+    return undefined;
+  }
+  return createFrame(platform, parts[2], parts[3] || UNKNOWN_FUNCTION, Number(parts[1]), undefined);
+}
+
+Regex opera11Regex = new Regex(" line (\\d+), column (\\d+)\\s*(?:in (?:<anonymous function: ([^>]+)>|([^)]+))\\(.*\\))? in (.*):\\s*$", "i");
+
+export JsValue opera11StackLineParser(string line, JsValue platform) {
+  JsValue parts = JS.regexExec(opera11Regex, line);
+  if (!parts.truthy()) {
+    return undefined;
+  }
+  return createFrame(platform, parts[5], parts[3] || parts[4] || UNKNOWN_FUNCTION, Number(parts[1]), Number(parts[2]));
+}
