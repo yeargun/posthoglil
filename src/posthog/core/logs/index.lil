@@ -281,7 +281,7 @@ async void flushInner(PostHogLogs self) {
     // Not on the background wrapper: every lifecycle hook takes `flush()`.
     self._retryAfter.record(outcome);
     // Outright: a timer a mid-flight capture armed is measured against this outcome's window.
-    if (flushTimer.timer.truthy()) {
+    if (flushTimer._timer.truthy()) {
       flushTimer.arm(self.flushIntervalMs.max(self._retryAfter.remainingMs()));
     }
     if (outcome.kind === "retry-later") {
@@ -339,7 +339,7 @@ void enqueue(PostHogLogs self, JsValue entry) {
 
 void armFlushTimer(PostHogLogs self) {
   FlushTimer flushTimer = flushTimerOf(self);
-  if (flushTimer.timer.truthy()) {
+  if (flushTimer._timer.truthy()) {
     return;
   }
   // Floored by any open window.

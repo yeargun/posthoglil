@@ -13,6 +13,8 @@ ecmascript = "es2020"
 assume_pristine_builtins = true
 # and Terser's pure_getters: true
 assume_pure_property_reads = true
+# and its mangle.properties: `_` names are private except rollup.config.mjs's reserved list
+assume_private_underscore_properties = true
 strip_debug = false
 # upstream's npm build mangles function and class names too
 keep_published_function_names = false
@@ -24,3 +26,4 @@ codecs = "raw"
 identifiers = true
 properties = true
 pool_strings = true
+preserve_properties = ["_", "_Departed", "_POSTHOG_REMOTE_CONFIG", "__POSTHOG_INSTRUMENTED__", "__PosthogExtensions__", "__Posthog__", "__SV", "__await", "__context", "__esModule", "__ln", "__ph_loaded", "__posthog_debug", "__posthog_wrapped__", "__proto__", "__publicField2", "__rrweb_original__", "__symbol__", "_addCaptureHook", "_args", "_batchKey", "_calculate_event_properties", "_classCallCheck", "_conversations", "_conversationsManager", "_createClass", "_css", "_cssText", "_dom_loaded", "_execute_array", "_forceAllowLocalhostNetworkCapture", "_handle_unload", "_i", "_init", "_instance", "_invoke", "_isIdentified", "_is_bot", "_kx", "_map", "_mappings", "_mirror", "_noHeatmaps", "_noTruncate", "_onCapture", "_onclick", "_oncontextmenu", "_ondblclick", "_onload", "_onmousedown", "_onmouseenter", "_onmouseleave", "_onmousemove", "_onmouseout", "_onmouseover", "_opts", "_overrideSDKInfo", "_patchFetch", "_patchXHR", "_posthog", "_processor", "_root", "_rrweb", "_sb", "_send_request", "_sessionActivityTimestamp", "_sessionStartTimestamp", "_sessionTimeoutMs", "_surveyEventReceiver", "_surveyManager", "_unchangedStyles", "_url", "alias", "calculateEventProperties", "capture", "captureException", "getActiveMatchingSurveys", "getSurveys", "has_opted_out_capturing", "identify", "isFeatureEnabled", "loadExternalDependency", "onActiveMatchingSurveysChanged", "onFeatureFlags", "opt_in_capturing", "opt_out_capturing", "posthog", "register", "register_once", "reset", "set", "set_config", "set_once", "surveys", "unregister", "version"]

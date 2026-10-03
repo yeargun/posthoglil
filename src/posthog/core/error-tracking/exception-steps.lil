@@ -61,16 +61,16 @@ shape StepEntry {
 }
 
 export class ExceptionStepsBuffer {
-  StepEntry[] entries = [];
-  float totalBytes = 0.0;
-  float maxBytes = 0.0;
+  StepEntry[] _entries = [];
+  float _totalBytes = 0.0;
+  float _maxBytes = 0.0;
 
   init(JsValue config) {
-    this.maxBytes = resolveExceptionStepsConfig(config).max_bytes as float;
+    this._maxBytes = resolveExceptionStepsConfig(config).max_bytes as float;
   }
 
   void setConfig(JsValue config) {
-    this.maxBytes = resolveExceptionStepsConfig(config).max_bytes as float;
+    this._maxBytes = resolveExceptionStepsConfig(config).max_bytes as float;
     trimToMaxBytes(this);
   }
 
@@ -80,34 +80,34 @@ export class ExceptionStepsBuffer {
       return;
     }
     float bytes = getUtf8ByteLength(serialized.json);
-    if (bytes > this.maxBytes) {
+    if (bytes > this._maxBytes) {
       return;
     }
-    this.entries.push(StepEntry{step: serialized.step, bytes: bytes});
-    this.totalBytes += bytes;
+    this._entries.push(StepEntry{step: serialized.step, bytes: bytes});
+    this._totalBytes += bytes;
     trimToMaxBytes(this);
   }
 
   JsValue[] getAttachable() {
-    return this.entries.map((StepEntry entry) => entry.step);
+    return this._entries.map((StepEntry entry) => entry.step);
   }
 
   void clear() {
-    this.entries = [];
-    this.totalBytes = 0.0;
+    this._entries = [];
+    this._totalBytes = 0.0;
   }
 
   float size() {
-    return this.entries.length;
+    return this._entries.length;
   }
 }
 export constructor ExceptionStepsBuffer;
 
 void trimToMaxBytes(ExceptionStepsBuffer self) {
-  while (self.totalBytes > self.maxBytes && self.entries.length > 0) {
-    StepEntry evicted = self.entries[0];
-    self.entries.splice(0, 1);
-    self.totalBytes -= evicted.bytes;
+  while (self._totalBytes > self._maxBytes && self._entries.length > 0) {
+    StepEntry evicted = self._entries[0];
+    self._entries.splice(0, 1);
+    self._totalBytes -= evicted.bytes;
   }
 }
 

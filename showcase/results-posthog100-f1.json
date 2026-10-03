@@ -1,0 +1,447 @@
+{
+ "compiler": "/home/azureuser/lilscript-work/bin/posthog100-f1/lilscript",
+ "date": "2026-10-03T21:44:39.827Z",
+ "results": [
+  {
+   "id": "error-tracking",
+   "title": "Exception capture pipeline",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 14046,
+     "gzip": 5385,
+     "brotli": 4911
+    },
+    "esbuild": {
+     "raw": 17510,
+     "gzip": 7095,
+     "brotli": 6497
+    },
+    "oxc": {
+     "raw": 14282,
+     "gzip": 5471,
+     "brotli": 4997
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "terser-upstream",
+     "bytes": 14046
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 5385
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 4911
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/error-tracking.mjs",
+     "seconds": 3.17,
+     "raw": 14063,
+     "gzip": 5772,
+     "brotli": 5202
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/error-tracking.mjs",
+     "seconds": 6.26,
+     "raw": 14307,
+     "gzip": 5632,
+     "brotli": 5146
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/error-tracking.mjs",
+     "seconds": 13.62,
+     "raw": 14344,
+     "gzip": 5687,
+     "brotli": 5124
+    }
+   },
+   "delta": {
+    "raw": 0.12,
+    "gzip": 4.59,
+    "brotli": 4.34
+   }
+  },
+  {
+   "id": "user-agent",
+   "title": "Browser, OS and device detection",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 5588,
+     "gzip": 2399,
+     "brotli": 2189
+    },
+    "esbuild": {
+     "raw": 5282,
+     "gzip": 2488,
+     "brotli": 2280
+    },
+    "oxc": {
+     "raw": 6047,
+     "gzip": 2483,
+     "brotli": 2260
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "esbuild",
+     "bytes": 5282
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 2399
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 2189
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/user-agent-utils.mjs",
+     "seconds": 0.4,
+     "raw": 5700,
+     "gzip": 2376,
+     "brotli": 2198
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/user-agent-utils.mjs",
+     "seconds": 0.66,
+     "raw": 6011,
+     "gzip": 2268,
+     "brotli": 2087
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/user-agent-utils.mjs",
+     "seconds": 1.49,
+     "raw": 6020,
+     "gzip": 2270,
+     "brotli": 2084
+    }
+   },
+   "delta": {
+    "raw": 7.91,
+    "gzip": -5.46,
+    "brotli": -4.8
+   }
+  },
+  {
+   "id": "autocapture-utils",
+   "title": "Autocapture DOM utilities",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 9624,
+     "gzip": 3971,
+     "brotli": 3560
+    },
+    "esbuild": {
+     "raw": 14173,
+     "gzip": 6181,
+     "brotli": 5544
+    },
+    "oxc": {
+     "raw": 9865,
+     "gzip": 4138,
+     "brotli": 3719
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "terser-upstream",
+     "bytes": 9624
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 3971
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 3560
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/autocapture-utils.mjs",
+     "seconds": 1.41,
+     "raw": 10367,
+     "gzip": 4431,
+     "brotli": 3940
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/autocapture-utils.mjs",
+     "seconds": 2.63,
+     "raw": 10595,
+     "gzip": 4294,
+     "brotli": 3841
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/autocapture-utils.mjs",
+     "seconds": 6.26,
+     "raw": 10636,
+     "gzip": 4331,
+     "brotli": 3841
+    }
+   },
+   "delta": {
+    "raw": 7.72,
+    "gzip": 8.13,
+    "brotli": 7.89
+   }
+  },
+  {
+   "id": "feature-flags",
+   "title": "Feature flag response utilities",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 2669,
+     "gzip": 1118,
+     "brotli": 976
+    },
+    "esbuild": {
+     "raw": 2658,
+     "gzip": 1145,
+     "brotli": 998
+    },
+    "oxc": {
+     "raw": 2671,
+     "gzip": 1140,
+     "brotli": 994
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "esbuild",
+     "bytes": 2658
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 1118
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 976
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/featureFlagUtils.mjs",
+     "seconds": 0.17,
+     "raw": 3051,
+     "gzip": 1265,
+     "brotli": 1117
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/featureFlagUtils.mjs",
+     "seconds": 0.17,
+     "raw": 3089,
+     "gzip": 1238,
+     "brotli": 1104
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/featureFlagUtils.mjs",
+     "seconds": 0.53,
+     "raw": 3079,
+     "gzip": 1234,
+     "brotli": 1095
+    }
+   },
+   "delta": {
+    "raw": 14.79,
+    "gzip": 10.73,
+    "brotli": 12.19
+   }
+  },
+  {
+   "id": "metrics",
+   "title": "Metrics client (OTLP)",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 10409,
+     "gzip": 3920,
+     "brotli": 3611
+    },
+    "esbuild": {
+     "raw": 14927,
+     "gzip": 5674,
+     "brotli": 5170
+    },
+    "oxc": {
+     "raw": 12090,
+     "gzip": 4169,
+     "brotli": 3817
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "terser-upstream",
+     "bytes": 10409
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 3920
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 3611
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/index.mjs",
+     "seconds": 2.17,
+     "raw": 11320,
+     "gzip": 4502,
+     "brotli": 4064
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/index.mjs",
+     "seconds": 2.68,
+     "raw": 11719,
+     "gzip": 4280,
+     "brotli": 3948
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/index.mjs",
+     "seconds": 7.41,
+     "raw": 11984,
+     "gzip": 4328,
+     "brotli": 3901
+    }
+   },
+   "delta": {
+    "raw": 8.75,
+    "gzip": 9.18,
+    "brotli": 8.03
+   }
+  },
+  {
+   "id": "uuidv7",
+   "title": "UUIDv7 event and session IDs",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 2775,
+     "gzip": 1271,
+     "brotli": 1114
+    },
+    "esbuild": {
+     "raw": 7505,
+     "gzip": 3412,
+     "brotli": 3016
+    },
+    "oxc": {
+     "raw": 3413,
+     "gzip": 1609,
+     "brotli": 1379
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "terser-upstream",
+     "bytes": 2775
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 1271
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 1114
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/uuidv7.mjs",
+     "seconds": 0.18,
+     "raw": 2834,
+     "gzip": 1459,
+     "brotli": 1266
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/uuidv7.mjs",
+     "seconds": 0.2,
+     "raw": 2875,
+     "gzip": 1434,
+     "brotli": 1253
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/uuidv7.mjs",
+     "seconds": 0.81,
+     "raw": 2882,
+     "gzip": 1437,
+     "brotli": 1247
+    }
+   },
+   "delta": {
+    "raw": 2.13,
+    "gzip": 12.82,
+    "brotli": 11.94
+   }
+  },
+  {
+   "id": "gzip",
+   "title": "Request gzip compression",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 1876,
+     "gzip": 981,
+     "brotli": 873
+    },
+    "esbuild": {
+     "raw": 5000,
+     "gzip": 2457,
+     "brotli": 2202
+    },
+    "oxc": {
+     "raw": 1866,
+     "gzip": 981,
+     "brotli": 874
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "oxc",
+     "bytes": 1866
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 981
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 873
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/gzip.mjs",
+     "seconds": 0.18,
+     "raw": 2053,
+     "gzip": 1082,
+     "brotli": 956
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/gzip.mjs",
+     "seconds": 0.22,
+     "raw": 2103,
+     "gzip": 1049,
+     "brotli": 931
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/gzip.mjs",
+     "seconds": 0.53,
+     "raw": 2077,
+     "gzip": 1054,
+     "brotli": 931
+    }
+   },
+   "delta": {
+    "raw": 10.02,
+    "gzip": 6.93,
+    "brotli": 6.64
+   }
+  }
+ ]
+}

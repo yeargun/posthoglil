@@ -23,16 +23,16 @@ export JsValue resolveExceptionRateLimiterConfig(JsValue config) {
 
 export class BucketedRateLimiter {
   JsValue _buckets = object {};
-  JsValue onBucketRateLimited = undefined;
-  float bucketSize = 0.0;
-  float refillRate = 0.0;
-  float refillInterval = 0.0;
+  JsValue _onBucketRateLimited = undefined;
+  float _bucketSize = 0.0;
+  float _refillRate = 0.0;
+  float _refillInterval = 0.0;
 
   init(JsValue options) {
-    this.onBucketRateLimited = options._onBucketRateLimited;
-    this.bucketSize = clampToRange(options.bucketSize, 0.0, 100.0, options._logger);
-    this.refillRate = clampToRange(options.refillRate, 0.0, this.bucketSize, options._logger);
-    this.refillInterval = clampToRange(options.refillInterval, 0.0, ONE_DAY_IN_MS, options._logger);
+    this._onBucketRateLimited = options._onBucketRateLimited;
+    this._bucketSize = clampToRange(options.bucketSize, 0.0, 100.0, options._logger);
+    this._refillRate = clampToRange(options.refillRate, 0.0, this._bucketSize, options._logger);
+    this._refillInterval = clampToRange(options.refillInterval, 0.0, ONE_DAY_IN_MS, options._logger);
   }
 
   bool consumeRateLimit(JsValue key) {
@@ -40,7 +40,7 @@ export class BucketedRateLimiter {
     JsValue keyStr = String(key);
     JsValue bucket = this._buckets[keyStr];
     if (!bucket.truthy()) {
-      bucket = object { tokens: this.bucketSize, lastAccess: now };
+      bucket = object { tokens: this._bucketSize, lastAccess: now };
       this._buckets[keyStr] = bucket;
     } else {
       applyRefill(this, bucket, now);
@@ -50,7 +50,7 @@ export class BucketedRateLimiter {
     }
     bucket.tokens = bucket.tokens - 1;
     if (bucket.tokens === 0) {
-      JsValue onRateLimited = this.onBucketRateLimited;
+      JsValue onRateLimited = this._onBucketRateLimited;
       if (onRateLimited != null) {
         onRateLimited.call(this, key);
       }
@@ -66,10 +66,10 @@ export constructor BucketedRateLimiter;
 
 void applyRefill(BucketedRateLimiter self, JsValue bucket, float now) {
   float elapsedMs = now - (bucket.lastAccess as float);
-  float refillIntervals = (elapsedMs / self.refillInterval).floor();
+  float refillIntervals = (elapsedMs / self._refillInterval).floor();
   if (refillIntervals > 0.0) {
-    float tokensToAdd = refillIntervals * self.refillRate;
-    bucket.tokens = ((bucket.tokens as float) + tokensToAdd).min(self.bucketSize);
-    bucket.lastAccess = (bucket.lastAccess as float) + refillIntervals * self.refillInterval;
+    float tokensToAdd = refillIntervals * self._refillRate;
+    bucket.tokens = ((bucket.tokens as float) + tokensToAdd).min(self._bucketSize);
+    bucket.lastAccess = (bucket.lastAccess as float) + refillIntervals * self._refillInterval;
   }
 }

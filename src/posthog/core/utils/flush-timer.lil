@@ -6,38 +6,38 @@ extern JsValue Object;
 extern JsValue clearTimeout;
 
 export class FlushTimer {
-  JsValue onFire = undefined;
-  float firesAt = 0.0;
-  JsValue timer = undefined;
+  JsValue _onFire = undefined;
+  float _firesAt = 0.0;
+  JsValue _timer = undefined;
 
   // `onFire` runs when the timer elapses, after the handle is released.
   init(JsValue onFire) {
-    this.onFire = onFire;
+    this._onFire = onFire;
   }
 
   // Schedules a flush in `delayMs`, replacing any timer already pending.
   void arm(float delayMs) {
     this.clear();
-    this.firesAt = (Date.now() as float) + delayMs;
+    this._firesAt = (Date.now() as float) + delayMs;
     FlushTimer self = this;
-    this.timer = safeSetTimeout(() => {
-      self.timer = undefined;
-      self.onFire.call(self);
+    this._timer = safeSetTimeout(() => {
+      self._timer = undefined;
+      self._onFire.call(self);
     }, delayMs);
   }
 
   // Arms only if it moves the flush later.
   void armNoEarlierThan(float delayMs) {
-    if (this.timer.truthy() && (Date.now() as float) + delayMs <= this.firesAt) {
+    if (this._timer.truthy() && (Date.now() as float) + delayMs <= this._firesAt) {
       return;
     }
     this.arm(delayMs);
   }
 
   void clear() {
-    if (this.timer.truthy()) {
-      clearTimeout(this.timer);
-      this.timer = undefined;
+    if (this._timer.truthy()) {
+      clearTimeout(this._timer);
+      this._timer = undefined;
     }
   }
 }
@@ -45,6 +45,6 @@ export constructor FlushTimer;
 
 // Whether a flush is already scheduled (a prototype getter, as upstream's class declares it).
 Object.defineProperty((FlushTimer as JsValue).prototype, "pending", object {
-  get: (this JsValue receiver) => (receiver as FlushTimer).timer.truthy(),
+  get: (this JsValue receiver) => (receiver as FlushTimer)._timer.truthy(),
   configurable: true
 });

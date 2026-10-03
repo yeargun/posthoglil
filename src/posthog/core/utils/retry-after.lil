@@ -45,8 +45,8 @@ export float | undefined parseRetryAfterMs(JsValue value, float now = Date.now()
 
 // The wait an ingestion endpoint asked for, held as an absolute deadline.
 export class RetryAfterWindow {
-  float until = 0.0;
-  float installedAt = 0.0;
+  float _until = 0.0;
+  float _installedAt = 0.0;
 
   // Folds one export outcome (`{kind, retryAfterMs?}`) into the window. The deadline is pushed out
   // but never past `MAX_RETRY_AFTER_MS` from where the window was installed, and never pulled in.
@@ -68,21 +68,21 @@ export class RetryAfterWindow {
     float now = Date.now() as float;
     float asked = (retryAfterMs as float).min(MAX_RETRY_AFTER_MS);
     if (!open) {
-      this.installedAt = now;
-      this.until = now + asked;
+      this._installedAt = now;
+      this._until = now + asked;
       return;
     }
-    this.until = this.until.max((now + asked).min(this.installedAt + MAX_RETRY_AFTER_MS));
+    this._until = this._until.max((now + asked).min(this._installedAt + MAX_RETRY_AFTER_MS));
   }
 
   // Milliseconds left of the wait, `0` when none is open; closes a window it finds spent.
   float remainingMs() {
     float now = Date.now() as float;
-    if (now < this.installedAt - CLOCK_STEP_TOLERANCE_MS) {
+    if (now < this._installedAt - CLOCK_STEP_TOLERANCE_MS) {
       this.reset();
       return 0.0;
     }
-    float remaining = MAX_RETRY_AFTER_MS.min((this.until - now).max(0.0));
+    float remaining = MAX_RETRY_AFTER_MS.min((this._until - now).max(0.0));
     if (remaining == 0.0) {
       this.reset();
     }
@@ -94,8 +94,8 @@ export class RetryAfterWindow {
   }
 
   void reset() {
-    this.until = 0.0;
-    this.installedAt = 0.0;
+    this._until = 0.0;
+    this._installedAt = 0.0;
   }
 }
 export constructor RetryAfterWindow;
