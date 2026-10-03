@@ -1,0 +1,655 @@
+// packages/browser/src/request.ts
+// The transport: sanitizes request options, encodes the body (JSON, base64 form data, or gzip via
+// fflate or the native CompressionStream), and sends it with fetch, XHR or sendBeacon.
+// Request options and response objects stay `JsValue`: callers own them and read them back
+// (callbacks, fetch options), and the encoded bytes and URLs are the contract. The transport
+// table keeps upstream's `{ transport, method }` entries.
+import { isArray } from "../core/utils/type-utils.lil";
+import { defineOwn, spreadInto, spreadCopy } from "../lil/spread.lil";
+import extern { each } from "@upstream/browser-common/utils/general-utils";
+import extern { default as Config } from "@upstream/browser/config";
+import extern { formDataToQuery, getQueryParam, jsonStringify } from "@upstream/browser-common/utils/request-utils";
+import extern { logger } from "@upstream/browser-common/utils/logger";
+import extern { AbortController, CompressionStream, fetch, navigator, XMLHttpRequest } from "@upstream/browser-common/utils/globals";
+import extern { gzipSync, strToU8 } from "fflate";
+import extern { _base64Encode } from "@upstream/browser-common/utils/encode-utils";
+// upstream imports these from `@posthog/core`; the same specifier keeps module mocks working
+import extern {
+  createNamedError,
+  gzipCompress,
+  isGzipData,
+  isGzipRequest,
+  isNativeAsyncGzipError,
+  isNativeAsyncGzipReadError,
+  parseRetryAfterMs
+} from "@upstream/core/index";
+extern JsValue each(JsValue obj, JsValue iterator);
+extern JsValue Config;
+extern string formDataToQuery(JsValue formdata);
+extern string getQueryParam(JsValue url, string param);
+extern JsValue jsonStringify(JsValue data);
+extern JsValue logger;
+extern JsValue AbortController;
+extern JsValue CompressionStream;
+extern JsValue fetch;
+extern JsValue navigator;
+extern JsValue XMLHttpRequest;
+extern JsValue gzipSync(JsValue data, JsValue options);
+extern JsValue strToU8(JsValue text);
+extern JsValue _base64Encode(JsValue data);
+extern JsValue createNamedError(string name, string message);
+extern Task<JsValue> gzipCompress(JsValue input, JsValue isDebug, JsValue options);
+extern bool isGzipData(JsValue body);
+extern bool isGzipRequest(JsValue compression, JsValue urlCompression);
+extern bool isNativeAsyncGzipError(JsValue error);
+extern bool isNativeAsyncGzipReadError(JsValue error);
+extern JsValue parseRetryAfterMs(JsValue value);
+extern JsValue Object;
+extern JsValue JSON;
+extern JsValue Date;
+extern JsValue Blob;
+extern JsValue Headers;
+extern JsValue WeakMap;
+extern JsValue Error;
+extern JsValue Promise;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+extern JsValue encodeURIComponent;
+extern JsValue isNaN;
+
+export { jsonStringify };
+
+export bool SUPPORTS_REQUEST = XMLHttpRequest.truthy() || fetch.truthy();
+
+// The SDK's fetch is the one captured at load, so page-level fetch wrappers never see it. Every
+// XMLHttpRequest shares one prototype, so the SDK's own XHRs are marked instead and observers such
+// as network metrics skip them. A WeakMap, not a WeakSet: IE11 has no WeakSet.
+JsValue posthogXHRs = new WeakMap();
+export bool isPostHogXHR(JsValue xhr) {
+  return posthogXHRs.has(xhr).truthy();
+}
+
+string CONTENT_TYPE_PLAIN = "text/plain";
+string CONTENT_TYPE_JSON = "application/json";
+string CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
+// Fetch's 64KiB keepalive quota is shared by outstanding requests, not per body: keep headroom and
+// coordinate every client using this module.
+float KEEP_ALIVE_THRESHOLD = 64.0 * 1024.0 * 0.8;
+float pendingKeepaliveBytes = 0.0;
+bool nativeAsyncGzipDisabled = false;
+
+string removeURLParam(string url, string param) {
+  string[] hashParts = url.split("#");
+  string[] searchParts = hashParts[0].split("?");
+  if (searchParts.length < 2 || searchParts[1] == "") {
+    return url;
+  }
+  string updatedSearch = searchParts[1].split("&").filter((string pair) => pair.split("=")[0] != param).join("&");
+  string hash = if (hashParts.length < 2) { "" } else { hashParts[1] };
+  return searchParts[0] + (if (updatedSearch != "") { "?" + updatedSearch } else { "" }) + (if (hash != "") { "#" + hash } else { "" });
+}
+
+// Extends a URL with additional query parameters. With `replace` (the default) new params
+// overwrite existing ones with the same key; otherwise existing params are preserved.
+export string extendURLParams(string url, JsValue params, bool replace = true) {
+  string[] parts = url.split("?");
+  string baseUrl = parts[0];
+  JsValue newParams = spreadCopy(params);
+  string[] updatedSearch = [];
+  if (parts.length > 1) {
+    string[] pairs = parts[1].split("&");
+    for (int i = 0; i < pairs.length; i++) {
+      string[] keyValue = pairs[i].split("=");
+      string key = keyValue[0];
+      JsValue origValue = if (keyValue.length > 1) { keyValue[1] as JsValue } else { undefined };
+      JsValue replacement = newParams[key];
+      JsValue value = if (replace && replacement != null) { replacement } else { origValue };
+      JS.delete(newParams, key);
+      updatedSearch.push(`${key}=${value}`);
+    }
+  }
+  string remaining = formDataToQuery(newParams);
+  if (remaining != "") {
+    updatedSearch.push(remaining);
+  }
+  return if (updatedSearch.length > 0) { baseUrl + "?" + updatedSearch.join("&") } else { baseUrl };
+}
+
+string encodeToDataString(JsValue data) {
+  return "data=" + encodeURIComponent(if (data is string) { data } else { jsonStringify(data) });
+}
+
+// `{ contentType, body, estimatedSize }`, or undefined without data. A body pre-encoded by the
+// async compression path wins.
+JsValue encodePostData(JsValue encodedBody, JsValue data, JsValue compression) {
+  if (encodedBody.truthy()) {
+    return encodedBody;
+  }
+  if (!data.truthy()) {
+    return undefined;
+  }
+  if (compression === "gzip-js") {
+    JsValue gzipData = gzipSync(strToU8(jsonStringify(data)), object { mtime: 0 });
+    return object {
+      contentType: CONTENT_TYPE_PLAIN,
+      body: gzipData.buffer.slice(gzipData.byteOffset, gzipData.byteOffset + gzipData.byteLength),
+      estimatedSize: gzipData.byteLength
+    };
+  }
+  if (compression === "base64") {
+    JsValue b64data = _base64Encode(jsonStringify(data));
+    string base64Body = encodeToDataString(b64data);
+    return object {
+      contentType: CONTENT_TYPE_FORM,
+      body: base64Body,
+      estimatedSize: new Blob([base64Body]).size
+    };
+  }
+  JsValue jsonBody = jsonStringify(data);
+  return object {
+    contentType: CONTENT_TYPE_JSON,
+    body: jsonBody,
+    estimatedSize: new Blob([jsonBody]).size
+  };
+}
+
+struct EncodedRequest {
+  JsValue url;
+  JsValue encodedBody;
+}
+
+EncodedRequest fallbackToUncompressed(JsValue options) {
+  // beacon bodies must keep a CORS-simple content type even on the gzip-failure fallback:
+  // uncompressed application/json preflights, base64 form data does not
+  if (options.transport === "sendBeacon") {
+    return EncodedRequest{
+      extendURLParams(options.url as string, object { compression: "base64" }),
+      encodePostData(undefined, options.data, "base64")
+    };
+  }
+  return EncodedRequest{
+    removeURLParam(options.url as string, "compression"),
+    encodePostData(undefined, options.data, undefined)
+  };
+}
+
+EncodedRequest encodePostDataSafely(JsValue options) {
+  JsValue encodedBody = undefined;
+  try {
+    encodedBody = encodePostData(options._encodedBody, options.data, options.compression);
+  } catch (JsValue error) {
+    if (isGzipRequest(options.compression, getQueryParam(options.url, "compression"))) {
+      logger.error("Failed to gzip request body, sending uncompressed payload", error);
+      return fallbackToUncompressed(options);
+    }
+    throw error;
+  }
+  if (!encodedBody.truthy() || !isGzipRequest(options.compression, getQueryParam(options.url, "compression")) || isGzipData(encodedBody.body)) {
+    return EncodedRequest{options.url, encodedBody};
+  }
+  nativeAsyncGzipDisabled = true;
+  return fallbackToUncompressed(options);
+}
+
+// `options.callback?.(…)`: called through the options object, like upstream
+void respond(JsValue options, JsValue response, JsValue retryAfterMs) {
+  if (options.callback != null) {
+    options.callback(response, retryAfterMs);
+  }
+}
+
+void respondOnce(JsValue options, JsValue response) {
+  if (options.callback != null) {
+    options.callback(response);
+  }
+}
+
+EncodedRequest? encodeRequest(JsValue options) {
+  try {
+    return encodePostDataSafely(options);
+  } catch (JsValue error) {
+    logger.error(error);
+    respondOnce(options, object { statusCode: 0, error: error });
+    return null;
+  }
+}
+
+// Pre-encodes the body with the native CompressionStream so fflate's synchronous gzip (300ms+ on
+// constrained devices) does not block the main thread. Callers check the preconditions.
+async JsValue preEncodeAsync(JsValue options) {
+  JsValue jsonData = jsonStringify(options.data);
+  JsValue compressed = await gzipCompress(jsonData, Config.DEBUG, object { rethrow: true });
+  if (!compressed.truthy()) {
+    return options;
+  }
+  JsValue body = await JS.assume(compressed.arrayBuffer());
+  JsValue encoded = spreadCopy(options);
+  encoded._encodedBody = object {
+    contentType: CONTENT_TYPE_PLAIN,
+    body: body,
+    estimatedSize: body.byteLength
+  };
+  return encoded;
+}
+
+// The reason used when our own request timeout aborts a fetch: `name === 'AbortError'` (timeout
+// detection by name keeps working) with a descriptive message.
+JsValue timeoutAbortReason(JsValue timeout) {
+  return createNamedError("AbortError", `PostHog request timed out${if (timeout.truthy()) { ` after ${timeout}ms` } else { "" }}`);
+}
+
+// A network-layer fetch failure (ad blocker, dropped connection, CORS, teardown) rejects with a
+// TypeError whose message varies by browser; these are expected, retried failures.
+Regex NETWORK_ERROR_MESSAGES = new Regex("Failed to fetch|NetworkError|Load failed", "i");
+bool isExpectedNetworkError(JsValue error) {
+  JsValue name = if (error == null) { undefined } else { error.name };
+  if (name !== "TypeError") {
+    return false;
+  }
+  JsValue message = if (error == null) { undefined } else { error["message"] };
+  return NETWORK_ERROR_MESSAGES.test((message || "") as string);
+}
+
+// Bound only the header component to 30 seconds: the queue's jittered exponential backoff is
+// never shortened.
+JsValue readRetryAfter(JsValue getHeader) {
+  try {
+    JsValue delay = parseRetryAfterMs(getHeader());
+    return if (delay === undefined) { undefined } else { ((delay as float).min(30000.0)) as JsValue };
+  } catch {
+    // Cross-origin headers may not be exposed, or a header accessor may throw.
+    return undefined;
+  }
+}
+
+void xhr(JsValue options) {
+  EncodedRequest? encodedRequest = encodeRequest(options);
+  if (encodedRequest == null) {
+    return;
+  }
+  JsValue req = new XMLHttpRequest();
+  posthogXHRs.set(req, true);
+  JsValue encodedBody = encodedRequest.encodedBody;
+  req.open(options.method || "GET", encodedRequest.url, true);
+  JsValue contentType = if (encodedBody == null) { undefined } else { encodedBody.contentType };
+  JsValue body = if (encodedBody == null) { undefined } else { encodedBody.body };
+  each(options.headers, (JsValue headerValue, JsValue headerName) => {
+    req.setRequestHeader(headerName, headerValue);
+  });
+  if (contentType.truthy()) {
+    req.setRequestHeader("Content-Type", contentType);
+  }
+  if (options.timeout.truthy()) {
+    req.timeout = options.timeout;
+  }
+  req.onreadystatechange = () => {
+    // XMLHttpRequest.DONE == 4, except in safari 4
+    if (req.readyState === 4) {
+      JsValue response = object {
+        statusCode: req.status,
+        text: req.responseText
+      };
+      if (req.status === 200) {
+        try {
+          response.json = JSON.parse(req.responseText);
+        } catch {
+        }
+      }
+      respond(options, response, readRetryAfter(() => req.getResponseHeader("Retry-After")));
+    }
+  };
+  req.send(body);
+}
+
+void fetchTransport(JsValue options) {
+  EncodedRequest? encodedRequest = encodeRequest(options);
+  if (encodedRequest == null) {
+    return;
+  }
+  JsValue url = encodedRequest.url;
+  JsValue encodedBody = encodedRequest.encodedBody;
+  JsValue contentType = if (encodedBody == null) { undefined } else { encodedBody.contentType };
+  JsValue body = if (encodedBody == null) { undefined } else { encodedBody.body };
+  JsValue estimatedSize = if (encodedBody == null) { undefined } else { encodedBody.estimatedSize };
+
+  JsValue headers = new Headers();
+  each(options.headers, (JsValue headerValue, JsValue headerName) => {
+    headers.append(headerName, headerValue);
+  });
+  if (contentType.truthy()) {
+    headers.append("Content-Type", contentType);
+  }
+
+  bool hasAborter = false;
+  JsValue abortSignal = undefined;
+  JsValue abortTimeout = undefined;
+  // Set the instant our own timeout fires, before the abort propagates: the source of truth for
+  // "we timed out ourselves" (not every browser propagates the abort reason).
+  bool timedOut = false;
+  // One request reports one outcome: whichever of the timeout and the fetch settles first
+  // reports, later results are dropped.
+  bool settled = false;
+  float reservedBytes = 0.0;
+
+  JsValue handleError = (JsValue error) => {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    // Our own timeout (an intentional abort) and network-level TypeErrors are expected, retried
+    // failures: warn, not error.
+    JsValue errorName = if (error == null) { undefined } else { error.name };
+    if ((timedOut && errorName === "AbortError") || isExpectedNetworkError(error)) {
+      logger.warn(error);
+    } else {
+      logger.error(error);
+    }
+    respondOnce(options, object { statusCode: 0, error: error });
+  };
+
+  if (AbortController.truthy()) {
+    JsValue controller = new AbortController();
+    hasAborter = true;
+    abortSignal = controller.signal;
+    abortTimeout = setTimeout(() => {
+      timedOut = true;
+      // Abort with an explicit reason so our own timeouts are identifiable. A patched `abort()`
+      // that throws is routed through the same `{ statusCode: 0, error }` path.
+      try {
+        controller.abort(timeoutAbortReason(options.timeout));
+      } catch (JsValue error) {
+        handleError(error);
+      }
+    }, options.timeout);
+  }
+
+  JsValue cleanup = () => {
+    pendingKeepaliveBytes -= reservedBytes;
+    reservedBytes = 0.0;
+    if (hasAborter) {
+      clearTimeout(abortTimeout);
+    }
+  };
+
+  try {
+    JsValue fetchOptions = object {
+      method: (if (options == null) { undefined } else { options.method }) || "GET",
+      headers: headers,
+      // Keep the referring origin for domain checks without sending the page path or query.
+      referrerPolicy: "strict-origin",
+      body: body,
+      signal: if (hasAborter) { abortSignal } else { undefined }
+    };
+    spreadInto(fetchOptions, options.fetchOptions);
+    JsValue requestSize = if (estimatedSize == null) { if (body === undefined) { 0 as JsValue } else { undefined } } else { estimatedSize };
+    // Respect runtime opt-out, but do not let untyped options override the safety budget or the
+    // beacon-rejection fallback. A replaced body has no trustworthy encoded size.
+    fetchOptions.keepalive = fetchOptions.method === "POST" &&
+      !options._keepaliveDisabled.truthy() &&
+      fetchOptions.keepalive !== false &&
+      fetchOptions.body === body &&
+      requestSize !== undefined &&
+      requestSize >= 0 &&
+      pendingKeepaliveBytes + requestSize < KEEP_ALIVE_THRESHOLD;
+    if (fetchOptions.keepalive.truthy()) {
+      reservedBytes = requestSize as float;
+      pendingKeepaliveBytes += reservedBytes;
+    }
+    // Reserve immediately before dispatch; fetch resolves at headers, so bytes stay reserved
+    // through body consumption.
+    fetch(url, fetchOptions)
+      .then((JsValue response) => {
+        return response.text().then((JsValue responseText) => {
+          if (settled) {
+            // Our timeout already reported a failure for this request.
+            return;
+          }
+          JsValue res = object {
+            statusCode: response.status,
+            text: responseText
+          };
+          if (response.status === 200) {
+            try {
+              res.json = JSON.parse(responseText);
+            } catch (JsValue e) {
+              logger.error(e);
+            }
+          }
+          settled = true;
+          // A callback can start the next batch immediately, including by resolving a promise.
+          cleanup();
+          respond(options, res, readRetryAfter(() => response.headers.get("Retry-After")));
+        });
+      })
+      .catch((JsValue error) => {
+        cleanup();
+        handleError(error);
+      })
+      .finally(cleanup);
+  } catch (JsValue error) {
+    // A monkey-patched `window.fetch` may throw synchronously; route it like a rejection.
+    // `.finally()` never runs then, so clear the timeout here too.
+    cleanup();
+    handleError(error);
+  }
+}
+
+// below this size a rejection means the shared quota is exhausted, not that the payload is too big
+float BEACON_SPLIT_FLOOR_BYTES = 16.0 * 1024.0;
+
+JsValue withSentAt(JsValue item, string sentAt) {
+  JsValue copy = spreadCopy(item);
+  copy.sent_at = sentAt;
+  return copy;
+}
+
+JsValue addSentAtToBody(JsValue data) {
+  string sentAt = new Date().toISOString() as string;
+  if (!isArray(data)) {
+    return withSentAt(data, sentAt);
+  }
+  return data.map((JsValue item) => withSentAt(item, sentAt));
+}
+
+JsValue withBatch(JsValue options, JsValue events) {
+  if (isArray(options.data)) {
+    return events;
+  }
+  JsValue data = spreadCopy(options.data);
+  data.batch = events;
+  return data;
+}
+
+JsValue withData(JsValue options, JsValue data) {
+  JsValue copy = Object.assign(object {}, options);
+  copy.data = data;
+  return copy;
+}
+
+void sendBeaconTransport(JsValue options) {
+  // beacon documentation https://w3c.github.io/beacon/
+  try {
+    EncodedRequest encodedRequest = encodePostDataSafely(options);
+    JsValue encodedBody = encodedRequest.encodedBody;
+    JsValue contentType = if (encodedBody == null) { undefined } else { encodedBody.contentType };
+    JsValue body = if (encodedBody == null) { undefined } else { encodedBody.body };
+    JsValue estimatedSize = if (encodedBody == null) { undefined } else { encodedBody.estimatedSize };
+    if (!body.truthy()) {
+      return;
+    }
+    // sendBeacon needs a Blob to set the Content-Type header: an ArrayBuffer body would be sent
+    // without one.
+    JsValue sendBeaconBody = if (body instanceof Blob) { body } else { new Blob([body], object { type: contentType }) };
+    if (navigator.sendBeacon(encodedRequest.url, sendBeaconBody).truthy()) {
+      return;
+    }
+
+    // rejected: over the page's shared ~64KiB in-flight keepalive quota; halve so what fits still
+    // delivers
+    JsValue data = options.data;
+    JsValue batch = if (isArray(data)) { data } else { if (data == null) { undefined } else { data.batch } };
+    JsValue size = if (estimatedSize == null) { 0 as JsValue } else { estimatedSize };
+    if (isArray(batch) && batch.length > 1.0 && size > BEACON_SPLIT_FLOOR_BYTES) {
+      JsValue mid = (batch.length / 2.0).ceil();
+      sendBeaconTransport(withData(options, withBatch(options, batch.slice(0, mid))));
+      sendBeaconTransport(withData(options, withBatch(options, batch.slice(mid))));
+      return;
+    }
+
+    logger.warn(`Beacon of ~${size} bytes was rejected by the browser, falling back to ${if (fetch.truthy()) { "fetch" } else { "XHR" }}`);
+    if (fetch.truthy()) {
+      // a beacon-rejected payload would fail a keepalive fetch too (shared quota)
+      JsValue retry = Object.assign(object {}, options);
+      retry._keepaliveDisabled = true;
+      fetchTransport(retry);
+    } else {
+      xhr(options);
+    }
+  } catch (JsValue error) {
+    // sendBeacon is a best-effort, fire-and-forget mechanism on page unload
+    logger.warn("Beacon send failed", error);
+  }
+}
+
+string buildRequestURL(JsValue url, JsValue method, JsValue compression, JsValue timestampMode) {
+  JsValue params = object {};
+  if (timestampMode === "query") {
+    params[if (method === "POST") { "sent_at" } else { "_" }] = Date.now().toString();
+  }
+  if (compression !== "gzip-js") {
+    params.compression = compression;
+  }
+  return extendURLParams(if (compression === "gzip-js") { removeURLParam(url as string, "compression") } else { url as string }, params);
+}
+
+JsValue addSentAtToCaptureBody(JsValue data) {
+  JsValue events = if (isArray(data)) { data } else { [data] };
+  JsValue batch = events.map((JsValue event) => {
+    JsValue copy = spreadCopy(event);
+    // the typed canonical timestamp override, not an arbitrary event property
+    if (event.timestamp instanceof Date && !isNaN(event.timestamp.getTime()).truthy()) {
+      copy.timestamp = event.timestamp.toISOString();
+    }
+    return copy;
+  });
+  JsValue firstEvent = batch[0];
+  JsValue properties = if (firstEvent == null) { undefined } else { firstEvent.properties };
+  JsValue propertiesToken = if (properties == null) { undefined } else { properties.token };
+  return object {
+    api_key: if (propertiesToken == null) { if (firstEvent == null) { undefined } else { firstEvent.token } } else { propertiesToken },
+    batch: batch,
+    sent_at: new Date().toISOString()
+  };
+}
+
+// Transports in order of preference. Initialization stays local so importing the URL helpers
+// does not retain the transports.
+JsValue AVAILABLE_TRANSPORTS = availableTransports();
+
+JsValue availableTransports() {
+  JsValue transports = [];
+  if (fetch.truthy()) {
+    transports.push(object { transport: "fetch", method: fetchTransport });
+  }
+  if (XMLHttpRequest.truthy()) {
+    transports.push(object { transport: "XHR", method: xhr });
+  }
+  if (navigator != null && navigator.sendBeacon.truthy()) {
+    transports.push(object { transport: "sendBeacon", method: sendBeaconTransport });
+  }
+  return transports;
+}
+
+void sendAsync(JsValue options, JsValue _options, JsValue safeTransportMethod) {
+  (preEncodeAsync(options) as JsValue)
+    .then((JsValue encodedOptions) => {
+      safeTransportMethod(encodedOptions);
+    })
+    .catch((JsValue error) => {
+      if (isNativeAsyncGzipReadError(error)) {
+        nativeAsyncGzipDisabled = true;
+        JsValue uncompressed = Object.assign(object {}, options);
+        uncompressed.compression = undefined;
+        uncompressed.url = buildRequestURL(_options.url, _options.method, undefined, _options.timestampMode);
+        safeTransportMethod(uncompressed);
+        return;
+      }
+      if (isNativeAsyncGzipError(error)) {
+        nativeAsyncGzipDisabled = true;
+      }
+      // If async compression fails for another reason, fall back to the synchronous fflate path
+      safeTransportMethod(options);
+    });
+}
+
+// The entrypoint: sanitizes the options, then calls the chosen transport.
+export void request(JsValue _options, JsValue onResponse) {
+  // Clone the options so we don't modify the original object
+  JsValue options = Object.assign(object {}, _options);
+  options.callback = onResponse ?? ((JsValue response) => respondOnce(_options, response));
+  options.timeout = options.timeout || 60000;
+
+  JsValue transport = options.transport ?? "fetch";
+
+  // beacons fire during page unload, where a CORS preflight cannot complete: the body must keep a
+  // CORS-simple content type, which uncompressed (application/json) is not
+  if (transport === "sendBeacon" && options.compression === undefined && options.data.truthy()) {
+    options.compression = "base64";
+  }
+
+  if (options.method === "POST" && options.data.truthy()) {
+    if (options.timestampMode === "capture-body") {
+      options.data = addSentAtToCaptureBody(options.data);
+    } else if (options.timestampMode === "body") {
+      options.data = addSentAtToBody(options.data);
+    }
+  }
+
+  options.url = buildRequestURL(options.url, options.method, options.compression, options.timestampMode);
+
+  JsValue available = AVAILABLE_TRANSPORTS.filter((JsValue t) =>
+    !options.disableTransport.truthy() || !t.transport.truthy() || !options.disableTransport.includes(t.transport).truthy());
+
+  JsValue transportMethod = undefined;
+  for (int i = 0; i < available.length; i++) {
+    if (available[i].transport === transport) {
+      transportMethod = available[i].method;
+      break;
+    }
+  }
+  if (transportMethod == null) {
+    transportMethod = available[0].method;
+  }
+  if (!transportMethod.truthy()) {
+    throw new Error("No available transport method");
+  }
+
+  // A patched global can throw outside a transport's own guards: route these errors through the
+  // normal failure callback for both synchronous and async compression.
+  JsValue safeTransportMethod = (JsValue opts) => {
+    try {
+      transportMethod(opts);
+    } catch (JsValue error) {
+      if (isExpectedNetworkError(error)) {
+        logger.warn(error);
+      } else {
+        logger.error(error);
+      }
+      respondOnce(options, object { statusCode: 0, error: error });
+    }
+  };
+
+  // Non-beacon transports use the async native CompressionStream when available; sendBeacon stays
+  // synchronous because it runs during page unload.
+  if (transport !== "sendBeacon" &&
+    !options.preferSyncCompression.truthy() &&
+    options.data.truthy() &&
+    options.compression === "gzip-js" &&
+    CompressionStream.truthy() &&
+    JS.typeOf(Promise) != "undefined" &&
+    !nativeAsyncGzipDisabled) {
+    sendAsync(options, _options, safeTransportMethod);
+  } else {
+    safeTransportMethod(options);
+  }
+}

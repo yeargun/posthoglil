@@ -1,0 +1,31 @@
+// LilScript-only helper (no upstream twin): object spread over dynamic values.
+// `{...source, key: value}` copies the source's own enumerable string keys in their order and
+// defines each as an own data property. Assignment is the same operation on a fresh ordinary
+// object except for a `__proto__` key, which assignment would turn into a prototype change, so
+// that key is defined explicitly. Symbol keys are not copied: every caller hands the copy to
+// JSON serialization or reads named fields from it.
+extern JsValue Object;
+
+export void defineOwn(JsValue target, string key, JsValue value) {
+  if (key == "__proto__") {
+    Object.defineProperty(target, key, object { value: value, writable: true, enumerable: true, configurable: true });
+  } else {
+    target[key] = value;
+  }
+}
+
+export JsValue spreadInto(JsValue target, JsValue source) {
+  if (source != null) {
+    JsValue keys = Object.keys(source);
+    for (int i = 0; i < keys.length; i++) {
+      string key = keys[i] as string;
+      defineOwn(target, key, source[key]);
+    }
+  }
+  return target;
+}
+
+// `{...source}`
+export JsValue spreadCopy(JsValue source) {
+  return spreadInto(object {}, source);
+}
