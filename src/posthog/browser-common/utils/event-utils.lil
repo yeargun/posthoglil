@@ -9,7 +9,7 @@ import { SDK_DIST_CHANNEL } from "../constants.lil";
 import { each, extend, stripEmptyProperties } from "./general-utils.lil";
 import { document, location, userAgent, window } from "./globals.lil";
 import { getCookieValue } from "./cookie-utils.lil";
-import { stripUrlHash } from "../../core/utils/index.lil";
+import { stripUrlHash } from "../../lil/core-utils.lil";
 import { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS } from "../../core/utils/user-agent-utils.lil";
 import { detectWebviewApp } from "../../core/utils/webview-app-utils.lil";
 extern JsValue navigator;

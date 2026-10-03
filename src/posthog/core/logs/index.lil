@@ -6,7 +6,7 @@
 import { buildOtlpLogRecord, buildOtlpLogsPayload, buildResourceAttributes } from "./logs-utils.lil";
 import { PostHogPersistedProperty } from "../types.lil";
 import { isArray } from "../utils/type-utils.lil";
-import { raceWithTimeout } from "../utils/index.lil";
+import { raceWithTimeout } from "../../lil/core-utils.lil";
 import { FlushTimer } from "../utils/flush-timer.lil";
 import { RetryAfterWindow } from "../utils/retry-after.lil";
 import { MAX_FLUSH_BACKOFF_MS, NO_JITTER, backoffDelayMs, drawJitter } from "../utils/backoff.lil";

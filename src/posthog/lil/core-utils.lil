@@ -1,0 +1,168 @@
+// The helpers that packages/core/src/utils/index.ts defines itself (not its re-exports). They live
+// here so a module that needs one of them does not import the whole utils barrel: a LilScript
+// program initializes every module an imported module imports, while upstream's bundler drops the
+// barrel's unused modules because its build declares @posthog/core free of side effects. The barrel
+// re-exports these names unchanged.
+import { isString } from "../core/utils/type-utils.lil";
+extern JsValue Object;
+extern JsValue Error;
+extern JsValue Date;
+extern JsValue Promise;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+extern JsValue fetch;
+extern JsValue globalThis;
+
+export string STRING_FORMAT = "utf8";
+
+export Regex UUID_REGEX = new Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "i");
+
+export bool isValidUUID(JsValue value) {
+  return value is string && UUID_REGEX.test(value);
+}
+
+export string getEventUuid(JsValue uuid, JsValue generateUuid) {
+  if (isValidUUID(uuid)) {
+    return uuid as string;
+  }
+  return generateUuid() as string;
+}
+
+// Creates an `Error` with the given `name` as an own property, which also holds where a browser
+// extension made `Error.prototype.name` non-writable.
+export JsValue createNamedError(string name, JsValue message) {
+  JsValue error = JS.construct(Error, message);
+  try {
+    Object.defineProperty(error, "name", object { value: name, writable: true, enumerable: true, configurable: true });
+  } catch (JsValue ignored) {
+    // a page hostile enough to harden `Error.prototype` can also patch `Object.defineProperty`
+  }
+  return error;
+}
+
+export void assert(JsValue truthyValue, JsValue message) {
+  if (!truthyValue.truthy() || !(truthyValue is string) || isEmpty(truthyValue)) {
+    throw JS.construct(Error, message);
+  }
+}
+
+bool isEmpty(string truthyValue) {
+  return truthyValue.trim().length == 0;
+}
+
+// Detects HTTP(S) URLs and explicit relative paths by prefix; does not validate URL syntax.
+export bool isUrl(JsValue value) {
+  return isString(value) && new Regex("^(https?:\\/\\/|\\/|\\.\\.?\\/)", "i").test(value.trim() as string);
+}
+
+export string | undefined removeTrailingSlash(string? url) {
+  if (url == null) {
+    return undefined;
+  }
+  return url.replace(new Regex("\\/+$"), "");
+}
+
+export JsValue stripUrlHash(JsValue url) {
+  if (!url.truthy()) {
+    return url;
+  }
+  return url.split("#")[0];
+}
+
+export async JsValue retriable(JsValue fn, JsValue props) {
+  JsValue lastError = null;
+  for (float i = 0.0; i < props.retryCount + 1; i += 1.0) {
+    if (i > 0.0) {
+      // don't wait when it's the last try
+      Task<JsValue> delay = JS.assume(JS.construct(Promise, (JsValue resolve) => setTimeout(resolve, props.retryDelay)));
+      await delay;
+    }
+    try {
+      Task<JsValue> attempt = JS.assume(fn());
+      JsValue res = await attempt;
+      return res;
+    } catch (JsValue e) {
+      lastError = e;
+      if (!props.retryCheck(e).truthy()) {
+        throw e;
+      }
+    }
+  }
+  throw lastError;
+}
+
+export float currentTimestamp() {
+  return JS.construct(Date).getTime() as float;
+}
+
+export string currentISOTime() {
+  return JS.construct(Date).toISOString() as string;
+}
+
+export JsValue trySafe(JsValue fn) {
+  try {
+    return fn();
+  } catch (JsValue ignored) {
+    return undefined;
+  }
+}
+
+export JsValue safeSetTimeout(JsValue fn, JsValue timeout) {
+  // NOTE: we use this so rarely that it is totally fine to do `safeSetTimeout(fn, 0)`
+  JsValue t = setTimeout(fn, timeout);
+  // We unref if available to prevent Node.js hanging on exit
+  if (t != null && t.unref.truthy()) {
+    t.unref();
+  }
+  return t;
+}
+
+export async JsValue raceWithTimeout(JsValue promise, JsValue timeoutMs, JsValue onTimeout) {
+  JsValue timeoutHandle = undefined;
+  try {
+    Task<JsValue> raced = JS.assume(Promise.race([
+      promise,
+      JS.construct(Promise, (JsValue resolve, JsValue reject) => {
+        timeoutHandle = safeSetTimeout(() => {
+          try {
+            if (onTimeout != null) {
+              onTimeout();
+            }
+            resolve();
+          } catch (JsValue error) {
+            reject(error);
+          }
+        }, timeoutMs);
+      })
+    ]));
+    return await raced;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+}
+
+// A slightly imperfect check, as the global "Promise" object can get mutated in some environments.
+export JsValue isPromise(JsValue obj) {
+  if (!obj.truthy()) {
+    return obj;
+  }
+  return JS.typeOf(obj.then) == "function";
+}
+
+export JsValue getFetch() {
+  if (JS.typeOf(fetch) != "undefined") {
+    return fetch;
+  }
+  return if (JS.typeOf(globalThis.fetch) != "undefined") { globalThis.fetch } else { undefined };
+}
+
+export JsValue allSettled(JsValue promises) {
+  return Promise.all(
+    promises.map((JsValue p) =>
+      (p ?? Promise.resolve()).then(
+        (JsValue value) => object { status: "fulfilled", value: value },
+        (JsValue reason) => object { status: "rejected", reason: reason }
+      )
+    )
+  );
+}

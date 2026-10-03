@@ -1,6 +1,6 @@
 // packages/core/src/utils/flush-timer.ts — the pending flush timer of an export queue, and when it
 // is due. The queues keep it in a private field, so its own calls to `arm`/`clear` are static.
-import { safeSetTimeout } from "./index.lil";
+import { safeSetTimeout } from "../../lil/core-utils.lil";
 extern JsValue Date;
 extern JsValue Object;
 extern JsValue clearTimeout;

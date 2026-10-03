@@ -1,0 +1,69 @@
+{
+ "compiler": "/home/azureuser/lilscript-work/bin/posthog100-f1/lilscript",
+ "date": "2026-10-03T21:39:16.897Z",
+ "results": [
+  {
+   "id": "metrics",
+   "title": "Metrics client (OTLP)",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 11528,
+     "gzip": 4383,
+     "brotli": 4024
+    },
+    "esbuild": {
+     "raw": 14927,
+     "gzip": 5674,
+     "brotli": 5170
+    },
+    "oxc": {
+     "raw": 12090,
+     "gzip": 4169,
+     "brotli": 3817
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "terser-upstream",
+     "bytes": 11528
+    },
+    "gzip": {
+     "lane": "oxc",
+     "bytes": 4169
+    },
+    "brotli": {
+     "lane": "oxc",
+     "bytes": 3817
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/index.mjs",
+     "seconds": 2.09,
+     "raw": 11320,
+     "gzip": 4502,
+     "brotli": 4064
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/index.mjs",
+     "seconds": 2.55,
+     "raw": 11719,
+     "gzip": 4280,
+     "brotli": 3948
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/index.mjs",
+     "seconds": 7.46,
+     "raw": 11984,
+     "gzip": 4328,
+     "brotli": 3901
+    }
+   },
+   "delta": {
+    "raw": -1.8,
+    "gzip": 2.66,
+    "brotli": 2.2
+   }
+  }
+ ]
+}

@@ -1,0 +1,132 @@
+{
+ "compiler": "/home/azureuser/lilscript-work/bin/posthog100/lilscript",
+ "date": "2026-10-03T21:19:13.535Z",
+ "results": [
+  {
+   "id": "feature-flags",
+   "title": "Feature flag response utilities",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 2867,
+     "gzip": 1193,
+     "brotli": 1041
+    },
+    "esbuild": {
+     "raw": 2858,
+     "gzip": 1205,
+     "brotli": 1062
+    },
+    "oxc": {
+     "raw": 2869,
+     "gzip": 1200,
+     "brotli": 1053
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "esbuild",
+     "bytes": 2858
+    },
+    "gzip": {
+     "lane": "terser-upstream",
+     "bytes": 1193
+    },
+    "brotli": {
+     "lane": "terser-upstream",
+     "bytes": 1041
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/featureFlagUtils.mjs",
+     "seconds": 0.21,
+     "raw": 3356,
+     "gzip": 1361,
+     "brotli": 1197
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/featureFlagUtils.mjs",
+     "seconds": 0.34,
+     "raw": 3392,
+     "gzip": 1328,
+     "brotli": 1184
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/featureFlagUtils.mjs",
+     "seconds": 0.56,
+     "raw": 3362,
+     "gzip": 1337,
+     "brotli": 1176
+    }
+   },
+   "delta": {
+    "raw": 17.42,
+    "gzip": 11.32,
+    "brotli": 12.97
+   }
+  },
+  {
+   "id": "uuidv7",
+   "title": "UUIDv7 event and session IDs",
+   "upstream": {
+    "terser-upstream": {
+     "raw": 20633,
+     "gzip": 7941,
+     "brotli": 7253
+    },
+    "esbuild": {
+     "raw": 24650,
+     "gzip": 9875,
+     "brotli": 8999
+    },
+    "oxc": {
+     "raw": 3823,
+     "gzip": 1803,
+     "brotli": 1553
+    }
+   },
+   "best": {
+    "raw": {
+     "lane": "oxc",
+     "bytes": 3823
+    },
+    "gzip": {
+     "lane": "oxc",
+     "bytes": 1803
+    },
+    "brotli": {
+     "lane": "oxc",
+     "bytes": 1553
+    }
+   },
+   "lilscript": {
+    "raw": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/uuidv7.mjs",
+     "seconds": 0.2,
+     "raw": 2836,
+     "gzip": 1460,
+     "brotli": 1268
+    },
+    "gzip": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/uuidv7.mjs",
+     "seconds": 0.22,
+     "raw": 2875,
+     "gzip": 1436,
+     "brotli": 1254
+    },
+    "brotli": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/uuidv7.mjs",
+     "seconds": 0.6,
+     "raw": 2887,
+     "gzip": 1440,
+     "brotli": 1249
+    }
+   },
+   "delta": {
+    "raw": -25.82,
+    "gzip": -20.35,
+    "brotli": -19.58
+   }
+  }
+ ]
+}

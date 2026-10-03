@@ -1,7 +1,7 @@
 // packages/core/src/gzip.ts — native gzip (CompressionStream) with output validation. The CRC table
 // is typed int32: upstream stores `crc >>> 0`, but only each entry's int32 bits are ever used.
 import { Compression } from "./types.lil";
-import { createNamedError } from "./utils/index.lil";
+import { createNamedError } from "../lil/core-utils.lil";
 extern JsValue globalThis;
 extern JsValue Response;
 extern JsValue ArrayBuffer;
