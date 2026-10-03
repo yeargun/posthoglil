@@ -1,0 +1,125 @@
+// packages/browser/src/scroll-manager.ts
+// Tracks scroll events and keeps the scroll context of the current page view.
+// `posthog.scrollManager` is reachable from the page: it keeps `_instance` (reserved in upstream's
+// npm build), the public methods, and one listener function per instance (the same function is
+// added for every event, so repeated `startMeasuringScrollPosition` calls stay deduplicated).
+import { isArray } from "../core/utils/type-utils.lil";
+import extern { window } from "@upstream/browser-common/utils/globals";
+import extern { addEventListener } from "@upstream/browser-common/utils/general-utils";
+extern JsValue window;
+extern JsValue addEventListener(JsValue element, string event, JsValue callback, JsValue options);
+extern JsValue setTimeout;
+
+export class ScrollManager {
+  JsValue _instance;
+  JsValue _updateScrollData;
+  // the ScrollContext object handed to page views: lastScrollY, maxScrollY, maxScrollHeight,
+  // lastContentY, maxContentY, maxContentHeight (scroll is how far down the user has scrolled,
+  // content how far down they can see content)
+  JsValue _context;
+
+  init(JsValue _instance) {
+    this._instance = _instance;
+    this._updateScrollData = undefined;
+    this._context = undefined;
+    ScrollManager self = this;
+    this._updateScrollData = (() => updateScrollData(self)) as JsValue;
+  }
+
+  JsValue getContext() {
+    return this._context;
+  }
+
+  JsValue resetContext() {
+    JsValue ctx = this._context;
+    this._context = undefined;
+    // update the scroll properties for the new page, but wait until the next tick of the event loop
+    setTimeout(this._updateScrollData, 0);
+    return ctx;
+  }
+
+  // `capture: true` is required to get scroll events for other scrollable elements on the page,
+  // not just the window
+  void startMeasuringScrollPosition() {
+    addEventListener(window, "scroll", this._updateScrollData, object { capture: true });
+    addEventListener(window, "scrollend", this._updateScrollData, object { capture: true });
+    addEventListener(window, "resize", this._updateScrollData, undefined);
+  }
+
+  JsValue scrollElement() {
+    if (scrollRootOf(this).truthy()) {
+      JsValue selectors = if (isArray(scrollRootOf(this))) { scrollRootOf(this) } else { [scrollRootOf(this)] };
+      for (int i = 0; i < selectors.length; i++) {
+        JsValue doc = if (window == null) { undefined } else { window.document };
+        JsValue element = if (doc == null) { undefined } else { doc.querySelector(selectors[i]) };
+        if (element.truthy()) {
+          return element;
+        }
+      }
+      return undefined;
+    }
+    JsValue doc = if (window == null) { undefined } else { window.document };
+    return if (doc == null) { undefined } else { doc.documentElement };
+  }
+
+  float scrollY() {
+    return scrollPosition(this, true);
+  }
+
+  float scrollX() {
+    return scrollPosition(this, false);
+  }
+}
+export constructor ScrollManager;
+
+JsValue scrollRootOf(ScrollManager self) {
+  return self._instance.config.scroll_root_selector;
+}
+
+float scrollPosition(ScrollManager self, bool vertical) {
+  string elementKey = if (vertical) { "scrollTop" } else { "scrollLeft" };
+  if (scrollRootOf(self).truthy()) {
+    JsValue element = (self as JsValue).scrollElement();
+    JsValue position = if (element.truthy()) { element[elementKey] } else { element };
+    return (position || 0) as float;
+  }
+  if (!window.truthy()) {
+    return 0;
+  }
+  if (vertical) {
+    return (window.scrollY || window.pageYOffset || documentElementKey("scrollTop") || 0) as float;
+  }
+  return (window.scrollX || window.pageXOffset || documentElementKey("scrollLeft") || 0) as float;
+}
+
+// `window.document?.documentElement?.[key]`
+JsValue documentElementKey(string key) {
+  JsValue doc = window.document;
+  if (doc == null) {
+    return undefined;
+  }
+  JsValue root = doc.documentElement;
+  return if (root == null) { undefined } else { root[key] };
+}
+
+float orZero(JsValue value) {
+  return (if (value == null) { 0 as JsValue } else { value }) as float;
+}
+
+void updateScrollData(ScrollManager self) {
+  if (!self._context.truthy()) {
+    self._context = object {};
+  }
+  JsValue el = (self as JsValue).scrollElement();
+  float scrollY = (self as JsValue).scrollY() as float;
+  float scrollHeight = if (el.truthy()) { (0.0).max((el.scrollHeight - el.clientHeight) as float) } else { 0.0 };
+  float contentY = scrollY + ((if (el == null) { undefined } else { el.clientHeight }) || 0) as float;
+  float contentHeight = ((if (el == null) { undefined } else { el.scrollHeight }) || 0) as float;
+  JsValue context = self._context;
+  context.lastScrollY = scrollY.ceil();
+  context.maxScrollY = scrollY.max(orZero(context.maxScrollY));
+  context.maxScrollHeight = scrollHeight.max(orZero(context.maxScrollHeight));
+  context.lastContentY = contentY;
+  context.maxContentY = contentY.max(orZero(context.maxContentY));
+  context.maxContentHeight = contentHeight.max(orZero(context.maxContentHeight));
+}

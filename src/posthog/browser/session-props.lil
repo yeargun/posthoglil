@@ -1,0 +1,88 @@
+// packages/browser/src/session-props.ts
+// Session-level attribution (entry URL and referrer) kept in persistence for the life of a
+// session id. `posthog.sessionPropsManager` is reachable from the page: it keeps `_instance`
+// (reserved in upstream's npm build) and the two public methods; the session-id callback, the
+// stored-props read and the remaining private fields are module state of this file.
+import { stripLeadingDollar } from "../core/utils/string-utils.lil";
+import extern { getPersonInfo, getPersonPropsFromInfo } from "@upstream/browser-common/utils/event-utils";
+import extern { CLIENT_SESSION_PROPS } from "@upstream/browser/constants";
+import extern { each, stripEmptyProperties } from "@upstream/browser-common/utils/general-utils";
+extern JsValue getPersonInfo(JsValue maskPersonalDataProperties, JsValue customPersonalDataProperties, JsValue disableCaptureUrlHashes);
+extern JsValue getPersonPropsFromInfo(JsValue info, JsValue disableCaptureUrlHashes);
+extern string CLIENT_SESSION_PROPS;
+extern JsValue each(JsValue obj, JsValue iterator);
+extern JsValue stripEmptyProperties(JsValue p);
+
+JsValue configOf(JsValue posthog, string key) {
+  return if (posthog == null) { undefined } else { posthog.config[key] };
+}
+
+JsValue generateSessionSourceParams = (JsValue posthog) => getPersonInfo(
+  configOf(posthog, "mask_personal_data_properties"),
+  configOf(posthog, "custom_personal_data_properties"),
+  configOf(posthog, "disable_capture_url_hashes")
+);
+
+export class SessionPropsManager {
+  JsValue _instance;
+  JsValue _persistence;
+  JsValue _sessionSourceParamGenerator;
+
+  init(JsValue instance, JsValue sessionIdManager, JsValue persistence, JsValue sessionSourceParamGenerator = undefined) {
+    this._instance = instance;
+    this._persistence = persistence;
+    this._sessionSourceParamGenerator = sessionSourceParamGenerator || generateSessionSourceParams;
+    SessionPropsManager self = this;
+    sessionIdManager.onSessionId((JsValue sessionId) => onSessionIdChanged(self, sessionId));
+  }
+
+  JsValue getSetOnceProps() {
+    JsValue stored = getStored(this);
+    JsValue p = if (stored == null) { undefined } else { stored.props };
+    if (!p.truthy()) {
+      return object {};
+    }
+    if (JS.in("r", p)) {
+      return getPersonPropsFromInfo(p, this._instance.config.disable_capture_url_hashes);
+    }
+    return object {
+      $referring_domain: p.referringDomain,
+      $pathname: p.initialPathName,
+      utm_source: p.utm_source,
+      utm_campaign: p.utm_campaign,
+      utm_medium: p.utm_medium,
+      utm_content: p.utm_content,
+      utm_term: p.utm_term
+    };
+  }
+
+  JsValue getSessionProps() {
+    // the same props, without null for unset ones, and with a prefix
+    JsValue p = object {};
+    each(stripEmptyProperties((this as JsValue).getSetOnceProps()), (JsValue v, string k) => {
+      // $session_entry_current_url would be a weird name, call it $session_entry_url instead
+      string key = if (k == "$current_url") { "url" } else { k };
+      p[`$session_entry_${stripLeadingDollar(key)}`] = v;
+    });
+    return p;
+  }
+}
+export constructor SessionPropsManager;
+
+JsValue getStored(SessionPropsManager self) {
+  return self._persistence.props[CLIENT_SESSION_PROPS];
+}
+
+void onSessionIdChanged(SessionPropsManager self, JsValue sessionId) {
+  JsValue stored = getStored(self);
+  if (stored.truthy() && stored.sessionId === sessionId) {
+    return;
+  }
+  JsValue newProps = object {
+    sessionId: sessionId,
+    props: self._sessionSourceParamGenerator.call(self, self._instance)
+  };
+  JsValue registered = object {};
+  registered[CLIENT_SESSION_PROPS] = newProps;
+  self._persistence.register(registered);
+}

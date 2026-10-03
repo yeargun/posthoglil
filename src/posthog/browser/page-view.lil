@@ -1,0 +1,137 @@
+// packages/browser/src/page-view.ts
+// Keeps the page-view state (previous path, timestamp, id and scroll properties) in memory; the
+// next $pageview or $pageleave carries it as $prev_pageview_* properties.
+// `posthog.pageViewManager` is reachable from the page: it keeps `_instance` (reserved in
+// upstream's npm build) and the public methods. The session-rotation handler is a closure.
+import { clampToRange } from "../core/utils/number-utils.lil";
+import extern { window } from "@upstream/browser-common/utils/globals";
+import extern { logger } from "@upstream/browser-common/utils/logger";
+extern JsValue window;
+extern JsValue logger;
+
+export class PageViewManager {
+  JsValue _instance;
+  JsValue _unsubscribeSessionId;
+  // { pathname, pageViewId, timestamp } of the current page view, or undefined
+  JsValue _currentPageview = undefined;
+
+  init(JsValue instance) {
+    this._instance = instance;
+    this._unsubscribeSessionId = undefined;
+    PageViewManager self = this;
+    JsValue sessionManager = instance.sessionManager;
+    this._unsubscribeSessionId = if (sessionManager == null) {
+      undefined
+    } else {
+      sessionManager.onSessionId((JsValue sessionId, JsValue _windowId, JsValue changeReason) => onSessionIdChange(self, sessionId, changeReason))
+    };
+  }
+
+  void destroy() {
+    JsValue unsubscribe = this._unsubscribeSessionId;
+    if (unsubscribe != null) {
+      unsubscribe.call(this);
+    }
+    this._unsubscribeSessionId = undefined;
+  }
+
+  JsValue doPageView(JsValue timestamp, JsValue pageViewId = undefined) {
+    JsValue response = previousPageViewProperties(this, timestamp, pageViewId);
+    // On a pageview we reset the contexts
+    JsValue pathname = if (window == null) { undefined } else { window.location.pathname };
+    this._currentPageview = object {
+      pathname: if (pathname == null) { "" as JsValue } else { pathname },
+      pageViewId: pageViewId,
+      timestamp: timestamp
+    };
+    this._instance.scrollManager.resetContext();
+    return response;
+  }
+
+  JsValue doPageLeave(JsValue timestamp) {
+    return previousPageViewProperties(this, timestamp, currentPageViewId(this));
+  }
+
+  JsValue doEvent() {
+    return object { $pageview_id: currentPageViewId(this) };
+  }
+}
+export constructor PageViewManager;
+
+JsValue currentPageViewId(PageViewManager self) {
+  JsValue current = self._currentPageview;
+  return if (current == null) { undefined } else { current.pageViewId };
+}
+
+void onSessionIdChange(PageViewManager self, JsValue sessionId, JsValue changeReason) {
+  // Only act on actual session rotations, not initial session creation
+  if (!changeReason.truthy()) {
+    return;
+  }
+  // noSessionId: after posthog.reset() or a forced idle reset; activityTimeout: idle;
+  // sessionPastMaximumLength: 24 hour max session; crossTabAdoption: another tab's rotation
+  if ((changeReason.noSessionId || changeReason.activityTimeout || changeReason.sessionPastMaximumLength || changeReason.crossTabAdoption).truthy()) {
+    logger.info("[PageViewManager] Session rotated, clearing pageview state", object {
+      sessionId: sessionId,
+      changeReason: changeReason
+    });
+    self._currentPageview = undefined;
+    self._instance.scrollManager.resetContext();
+  }
+}
+
+float percentage(float position, float height) {
+  // if the maximum scroll height is near 0, then the percentage is 1
+  return if (height <= 1.0) { 1.0 } else { clampToRange(position / height, 0.0, 1.0, logger) };
+}
+
+JsValue previousPageViewProperties(PageViewManager self, JsValue timestamp, JsValue pageviewId) {
+  JsValue previousPageView = self._currentPageview;
+  if (!previousPageView.truthy()) {
+    return object { $pageview_id: pageviewId };
+  }
+  JsValue properties = object {
+    $pageview_id: pageviewId,
+    $prev_pageview_id: previousPageView.pageViewId
+  };
+  JsValue scrollContext = self._instance.scrollManager.getContext();
+  if (scrollContext.truthy() && !self._instance.config.disable_scroll_properties.truthy()) {
+    JsValue maxScrollHeightValue = scrollContext.maxScrollHeight;
+    JsValue lastScrollYValue = scrollContext.lastScrollY;
+    JsValue maxScrollYValue = scrollContext.maxScrollY;
+    JsValue maxContentHeightValue = scrollContext.maxContentHeight;
+    JsValue lastContentYValue = scrollContext.lastContentY;
+    JsValue maxContentYValue = scrollContext.maxContentY;
+    if (maxScrollHeightValue !== undefined && lastScrollYValue !== undefined && maxScrollYValue !== undefined &&
+      maxContentHeightValue !== undefined && lastContentYValue !== undefined && maxContentYValue !== undefined) {
+      // Use ceil, so that e.g. scrolling 999.5px of a 1000px page is considered 100% scrolled
+      float maxScrollHeight = (maxScrollHeightValue as float).ceil();
+      float lastScrollY = (lastScrollYValue as float).ceil();
+      float maxScrollY = (maxScrollYValue as float).ceil();
+      float maxContentHeight = (maxContentHeightValue as float).ceil();
+      float lastContentY = (lastContentYValue as float).ceil();
+      float maxContentY = (maxContentYValue as float).ceil();
+      float lastScrollPercentage = percentage(lastScrollY, maxScrollHeight);
+      float maxScrollPercentage = percentage(maxScrollY, maxScrollHeight);
+      float lastContentPercentage = percentage(lastContentY, maxContentHeight);
+      float maxContentPercentage = percentage(maxContentY, maxContentHeight);
+      // upstream extends the properties with these eight (never undefined) values, in this order
+      properties.$prev_pageview_last_scroll = lastScrollY;
+      properties.$prev_pageview_last_scroll_percentage = lastScrollPercentage;
+      properties.$prev_pageview_max_scroll = maxScrollY;
+      properties.$prev_pageview_max_scroll_percentage = maxScrollPercentage;
+      properties.$prev_pageview_last_content = lastContentY;
+      properties.$prev_pageview_last_content_percentage = lastContentPercentage;
+      properties.$prev_pageview_max_content = maxContentY;
+      properties.$prev_pageview_max_content_percentage = maxContentPercentage;
+    }
+  }
+  if (previousPageView.pathname.truthy()) {
+    properties.$prev_pageview_pathname = previousPageView.pathname;
+  }
+  if (previousPageView.timestamp.truthy()) {
+    // Use seconds, for consistency with our other duration-related properties like $duration
+    properties.$prev_pageview_duration = (timestamp.getTime() - previousPageView.timestamp.getTime()) / 1000;
+  }
+  return properties;
+}
