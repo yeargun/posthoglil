@@ -33,6 +33,21 @@ test('literal pooling keeps eval and module-cycle boundaries untouched',()=>{
     assert.equal(poolLiterals(source).code,source)
   }
 })
+test('pooling recognizes cooked template literals and preserves tagged raw text',async()=>{
+  const source='export function read(){return [`repeated long value\\n`,`repeated long value\\n`,String.raw`repeated long value\\n`,String.raw`repeated long value\\n`]}';
+  const result=poolLiterals(source,{propertyAccesses:false})
+  assert.equal(result.bindings,1)
+  assert.equal(result.references,2)
+  assert.deepEqual((await load(result.code)).read(),(await load(source)).read())
+})
+test('package pooling preserves public method names, receiver and proxy keys',async()=>{
+  const name='longPublicMethodNameForPackage'
+  const calls=Array.from({length:8},()=>`value.${name}()`).join(',')
+  const source=`const keys=[];const value=new Proxy({${name}(){return this===value}},{get(target,key,receiver){keys.push(key);return Reflect.get(target,key,receiver)}});export const result=[${calls},value.${name}.name,keys]`
+  const {output,receipt}=await optimizeSdkDelivery(source,{surface:'standard',objective:'package'})
+  assert.equal(receipt.literalPool.bindings,1)
+  assert.deepEqual((await load(output)).result,(await load(source)).result)
+})
 test('private mangling preserves quoted protocol fields and public payloads',async()=>{
   const source=`const key='_wireData';class State{constructor(){this._privateCounter=3;this._wireData=4}_readCounter(){return this._privateCounter}get(){return this._readCounter()+this[key]}};export const result=[new State().get(),{['_wireData']:5}];`
   const output=await minifySdk(source,{surface:'full',lane:'oxc-private'})

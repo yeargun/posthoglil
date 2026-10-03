@@ -84,10 +84,24 @@ test('private SDK steps retain dynamic TextEncoder calls and unusual lengths',()
   const saved=globalThis.TextEncoder
   try{compare(make=>{
     const effects=[],buffer=make({max_bytes:100})
-    for(const length of [NaN,-1,0,Infinity,101]){
+    for(const length of [NaN,-1,0,Infinity,101,2**31,2**32+1]){
       globalThis.TextEncoder=class{constructor(){effects.push('new')}encode(value){effects.push(value);return {length}}}
       buffer.add(step('length '+length))
     }
     return {effects,steps:buffer.getAttachable()}
   })}finally{globalThis.TextEncoder=saved}
+})
+
+test('private SDK steps do not truncate encoder lengths to signed integers',()=>{
+  const saved=globalThis.TextEncoder
+  try {
+    for(const length of [2**31,2**32+1,101.5]) {
+      globalThis.TextEncoder=class{encode(){return {length}}}
+      compare(make=>{
+        const buffer=make({max_bytes:101})
+        buffer.add(step('must exceed the budget'))
+        return buffer.getAttachable()
+      })
+    }
+  } finally {globalThis.TextEncoder=saved}
 })

@@ -1,7 +1,7 @@
 import {isArrayValue as isArr} from "./types.lil";
 // The SDK owns this default pipeline; constructor APIs remain in error-coercer-api.lil.
 // Only the buildFromUnknown closure crosses the SDK boundary.
-import {copyObj, hasKey, isFiniteNum, isNullish, isStr, isUndef, jsonParse, len, objectAssign, objectKeys, toNum, toStr, typeError, undef} from "./host.lil";
+import {copyObj, hasKey, isFiniteNum, isNullish, isStr, isUndef, jsonParse, arrayLikeLength as len, objectAssign, objectKeys, toNum, toStr, typeError, undef} from "./host.lil";
 import {explicitString, getPrototypeOf, isBuiltinValue, isEmptyStringValue, isErrorEventValue, isErrorValue, isEventValue, isNumberValue, isObjectValue, isPrimitiveValue, isStringValue, owns, safeJsonStringify} from "./error-host.lil";
 import {extractExceptionKeysForMessage} from "./error-coercers.lil";
 import {createDefaultStackParser} from "./error-parsers.lil";
@@ -387,7 +387,7 @@ JsValue getFilenameToChunkIdMap(JsValue stackParser) {
   }
   lastKeysCount = len(chunkIdKeys);
   cachedFilenameChunkIds = JS.object();
-  int keyIndex = 0;
+  number keyIndex = 0;
   while (keyIndex < len(chunkIdKeys)) {
     JsValue stackKey = chunkIdKeys[keyIndex];
     if (!parsedStackResults.truthy()) {
@@ -408,9 +408,7 @@ JsValue getFilenameToChunkIdMap(JsValue stackParser) {
         JsValue chunkId = chunkIdMap[stackKey];
         if (filename.truthy() && chunkId.truthy()) {
           cachedFilenameChunkIds[filename] = chunkId;
-          JsValue pair = JS.array();
-          JS.invoke(pair, "push", filename);
-          JS.invoke(pair, "push", chunkId);
+          JsValue pair = [filename, chunkId];
           parsedStackResults[stackKey] = pair;
           break;
         }

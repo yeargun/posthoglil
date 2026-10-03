@@ -47,13 +47,13 @@ export func(JsValue)->bool isEmptyObject = (JsValue value) => {
 export func(JsValue)->bool isEmptyString = (JsValue value) => isString(value) && JS.invoke(value, "trim").length == 0.0;
 export func(JsValue)->bool isPositiveNumber = (JsValue value) => isNumber(value) && JS.greaterThan(value, 0);
 export bool isPrimitive(JsValue value) { return JS.strictEqual(value, null) || JS.typeOf(value) != "object"; }
-export bool isBuiltin(JsValue candidate, string className) { return objectTag(candidate) == "[object " + className + "]"; }
+export bool isBuiltin(JsValue candidate, string className) { return JS.strictEqual(JS.invoke(Object["prototype"]["toString"], "call", candidate), "[object " + className + "]"); }
 export bool isInstanceOf(JsValue candidate, JsValue base) {
   try { return candidate instanceof base; } catch { return false; }
 }
 export bool isError(JsValue value) {
-  string tag = objectTag(value);
-  return tag == "[object Error]" || tag == "[object Exception]" || tag == "[object DOMException]" || tag == "[object DOMError]" || tag == "[object WebAssembly.Exception]" || isInstanceOf(value, Error);
+  JsValue tag = JS.invoke(Object["prototype"]["toString"], "call", value);
+  return JS.strictEqual(tag, "[object Error]") || JS.strictEqual(tag, "[object Exception]") || JS.strictEqual(tag, "[object DOMException]") || JS.strictEqual(tag, "[object DOMError]") || JS.strictEqual(tag, "[object WebAssembly.Exception]") || isInstanceOf(value, Error);
 }
 export bool isErrorEvent(JsValue value) { return isBuiltin(value, "ErrorEvent"); }
 export bool isEvent(JsValue value) { return JS.typeOf(Event) != "undefined" && isInstanceOf(value, Event); }

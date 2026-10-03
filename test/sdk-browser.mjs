@@ -258,6 +258,18 @@ async function journey(label,file,surface){
 }
 
 try{
+  if(process.env.POSTHOGLIL_CONSUMER_RESULTS) {
+    const consumers=JSON.parse(readFileSync(join(root,process.env.POSTHOGLIL_CONSUMER_RESULTS),'utf8'))
+    for(const row of consumers.rows.filter(row=>['standard','full'].includes(row.fixture))) {
+      const surface=row.fixture,objective=row.bundler
+      const baseline=await journey('app-original-'+objective,row.original.files.find(file=>file.entry).file,surface)
+      const candidate=await journey('app-candidate-'+objective,row.candidate.files.find(file=>file.entry).file,surface)
+      assert.deepEqual(candidate.result,baseline.result,`${surface}/${objective}: installed SDK API state changed`)
+      assert.deepEqual(candidate.events,baseline.events,`${surface}/${objective}: installed SDK event properties changed`)
+      output.push({surface,objective,upstreamVersion,packageIntegrity:consumers.packageIntegrity,baseline,candidate,ok:true})
+      console.log(surface,objective,'installed SDK browser journey passed')
+    }
+  } else {
   const selected=process.argv[2]
   for(const surface of ['standard','full']){
     if(selected&&selected!==surface)continue
@@ -274,7 +286,8 @@ try{
       console.log(surface,objective.objective,'browser journey passed',candidate.eventNames)
     }
   }
+  }
 }finally{
-  writeFileSync(join(root,'reports/full-sdk/browser-journeys.json'),JSON.stringify(output,null,2)+'\n')
+  writeFileSync(join(root,process.env.POSTHOGLIL_CONSUMER_RESULTS?'reports/full-sdk/consumer-journeys.json':'reports/full-sdk/browser-journeys.json'),JSON.stringify(output,null,2)+'\n')
   await browser.close();server.close()
 }

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-03T12:08:54.647Z",
+  "generatedAt": "2026-10-03T13:11:33.624Z",
   "upstream": {
     "name": "posthog-js",
     "version": "1.435.8",
@@ -18,9 +18,9 @@
     "platform": "linux",
     "release": "7.0.0-1014-azure",
     "load": [
-      0.51,
-      0.9,
-      0.98
+      1.46,
+      2.04,
+      2.4
     ]
   },
   "tools": {
@@ -182,8 +182,8 @@
           "brotli11": 85267,
           "sha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
           "lane": "terser",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 2.9888982129999997,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 3.015336773,
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-terser.map",
             "sha256": "2ec539d33d0a44af8c3e0e82f272af811f7f4f8c3a10bc1cb8fe4abcb8c26d2c",
@@ -197,8 +197,8 @@
           "brotli11": 88314,
           "sha256": "cab1d4f76754bb77188b4a6decb241a372b52b11913874d07866dbebaabde7e0",
           "lane": "terser-pooled",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 4.574696886,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 4.619422074999999,
           "delivery": {
             "literalPool": {
               "bindings": 851,
@@ -218,8 +218,8 @@
           "brotli11": 86837,
           "sha256": "cf9f8afb02f8e7f6e856b1159d98b8f35359ed1953262279313b082a438877a5",
           "lane": "oxc",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 0.07780800900000032,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 0.09327630700000009,
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-oxc.map",
             "sha256": "95e8c35347554530ea407f43d62e3359b2b201dca2cc308e85c79887927978c6",
@@ -228,22 +228,22 @@
         },
         {
           "file": "artifacts/sdk/standard/original-oxc-pooled.mjs",
-          "raw": 296712,
-          "gzip9": 106770,
-          "brotli11": 90876,
-          "sha256": "66544c05a589394e370f990dc8463b1c209ff3ea1118402a7587e741ce09d403",
+          "raw": 289622,
+          "gzip9": 106866,
+          "brotli11": 91298,
+          "sha256": "9e600e70cc949cc5c2483c484f09603614ee27532722f3a773412809be6c72c7",
           "lane": "oxc-pooled",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 1.6348491650000005,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 1.781419981,
           "delivery": {
             "literalPool": {
-              "bindings": 1043,
-              "references": 8753
+              "bindings": 1227,
+              "references": 9800
             }
           },
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-oxc-pooled.map",
-            "sha256": "ebd4a2d0dc8fe8575f95117d622c155e8646da1b76dfaf85c6dd3d0a0751861e",
+            "sha256": "6ae02b04ab6358091eeeda74e147d0914d74a1dd1170892efb05ba038ddb7ff8",
             "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
           }
         },
@@ -254,8 +254,8 @@
           "brotli11": 92776,
           "sha256": "cf1a277528d0f9c1ebb9e207dcb6653621f3bfb77c8127c91ed9f30631e76ad3",
           "lane": "esbuild",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 0.11873191800000131,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 0.12070401300000048,
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-esbuild.map",
             "sha256": "ba605d31c5e477b05ce8b1f012a66f31e7f7ba20ded829d0105dbe2d148950d1",
@@ -269,8 +269,8 @@
           "brotli11": 95102,
           "sha256": "a8aa8456d7be8282857a5ff2122b0857a112a669f55e7904c5d95e17b4f654f7",
           "lane": "esbuild-pooled",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 1.9356997710000015,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 1.945617131000001,
           "delivery": {
             "literalPool": {
               "bindings": 1307,
@@ -290,8 +290,8 @@
           "brotli11": 82183,
           "sha256": "10ab9e2548e45cfd58768816fd0c32fa680641e4c0d91c000e6acadc656de20c",
           "lane": "terser-oxc",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 2.326533944000001,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 2.3673745029999993,
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-terser-oxc.map",
             "sha256": "c92db03cfc70d019721ef7092ff100b27a0de01ac4922dfc2dfe66b95e1f18d4",
@@ -300,22 +300,22 @@
         },
         {
           "file": "artifacts/sdk/standard/original-terser-oxc-pooled.mjs",
-          "raw": 270829,
-          "gzip9": 99401,
-          "brotli11": 84792,
-          "sha256": "13da489fbdccf89c0ed385877f3ef154e6a43d3bc88f5a491a3a8944b1fcf6ee",
+          "raw": 263722,
+          "gzip9": 99397,
+          "brotli11": 85154,
+          "sha256": "0a05a7aa31d7872df52793b9fd6919a2763b29328deee15ec38c4e766a0ac7e9",
           "lane": "terser-oxc-pooled",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 3.3902950889999994,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 3.610476562999999,
           "delivery": {
             "literalPool": {
-              "bindings": 588,
-              "references": 5959
+              "bindings": 772,
+              "references": 7005
             }
           },
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-terser-oxc-pooled.map",
-            "sha256": "d04164cb820978a7c8f7fc514a4c483516e84c2550f4c3a187d8ddaf05a00de6",
+            "sha256": "f52c52e9044e377cc8a863bb0f6c2d2ee95c235312f27bd8f38eef599e0c1de8",
             "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
           }
         },
@@ -326,8 +326,8 @@
           "brotli11": 82194,
           "sha256": "ddf84277d7ca1de81af0b666a97a3721649e1cd1e03892ddb74791664a7f956b",
           "lane": "oxc-terser",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 1.867751350999999,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 2.024733015999998,
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-oxc-terser.map",
             "sha256": "06e7dc252d565b22fc564b6d74fa4bae4bad67cfcacbda5a1f2213e897dae57d",
@@ -341,8 +341,8 @@
           "brotli11": 85173,
           "sha256": "4394a63d470afd2f9d1d968617292917c2421654cb019bb0eb4e0091e469c2e8",
           "lane": "oxc-terser-pooled",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 3.051564162999999,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 3.161293809999999,
           "delivery": {
             "literalPool": {
               "bindings": 773,
@@ -362,8 +362,8 @@
           "brotli11": 83158,
           "sha256": "8ef5ae8f1eeba10587140ac5ef7f8a7d2d86ed189b75eba1498753c9da437d7f",
           "lane": "oxc-private",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 1.019123641000002,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 1.2585061180000012,
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-oxc-private.map",
             "sha256": "d9fb8ebd913de0d08feced46e7b1eb00c1f40058fa72f1060cf14673231b68f9",
@@ -372,22 +372,22 @@
         },
         {
           "file": "artifacts/sdk/standard/original-oxc-private-pooled.mjs",
-          "raw": 274184,
-          "gzip9": 100262,
-          "brotli11": 85825,
-          "sha256": "429896211770c22c2e3892bc463867d09467672901a8ce9eac4205e67dc7cb8c",
+          "raw": 267070,
+          "gzip9": 100252,
+          "brotli11": 86176,
+          "sha256": "08d1adfc49df8fe6fdaa6b9a7a01d6a263b75c985f4325865300f6570f21f5cf",
           "lane": "oxc-private-pooled",
-          "bundleSeconds": 0.09149006399999984,
-          "minifySeconds": 2.113768161000004,
+          "bundleSeconds": 0.08118775400000004,
+          "minifySeconds": 2.5250669720000003,
           "delivery": {
             "literalPool": {
-              "bindings": 595,
-              "references": 5999
+              "bindings": 779,
+              "references": 7046
             }
           },
           "sourceMap": {
             "file": "artifacts/sdk/standard/standard-original-oxc-private-pooled.map",
-            "sha256": "f53e2f7cf94d9b3f8a6f0bb243ef241b96329a8796f15d9286fc467b06b99b6b",
+            "sha256": "7b3fe637ef26ddffc40ddd5ed4043bcd2cad908ece7394d077ed9c1cc2c34a05",
             "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
           }
         }
@@ -398,63 +398,63 @@
           "metric": "raw",
           "artifact": {
             "file": "artifacts/sdk/standard/raw.mjs",
-            "raw": 262880,
-            "gzip9": 99549,
-            "brotli11": 85280,
-            "sha256": "f66ba2241479aa75bfd6fecb1839a10afdae6a7dcdce57e0de6c8d320f26ea7c",
-            "lane": "oxc-terser-pooled",
-            "minifySeconds": 3.061950218999998,
+            "raw": 262261,
+            "gzip9": 99279,
+            "brotli11": 85019,
+            "sha256": "dbf03b729ea1e3a07c620f22d0129b1c4c68832ab6746a439c2b221b13a90b5f",
+            "lane": "terser-oxc-pooled",
+            "minifySeconds": 3.386212466999998,
             "delivery": {
               "literalPool": {
-                "bindings": 765,
-                "references": 6909
+                "bindings": 764,
+                "references": 6891
               }
             },
             "sourceMap": {
-              "file": "artifacts/sdk/standard/standard-raw-oxc-terser-pooled.map",
-              "sha256": "9711171b3ba7505f158d18bff11b55693a7f63947cb25c6ed76160e47e1783d2",
+              "file": "artifacts/sdk/standard/standard-raw-terser-oxc-pooled.map",
+              "sha256": "be6b103232a38ce144caddc82a457dd6a20eb447fe3b1a2bdef81e1ab66a8fde",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
           "baseline": {
-            "file": "artifacts/sdk/standard/original-oxc-terser-pooled.mjs",
-            "raw": 264327,
-            "gzip9": 99591,
-            "brotli11": 85173,
-            "sha256": "4394a63d470afd2f9d1d968617292917c2421654cb019bb0eb4e0091e469c2e8",
-            "lane": "oxc-terser-pooled",
-            "bundleSeconds": 0.09149006399999984,
-            "minifySeconds": 3.051564162999999,
+            "file": "artifacts/sdk/standard/original-terser-oxc-pooled.mjs",
+            "raw": 263722,
+            "gzip9": 99397,
+            "brotli11": 85154,
+            "sha256": "0a05a7aa31d7872df52793b9fd6919a2763b29328deee15ec38c4e766a0ac7e9",
+            "lane": "terser-oxc-pooled",
+            "bundleSeconds": 0.08118775400000004,
+            "minifySeconds": 3.610476562999999,
             "delivery": {
               "literalPool": {
-                "bindings": 773,
-                "references": 7006
+                "bindings": 772,
+                "references": 7005
               }
             },
             "sourceMap": {
-              "file": "artifacts/sdk/standard/standard-original-oxc-terser-pooled.map",
-              "sha256": "7fddbdddec588f92264d39b7136b30ef892615a0e279c86d7e031246e7577664",
+              "file": "artifacts/sdk/standard/standard-original-terser-oxc-pooled.map",
+              "sha256": "f52c52e9044e377cc8a863bb0f6c2d2ee95c235312f27bd8f38eef599e0c1de8",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
           "matchedOriginal": {
-            "file": "artifacts/sdk/standard/original-oxc-terser-pooled.mjs",
-            "raw": 264327,
-            "gzip9": 99591,
-            "brotli11": 85173,
-            "sha256": "4394a63d470afd2f9d1d968617292917c2421654cb019bb0eb4e0091e469c2e8",
-            "lane": "oxc-terser-pooled",
-            "bundleSeconds": 0.09149006399999984,
-            "minifySeconds": 3.051564162999999,
+            "file": "artifacts/sdk/standard/original-terser-oxc-pooled.mjs",
+            "raw": 263722,
+            "gzip9": 99397,
+            "brotli11": 85154,
+            "sha256": "0a05a7aa31d7872df52793b9fd6919a2763b29328deee15ec38c4e766a0ac7e9",
+            "lane": "terser-oxc-pooled",
+            "bundleSeconds": 0.08118775400000004,
+            "minifySeconds": 3.610476562999999,
             "delivery": {
               "literalPool": {
-                "bindings": 773,
-                "references": 7006
+                "bindings": 772,
+                "references": 7005
               }
             },
             "sourceMap": {
-              "file": "artifacts/sdk/standard/standard-original-oxc-terser-pooled.map",
-              "sha256": "7fddbdddec588f92264d39b7136b30ef892615a0e279c86d7e031246e7577664",
+              "file": "artifacts/sdk/standard/standard-original-terser-oxc-pooled.map",
+              "sha256": "f52c52e9044e377cc8a863bb0f6c2d2ee95c235312f27bd8f38eef599e0c1de8",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
@@ -475,239 +475,239 @@
           },
           "candidates": [
             {
-              "file": "artifacts/sdk/standard/raw-oxc-terser-pooled.mjs",
-              "raw": 262880,
-              "gzip9": 99549,
-              "brotli11": 85280,
-              "sha256": "f66ba2241479aa75bfd6fecb1839a10afdae6a7dcdce57e0de6c8d320f26ea7c",
-              "lane": "oxc-terser-pooled",
-              "minifySeconds": 3.061950218999998,
-              "delivery": {
-                "literalPool": {
-                  "bindings": 765,
-                  "references": 6909
-                }
-              },
-              "sourceMap": {
-                "file": "artifacts/sdk/standard/standard-raw-oxc-terser-pooled.map",
-                "sha256": "9711171b3ba7505f158d18bff11b55693a7f63947cb25c6ed76160e47e1783d2",
-                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
-              }
-            },
-            {
               "file": "artifacts/sdk/standard/raw-terser-oxc-pooled.mjs",
-              "raw": 269318,
-              "gzip9": 99353,
-              "brotli11": 84808,
-              "sha256": "c2a68f565bc87dc1240646b423d18c0a40a98783ea6c22fabea46e88e0ba7a11",
+              "raw": 262261,
+              "gzip9": 99279,
+              "brotli11": 85019,
+              "sha256": "dbf03b729ea1e3a07c620f22d0129b1c4c68832ab6746a439c2b221b13a90b5f",
               "lane": "terser-oxc-pooled",
-              "minifySeconds": 3.277855398,
+              "minifySeconds": 3.386212466999998,
               "delivery": {
                 "literalPool": {
-                  "bindings": 581,
-                  "references": 5889
+                  "bindings": 764,
+                  "references": 6891
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-terser-oxc-pooled.map",
-                "sha256": "b989b396ffad3ca94f2044366c9d5516824485a5ecfa55c3d5c08ec84801c4a3",
+                "sha256": "be6b103232a38ce144caddc82a457dd6a20eb447fe3b1a2bdef81e1ab66a8fde",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/raw-oxc-terser-pooled.mjs",
+              "raw": 262787,
+              "gzip9": 99518,
+              "brotli11": 85143,
+              "sha256": "cba96fee9da16e503ee788dc9544456b50457704af985fb8eafcaa28e32e8068",
+              "lane": "oxc-terser-pooled",
+              "minifySeconds": 3.1931766730000017,
+              "delivery": {
+                "literalPool": {
+                  "bindings": 765,
+                  "references": 6892
+                }
+              },
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-raw-oxc-terser-pooled.map",
+                "sha256": "a43febe1976294b6b5690bc1a516d51043be2f303b5caf927fe0c82413c9bd67",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-oxc-private-pooled.mjs",
-              "raw": 272509,
-              "gzip9": 100086,
-              "brotli11": 85726,
-              "sha256": "39f189fb423e66a373fd7b24daaf2af0cbb823228c7daf66c480fdec75ae091a",
+              "raw": 265449,
+              "gzip9": 100057,
+              "brotli11": 85900,
+              "sha256": "456b401321388c6900790c33e106507b0d14503092bf0a1e9516de6e3d54b157",
               "lane": "oxc-private-pooled",
-              "minifySeconds": 2.1528403340000004,
+              "minifySeconds": 2.2651307190000005,
               "delivery": {
                 "literalPool": {
-                  "bindings": 586,
-                  "references": 5923
+                  "bindings": 769,
+                  "references": 6926
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-oxc-private-pooled.map",
-                "sha256": "b9be4ae269852795917090e4b6984b6ea578ee68225980d055ae1adb84c68ea6",
+                "sha256": "76edd431bad3e9f98cc7e09aaea5d5b95971464f2acc0fa82b49e313e2b6b648",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-terser-pooled.mjs",
-              "raw": 286422,
-              "gzip9": 103836,
-              "brotli11": 88362,
-              "sha256": "3037ced627e2de9e89d177f3f2dc27851829261d4edd3292c2fbbca7f66fe7d3",
+              "raw": 286329,
+              "gzip9": 103780,
+              "brotli11": 88216,
+              "sha256": "994ceb76b62feacb8aa80a5e1121ef476372de1589199b45e9e05504afef0c7c",
               "lane": "terser-pooled",
-              "minifySeconds": 3.4838474800000006,
+              "minifySeconds": 3.5815651180000057,
               "delivery": {
                 "literalPool": {
                   "bindings": 845,
-                  "references": 7494
+                  "references": 7477
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-terser-pooled.map",
-                "sha256": "1fa0cc97350c4bfd5f9458328b1383a1491317b22aaa48dce52666cbb91094de",
-                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
-              }
-            },
-            {
-              "file": "artifacts/sdk/standard/raw-terser-oxc.mjs",
-              "raw": 294853,
-              "gzip9": 96542,
-              "brotli11": 82184,
-              "sha256": "0b619e3527b0009d98248772424c2bf0fac72e1d38bfb1c56018fb4ce9cc5ca8",
-              "lane": "terser-oxc",
-              "minifySeconds": 2.247687152999999,
-              "sourceMap": {
-                "file": "artifacts/sdk/standard/standard-raw-terser-oxc.map",
-                "sha256": "fff82a648817f91be4e99d141c9b6a4c3bb9fd8d8b1a3bacc52ec22d5a98d04d",
+                "sha256": "cce4ba175657739d3980d1416390d8c77420d3f8f0521bb06ac2ae6c4f744d77",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-oxc-pooled.mjs",
-              "raw": 294899,
-              "gzip9": 106598,
-              "brotli11": 90764,
-              "sha256": "29da9cf64f0606c1a7c1a3ba853a393a2d7e3442fd6b439395c889d2cf8a49ca",
+              "raw": 287862,
+              "gzip9": 106491,
+              "brotli11": 91118,
+              "sha256": "428c79ee7221ee35cc85b3a7142f6507ae61578f30b1990560918566c705f5cf",
               "lane": "oxc-pooled",
-              "minifySeconds": 1.3829641840000004,
+              "minifySeconds": 1.715193453,
               "delivery": {
                 "literalPool": {
-                  "bindings": 1031,
-                  "references": 8658
+                  "bindings": 1214,
+                  "references": 9661
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-oxc-pooled.map",
-                "sha256": "2c83bf0079aa45ae342446e68882d4f06de5e972808b564dbb432949e8fcdc12",
+                "sha256": "75d62df28e75af757dff3e361a5c0640da2509093fc8934dfb7b3b8dac2d33f9",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/raw-terser-oxc.mjs",
+              "raw": 294748,
+              "gzip9": 96495,
+              "brotli11": 82087,
+              "sha256": "af05a45e3d1b7836efcd123564a1cb28fe031f640c07acb7f3ec704a0c4504f6",
+              "lane": "terser-oxc",
+              "minifySeconds": 2.2190763389999995,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-raw-terser-oxc.map",
+                "sha256": "56cca0c91bb4c2bdaac46528cce87ff968c47d7f1614db68c188728f3ee79d51",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-oxc-terser.mjs",
-              "raw": 296221,
-              "gzip9": 96852,
-              "brotli11": 82268,
-              "sha256": "a0dda058adb2c21af4d19317a56872ecfdec4050cae48ccac9a5366a7e35ba5a",
+              "raw": 296108,
+              "gzip9": 96806,
+              "brotli11": 82180,
+              "sha256": "4f2d9d5a90518dbf6f8db9926a8f2ba8b261ecb861bebcb677ed5cdcb988b882",
               "lane": "oxc-terser",
-              "minifySeconds": 1.8839259119999987,
+              "minifySeconds": 1.9494132640000026,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-oxc-terser.map",
-                "sha256": "2ae9edf18fd9e280fbea01726efa5255b86a61c88b93183a00bf80b5e7310405",
+                "sha256": "a78408318de1248c493610a9e596167914ac3ee774a1b13c95bea2763c141e51",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-oxc-private.mjs",
-              "raw": 298235,
-              "gzip9": 97276,
-              "brotli11": 83054,
-              "sha256": "fc4db46cd226ee1eee843a156f5b3287f61b0a47a17f45f438edbb0dd1e510c8",
+              "raw": 298133,
+              "gzip9": 97231,
+              "brotli11": 83069,
+              "sha256": "dea0839bb51b2335755191e344d68b4694fa94f93fd8716b5da69c85fcd5950d",
               "lane": "oxc-private",
-              "minifySeconds": 0.9791408749999974,
+              "minifySeconds": 0.9548303070000038,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-oxc-private.map",
-                "sha256": "eeba4f64946fb4506acdc0bc564644dee703989fe63361bfcdb571c46aa975f9",
+                "sha256": "3c909244893a13994c53a7a87fc8fe5db8014c20b35f8859d9cccdb73884a96d",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-esbuild-pooled.mjs",
-              "raw": 311983,
-              "gzip9": 111662,
-              "brotli11": 94956,
-              "sha256": "e4eba77065492f1ed05310054e2b61e7aa5963fd07e3ad44724828cbe0b9ec30",
+              "raw": 311899,
+              "gzip9": 111547,
+              "brotli11": 94764,
+              "sha256": "174fbced5c70f81696a4c95f94b0065369df58d412ad2d239d2210a5fd7b8cd1",
               "lane": "esbuild-pooled",
-              "minifySeconds": 1.824754028000003,
+              "minifySeconds": 1.8204189629999965,
               "delivery": {
                 "literalPool": {
                   "bindings": 1296,
-                  "references": 10291
+                  "references": 10274
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-esbuild-pooled.map",
-                "sha256": "58bfdc691bb413f92028e008ae8c894869b72cc8d12bb9879c776740bb26b2b2",
+                "sha256": "b07413a38ede55576cce3fec50820d1e843fd32294b3c88b98e6fadc3c3fde45",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-terser.mjs",
-              "raw": 323069,
-              "gzip9": 101218,
-              "brotli11": 85205,
-              "sha256": "2506be21487c67979a34b18eac6e7b6f7fd8688726a46cf695899f5047a5e6fc",
+              "raw": 322956,
+              "gzip9": 101171,
+              "brotli11": 85223,
+              "sha256": "57f0e4f36ae790242cfb9da356cf2a05fe956368d40551fe10959580d16d805e",
               "lane": "terser",
-              "minifySeconds": 2.1194883300000003,
+              "minifySeconds": 2.217673506000003,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-terser.map",
-                "sha256": "8d7e7d1b2c213f699a6635edc64736f3307730949a70bae93658d5b8405f1c66",
+                "sha256": "06c182709c4182ee722664c20c2b34c5e1eb54599b820793358247cfb07ea8de",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-oxc.mjs",
-              "raw": 345428,
-              "gzip9": 102483,
-              "brotli11": 86642,
-              "sha256": "e3ef1a440e888e65291934664921dc8eae3407499f7c93408a74dd3150a37a4d",
+              "raw": 345327,
+              "gzip9": 102436,
+              "brotli11": 86604,
+              "sha256": "a4ed6fbf7dda02e1075c0d0e6e7554d8190b3b8b10b336f3e4ed79e4f3b776b1",
               "lane": "oxc",
-              "minifySeconds": 0.06416956099999879,
+              "minifySeconds": 0.09052107400000023,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-oxc.map",
-                "sha256": "1979a6a5c8d87ea9ea9fed031d3abb99cbf3723e0d6afec3affdadc780a79aa4",
+                "sha256": "44c33d31eca93104bb328dfd9ca100be2ed8323ec76f4557134dac31dda10088",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/raw-esbuild.mjs",
-              "raw": 373446,
-              "gzip9": 110145,
-              "brotli11": 92781,
-              "sha256": "76061ce2477ddf6821a2f725e256994d3c427f0f9d6c2dd3f3c3dfa50d0db266",
+              "raw": 373351,
+              "gzip9": 110072,
+              "brotli11": 92803,
+              "sha256": "12ce565033f5e12efd1b33bb1830a46aae5488fd93cf4034b26e5bb472916777",
               "lane": "esbuild",
-              "minifySeconds": 0.10020549000000029,
+              "minifySeconds": 0.10263669500000105,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-raw-esbuild.map",
-                "sha256": "f974bb9b2c72a9aafaba83ee4cac67d1e62f42577ec87f608c3f19db8391bf43",
+                "sha256": "5023903bdee3558843b00eb146f02773a6125f3d988c014c5177bf5bc2dbb8ee",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             }
           ],
           "compiler": {
             "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
-            "sourceSha256": "0d18f92ee5f5f777bb78d9fc023bdccae66688d4e7754caa0185ad41f3ccd1ee",
+            "sourceSha256": "4471a4aa8332bf5d4979efaf1e9b55655e4e24ee7f890aea935315b6c732711d",
             "configSha256": "0ffa302d1d23eb4a7aad6f81619068b9f6384913c8bdf425696537267591d622",
             "entrySha256": "bc74de6a8a074bd54f4cfe3fd56022f3690e46ee63a802bbfbe6b33832e85e19",
-            "outputSha256": "6c2bac3be812ee59fc2626f9acd2bbdf178e296a00a66c3a2c759e8e61647368",
-            "seconds": 0.7438142889999999
+            "outputSha256": "9901e45828470b8061524157dd43fccc64b5922ba8f2e9353de1b0bf40c7ec5f",
+            "seconds": 0.7117472760000001
           },
-          "bundleSeconds": 0.07567110399999728,
-          "totalBuildSeconds": 3.8814356119999953,
-          "originalBuildSeconds": 3.143054226999999,
-          "savingsPercent": 0.5474279963832651,
-          "publishedSavingsPercent": 18.479491179051756,
-          "samePipelineSavingsPercent": 0.5474279963832651
+          "bundleSeconds": 0.15617600499999754,
+          "totalBuildSeconds": 4.254135747999995,
+          "originalBuildSeconds": 3.691664316999999,
+          "savingsPercent": 0.5539924617589786,
+          "publishedSavingsPercent": 18.671446424639736,
+          "samePipelineSavingsPercent": 0.5539924617589786
         },
         {
           "objective": "gzip",
           "metric": "gzip9",
           "artifact": {
             "file": "artifacts/sdk/standard/gzip.mjs",
-            "raw": 295142,
-            "gzip9": 96445,
-            "brotli11": 82006,
-            "sha256": "16c32aa0928b7d4e36a3a3064a804229c04e39c6b633fa793839953fae44fd35",
+            "raw": 294989,
+            "gzip9": 96394,
+            "brotli11": 81913,
+            "sha256": "630955a5074bb184ff2229fafbbc17087348daeac344f56bbf742bfc0a3cf6c8",
             "lane": "terser-oxc",
-            "minifySeconds": 2.1629253769999996,
+            "minifySeconds": 2.2326390859999954,
             "sourceMap": {
               "file": "artifacts/sdk/standard/standard-gzip-terser-oxc.map",
-              "sha256": "43f57e2e210817c1280fc9c1ff32dbb29f7cf9543e3582305fb36b078b11f652",
+              "sha256": "80e2cd7e8e02e4feef03dc330d1d5d179598e0e56642a311ea8f07a8684973a5",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
@@ -718,8 +718,8 @@
             "brotli11": 82183,
             "sha256": "10ab9e2548e45cfd58768816fd0c32fa680641e4c0d91c000e6acadc656de20c",
             "lane": "terser-oxc",
-            "bundleSeconds": 0.09149006399999984,
-            "minifySeconds": 2.326533944000001,
+            "bundleSeconds": 0.08118775400000004,
+            "minifySeconds": 2.3673745029999993,
             "sourceMap": {
               "file": "artifacts/sdk/standard/standard-original-terser-oxc.map",
               "sha256": "c92db03cfc70d019721ef7092ff100b27a0de01ac4922dfc2dfe66b95e1f18d4",
@@ -733,8 +733,8 @@
             "brotli11": 82183,
             "sha256": "10ab9e2548e45cfd58768816fd0c32fa680641e4c0d91c000e6acadc656de20c",
             "lane": "terser-oxc",
-            "bundleSeconds": 0.09149006399999984,
-            "minifySeconds": 2.326533944000001,
+            "bundleSeconds": 0.08118775400000004,
+            "minifySeconds": 2.3673745029999993,
             "sourceMap": {
               "file": "artifacts/sdk/standard/standard-original-terser-oxc.map",
               "sha256": "c92db03cfc70d019721ef7092ff100b27a0de01ac4922dfc2dfe66b95e1f18d4",
@@ -759,118 +759,118 @@
           "candidates": [
             {
               "file": "artifacts/sdk/standard/gzip-terser-oxc.mjs",
-              "raw": 295142,
-              "gzip9": 96445,
-              "brotli11": 82006,
-              "sha256": "16c32aa0928b7d4e36a3a3064a804229c04e39c6b633fa793839953fae44fd35",
+              "raw": 294989,
+              "gzip9": 96394,
+              "brotli11": 81913,
+              "sha256": "630955a5074bb184ff2229fafbbc17087348daeac344f56bbf742bfc0a3cf6c8",
               "lane": "terser-oxc",
-              "minifySeconds": 2.1629253769999996,
+              "minifySeconds": 2.2326390859999954,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-gzip-terser-oxc.map",
-                "sha256": "43f57e2e210817c1280fc9c1ff32dbb29f7cf9543e3582305fb36b078b11f652",
+                "sha256": "80e2cd7e8e02e4feef03dc330d1d5d179598e0e56642a311ea8f07a8684973a5",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/gzip-oxc-terser.mjs",
-              "raw": 296546,
-              "gzip9": 96760,
-              "brotli11": 82018,
-              "sha256": "5476c21faac6ea63bfa4e0145eeda851e4f52d00181df284ae305d990d9c1520",
+              "raw": 296393,
+              "gzip9": 96713,
+              "brotli11": 82067,
+              "sha256": "dd29889e8e19686e6408117f2c3f3e8325bcb3deb7cead3c3f1f551021fe7759",
               "lane": "oxc-terser",
-              "minifySeconds": 1.8366317559999952,
+              "minifySeconds": 1.8790125699999989,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-gzip-oxc-terser.map",
-                "sha256": "e1293824458dc5f295f9f3cb968f7188b402db49e4741907b71f719721a0bebb",
+                "sha256": "e234d25bd7609b44ba9d35dde580ed7da9d7e926e4307230c230d2ff67a74d9f",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/gzip-oxc-private.mjs",
-              "raw": 298584,
-              "gzip9": 97167,
-              "brotli11": 83103,
-              "sha256": "3ff7a0e2b9404fee1fc420c5da6a1e651d0c502c6e18fb08c8f2236dca04f21c",
+              "raw": 298435,
+              "gzip9": 97114,
+              "brotli11": 82975,
+              "sha256": "2ef81b8dd5bf5597750ac24baccbe19e8a1b8d37ecd981f7983de684d6854095",
               "lane": "oxc-private",
-              "minifySeconds": 0.9669275830000043,
+              "minifySeconds": 1.0481225639999976,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-gzip-oxc-private.map",
-                "sha256": "1bf26735115b7d45f599d8d4ea4cea8190351768954abd3a1d7a2ad1535bb241",
+                "sha256": "bba74ccd7df72556b650a754cf2e61083ee8344855476f0794388dc959b368a6",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/gzip-terser.mjs",
-              "raw": 323396,
-              "gzip9": 101109,
-              "brotli11": 85160,
-              "sha256": "85db97d61bf0af9253a50fb9624ee69b47bead969c903813e0e0f239e317475c",
+              "raw": 323234,
+              "gzip9": 101051,
+              "brotli11": 85014,
+              "sha256": "a50cf9468ecfdb073ea5aeb3c59da54f123e1600a565306430eb2e4ca5184cc6",
               "lane": "terser",
-              "minifySeconds": 2.1354993560000004,
+              "minifySeconds": 2.1982406529999934,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-gzip-terser.map",
-                "sha256": "98509454c8e154851775deaaad144fe418838869af103bb2a6a60c55b0c17bc9",
+                "sha256": "58711eb51946a933073fb0bed18a6d4f5735f78000f1f50f6d12239831cd4ba2",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/gzip-oxc.mjs",
-              "raw": 345778,
-              "gzip9": 102365,
-              "brotli11": 86661,
-              "sha256": "0d31246ca1ff2d5e31a901e8c3eefd9f1ac1f071a83fd0539c9ace6e9676fc53",
+              "raw": 345629,
+              "gzip9": 102312,
+              "brotli11": 86526,
+              "sha256": "eeedbd5510aec4e437da5717cb4eed99cb8e45195b08151509d7a160ba69099e",
               "lane": "oxc",
-              "minifySeconds": 0.06691853200000332,
+              "minifySeconds": 0.07300216300000466,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-gzip-oxc.map",
-                "sha256": "ca543841bb645109c5562cdfbe035b6e6aeb96ea3dcd2e7131225caf8bb2d25e",
+                "sha256": "6bd537c2157fa955d49dd7a518018ca20e31490bda4a368971ce5dc0759cc47b",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/gzip-esbuild.mjs",
-              "raw": 373845,
-              "gzip9": 110067,
-              "brotli11": 92727,
-              "sha256": "e45d9957e00e9dadeb2804a6ab2337be5f5eb8a8d2ba642ed5c457d2d4a7e205",
+              "raw": 373695,
+              "gzip9": 110013,
+              "brotli11": 92678,
+              "sha256": "3f4a39ff403340d770566165f976ff613796649241ca094920778f7729698e97",
               "lane": "esbuild",
-              "minifySeconds": 0.099401291999995,
+              "minifySeconds": 0.10172161900000355,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-gzip-esbuild.map",
-                "sha256": "2db7991b00a21790d8da16f6b0d3cec5af413e84dbc1c47e9bb8d95c155665e7",
+                "sha256": "d108484318818b9541f0fc7c38fc8f20464c390790a62e33c2f221cc06950177",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             }
           ],
           "compiler": {
             "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
-            "sourceSha256": "0d18f92ee5f5f777bb78d9fc023bdccae66688d4e7754caa0185ad41f3ccd1ee",
+            "sourceSha256": "4471a4aa8332bf5d4979efaf1e9b55655e4e24ee7f890aea935315b6c732711d",
             "configSha256": "30f3cf7752dbfa879232ae91afdf535a46f44a57c4768e77cb0e2e66e68fbc17",
             "entrySha256": "bc74de6a8a074bd54f4cfe3fd56022f3690e46ee63a802bbfbe6b33832e85e19",
-            "outputSha256": "82d0acc14b27df5ef02e0b5512c3e4729cb0f00095333f5a90009a999190b702",
-            "seconds": 0.6093772639999999
+            "outputSha256": "e40efdf4bd9ea214a0b53d211d2474bd9d7858988cdc6c9b97e385304a352585",
+            "seconds": 0.570081699
           },
-          "bundleSeconds": 0.06521723799999746,
-          "totalBuildSeconds": 2.837519878999997,
-          "originalBuildSeconds": 2.4180240080000006,
-          "savingsPercent": 0.09219549588745934,
-          "publishedSavingsPercent": 4.447460716904117,
-          "samePipelineSavingsPercent": 0.09219549588745934
+          "bundleSeconds": 0.09043154299999878,
+          "totalBuildSeconds": 2.893152327999994,
+          "originalBuildSeconds": 2.4485622569999994,
+          "savingsPercent": 0.14502662274431533,
+          "publishedSavingsPercent": 4.4979887847504285,
+          "samePipelineSavingsPercent": 0.14502662274431533
         },
         {
           "objective": "brotli",
           "metric": "brotli11",
           "artifact": {
             "file": "artifacts/sdk/standard/brotli.mjs",
-            "raw": 295066,
-            "gzip9": 96494,
-            "brotli11": 82060,
-            "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
+            "raw": 294949,
+            "gzip9": 96449,
+            "brotli11": 81981,
+            "sha256": "feba73d2b4bffc6b37d18ff54fb582844105add00a4f26d51dd4f314a8d9e337",
             "lane": "terser-oxc",
-            "minifySeconds": 2.1523244140000024,
+            "minifySeconds": 2.279909961999998,
             "sourceMap": {
               "file": "artifacts/sdk/standard/standard-brotli-terser-oxc.map",
-              "sha256": "7f711b2455466d527a11b5cb7e4fe99fdeb1ee680412414da5ee25f95fccac03",
+              "sha256": "89a4b8eedfcadc7f0b9874aff088147e10e829849577d570fa2917e68b4578ab",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
@@ -881,8 +881,8 @@
             "brotli11": 82183,
             "sha256": "10ab9e2548e45cfd58768816fd0c32fa680641e4c0d91c000e6acadc656de20c",
             "lane": "terser-oxc",
-            "bundleSeconds": 0.09149006399999984,
-            "minifySeconds": 2.326533944000001,
+            "bundleSeconds": 0.08118775400000004,
+            "minifySeconds": 2.3673745029999993,
             "sourceMap": {
               "file": "artifacts/sdk/standard/standard-original-terser-oxc.map",
               "sha256": "c92db03cfc70d019721ef7092ff100b27a0de01ac4922dfc2dfe66b95e1f18d4",
@@ -896,8 +896,8 @@
             "brotli11": 82183,
             "sha256": "10ab9e2548e45cfd58768816fd0c32fa680641e4c0d91c000e6acadc656de20c",
             "lane": "terser-oxc",
-            "bundleSeconds": 0.09149006399999984,
-            "minifySeconds": 2.326533944000001,
+            "bundleSeconds": 0.08118775400000004,
+            "minifySeconds": 2.3673745029999993,
             "sourceMap": {
               "file": "artifacts/sdk/standard/standard-original-terser-oxc.map",
               "sha256": "c92db03cfc70d019721ef7092ff100b27a0de01ac4922dfc2dfe66b95e1f18d4",
@@ -922,103 +922,103 @@
           "candidates": [
             {
               "file": "artifacts/sdk/standard/brotli-terser-oxc.mjs",
-              "raw": 295066,
-              "gzip9": 96494,
-              "brotli11": 82060,
-              "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
+              "raw": 294949,
+              "gzip9": 96449,
+              "brotli11": 81981,
+              "sha256": "feba73d2b4bffc6b37d18ff54fb582844105add00a4f26d51dd4f314a8d9e337",
               "lane": "terser-oxc",
-              "minifySeconds": 2.1523244140000024,
+              "minifySeconds": 2.279909961999998,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-brotli-terser-oxc.map",
-                "sha256": "7f711b2455466d527a11b5cb7e4fe99fdeb1ee680412414da5ee25f95fccac03",
+                "sha256": "89a4b8eedfcadc7f0b9874aff088147e10e829849577d570fa2917e68b4578ab",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/brotli-oxc-terser.mjs",
-              "raw": 296477,
-              "gzip9": 96832,
-              "brotli11": 82215,
-              "sha256": "a46b9273e2edaf611a55cb4b8f1b136b05fba84e4766faf465cafb3b05a226fc",
+              "raw": 296358,
+              "gzip9": 96780,
+              "brotli11": 82114,
+              "sha256": "321b7e39a0230fc3f8d057f0407d09b2376be3f357d52a087ecabc93aedf15f7",
               "lane": "oxc-terser",
-              "minifySeconds": 1.9182958440000002,
+              "minifySeconds": 1.8153944790000096,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-brotli-oxc-terser.map",
-                "sha256": "9a59d9c0d97028437ddbaab31c46a08a621ac86324ece497c1b0517d086bd6a6",
+                "sha256": "4d4dcaa545e90b0adbbc19e3850ecd24d8cdb273461e71fef342bbb5ff06a3a2",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/brotli-oxc-private.mjs",
-              "raw": 298501,
-              "gzip9": 97234,
-              "brotli11": 83116,
-              "sha256": "21b335c4cf8915267f043fe6a7c6482d079db0f5c0b701be79410da9a6abf32d",
+              "raw": 298389,
+              "gzip9": 97185,
+              "brotli11": 82994,
+              "sha256": "b150719e44d781536eafb1aa4cdc94f437b6d42782dd129fbbb6187b49218d53",
               "lane": "oxc-private",
-              "minifySeconds": 0.9655748310000054,
+              "minifySeconds": 0.984639931999991,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-brotli-oxc-private.map",
-                "sha256": "64a5cd4595c6de51bba6367675ac3f304efbaec4a9440d09a66d5cb0ccf6db80",
+                "sha256": "1819aaca0a6ae87ffc117c7629a322e00d4fc22e05c9deaffdcdbcbaf1ac0b1b",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/brotli-terser.mjs",
-              "raw": 323320,
-              "gzip9": 101163,
-              "brotli11": 85102,
-              "sha256": "9731ce9d7e2ef8cf3b6dbc3d462c70b45f2815e3ebcbe0943810228bcc754957",
+              "raw": 323201,
+              "gzip9": 101117,
+              "brotli11": 85162,
+              "sha256": "c36f7961640f3560778929458b9e54ec1ca10bc51b317cfcf6ce33f58a7872ef",
               "lane": "terser",
-              "minifySeconds": 2.2379611779999977,
+              "minifySeconds": 2.1403511690000014,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-brotli-terser.map",
-                "sha256": "6cef1600ba131f3e4799b4dcb348209e1895c197e96b67ca1340f36d3c2f8460",
+                "sha256": "8712647a66ec01b99ebbcca49b5644ec4ce0477a361b515369a3451d49c12bf8",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/brotli-oxc.mjs",
-              "raw": 345694,
-              "gzip9": 102432,
-              "brotli11": 86611,
-              "sha256": "11831e16126a889ec8aac946fd489c090caf1a439b279b594257cbb627d309f7",
+              "raw": 345583,
+              "gzip9": 102380,
+              "brotli11": 86541,
+              "sha256": "fbcd07c9fac0bb2fdd0b36b310526979e60f48ebf10a1292b659e27753eca84e",
               "lane": "oxc",
-              "minifySeconds": 0.06396876599999814,
+              "minifySeconds": 0.07163116499999887,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-brotli-oxc.map",
-                "sha256": "94b4243f97e44648dc1fd45ebf34bab6ce8a7b300b8dc86b3f136c1521f92678",
+                "sha256": "3b4be9f5751ead65490edec1f98064eec2e59f5b55c93d2bccf1a71035ac05ab",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/standard/brotli-esbuild.mjs",
-              "raw": 373778,
-              "gzip9": 110135,
-              "brotli11": 92860,
-              "sha256": "9a533c722fb9ce17d5721db3c5f8a6147394b70845ff97105803a34fa2cc5566",
+              "raw": 373675,
+              "gzip9": 110087,
+              "brotli11": 92755,
+              "sha256": "678b8005f6eb2d975e47a04878c00573b488f9d25c08e0c37eb37fdfbb0dc775",
               "lane": "esbuild",
-              "minifySeconds": 0.09979973299999984,
+              "minifySeconds": 0.10260412099999666,
               "sourceMap": {
                 "file": "artifacts/sdk/standard/standard-brotli-esbuild.map",
-                "sha256": "c526229e981d0f4e5f59b4a3a486fb6b2be17289b65e0a9204a8f9143a54579a",
+                "sha256": "7c78f907313f6797830791757074f419d3c9eab4b8f3876f0d2347f4a11a4534",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             }
           ],
           "compiler": {
             "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
-            "sourceSha256": "0d18f92ee5f5f777bb78d9fc023bdccae66688d4e7754caa0185ad41f3ccd1ee",
+            "sourceSha256": "4471a4aa8332bf5d4979efaf1e9b55655e4e24ee7f890aea935315b6c732711d",
             "configSha256": "20785639b2a63aea7c7cdf7874b19c888bad6a56d496f220c5c7b566b7a73158",
             "entrySha256": "bc74de6a8a074bd54f4cfe3fd56022f3690e46ee63a802bbfbe6b33832e85e19",
-            "outputSha256": "0e47e355ad887dad171917f5a9fef72fc467e8c2c1e99368a931aae54f4f333c",
-            "seconds": 0.6464546189999999
+            "outputSha256": "2da6621d1ad9595b85d5e0005f3d31edc553d89ed48d53d9daa151284adaf1f3",
+            "seconds": 0.6421383409999999
           },
-          "bundleSeconds": 0.0671304569999993,
-          "totalBuildSeconds": 2.8659094900000017,
-          "originalBuildSeconds": 2.4180240080000006,
-          "savingsPercent": 0.14966598931652753,
-          "publishedSavingsPercent": 3.7667698658410687,
-          "samePipelineSavingsPercent": 0.14966598931652753
+          "bundleSeconds": 0.0775772450000004,
+          "totalBuildSeconds": 2.9996255479999983,
+          "originalBuildSeconds": 2.4485622569999994,
+          "savingsPercent": 0.24579292554420817,
+          "publishedSavingsPercent": 3.859414579228826,
+          "samePipelineSavingsPercent": 0.24579292554420817
         }
       ]
     },
@@ -1048,8 +1048,8 @@
           "brotli11": 171862,
           "sha256": "aadb10ccaefb5ca4a28f31018d04e9165c5d926110a601bf61e86a61d8219cab",
           "lane": "terser",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 4.002810677999994,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 4.003266310999999,
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-terser.map",
             "sha256": "2138a5f1aafc2fbd05823a9e5265478cd23c256410e5a41bc53da96729d4d749",
@@ -1063,8 +1063,8 @@
           "brotli11": 180158,
           "sha256": "1ba50027c781153ea07cf6f6436dc40131c6f83ebaf62ec247921996c225d15d",
           "lane": "terser-pooled",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 8.82916040699999,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 8.743082555,
           "delivery": {
             "literalPool": {
               "bindings": 2263,
@@ -1084,8 +1084,8 @@
           "brotli11": 168507,
           "sha256": "c06c8f4c2a9bb93283114962ff888f8fc7d19d30b2f01a6bc8e2d86473414823",
           "lane": "oxc",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 0.1508438119999919,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 0.2068850150000071,
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-oxc.map",
             "sha256": "fa86b041455516c8d9208a43e092fb1bc1af98eac9faa5a47ca14c027902b69b",
@@ -1094,22 +1094,22 @@
         },
         {
           "file": "artifacts/sdk/full/original-oxc-pooled.mjs",
-          "raw": 587917,
-          "gzip9": 208485,
-          "brotli11": 175852,
-          "sha256": "579aef130904e86fe9d508654f8c5940f88e7ccb26928ae4d81d43a38a90e22e",
+          "raw": 572851,
+          "gzip9": 208102,
+          "brotli11": 176425,
+          "sha256": "b10349b9d7fdd0cb0c649a2964ea8d06dc7bb7b59b1477af0e1b2832c9168151",
           "lane": "oxc-pooled",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 3.8002408439999997,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 4.83305773,
           "delivery": {
             "literalPool": {
-              "bindings": 1808,
-              "references": 16908
+              "bindings": 2169,
+              "references": 19223
             }
           },
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-oxc-pooled.map",
-            "sha256": "920986ba66f28ad380fc856e06b15a07e3c95c45301ce2830cb121171100db8e",
+            "sha256": "28e74f350afab94e50c00b5a47ec58a880ccc2760c2d4142ec0b70aed4fc87be",
             "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
           }
         },
@@ -1120,8 +1120,8 @@
           "brotli11": 180386,
           "sha256": "054e7588845817953d4faf700aaa38e9db82cc4fe4af104a6e9ea42d2fcc8960",
           "lane": "esbuild",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 0.19281163900000683,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 0.203718927000009,
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-esbuild.map",
             "sha256": "33f95b5e7e41295d4abe96502d469a5245b582282a28d95719c0a1e0a556b286",
@@ -1135,8 +1135,8 @@
           "brotli11": 183301,
           "sha256": "03e158e958f4e2513efad29e6502820f15459745926e9cd0d6fdb8f345d98fc7",
           "lane": "esbuild-pooled",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 5.013480162000007,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 5.381306829000008,
           "delivery": {
             "literalPool": {
               "bindings": 2284,
@@ -1156,8 +1156,8 @@
           "brotli11": 166552,
           "sha256": "39b02f7c298750171a0d4267fb15213cda803a5c47caf3f90a460cd7fa12df15",
           "lane": "terser-oxc",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 3.9276264010000013,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 4.0495299240000024,
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-terser-oxc.map",
             "sha256": "da9de08bf5f0ebb1edf23c97867b2657a593f3c0497a72e73a5670132ce8768e",
@@ -1166,22 +1166,22 @@
         },
         {
           "file": "artifacts/sdk/full/original-terser-oxc-pooled.mjs",
-          "raw": 581818,
-          "gzip9": 206580,
-          "brotli11": 174186,
-          "sha256": "841e5425cce84ed7f7b5a887269bbb745db73dd4f81f9b04bdd2b3af773b4213",
+          "raw": 565854,
+          "gzip9": 206282,
+          "brotli11": 174949,
+          "sha256": "56ec089209771400d86fb620df72ddea27cfd08611629b232c8bf44e63f17cfe",
           "lane": "terser-oxc-pooled",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 7.326892878999992,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 8.299543858000005,
           "delivery": {
             "literalPool": {
-              "bindings": 1796,
-              "references": 16813
+              "bindings": 2157,
+              "references": 19126
             }
           },
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-terser-oxc-pooled.map",
-            "sha256": "9dbbe471f419e8802ebc3066b9960538c860fd9f587810db2d6fad001c96a26a",
+            "sha256": "0f101ce4500e7c2cd8b097f65c9441a2c08c9f9727c3a15d8e85aca31de1c768",
             "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
           }
         },
@@ -1192,8 +1192,8 @@
           "brotli11": 166663,
           "sha256": "2ce13902444d95f1eb333748e014ff4004994559af5dec3d0122eea2a43a52ea",
           "lane": "oxc-terser",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 3.522576006000003,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 3.568706466000003,
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-oxc-terser.map",
             "sha256": "9e8b89cd8ffec1d9cb1be43a900cd764dd393814247563ed2ad734d6fe3954eb",
@@ -1207,8 +1207,8 @@
           "brotli11": 174720,
           "sha256": "90b1f8918632aff6a582a70439ec720d92e1c3e32fcd05f6e64b1e70e5fd82f4",
           "lane": "oxc-terser-pooled",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 7.6386815159999975,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 7.79909752699999,
           "delivery": {
             "literalPool": {
               "bindings": 2158,
@@ -1228,8 +1228,8 @@
           "brotli11": 163131,
           "sha256": "79aca506530f8f11d5e29cc8caf35befce030c9bec296b32c4373c7e0a860a1f",
           "lane": "oxc-private",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 2.0167011060000077,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 2.001981123999998,
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-oxc-private.map",
             "sha256": "0bf4e24893cc8239546104faa3204a6745a2aad04b41cefb414bb2c395b1c79f",
@@ -1238,22 +1238,22 @@
         },
         {
           "file": "artifacts/sdk/full/original-oxc-private-pooled.mjs",
-          "raw": 555933,
-          "gzip9": 199090,
-          "brotli11": 168761,
-          "sha256": "66fdd2b50779606e22dcd68ec246da2d75696703e7b19d6cb190c88daae15ed3",
+          "raw": 539954,
+          "gzip9": 198514,
+          "brotli11": 169014,
+          "sha256": "10b2f1e76b74cb2877c82335bb9ce05a3cef55b08649dbc3250cf7bc2238675b",
           "lane": "oxc-private-pooled",
-          "bundleSeconds": 0.12024225600001227,
-          "minifySeconds": 4.750595803999997,
+          "bundleSeconds": 0.20847244300000603,
+          "minifySeconds": 5.502185468000011,
           "delivery": {
             "literalPool": {
-              "bindings": 1155,
-              "references": 12955
+              "bindings": 1516,
+              "references": 15270
             }
           },
           "sourceMap": {
             "file": "artifacts/sdk/full/full-original-oxc-private-pooled.map",
-            "sha256": "1a5458b184f968523a8f081b5ac85027f7c3a2fa7ee66ad09e2c9907ed1ccc60",
+            "sha256": "e8fd43c0e38e108999af289fb681c97466ed03c63972e6ce99e1bf4f60dcd56f",
             "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
           }
         }
@@ -1264,63 +1264,63 @@
           "metric": "raw",
           "artifact": {
             "file": "artifacts/sdk/full/raw.mjs",
-            "raw": 554277,
-            "gzip9": 198853,
-            "brotli11": 168571,
-            "sha256": "de32ea91e636e8f6f163b336bb65406f6a0b55659c639c472b9d5c4d0c5b4cc9",
+            "raw": 538366,
+            "gzip9": 198227,
+            "brotli11": 168980,
+            "sha256": "f9e438fa4f015e4ac8f05e50e2ccb1b8c261105db65c38699d917a306b83b40c",
             "lane": "oxc-private-pooled",
-            "minifySeconds": 4.665151874000003,
+            "minifySeconds": 5.450642833999998,
             "delivery": {
               "literalPool": {
-                "bindings": 1145,
-                "references": 12878
+                "bindings": 1506,
+                "references": 15150
               }
             },
             "sourceMap": {
               "file": "artifacts/sdk/full/full-raw-oxc-private-pooled.map",
-              "sha256": "8f81c2ab1f5e196c224f7a955d9287a2f5c25d7c23542ba5f66fa44a12f79d8f",
+              "sha256": "b0bc513276402c220f3b3f75acaa50849604f8c28457b3ec9a9b4e9c869ffe4c",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
           "baseline": {
             "file": "artifacts/sdk/full/original-oxc-private-pooled.mjs",
-            "raw": 555933,
-            "gzip9": 199090,
-            "brotli11": 168761,
-            "sha256": "66fdd2b50779606e22dcd68ec246da2d75696703e7b19d6cb190c88daae15ed3",
+            "raw": 539954,
+            "gzip9": 198514,
+            "brotli11": 169014,
+            "sha256": "10b2f1e76b74cb2877c82335bb9ce05a3cef55b08649dbc3250cf7bc2238675b",
             "lane": "oxc-private-pooled",
-            "bundleSeconds": 0.12024225600001227,
-            "minifySeconds": 4.750595803999997,
+            "bundleSeconds": 0.20847244300000603,
+            "minifySeconds": 5.502185468000011,
             "delivery": {
               "literalPool": {
-                "bindings": 1155,
-                "references": 12955
+                "bindings": 1516,
+                "references": 15270
               }
             },
             "sourceMap": {
               "file": "artifacts/sdk/full/full-original-oxc-private-pooled.map",
-              "sha256": "1a5458b184f968523a8f081b5ac85027f7c3a2fa7ee66ad09e2c9907ed1ccc60",
+              "sha256": "e8fd43c0e38e108999af289fb681c97466ed03c63972e6ce99e1bf4f60dcd56f",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
           "matchedOriginal": {
             "file": "artifacts/sdk/full/original-oxc-private-pooled.mjs",
-            "raw": 555933,
-            "gzip9": 199090,
-            "brotli11": 168761,
-            "sha256": "66fdd2b50779606e22dcd68ec246da2d75696703e7b19d6cb190c88daae15ed3",
+            "raw": 539954,
+            "gzip9": 198514,
+            "brotli11": 169014,
+            "sha256": "10b2f1e76b74cb2877c82335bb9ce05a3cef55b08649dbc3250cf7bc2238675b",
             "lane": "oxc-private-pooled",
-            "bundleSeconds": 0.12024225600001227,
-            "minifySeconds": 4.750595803999997,
+            "bundleSeconds": 0.20847244300000603,
+            "minifySeconds": 5.502185468000011,
             "delivery": {
               "literalPool": {
-                "bindings": 1155,
-                "references": 12955
+                "bindings": 1516,
+                "references": 15270
               }
             },
             "sourceMap": {
               "file": "artifacts/sdk/full/full-original-oxc-private-pooled.map",
-              "sha256": "1a5458b184f968523a8f081b5ac85027f7c3a2fa7ee66ad09e2c9907ed1ccc60",
+              "sha256": "e8fd43c0e38e108999af289fb681c97466ed03c63972e6ce99e1bf4f60dcd56f",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
@@ -1342,238 +1342,238 @@
           "candidates": [
             {
               "file": "artifacts/sdk/full/raw-oxc-private-pooled.mjs",
-              "raw": 554277,
-              "gzip9": 198853,
-              "brotli11": 168571,
-              "sha256": "de32ea91e636e8f6f163b336bb65406f6a0b55659c639c472b9d5c4d0c5b4cc9",
+              "raw": 538366,
+              "gzip9": 198227,
+              "brotli11": 168980,
+              "sha256": "f9e438fa4f015e4ac8f05e50e2ccb1b8c261105db65c38699d917a306b83b40c",
               "lane": "oxc-private-pooled",
-              "minifySeconds": 4.665151874000003,
+              "minifySeconds": 5.450642833999998,
               "delivery": {
                 "literalPool": {
-                  "bindings": 1145,
-                  "references": 12878
+                  "bindings": 1506,
+                  "references": 15150
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-oxc-private-pooled.map",
-                "sha256": "8f81c2ab1f5e196c224f7a955d9287a2f5c25d7c23542ba5f66fa44a12f79d8f",
-                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
-              }
-            },
-            {
-              "file": "artifacts/sdk/full/raw-oxc-terser-pooled.mjs",
-              "raw": 564803,
-              "gzip9": 206557,
-              "brotli11": 174996,
-              "sha256": "38a79316eb3f57ff298028c62269694e6afd520c24325991d218df25e052f2ea",
-              "lane": "oxc-terser-pooled",
-              "minifySeconds": 7.629071003000019,
-              "delivery": {
-                "literalPool": {
-                  "bindings": 2147,
-                  "references": 19011
-                }
-              },
-              "sourceMap": {
-                "file": "artifacts/sdk/full/full-raw-oxc-terser-pooled.map",
-                "sha256": "329fe87e9dd333dd89654032f14e23a892e90ded23840b7a6450348fe4122f4d",
+                "sha256": "b0bc513276402c220f3b3f75acaa50849604f8c28457b3ec9a9b4e9c869ffe4c",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-terser-oxc-pooled.mjs",
-              "raw": 580120,
-              "gzip9": 206346,
-              "brotli11": 173986,
-              "sha256": "57ede4be4c5b4dc9cc0835dbe014c226e955d33122f7e965f3dc94934585be8c",
+              "raw": 564229,
+              "gzip9": 206207,
+              "brotli11": 174672,
+              "sha256": "237c2958790c4421e4999c9aa0233905d558e773bcc3e54f8cc9e352303d0355",
               "lane": "terser-oxc-pooled",
-              "minifySeconds": 7.432281063000002,
+              "minifySeconds": 11.551376969000003,
               "delivery": {
                 "literalPool": {
-                  "bindings": 1785,
-                  "references": 16723
+                  "bindings": 2146,
+                  "references": 18993
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-terser-oxc-pooled.map",
-                "sha256": "c01bb238f5180b846eae3ece9b873cd45cede90c791736e3e52335e1f935df91",
+                "sha256": "5ad9da7d8090348b77e118344621dac1337eaab1df11b25919fb2c14bfac2e3f",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/full/raw-oxc-terser-pooled.mjs",
+              "raw": 564710,
+              "gzip9": 206485,
+              "brotli11": 174873,
+              "sha256": "e60cc82001b3c06ace2d3492c45bc013eba988d103b391f45f53676cc73e3583",
+              "lane": "oxc-terser-pooled",
+              "minifySeconds": 7.835069636,
+              "delivery": {
+                "literalPool": {
+                  "bindings": 2147,
+                  "references": 18995
+                }
+              },
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-raw-oxc-terser-pooled.map",
+                "sha256": "20cece5daa9a28dab5c9e96329a17f5f166952e3b0d9210d73c6943641537a56",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-oxc-pooled.mjs",
-              "raw": 586108,
-              "gzip9": 208286,
-              "brotli11": 175799,
-              "sha256": "7682a8c38baf1fddd05b8cf3168db40003ef2f7ef05cd23d8d65d18b9e1bf649",
+              "raw": 571106,
+              "gzip9": 207742,
+              "brotli11": 176353,
+              "sha256": "3cb3df37718b5cad696eef051549abcdc4393d4d0d5c3351deab18b7ec3aa438",
               "lane": "oxc-pooled",
-              "minifySeconds": 3.725244242000015,
+              "minifySeconds": 4.52737741700001,
               "delivery": {
                 "literalPool": {
-                  "bindings": 1795,
-                  "references": 16812
+                  "bindings": 2156,
+                  "references": 19084
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-oxc-pooled.map",
-                "sha256": "d9fee13c63f881c22e09dca79e93cb521a1a8ec5ae6d09c13d1676d50b0a8051",
+                "sha256": "8450071117b1318981c99e7555ac296666f07dade8c6a1099e034bc09959b123",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-terser-pooled.mjs",
-              "raw": 603608,
-              "gzip9": 213481,
-              "brotli11": 180027,
-              "sha256": "67511cde99464a45dca3dc206b08184766730b4ee4d773b0e8082833fd4cdf83",
+              "raw": 603515,
+              "gzip9": 213418,
+              "brotli11": 180118,
+              "sha256": "c64a402e9469ee31212425543f84d389e5864b01a3285257af6c6897c185a86e",
               "lane": "terser-pooled",
-              "minifySeconds": 8.51866121199999,
+              "minifySeconds": 8.538061016999986,
               "delivery": {
                 "literalPool": {
                   "bindings": 2254,
-                  "references": 19992
+                  "references": 19976
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-terser-pooled.map",
-                "sha256": "b3bdb3e2b38bcfc01c83caf8f91cd3c982be7e65c382ca435aec9c709d92e114",
+                "sha256": "2b022b86f7cf7e653d60c9ef1054c25512990030592b068fce99195bd70c1122",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-oxc-private.mjs",
-              "raw": 611722,
-              "gzip9": 193905,
-              "brotli11": 163175,
-              "sha256": "54a8ac20ef2e184fd5e0cf8e0a14e29ed64baf60af0c7fd362c33a61b0a8ef84",
+              "raw": 611618,
+              "gzip9": 193857,
+              "brotli11": 163126,
+              "sha256": "5265d2f66b4bbf0ddbf6ac6304fad14c5ea3f04f7c2109951836b4ee79fe05d0",
               "lane": "oxc-private",
-              "minifySeconds": 1.9491101759999874,
+              "minifySeconds": 2.0386390419999953,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-oxc-private.map",
-                "sha256": "e31d414c164cd571510f8f7da2ccd5f7740ddb3edaa2d31cb2a540779b24b063",
+                "sha256": "549dbf93c83d72165bd3b32e2f0f101f6bb7cb75e184cf59bd273faf19e8d4ac",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-esbuild-pooled.mjs",
-              "raw": 612234,
-              "gzip9": 216413,
-              "brotli11": 182897,
-              "sha256": "c74b1236248694774034f17bc304f39cbd8040f60ab2128ad5c66c801959ec0a",
+              "raw": 612150,
+              "gzip9": 216346,
+              "brotli11": 182931,
+              "sha256": "a9e5716c86288d29317107b908ef873c42d39a482520ff1adff63607a5860ffb",
               "lane": "esbuild-pooled",
-              "minifySeconds": 5.016165624999994,
+              "minifySeconds": 5.308598811000004,
               "delivery": {
                 "literalPool": {
                   "bindings": 2273,
-                  "references": 20125
+                  "references": 20109
                 }
               },
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-esbuild-pooled.map",
-                "sha256": "c71a417d629086d76705ced78e7c93ed15996a1d50107ecf59e0f49e33dbb8be",
+                "sha256": "15b893dd287677aeff42ad1d0e67e7b3259b1b9e1b911eb0395115d2d0f0df0d",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-terser-oxc.mjs",
-              "raw": 673834,
-              "gzip9": 199260,
-              "brotli11": 166736,
-              "sha256": "c06ed9e59941db5081316a4d20cc31687b34357f0e0c3df113027a14e888a654",
+              "raw": 673713,
+              "gzip9": 199196,
+              "brotli11": 166489,
+              "sha256": "fdb90d17dfdf854820d08476ceaa3906ca762eccd1a64a21b5fa4ea05fb8aaf5",
               "lane": "terser-oxc",
-              "minifySeconds": 4.122947572000005,
+              "minifySeconds": 5.851388269999996,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-terser-oxc.map",
-                "sha256": "47e0794edb9b1aba628da357243189490fa8a4402e11f50befce5b0ac74a07bb",
+                "sha256": "b6269fceb33e65ff4c5e8425417a3f451e584c6199c39b5f87a4fe05c215e907",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-oxc-terser.mjs",
-              "raw": 675540,
-              "gzip9": 199804,
-              "brotli11": 166672,
-              "sha256": "372631414a941436683182569302f9f040c0e149f38bafc34e519988a68c5ce0",
+              "raw": 675421,
+              "gzip9": 199755,
+              "brotli11": 166729,
+              "sha256": "d135f832549631e9554c416f095121a387b797562e12fef9f7d8513e1d494373",
               "lane": "oxc-terser",
-              "minifySeconds": 3.429751662000024,
+              "minifySeconds": 3.507961219999997,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-oxc-terser.map",
-                "sha256": "7626d61994dab604b674e39794addceac1076c4d42e8a9be93156969c76fa887",
+                "sha256": "bbc2e7f2b08ec171ea245b62f11e7e6d159b7fc46ef64e09245507a8102d74c3",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-oxc.mjs",
-              "raw": 680352,
-              "gzip9": 201029,
-              "brotli11": 168497,
-              "sha256": "2aef83e19c20ce18fa9db2b46860ada0d7912326d4bcd9549ef7b753c5b00ccd",
+              "raw": 680249,
+              "gzip9": 200982,
+              "brotli11": 168360,
+              "sha256": "53a3b464ac637b226cb2b79914b2d6bd0789aa3332f87f9325057f26f52293e9",
               "lane": "oxc",
-              "minifySeconds": 0.14481543800001964,
+              "minifySeconds": 0.16815018799999962,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-oxc.map",
-                "sha256": "a3920a6145ad88092c34bfc6cd7c2ad45fc0f9948b259982da42db9421947608",
+                "sha256": "8bd04d70c349bd6c7da9a4ae5111238ca045e40b7fd4e01bae3e925b9187b90a",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-terser.mjs",
-              "raw": 720307,
-              "gzip9": 207156,
-              "brotli11": 171956,
-              "sha256": "e4eb92208773cf3efbb725da6c6d695cfb716664c335f88c8d350d267968d79d",
+              "raw": 720188,
+              "gzip9": 207106,
+              "brotli11": 171789,
+              "sha256": "36f4737702dc0900ebf0baae261bb64298e12a001b850e97d3a0b27cf01fc64e",
               "lane": "terser",
-              "minifySeconds": 3.914739282999988,
+              "minifySeconds": 3.842844865000006,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-terser.map",
-                "sha256": "0ea2c8dd3af488ca0bbfd541af555028b22872eb3645610faf2ad66a1986f17e",
+                "sha256": "00240743c42dff3d8a014929c9d73b044fd4a3683102e408b15e42ed168687e2",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/raw-esbuild.mjs",
-              "raw": 727427,
-              "gzip9": 215938,
-              "brotli11": 180391,
-              "sha256": "0f2440f733af9acbe95d0c656dc084f16b77410fd8b8bf7847f197852a15f966",
+              "raw": 727323,
+              "gzip9": 215875,
+              "brotli11": 180284,
+              "sha256": "4de34d57d23dfd4f3cda8e87d8af4691198f3e491a4999cb93fad61f4596564d",
               "lane": "esbuild",
-              "minifySeconds": 0.19822501699998976,
+              "minifySeconds": 0.20669975800000248,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-raw-esbuild.map",
-                "sha256": "123b3bb26c0f01255b0a3877e5c22721aed6a0cb3902957684e3e098c8e1c333",
+                "sha256": "2ac6f0da86599898c44805200867b9ed2df8c69c7f449e3a63d51a2d4e01c92f",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             }
           ],
           "compiler": {
             "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
-            "sourceSha256": "0d18f92ee5f5f777bb78d9fc023bdccae66688d4e7754caa0185ad41f3ccd1ee",
+            "sourceSha256": "4471a4aa8332bf5d4979efaf1e9b55655e4e24ee7f890aea935315b6c732711d",
             "configSha256": "0ffa302d1d23eb4a7aad6f81619068b9f6384913c8bdf425696537267591d622",
             "entrySha256": "bec013cdea2aad5444bc0eb117cfaf043f5e0410cdfcde55f967e3ecee03f688",
-            "outputSha256": "c47f732577068e5415c6f69362ff00dbf0a89201032165fd5973d466013b65d5",
-            "seconds": 0.7815175590000001
+            "outputSha256": "95cb3b5d5b80eee235dd8e642874afb0b509bbd9d584285fcbdc549340bc3ac5",
+            "seconds": 0.7137889140000001
           },
-          "bundleSeconds": 0.12844093700000667,
-          "totalBuildSeconds": 5.57511037000001,
-          "originalBuildSeconds": 4.870838060000009,
-          "savingsPercent": 0.2978776219436541,
-          "publishedSavingsPercent": 23.552534125562207,
-          "samePipelineSavingsPercent": 0.2978776219436541
+          "bundleSeconds": 0.12893191499999376,
+          "totalBuildSeconds": 6.293363662999992,
+          "originalBuildSeconds": 5.710657911000017,
+          "savingsPercent": 0.2940991269626658,
+          "publishedSavingsPercent": 25.7470246592271,
+          "samePipelineSavingsPercent": 0.2940991269626658
         },
         {
           "objective": "gzip",
           "metric": "gzip9",
           "artifact": {
             "file": "artifacts/sdk/full/gzip.mjs",
-            "raw": 612039,
-            "gzip9": 193793,
-            "brotli11": 163100,
-            "sha256": "016c53ffdbee794f3faf9ccc9f38949292dd2fbf58698e93ab13885289d80530",
+            "raw": 611890,
+            "gzip9": 193750,
+            "brotli11": 163054,
+            "sha256": "39d313acd01fd504435fb7289dd7063e9218dca4dfe1b6eacc7f6274f660f087",
             "lane": "oxc-private",
-            "minifySeconds": 1.9343222590000078,
+            "minifySeconds": 1.9508449290000136,
             "sourceMap": {
               "file": "artifacts/sdk/full/full-gzip-oxc-private.map",
-              "sha256": "51aa0cde779d3ed83c68b76e4159f66fcae4e1ba58d829840517085e8853dfc8",
+              "sha256": "203890c32a283d2b7c8b8fac3126dca53fdbb25819c31f9f3ea694131824a0b7",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
@@ -1584,8 +1584,8 @@
             "brotli11": 163131,
             "sha256": "79aca506530f8f11d5e29cc8caf35befce030c9bec296b32c4373c7e0a860a1f",
             "lane": "oxc-private",
-            "bundleSeconds": 0.12024225600001227,
-            "minifySeconds": 2.0167011060000077,
+            "bundleSeconds": 0.20847244300000603,
+            "minifySeconds": 2.001981123999998,
             "sourceMap": {
               "file": "artifacts/sdk/full/full-original-oxc-private.map",
               "sha256": "0bf4e24893cc8239546104faa3204a6745a2aad04b41cefb414bb2c395b1c79f",
@@ -1599,8 +1599,8 @@
             "brotli11": 163131,
             "sha256": "79aca506530f8f11d5e29cc8caf35befce030c9bec296b32c4373c7e0a860a1f",
             "lane": "oxc-private",
-            "bundleSeconds": 0.12024225600001227,
-            "minifySeconds": 2.0167011060000077,
+            "bundleSeconds": 0.20847244300000603,
+            "minifySeconds": 2.001981123999998,
             "sourceMap": {
               "file": "artifacts/sdk/full/full-original-oxc-private.map",
               "sha256": "0bf4e24893cc8239546104faa3204a6745a2aad04b41cefb414bb2c395b1c79f",
@@ -1625,118 +1625,118 @@
           "candidates": [
             {
               "file": "artifacts/sdk/full/gzip-oxc-private.mjs",
-              "raw": 612039,
-              "gzip9": 193793,
-              "brotli11": 163100,
-              "sha256": "016c53ffdbee794f3faf9ccc9f38949292dd2fbf58698e93ab13885289d80530",
+              "raw": 611890,
+              "gzip9": 193750,
+              "brotli11": 163054,
+              "sha256": "39d313acd01fd504435fb7289dd7063e9218dca4dfe1b6eacc7f6274f660f087",
               "lane": "oxc-private",
-              "minifySeconds": 1.9343222590000078,
+              "minifySeconds": 1.9508449290000136,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-gzip-oxc-private.map",
-                "sha256": "51aa0cde779d3ed83c68b76e4159f66fcae4e1ba58d829840517085e8853dfc8",
+                "sha256": "203890c32a283d2b7c8b8fac3126dca53fdbb25819c31f9f3ea694131824a0b7",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/gzip-terser-oxc.mjs",
-              "raw": 674132,
-              "gzip9": 199160,
-              "brotli11": 166524,
-              "sha256": "8a57a7031d0035906a9e4e2b4f57ee9409c7f572b1ce7dbfb1447b3561794708",
+              "raw": 673977,
+              "gzip9": 199109,
+              "brotli11": 166388,
+              "sha256": "8d72481b14ff4e1ea837b0500aaf93658d55cbe16cf33279f0a6cd3660056681",
               "lane": "terser-oxc",
-              "minifySeconds": 3.8990625880000005,
+              "minifySeconds": 4.029366849999991,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-gzip-terser-oxc.map",
-                "sha256": "792179e5f94471a269597375fb757fdae8917e5babb520fc3155aef79a387544",
+                "sha256": "691690850605cbee8ce72452a612947590bc8555e50ba330291d54de109f05e3",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/gzip-oxc-terser.mjs",
-              "raw": 675834,
-              "gzip9": 199750,
-              "brotli11": 166441,
-              "sha256": "7c78d624cfd363924825381f160425f08f23cd2cb252e9017f279e29bd4e8b7a",
+              "raw": 675681,
+              "gzip9": 199706,
+              "brotli11": 166679,
+              "sha256": "9e97fadf02bd5f5e8d49ae4031db790ab71a1a59570b3e14f8e8346b0f6afe19",
               "lane": "oxc-terser",
-              "minifySeconds": 3.5139124469999805,
+              "minifySeconds": 3.623114677000005,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-gzip-oxc-terser.map",
-                "sha256": "d126d1044d04c60da51578e62402d3296a6b5094643e5d816d0d9cd71e96b832",
+                "sha256": "c2b75e79bff11b2b4a2edad30cf637834d52638e2b0835136e4eab3b5d52d784",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/gzip-oxc.mjs",
-              "raw": 680670,
-              "gzip9": 200939,
-              "brotli11": 168298,
-              "sha256": "d97aa86f488394565d0b87515cc969022053a569395b1a86e14e823b53dffcd2",
+              "raw": 680521,
+              "gzip9": 200889,
+              "brotli11": 168241,
+              "sha256": "163125d4a4e00d53e6da17f85d3dd2ef5857072e8f02d5ab595aad646aeea404",
               "lane": "oxc",
-              "minifySeconds": 0.1968119440000155,
+              "minifySeconds": 0.15667066999999224,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-gzip-oxc.map",
-                "sha256": "fee6a626ebc83fdfaf7060ce3a4cefaa5c65775491ad5f5fa265dbdfbac266f8",
+                "sha256": "7f28d031dab95c481b7f063ea351d1065d17be8af1c1520cb82210bb9ae7776f",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/gzip-terser.mjs",
-              "raw": 720658,
-              "gzip9": 207001,
-              "brotli11": 171697,
-              "sha256": "a4f8710208ce91f2ea9af33b3d9bb1d26bfcfcb304d24a2d59c8734c1e27dfe2",
+              "raw": 720496,
+              "gzip9": 206950,
+              "brotli11": 171699,
+              "sha256": "589ee5ced00bcea1492495c75ad463b8329cc4819ea61944aa064a8553d2cf7a",
               "lane": "terser",
-              "minifySeconds": 3.947844557000004,
+              "minifySeconds": 3.8494870270000248,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-gzip-terser.map",
-                "sha256": "28c44ad04af13376e4e75c3fd2f34c73336d3c6068c8b9c619c13895fefa6f8c",
+                "sha256": "310ddea6d3867af50c38f0a72991ccca10ae3bbe5d55a58a69cf7008ee911886",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/gzip-esbuild.mjs",
-              "raw": 727817,
-              "gzip9": 215863,
-              "brotli11": 180214,
-              "sha256": "50cd3d5321c306e4382104ff8a59a47a90e7aa49193438addb2c97b40fd3f7ab",
+              "raw": 727667,
+              "gzip9": 215808,
+              "brotli11": 180280,
+              "sha256": "8e4f1b1fef17aa10db8dcc6dba56db481a486dfaace022644c375e3808962ba6",
               "lane": "esbuild",
-              "minifySeconds": 0.19674006899999222,
+              "minifySeconds": 0.19232010800001445,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-gzip-esbuild.map",
-                "sha256": "769db90f567782f2e2054ec8c21aa8f8e13081c38670ae4f0a67f7c8b7d3201a",
+                "sha256": "e2f8f00e398c57b50a74dedcd1a2db1652c66ee6f0998e435caf8641d16ec97e",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             }
           ],
           "compiler": {
             "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
-            "sourceSha256": "0d18f92ee5f5f777bb78d9fc023bdccae66688d4e7754caa0185ad41f3ccd1ee",
+            "sourceSha256": "4471a4aa8332bf5d4979efaf1e9b55655e4e24ee7f890aea935315b6c732711d",
             "configSha256": "30f3cf7752dbfa879232ae91afdf535a46f44a57c4768e77cb0e2e66e68fbc17",
             "entrySha256": "bec013cdea2aad5444bc0eb117cfaf043f5e0410cdfcde55f967e3ecee03f688",
-            "outputSha256": "68b787d0fe7f8426cf0dc21c1b8ca0776f38e4cce8785dc70a23e80eecc67e76",
-            "seconds": 0.6088978359999999
+            "outputSha256": "8955721de94b7d86489aecd367e1c83f83e5b3d9a03ca0362d782b1499da36c8",
+            "seconds": 0.5538341889999999
           },
-          "bundleSeconds": 0.11465677200001664,
-          "totalBuildSeconds": 2.6578768670000246,
-          "originalBuildSeconds": 2.13694336200002,
-          "savingsPercent": 0.1103052982624364,
-          "publishedSavingsPercent": 7.372692598151209,
-          "samePipelineSavingsPercent": 0.1103052982624364
+          "bundleSeconds": 0.10988326000000234,
+          "totalBuildSeconds": 2.614562378000016,
+          "originalBuildSeconds": 2.210453567000004,
+          "savingsPercent": 0.13246944697872243,
+          "publishedSavingsPercent": 7.39324532306016,
+          "samePipelineSavingsPercent": 0.13246944697872243
         },
         {
           "objective": "brotli",
           "metric": "brotli11",
           "artifact": {
             "file": "artifacts/sdk/full/brotli.mjs",
-            "raw": 612073,
-            "gzip9": 193814,
-            "brotli11": 163086,
-            "sha256": "555a6ec04e7c9a79c3a0fdf5ca6acad5edd23575ce2edc4fad3854ed3260d184",
+            "raw": 611940,
+            "gzip9": 193782,
+            "brotli11": 163015,
+            "sha256": "d18b70de8a817d5979c44243585c7e1f07299e619080a06dd643e90ea994e34b",
             "lane": "oxc-private",
-            "minifySeconds": 1.8887832509999862,
+            "minifySeconds": 1.946230836999981,
             "sourceMap": {
               "file": "artifacts/sdk/full/full-brotli-oxc-private.map",
-              "sha256": "07f51c563ee346ea9f48bc914c6d736521cc5c4dbf5eee8a7f99f937f8c5cd1c",
+              "sha256": "977a6c0afd5e87e809fcb60e826a68138370235c4f912d04afeef67ecde12a4a",
               "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
             }
           },
@@ -1747,8 +1747,8 @@
             "brotli11": 163131,
             "sha256": "79aca506530f8f11d5e29cc8caf35befce030c9bec296b32c4373c7e0a860a1f",
             "lane": "oxc-private",
-            "bundleSeconds": 0.12024225600001227,
-            "minifySeconds": 2.0167011060000077,
+            "bundleSeconds": 0.20847244300000603,
+            "minifySeconds": 2.001981123999998,
             "sourceMap": {
               "file": "artifacts/sdk/full/full-original-oxc-private.map",
               "sha256": "0bf4e24893cc8239546104faa3204a6745a2aad04b41cefb414bb2c395b1c79f",
@@ -1762,8 +1762,8 @@
             "brotli11": 163131,
             "sha256": "79aca506530f8f11d5e29cc8caf35befce030c9bec296b32c4373c7e0a860a1f",
             "lane": "oxc-private",
-            "bundleSeconds": 0.12024225600001227,
-            "minifySeconds": 2.0167011060000077,
+            "bundleSeconds": 0.20847244300000603,
+            "minifySeconds": 2.001981123999998,
             "sourceMap": {
               "file": "artifacts/sdk/full/full-original-oxc-private.map",
               "sha256": "0bf4e24893cc8239546104faa3204a6745a2aad04b41cefb414bb2c395b1c79f",
@@ -1788,103 +1788,103 @@
           "candidates": [
             {
               "file": "artifacts/sdk/full/brotli-oxc-private.mjs",
-              "raw": 612073,
-              "gzip9": 193814,
-              "brotli11": 163086,
-              "sha256": "555a6ec04e7c9a79c3a0fdf5ca6acad5edd23575ce2edc4fad3854ed3260d184",
+              "raw": 611940,
+              "gzip9": 193782,
+              "brotli11": 163015,
+              "sha256": "d18b70de8a817d5979c44243585c7e1f07299e619080a06dd643e90ea994e34b",
               "lane": "oxc-private",
-              "minifySeconds": 1.8887832509999862,
+              "minifySeconds": 1.946230836999981,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-brotli-oxc-private.map",
-                "sha256": "07f51c563ee346ea9f48bc914c6d736521cc5c4dbf5eee8a7f99f937f8c5cd1c",
+                "sha256": "977a6c0afd5e87e809fcb60e826a68138370235c4f912d04afeef67ecde12a4a",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/brotli-terser-oxc.mjs",
-              "raw": 674165,
-              "gzip9": 199152,
-              "brotli11": 166554,
-              "sha256": "50280d469983d5c8fda1abe64a08bec1a4a521c643fdacf8d8af4edf7dd00a3e",
+              "raw": 674027,
+              "gzip9": 199120,
+              "brotli11": 166428,
+              "sha256": "27a8e0de988155608174a86265de3e1d023da18e617c21ec12913aab28c14f05",
               "lane": "terser-oxc",
-              "minifySeconds": 4.0211809089999875,
+              "minifySeconds": 4.097287675,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-brotli-terser-oxc.map",
-                "sha256": "a94092a56a751b4464e2e38a93bfa61cc3b487b03af43bd2872ca14c6c65ccd6",
+                "sha256": "1c9091fc6df2ba643b5ab25f970ec6963bf8200d357eaa6ea2d8160899b032ac",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/brotli-oxc-terser.mjs",
-              "raw": 675872,
-              "gzip9": 199791,
-              "brotli11": 166649,
-              "sha256": "47fe7d3b5ffae9aefe116894dd6a4a035734ec42f0ac97f1ee250dfd93f217f0",
+              "raw": 675731,
+              "gzip9": 199734,
+              "brotli11": 166724,
+              "sha256": "50c0d7ed5eb45c867c6df1e253eae474e829bb6aa087140d792c735045c8dc1b",
               "lane": "oxc-terser",
-              "minifySeconds": 3.5520790470000065,
+              "minifySeconds": 3.5817027800000214,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-brotli-oxc-terser.map",
-                "sha256": "280cae2776fe183d4e547e03ef3c337b451e98b365131a56a91645191b3b74fe",
+                "sha256": "7c2c210000694dd91e6c4d77679a7d41f437f584a43cc12d0f79dcd09322f3f2",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/brotli-oxc.mjs",
-              "raw": 680704,
-              "gzip9": 200951,
-              "brotli11": 168294,
-              "sha256": "0f1efe59c9e8f21f5571f5c7a83d4889733932f859b414cd067991beb629ffce",
+              "raw": 680571,
+              "gzip9": 200911,
+              "brotli11": 168350,
+              "sha256": "1f63c7f331cc6ad1ba3a69b1069fc937a42791748332bec59aa09f75d4911b1e",
               "lane": "oxc",
-              "minifySeconds": 0.15571630100000766,
+              "minifySeconds": 0.18225402199997917,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-brotli-oxc.map",
-                "sha256": "eb1953152730a556a38834027a9a7d52889c3603a4a3be6301eafa2d5c65e45f",
+                "sha256": "4ca28fb66fd239ac89b05438c5e3d60eaaa873a0e4446f5028211dd26d1881ed",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/brotli-terser.mjs",
-              "raw": 720687,
-              "gzip9": 207045,
-              "brotli11": 171800,
-              "sha256": "9f66b38e7055d5fe5d14a07c7012a05a3b4fb18caa4b7851958f50f3e7b1a876",
+              "raw": 720546,
+              "gzip9": 206987,
+              "brotli11": 171586,
+              "sha256": "630f6d416fa508fa12109a9657b94555f90e80147cca3ced612ae4ea6a33260a",
               "lane": "terser",
-              "minifySeconds": 3.832041376999987,
+              "minifySeconds": 3.9350969150000017,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-brotli-terser.map",
-                "sha256": "d813074357aac748cc1e974c5bf3bb3c391163919def12fe2f002422a865f8d7",
+                "sha256": "4243f37b39285650a3025b2e9a96554913912d25c6d545bfd2bc196c30b469d7",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             },
             {
               "file": "artifacts/sdk/full/brotli-esbuild.mjs",
-              "raw": 727843,
-              "gzip9": 215867,
-              "brotli11": 180323,
-              "sha256": "154dabb7ac0faf0a09dbe1a5199a526ecc3e5e28c1dd96a8c3043c74152a7f51",
+              "raw": 727717,
+              "gzip9": 215828,
+              "brotli11": 180359,
+              "sha256": "17a64ce7300b7d07530834c3fe44600d2e2148dce76d9e110a9a2b8a5f2eab50",
               "lane": "esbuild",
-              "minifySeconds": 0.18665262700000312,
+              "minifySeconds": 0.18467936700000429,
               "sourceMap": {
                 "file": "artifacts/sdk/full/full-brotli-esbuild.map",
-                "sha256": "535adf6baeabe7adcfbcd3d8d2cb688ed5a837a0c0121846ac80ab8914673a68",
+                "sha256": "9d0aa60e61f12f0d26353dd25fe6c49ebb889d1306648292ba97e8e2248db3a8",
                 "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
               }
             }
           ],
           "compiler": {
             "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
-            "sourceSha256": "0d18f92ee5f5f777bb78d9fc023bdccae66688d4e7754caa0185ad41f3ccd1ee",
+            "sourceSha256": "4471a4aa8332bf5d4979efaf1e9b55655e4e24ee7f890aea935315b6c732711d",
             "configSha256": "20785639b2a63aea7c7cdf7874b19c888bad6a56d496f220c5c7b566b7a73158",
             "entrySha256": "bec013cdea2aad5444bc0eb117cfaf043f5e0410cdfcde55f967e3ecee03f688",
-            "outputSha256": "30cedb958acc2fa45d5b9462884a2e4d5cf74ed304e3560e0ae1b2367bea58d2",
-            "seconds": 0.662881742
+            "outputSha256": "0140c51d0729367ef9d185ddb76c8238c16a0a41a5a426cbe68aacdb906d747b",
+            "seconds": 0.6489455500000001
           },
-          "bundleSeconds": 0.11313133899998502,
-          "totalBuildSeconds": 2.6647963319999715,
-          "originalBuildSeconds": 2.13694336200002,
-          "savingsPercent": 0.027585192268786418,
-          "publishedSavingsPercent": 5.795435509678315,
-          "samePipelineSavingsPercent": 0.027585192268786418
+          "bundleSeconds": 0.1199251949999889,
+          "totalBuildSeconds": 2.7151015819999698,
+          "originalBuildSeconds": 2.210453567000004,
+          "savingsPercent": 0.07110849562621535,
+          "publishedSavingsPercent": 5.836447761366459,
+          "samePipelineSavingsPercent": 0.07110849562621535
         }
       ]
     }

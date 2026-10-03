@@ -13,8 +13,8 @@
           "closure": [
             "otlp.gzip.js"
           ],
-          "row": 2596,
-          "raw_row": 6894
+          "row": 2595,
+          "raw_row": 6888
         }
       ],
       "files": [
@@ -37,16 +37,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6894,
-          "codec_bytes": 2596,
-          "sha256": "afb9b9581a79edcc7358073f81727febd4c6ea34ab63f8505d27ef09b5d4074f"
+          "bytes": 6888,
+          "codec_bytes": 2595,
+          "sha256": "7c80362ece507e09c6f0170dac78ea9e3b1a03eb5d8a40917eb16f48db4aeeec"
         }
       ],
       "side_effects": [
         "otlp.gzip.js"
       ],
-      "codec_total": 2596,
-      "rows_total": 2596,
+      "codec_total": 2595,
+      "rows_total": 2595,
       "setters": 0,
       "output": "primary",
       "codec": "gzip",
@@ -97,7 +97,7 @@
       ]
     }
   ],
-  "source_sha256": "00ea16df25317524530d0ecd3449b55ca8bf7a7a184e0363a53104a7dfd14d56",
+  "source_sha256": "9ea354752f7ea7da1603df2b08bb2fe4615a7a82e81ac54ac86196bca327dda2",
   "inputs": {
     "root": 0,
     "entries": [
@@ -131,8 +131,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
-        "bytes": 4472,
-        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "bytes": 4639,
+        "sha256": "19e18a02117b57405d563ff7211b66664af94bb941dfee9d4b5f69886ebe17c5",
         "dependencies": [
           3,
           4
@@ -141,8 +141,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4312,
-        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
+        "bytes": 4618,
+        "sha256": "704d47748b9f5c65a74285a0f9938a2e69839c8879ebfe778309ad8f3340b3b3",
         "dependencies": [],
         "dynamic_dependencies": []
       },
@@ -164,8 +164,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-host.lil",
-        "bytes": 2359,
-        "sha256": "a4635cfaefed2c7675b2a43b39cb46fa495a45bf17c995b0da928179135c2258",
+        "bytes": 2331,
+        "sha256": "849ed3351a85431ddbc4eaace71043bbb8f45752e62732a1be982c7a8835d3c7",
         "dependencies": [
           3,
           2

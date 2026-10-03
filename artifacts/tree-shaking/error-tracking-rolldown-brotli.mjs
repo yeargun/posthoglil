@@ -1,1 +1,1 @@
-let e=function(e){let t=globalThis.TextEncoder;if(t!==void 0)return new t().encode(e).length;let n=encodeURIComponent(e)+``,r=0,i=0;for(;i<n.length;++i)n[i]==`%`?(r=r+1|0,i+=2):r=r+1|0;return r};Array.isArray;export{e as getUtf8ByteLength};
+let e=function(e){let t=globalThis.TextEncoder;if(t!==void 0)return new t().encode(e).length;let n=encodeURIComponent(e)+``,r=0,i=0;for(;i<n.length;)n[i]==`%`?(++r,i+=2):++r,++i;return r};Array.isArray;export{e as getUtf8ByteLength};

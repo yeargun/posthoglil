@@ -1,48 +1,55 @@
 {
   "upstreamVersion": "1.435.8",
   "packageVersion": "1.435.8-lil.1",
-  "status": "experimental; not published to npm",
+  "status": "release candidate; not published to npm",
   "installAs": "posthog-js",
   "optimizedEntries": [
     "posthog-js",
     "posthog-js/full/no-external"
   ],
   "otherEntries": "Exact upstream runtime artifacts; no size claim for these entries.",
-  "defaultObjective": "brotli",
+  "defaultObjective": "package",
+  "compilerObjective": "gzip",
+  "runtimeReceipt": "artifacts/package-runtime/results.json",
   "sourceMaps": "Rebuilt maps with embedded upstream TypeScript and generated LilScript JavaScript for every replaced ESM/CJS entry. LilScript source-level mapping is not supplied.",
   "declarations": "Exact upstream dist/module.d.ts; shared by the entrypoint manifests.",
   "replacements": [
     {
       "file": "dist/module.js",
-      "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
-      "objective": "brotli"
+      "sha256": "8ad3da4ee019163b2547cbedb960fb27233ca75b78ee3156b7ce84dac31959d7",
+      "objective": "package",
+      "sourceObjective": "gzip"
     },
     {
       "file": "dist/module.mjs",
-      "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
-      "objective": "brotli"
+      "sha256": "8ad3da4ee019163b2547cbedb960fb27233ca75b78ee3156b7ce84dac31959d7",
+      "objective": "package",
+      "sourceObjective": "gzip"
     },
     {
       "file": "dist/main.js",
-      "sha256": "2363e2bd227cdda64badffde1b3b2beb5ab7a6e46c4ac1b257cd078eb972221d",
-      "objective": "brotli",
+      "sha256": "d2f11a4752e434142f98db82a597ce26c64653c620924a33cd5cb386da1c21a4",
+      "objective": "package",
+      "sourceObjective": "gzip",
       "formatAdapter": "esbuild CJS"
     },
     {
       "file": "dist/module.full.no-external.js",
-      "sha256": "555a6ec04e7c9a79c3a0fdf5ca6acad5edd23575ce2edc4fad3854ed3260d184",
-      "objective": "brotli"
+      "sha256": "86013b10b6b193706c9a7393938376277cdeeeea30aa1bc0245e7b7b3669f315",
+      "objective": "package",
+      "sourceObjective": "gzip"
     },
     {
       "file": "dist/module.full.no-external.cjs",
-      "sha256": "177681040d6da5c3b65df8c021ec7073319ef750fa742dac7e1f2f35220dec05",
-      "objective": "brotli",
+      "sha256": "3e29c20b6d953f98b3afe61041c630f126994f915befecf93e35f060100a13a9",
+      "objective": "package",
+      "sourceObjective": "gzip",
       "formatAdapter": "esbuild CJS"
     }
   ],
   "tarball": "itslil-posthog-browser-1.435.8-lil.1.tgz",
-  "integrity": "sha512-Rv2aQYv3J3VG3tSANH5zV4RpS4uT4ZaZ9t5surOhp+cjbxljexKyG3ipK039tDsGUV70URo+WOAwc9Uz4iisgA==",
-  "shasum": "09e083e4d83678baeaff0793a69d740082e9a913",
-  "size": 15199776,
-  "unpackedSize": 52141922
+  "integrity": "sha512-jiCxvTPLJAEOdLn8LUJNfURN2GFiUlQ7H47W3gDrBdvlO9KttJVU9W3kjVYQ74bj8E7pOThD3PI0AghzvYBEEA==",
+  "shasum": "b44e833ac0d3c4f7852fb9084844f2e84cfa7b3c",
+  "size": 10148591,
+  "unpackedSize": 34243541
 }

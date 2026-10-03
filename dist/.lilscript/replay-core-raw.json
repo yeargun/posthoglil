@@ -96,7 +96,7 @@
       ]
     }
   ],
-  "source_sha256": "7ef8a274814dfdc50fa9ede18e84483da2e61d4187ebbf7fe38d803508543725",
+  "source_sha256": "ca0cc85c3c1ca1de3146a1e383ac5c317f9250fbf4cf70e743260d12fecb58c6",
   "inputs": {
     "root": 0,
     "entries": [
@@ -128,8 +128,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
-        "bytes": 4472,
-        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "bytes": 4639,
+        "sha256": "19e18a02117b57405d563ff7211b66664af94bb941dfee9d4b5f69886ebe17c5",
         "dependencies": [
           3,
           4
@@ -138,8 +138,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4312,
-        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
+        "bytes": 4618,
+        "sha256": "704d47748b9f5c65a74285a0f9938a2e69839c8879ebfe778309ad8f3340b3b3",
         "dependencies": [],
         "dynamic_dependencies": []
       },

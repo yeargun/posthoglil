@@ -1,0 +1,871 @@
+{
+  "schema": 1,
+  "date": "2026-10-03T13:17:13.585Z",
+  "upstreamVersion": "1.435.8",
+  "packageIntegrity": "sha512-jiCxvTPLJAEOdLn8LUJNfURN2GFiUlQ7H47W3gDrBdvlO9KttJVU9W3kjVYQ74bj8E7pOThD3PI0AghzvYBEEA==",
+  "defaultObjective": "package",
+  "method": "Identical application source, real npm installs under posthog-js, default tree shaking, production minification and ES2020 target. One default package artifact is measured with all three codecs; no side-effect overrides. Builds run sequentially. Split assets are compressed separately and summed.",
+  "buildTimeScope": "One warm-machine application build per row; installed dependencies, no output writes or transport compression in timing. Not SDK compilation time.",
+  "rows": [
+    {
+      "fixture": "standard",
+      "optimized": true,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 59.65527199999997,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/standard/esbuild/original/consumer.js",
+            "sha256": "8092e6025b1787960448d030075bdb7e431671ba3feff9b635043e730bcaa7f0",
+            "entry": true,
+            "raw": 312504,
+            "gzip9": 102125,
+            "brotli11": 86875
+          }
+        ],
+        "total": {
+          "raw": 312504,
+          "gzip9": 102125,
+          "brotli11": 86875
+        }
+      },
+      "candidate": {
+        "buildMs": 47.36687299999994,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/standard/esbuild/candidate/consumer.js",
+            "sha256": "8986557c688ccdcac276150b1c8e262b2549cb42a4304a1efb19849e9e6b9bdd",
+            "entry": true,
+            "raw": 290425,
+            "gzip9": 98639,
+            "brotli11": 84226
+          }
+        ],
+        "total": {
+          "raw": 290425,
+          "gzip9": 98639,
+          "brotli11": 84226
+        }
+      },
+      "savingsPercent": {
+        "raw": 7.06518956557356,
+        "gzip9": 3.4134638922888594,
+        "brotli11": 3.0492086330935253
+      }
+    },
+    {
+      "fixture": "standard",
+      "optimized": true,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 80.29924500000016,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/standard/rolldown/original/consumer.js",
+            "sha256": "1f392cf8a2a389f33144b42e1c48cd4edfadfa075a4ff6e0c2f245227779c256",
+            "entry": true,
+            "raw": 293271,
+            "gzip9": 95897,
+            "brotli11": 81756
+          }
+        ],
+        "total": {
+          "raw": 293271,
+          "gzip9": 95897,
+          "brotli11": 81756
+        }
+      },
+      "candidate": {
+        "buildMs": 56.853274000000056,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/standard/rolldown/candidate/consumer.js",
+            "sha256": "4f0a2717da328e5ced90f61933f4bba97804deccf797fbdab347234ef34cb30e",
+            "entry": true,
+            "raw": 289927,
+            "gzip9": 95790,
+            "brotli11": 81497
+          }
+        ],
+        "total": {
+          "raw": 289927,
+          "gzip9": 95790,
+          "brotli11": 81497
+        }
+      },
+      "savingsPercent": {
+        "raw": 1.1402423014890695,
+        "gzip9": 0.11157804727989218,
+        "brotli11": 0.3167963207593272
+      }
+    },
+    {
+      "fixture": "constructor",
+      "optimized": true,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 48.925052999999934,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/constructor/esbuild/original/consumer.js",
+            "sha256": "4d6a6511effc59be9af69a560721e7771294a31b1237278cc2fd9ecd860f377f",
+            "entry": true,
+            "raw": 312483,
+            "gzip9": 102116,
+            "brotli11": 86947
+          }
+        ],
+        "total": {
+          "raw": 312483,
+          "gzip9": 102116,
+          "brotli11": 86947
+        }
+      },
+      "candidate": {
+        "buildMs": 45.78134500000033,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/constructor/esbuild/candidate/consumer.js",
+            "sha256": "b1813b1adbba4197d7f8e9b8d2ad43359e14aec61a4ea7e8fc7f96061af30133",
+            "entry": true,
+            "raw": 290404,
+            "gzip9": 98633,
+            "brotli11": 84348
+          }
+        ],
+        "total": {
+          "raw": 290404,
+          "gzip9": 98633,
+          "brotli11": 84348
+        }
+      },
+      "savingsPercent": {
+        "raw": 7.065664372141844,
+        "gzip9": 3.410826902738062,
+        "brotli11": 2.9891773149159806
+      }
+    },
+    {
+      "fixture": "constructor",
+      "optimized": true,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 72.1749520000003,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/constructor/rolldown/original/consumer.js",
+            "sha256": "1a06f5a020df5503f4a604667dd9c15bb8025031ca34c10b1662b8d95fb68c29",
+            "entry": true,
+            "raw": 293251,
+            "gzip9": 95894,
+            "brotli11": 81699
+          }
+        ],
+        "total": {
+          "raw": 293251,
+          "gzip9": 95894,
+          "brotli11": 81699
+        }
+      },
+      "candidate": {
+        "buildMs": 56.20312400000057,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/constructor/rolldown/candidate/consumer.js",
+            "sha256": "08c8b79d9dc0da1d6fa969d727ad78f8ff3f830f3a5e0b46e67edad6a27cdcf4",
+            "entry": true,
+            "raw": 289907,
+            "gzip9": 95787,
+            "brotli11": 81568
+          }
+        ],
+        "total": {
+          "raw": 289907,
+          "gzip9": 95787,
+          "brotli11": 81568
+        }
+      },
+      "savingsPercent": {
+        "raw": 1.1403200671097458,
+        "gzip9": 0.11158153794814663,
+        "brotli11": 0.16034467986144607
+      }
+    },
+    {
+      "fixture": "full",
+      "optimized": true,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 94.03341100000034,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/full/esbuild/original/consumer.js",
+            "sha256": "220b0beb7d5d157963a7e373c9775747ee509dc61d8eefc2512b42c91d6df733",
+            "entry": true,
+            "raw": 709218,
+            "gzip9": 214275,
+            "brotli11": 178681
+          }
+        ],
+        "total": {
+          "raw": 709218,
+          "gzip9": 214275,
+          "brotli11": 178681
+        }
+      },
+      "candidate": {
+        "buildMs": 86.04881999999907,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/full/esbuild/candidate/consumer.js",
+            "sha256": "7a3612725f0d6847caec22fc44f33474f4e37e4283cd3e71f95148e4c87ab57e",
+            "entry": true,
+            "raw": 596789,
+            "gzip9": 198322,
+            "brotli11": 167445
+          }
+        ],
+        "total": {
+          "raw": 596789,
+          "gzip9": 198322,
+          "brotli11": 167445
+        }
+      },
+      "savingsPercent": {
+        "raw": 15.852530533629993,
+        "gzip9": 7.4451055886127655,
+        "brotli11": 6.288301498200699
+      }
+    },
+    {
+      "fixture": "full",
+      "optimized": true,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 152.31686399999853,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/full/rolldown/original/consumer.js",
+            "sha256": "a088e36a68e1a7111912f345d6f67dc4ff0868a7f550ebbc88d72c937990c195",
+            "entry": true,
+            "raw": 677750,
+            "gzip9": 201016,
+            "brotli11": 167897
+          }
+        ],
+        "total": {
+          "raw": 677750,
+          "gzip9": 201016,
+          "brotli11": 167897
+        }
+      },
+      "candidate": {
+        "buildMs": 108.4184750000004,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/full/rolldown/candidate/consumer.js",
+            "sha256": "b67b58fcbb4dc29e787286356e1b091e222d877c6e09200925eb123ad91ee823",
+            "entry": true,
+            "raw": 595191,
+            "gzip9": 191469,
+            "brotli11": 161294
+          }
+        ],
+        "total": {
+          "raw": 595191,
+          "gzip9": 191469,
+          "brotli11": 161294
+        }
+      },
+      "savingsPercent": {
+        "raw": 12.181335300627072,
+        "gzip9": 4.749373184224137,
+        "brotli11": 3.932768304377088
+      }
+    },
+    {
+      "fixture": "side-effect",
+      "optimized": true,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 52.067755000000034,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/side-effect/esbuild/original/consumer.js",
+            "sha256": "d8c2d911399a172d09c1e05d19dcb57a9dfa93aa71d1b2a57489e048adf2704a",
+            "entry": true,
+            "raw": 312494,
+            "gzip9": 102121,
+            "brotli11": 86889
+          }
+        ],
+        "total": {
+          "raw": 312494,
+          "gzip9": 102121,
+          "brotli11": 86889
+        }
+      },
+      "candidate": {
+        "buildMs": 46.79149099999995,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/side-effect/esbuild/candidate/consumer.js",
+            "sha256": "3b22117e9dc80edc71eaaefe4ee15a5ee4158567a46fccb7c03138e313caa704",
+            "entry": true,
+            "raw": 290415,
+            "gzip9": 98642,
+            "brotli11": 84286
+          }
+        ],
+        "total": {
+          "raw": 290415,
+          "gzip9": 98642,
+          "brotli11": 84286
+        }
+      },
+      "savingsPercent": {
+        "raw": 7.0654156559806,
+        "gzip9": 3.4067429813652406,
+        "brotli11": 2.9957762202350136
+      }
+    },
+    {
+      "fixture": "side-effect",
+      "optimized": true,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 75.91919899999994,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/side-effect/rolldown/original/consumer.js",
+            "sha256": "eb2a6942d2dda27d227c8ab9dcf3b8900222e8abf1966928acf5a82413da1e83",
+            "entry": true,
+            "raw": 293262,
+            "gzip9": 95899,
+            "brotli11": 81675
+          }
+        ],
+        "total": {
+          "raw": 293262,
+          "gzip9": 95899,
+          "brotli11": 81675
+        }
+      },
+      "candidate": {
+        "buildMs": 56.529727000001,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/side-effect/rolldown/candidate/consumer.js",
+            "sha256": "4bb746f12e7f0456110d72c0799a8c87a112a227892b3cc1b648614f8b8d3390",
+            "entry": true,
+            "raw": 289918,
+            "gzip9": 95792,
+            "brotli11": 81500
+          }
+        ],
+        "total": {
+          "raw": 289918,
+          "gzip9": 95792,
+          "brotli11": 81500
+        }
+      },
+      "savingsPercent": {
+        "raw": 1.1402772947057604,
+        "gzip9": 0.11157572028905882,
+        "brotli11": 0.214263850627483
+      }
+    },
+    {
+      "fixture": "react-hook",
+      "optimized": true,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 51.90976999999839,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-hook/esbuild/original/consumer.js",
+            "sha256": "83933bb8cf886c33d479c51bbc7bf10262ed5f71aaaa45c447b8c96586ebe3a2",
+            "entry": true,
+            "raw": 323885,
+            "gzip9": 106189,
+            "brotli11": 90388
+          }
+        ],
+        "total": {
+          "raw": 323885,
+          "gzip9": 106189,
+          "brotli11": 90388
+        }
+      },
+      "candidate": {
+        "buildMs": 48.84620899999936,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-hook/esbuild/candidate/consumer.js",
+            "sha256": "70857c6880543da0fc8c26d06a361683c146037ca892bd0058c6417efd2e52f4",
+            "entry": true,
+            "raw": 301806,
+            "gzip9": 102655,
+            "brotli11": 87878
+          }
+        ],
+        "total": {
+          "raw": 301806,
+          "gzip9": 102655,
+          "brotli11": 87878
+        }
+      },
+      "savingsPercent": {
+        "raw": 6.816925760686665,
+        "gzip9": 3.3280283268511845,
+        "brotli11": 2.776917289905745
+      }
+    },
+    {
+      "fixture": "react-hook",
+      "optimized": true,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 75.59480199999962,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-hook/rolldown/original/consumer.js",
+            "sha256": "738610beb72024f8ce6bdc7bd7276b5169df2edcceddd7b592114a752fce332a",
+            "entry": true,
+            "raw": 298801,
+            "gzip9": 98001,
+            "brotli11": 83396
+          }
+        ],
+        "total": {
+          "raw": 298801,
+          "gzip9": 98001,
+          "brotli11": 83396
+        }
+      },
+      "candidate": {
+        "buildMs": 61.07289900000069,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-hook/rolldown/candidate/consumer.js",
+            "sha256": "95b8f20f0962ce795b8d7b9d072316514460c25ef5511a697a35b5572242e235",
+            "entry": true,
+            "raw": 295412,
+            "gzip9": 97804,
+            "brotli11": 83142
+          }
+        ],
+        "total": {
+          "raw": 295412,
+          "gzip9": 97804,
+          "brotli11": 83142
+        }
+      },
+      "savingsPercent": {
+        "raw": 1.1341996847400115,
+        "gzip9": 0.20101835695554016,
+        "brotli11": 0.30457096263609706
+      }
+    },
+    {
+      "fixture": "react-all",
+      "optimized": true,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 65.21242699999857,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-all/esbuild/original/consumer.js",
+            "sha256": "2c2390baa166268371f9922400c84cce6b08f4b8706a6787c05d8082f968aa19",
+            "entry": true,
+            "raw": 331889,
+            "gzip9": 108523,
+            "brotli11": 92243
+          }
+        ],
+        "total": {
+          "raw": 331889,
+          "gzip9": 108523,
+          "brotli11": 92243
+        }
+      },
+      "candidate": {
+        "buildMs": 43.8100689999992,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-all/esbuild/candidate/consumer.js",
+            "sha256": "7d852bcda9e659dc39da06f070181edf5dc3901c3c7e81be93dceb7c142845eb",
+            "entry": true,
+            "raw": 309809,
+            "gzip9": 105043,
+            "brotli11": 89827
+          }
+        ],
+        "total": {
+          "raw": 309809,
+          "gzip9": 105043,
+          "brotli11": 89827
+        }
+      },
+      "savingsPercent": {
+        "raw": 6.652826698082793,
+        "gzip9": 3.2066935119744233,
+        "brotli11": 2.6191689342280666
+      }
+    },
+    {
+      "fixture": "react-all",
+      "optimized": true,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 77.12284699999873,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-all/rolldown/original/consumer.js",
+            "sha256": "e6ab77236c44046fb45b423d46ffdfe8735c8ff2760f6ad50dcb5bc6cebfc107",
+            "entry": true,
+            "raw": 308871,
+            "gzip9": 101144,
+            "brotli11": 85996
+          }
+        ],
+        "total": {
+          "raw": 308871,
+          "gzip9": 101144,
+          "brotli11": 85996
+        }
+      },
+      "candidate": {
+        "buildMs": 68.91949199999726,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-all/rolldown/candidate/consumer.js",
+            "sha256": "889b2e742d0eff9f58d9b752f3497a04bed7c61668bb8d6abdc5794316763bad",
+            "entry": true,
+            "raw": 305475,
+            "gzip9": 100948,
+            "brotli11": 85887
+          }
+        ],
+        "total": {
+          "raw": 305475,
+          "gzip9": 100948,
+          "brotli11": 85887
+        }
+      },
+      "savingsPercent": {
+        "raw": 1.0994881358236896,
+        "gzip9": 0.19378312109468165,
+        "brotli11": 0.12675008139912958
+      }
+    },
+    {
+      "fixture": "react-slim",
+      "optimized": false,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 6.728246999999101,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-slim/esbuild/original/consumer.js",
+            "sha256": "5990e2e3352bcf1513e3af3d718ee5ebdd9d7e2e97dca40ccaa4c095177208f2",
+            "entry": true,
+            "raw": 11076,
+            "gzip9": 4214,
+            "brotli11": 3779
+          }
+        ],
+        "total": {
+          "raw": 11076,
+          "gzip9": 4214,
+          "brotli11": 3779
+        }
+      },
+      "candidate": {
+        "buildMs": 5.404704000000493,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-slim/esbuild/candidate/consumer.js",
+            "sha256": "5990e2e3352bcf1513e3af3d718ee5ebdd9d7e2e97dca40ccaa4c095177208f2",
+            "entry": true,
+            "raw": 11076,
+            "gzip9": 4214,
+            "brotli11": 3779
+          }
+        ],
+        "total": {
+          "raw": 11076,
+          "gzip9": 4214,
+          "brotli11": 3779
+        }
+      },
+      "savingsPercent": {
+        "raw": 0,
+        "gzip9": 0,
+        "brotli11": 0
+      }
+    },
+    {
+      "fixture": "react-slim",
+      "optimized": false,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 4.851510999997117,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-slim/rolldown/original/consumer.js",
+            "sha256": "3d1804ba5dee968744b83fe9eba8e83cb5861ef43c135c9c33d25736dce7ef81",
+            "entry": true,
+            "raw": 5272,
+            "gzip9": 2203,
+            "brotli11": 1973
+          }
+        ],
+        "total": {
+          "raw": 5272,
+          "gzip9": 2203,
+          "brotli11": 1973
+        }
+      },
+      "candidate": {
+        "buildMs": 4.5727180000030785,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/react-slim/rolldown/candidate/consumer.js",
+            "sha256": "3d1804ba5dee968744b83fe9eba8e83cb5861ef43c135c9c33d25736dce7ef81",
+            "entry": true,
+            "raw": 5272,
+            "gzip9": 2203,
+            "brotli11": 1973
+          }
+        ],
+        "total": {
+          "raw": 5272,
+          "gzip9": 2203,
+          "brotli11": 1973
+        }
+      },
+      "savingsPercent": {
+        "raw": 0,
+        "gzip9": 0,
+        "brotli11": 0
+      }
+    },
+    {
+      "fixture": "no-external",
+      "optimized": false,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 50.493546000001515,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/no-external/esbuild/original/consumer.js",
+            "sha256": "38691eb1d1e9fd0336eed15d7406726cb95c8aee0ca4d312075ae6b2ef393757",
+            "entry": true,
+            "raw": 355773,
+            "gzip9": 106595,
+            "brotli11": 89859
+          }
+        ],
+        "total": {
+          "raw": 355773,
+          "gzip9": 106595,
+          "brotli11": 89859
+        }
+      },
+      "candidate": {
+        "buildMs": 51.38215299999865,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/no-external/esbuild/candidate/consumer.js",
+            "sha256": "38691eb1d1e9fd0336eed15d7406726cb95c8aee0ca4d312075ae6b2ef393757",
+            "entry": true,
+            "raw": 355773,
+            "gzip9": 106595,
+            "brotli11": 89859
+          }
+        ],
+        "total": {
+          "raw": 355773,
+          "gzip9": 106595,
+          "brotli11": 89859
+        }
+      },
+      "savingsPercent": {
+        "raw": 0,
+        "gzip9": 0,
+        "brotli11": 0
+      }
+    },
+    {
+      "fixture": "no-external",
+      "optimized": false,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 71.90780799999993,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/no-external/rolldown/original/consumer.js",
+            "sha256": "9ce2c705dbda472102073be6f5bcadae9f3629148e35d2466dd81bada992bb47",
+            "entry": true,
+            "raw": 336746,
+            "gzip9": 100322,
+            "brotli11": 84700
+          }
+        ],
+        "total": {
+          "raw": 336746,
+          "gzip9": 100322,
+          "brotli11": 84700
+        }
+      },
+      "candidate": {
+        "buildMs": 71.19375699999728,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/no-external/rolldown/candidate/consumer.js",
+            "sha256": "9ce2c705dbda472102073be6f5bcadae9f3629148e35d2466dd81bada992bb47",
+            "entry": true,
+            "raw": 336746,
+            "gzip9": 100322,
+            "brotli11": 84700
+          }
+        ],
+        "total": {
+          "raw": 336746,
+          "gzip9": 100322,
+          "brotli11": 84700
+        }
+      },
+      "savingsPercent": {
+        "raw": 0,
+        "gzip9": 0,
+        "brotli11": 0
+      }
+    },
+    {
+      "fixture": "lazy",
+      "optimized": true,
+      "bundler": "esbuild",
+      "original": {
+        "buildMs": 47.016223999999056,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/lazy/esbuild/original/consumer.js",
+            "sha256": "c03f20c8b1b69ce7876c2d1282a21a6cbd8d2cf8dc399c17b933e389e52f8e38",
+            "entry": true,
+            "raw": 60,
+            "gzip9": 78,
+            "brotli11": 64
+          },
+          {
+            "file": "artifacts/sdk-consumers/lazy/esbuild/original/module-TQDIHTYR.js",
+            "sha256": "fa7340434f533325f19e90a5e35e175e3c221a88bac207b780adbb636c56ab32",
+            "entry": false,
+            "raw": 313816,
+            "gzip9": 102800,
+            "brotli11": 87460
+          }
+        ],
+        "total": {
+          "raw": 313876,
+          "gzip9": 102878,
+          "brotli11": 87524
+        }
+      },
+      "candidate": {
+        "buildMs": 43.93058600000222,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/lazy/esbuild/candidate/consumer.js",
+            "sha256": "af3af76515f05d1c223c2d12de296b6cc3a38102bf328762860150935154085d",
+            "entry": true,
+            "raw": 60,
+            "gzip9": 78,
+            "brotli11": 64
+          },
+          {
+            "file": "artifacts/sdk-consumers/lazy/esbuild/candidate/module-UWPG44EL.js",
+            "sha256": "206c675c45999be2410466d315b69d64722ebe3c935f6e60616f589bee881e19",
+            "entry": false,
+            "raw": 291737,
+            "gzip9": 99283,
+            "brotli11": 84791
+          }
+        ],
+        "total": {
+          "raw": 291797,
+          "gzip9": 99361,
+          "brotli11": 84855
+        }
+      },
+      "savingsPercent": {
+        "raw": 7.034306541436742,
+        "gzip9": 3.4186123369427834,
+        "brotli11": 3.0494492939079576
+      }
+    },
+    {
+      "fixture": "lazy",
+      "optimized": true,
+      "bundler": "rolldown",
+      "original": {
+        "buildMs": 73.5348750000012,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/lazy/rolldown/original/consumer.js",
+            "sha256": "be5684e28c55d2b26089d86d945d51bd41840bfc1e9add3328ecbe7401c6e765",
+            "entry": true,
+            "raw": 60,
+            "gzip9": 78,
+            "brotli11": 62
+          },
+          {
+            "file": "artifacts/sdk-consumers/lazy/rolldown/original/chunk-1KrfkAQ-.js",
+            "sha256": "d0415595ffe797b4fde9449204428fde46eb972cc6035bb7f3d8760740f19ae8",
+            "entry": false,
+            "raw": 294617,
+            "gzip9": 96560,
+            "brotli11": 82273
+          }
+        ],
+        "total": {
+          "raw": 294677,
+          "gzip9": 96638,
+          "brotli11": 82335
+        }
+      },
+      "candidate": {
+        "buildMs": 61.192534999998315,
+        "files": [
+          {
+            "file": "artifacts/sdk-consumers/lazy/rolldown/candidate/consumer.js",
+            "sha256": "cd19355021579a7bcf9e626312ca1a3d7c6159ba56305a9dd53af88972ac4442",
+            "entry": true,
+            "raw": 60,
+            "gzip9": 78,
+            "brotli11": 64
+          },
+          {
+            "file": "artifacts/sdk-consumers/lazy/rolldown/candidate/chunk-DViSKj60.js",
+            "sha256": "e7a96769fec25c08e1f38b29172760ec8920548fb9bbfff2345c2560eecd98b8",
+            "entry": false,
+            "raw": 291273,
+            "gzip9": 96420,
+            "brotli11": 82072
+          }
+        ],
+        "total": {
+          "raw": 291333,
+          "gzip9": 96498,
+          "brotli11": 82136
+        }
+      },
+      "savingsPercent": {
+        "raw": 1.1348018338723453,
+        "gzip9": 0.14487054781763264,
+        "brotli11": 0.2416955122365949
+      }
+    }
+  ]
+}

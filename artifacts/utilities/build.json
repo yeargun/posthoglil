@@ -9,8 +9,8 @@
       "configSha256": "b8c6587e6c8c4dab1be63d270e87e5e4e20a747203eced21ce6850ec4737020c",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "2ae3c8e39dc83633ff802f6e2b9670ef054cd902480c48add122af5b33dc0d97",
-      "manifestSha256": "d664cda8636680eea8206266379a9929fd1b1d366f98169b50bf245f9e81f049",
+      "sourceSha256": "7573948dc7da3d88618af55f33ac5b2be9a2374520b2195f3ecdc3dbbf1b702e",
+      "manifestSha256": "a72453f83f1e78e1f936d11315079c1a07062ab70ed658e87d6d37cb3f5a9b98",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/posthog-raw.toml",
         "warnings": [],
@@ -1329,7 +1329,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 2282
+      "compileWallMs": 2217
     },
     {
       "name": "posthog-gzip",
@@ -1337,8 +1337,8 @@
       "configSha256": "bc695f447fef6b2873298951b0b371d9d0e03ca27efc08f90a728f39f173220e",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "2ae3c8e39dc83633ff802f6e2b9670ef054cd902480c48add122af5b33dc0d97",
-      "manifestSha256": "b0b5781b9665d0d8bfbe95659b0db9f41bd5310d96aeefd1f1de12e76c5cf550",
+      "sourceSha256": "7573948dc7da3d88618af55f33ac5b2be9a2374520b2195f3ecdc3dbbf1b702e",
+      "manifestSha256": "5af32622f92ff8560d8107686929b442019cc20f5ae7e4eec7e1d1a4e6430f23",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/posthog-gzip.toml",
         "warnings": [],
@@ -2657,7 +2657,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 3588
+      "compileWallMs": 3648
     },
     {
       "name": "posthog-brotli",
@@ -2665,8 +2665,8 @@
       "configSha256": "4c64d61524994daffc02e0fe8839c6b8c924841528ac4ec6efe68e46de81e0cc",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "b174e8db6f2ad11b5c0ed111de589b8e3a8035d7f57db7562a23d3bc5b715d98",
-      "manifestSha256": "44c3e7ae71a5c38476587896e15e5fad1fab08eed997dc2b7dfea1d0a3f3af30",
+      "sourceSha256": "ac692d220d6010caa3050404845520fae9e40571c99de634be2926ffb127d2e6",
+      "manifestSha256": "18b182df6727825f9ce096f570b787f682c0986d390009010b876f38b308b45c",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/posthog-brotli.toml",
         "warnings": [],
@@ -5667,7 +5667,7 @@
         "primary_fingerprint": "af8f5e554cdf3523b290c4598b1ee4695ea1312e272d12fee2ddca5aee7d4aae",
         "fingerprint_scope": "requested delivery and objective policies"
       },
-      "compileWallMs": 18940
+      "compileWallMs": 22157
     },
     {
       "name": "surveys-raw",
@@ -5675,8 +5675,8 @@
       "configSha256": "be0cb0438a41c084c7fad86798d797df996dd27b186678c65b64ac11a6a8a2e9",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "ba6b69cac3d6ee5a0e227a9f08b1b0838628fee110c2c80cd835fd7dd840ceb9",
-      "manifestSha256": "4e5a2b8805e682bb746b676261888f9e7d7bc04b71c2941e8822f3475f65c65c",
+      "sourceSha256": "17724cacbeb5596be656cf56347b7aadbe1de6b2e06fb11d6f35e691e43244f3",
+      "manifestSha256": "527bc4e12b7bd4d2ff5e75205a4a7820f94de53d5bc19486b5d7e814c7818efb",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/surveys-raw.toml",
         "warnings": [],
@@ -6995,7 +6995,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 913
+      "compileWallMs": 909
     },
     {
       "name": "surveys-gzip",
@@ -7003,8 +7003,8 @@
       "configSha256": "d41c4ad7d1091d505bcbabee88af6b794ca411c133b21f0328eca14ac3307a19",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "ba6b69cac3d6ee5a0e227a9f08b1b0838628fee110c2c80cd835fd7dd840ceb9",
-      "manifestSha256": "33b9ad8a335a8a6bc46def8b304552b9ebf3ddf9edb63f3f7935895b2c7c9d8f",
+      "sourceSha256": "17724cacbeb5596be656cf56347b7aadbe1de6b2e06fb11d6f35e691e43244f3",
+      "manifestSha256": "9fa26e16516ea136101c86769aa7d746e1d0b9746d2a741a94ff32b05a2e05b2",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/surveys-gzip.toml",
         "warnings": [],
@@ -8323,7 +8323,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 1426
+      "compileWallMs": 1423
     },
     {
       "name": "surveys-brotli",
@@ -8331,8 +8331,8 @@
       "configSha256": "99effc0b70527fd8dd1c98e2e09dc0e520174bcf296fe8f13575e0eaf96f3cba",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "ba6b69cac3d6ee5a0e227a9f08b1b0838628fee110c2c80cd835fd7dd840ceb9",
-      "manifestSha256": "37578d7a3cc869e8df9340928b7e7935b36d7a537a7ca6dc80710794f5ccf5ca",
+      "sourceSha256": "17724cacbeb5596be656cf56347b7aadbe1de6b2e06fb11d6f35e691e43244f3",
+      "manifestSha256": "ef2814c15d92e8d061f2f371a0ea53a409be0fb98483cfe34e36947106463c5b",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/surveys-brotli.toml",
         "warnings": [],
@@ -10497,7 +10497,7 @@
         "primary_fingerprint": "63e604f5552b867d237655033eb65641101b9ea28b9aad685024c62e873b73dc",
         "fingerprint_scope": "requested delivery and objective policies"
       },
-      "compileWallMs": 7856
+      "compileWallMs": 7848
     },
     {
       "name": "error-tracking-raw",
@@ -10505,8 +10505,8 @@
       "configSha256": "2b49dd7f481f4fa5d446486773bc22aa2ba98833b95a7355ef7fc69223b53db7",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "1f51e97e97f930cd61698fa51cda47bf5981c1244cc105264066c5125f5d9b25",
-      "manifestSha256": "624b97eb405cc0b55ce5da9bc5abe7efc9cf0a06308c18f02a3ba842c935f12a",
+      "sourceSha256": "25455c0b3bb949c896f34eb18610254993b45333974f2a22279c586b6ed31ce0",
+      "manifestSha256": "a6206ff9d8d3315174b0db561e12ddbbbdd72e0e11a785f58034fac96cca83bd",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/error-tracking-raw.toml",
         "warnings": [],
@@ -11825,7 +11825,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 17234
+      "compileWallMs": 11681
     },
     {
       "name": "error-tracking-gzip",
@@ -11833,8 +11833,8 @@
       "configSha256": "b92e1d002e87a64f65c00fcd7fb10d1f2461131bd2a85910fd23910b55695b07",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "1f51e97e97f930cd61698fa51cda47bf5981c1244cc105264066c5125f5d9b25",
-      "manifestSha256": "9d2754bf4cdff10f658d8eb887baefdbd931b5f17e128ca4aa0043ce1e957c47",
+      "sourceSha256": "25455c0b3bb949c896f34eb18610254993b45333974f2a22279c586b6ed31ce0",
+      "manifestSha256": "22aab11404eca81597ef37f0d7263c8a5c013fb062bcd80b78edcd8560871a25",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/error-tracking-gzip.toml",
         "warnings": [],
@@ -13153,7 +13153,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 18918
+      "compileWallMs": 24357
     },
     {
       "name": "error-tracking-brotli",
@@ -13161,8 +13161,8 @@
       "configSha256": "44c9bc04e46c28d9416301dc5efd4c7a5b66422ae6cc5e237a3d1a19009f9b93",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "1f51e97e97f930cd61698fa51cda47bf5981c1244cc105264066c5125f5d9b25",
-      "manifestSha256": "84688689b45b2c935f56bd699ab29dc3f35070a51652b834ef00512e8145515e",
+      "sourceSha256": "25455c0b3bb949c896f34eb18610254993b45333974f2a22279c586b6ed31ce0",
+      "manifestSha256": "fc3bbc8554848a2c4b603130bf87518678e858471f3233656423285acac7a1c5",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/error-tracking-brotli.toml",
         "warnings": [],
@@ -15327,7 +15327,7 @@
         "primary_fingerprint": "d218db86d1ea4cabb9c23c3b70cc43ce724717673520e0c05315a8bd32b119d3",
         "fingerprint_scope": "requested delivery and objective policies"
       },
-      "compileWallMs": 102839
+      "compileWallMs": 55822
     },
     {
       "name": "otlp-raw",
@@ -15335,8 +15335,8 @@
       "configSha256": "d18a4d11d65ff005b7800392db41ea5b1105cc4d7512c0afbef16325808b84f1",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "00ea16df25317524530d0ecd3449b55ca8bf7a7a184e0363a53104a7dfd14d56",
-      "manifestSha256": "5588332a6fa29ce69007b3840d29973ec2cfb0f9f3bf2185479c5fdc85370784",
+      "sourceSha256": "9ea354752f7ea7da1603df2b08bb2fe4615a7a82e81ac54ac86196bca327dda2",
+      "manifestSha256": "141f28e8f856328b68c8a6831107be2ead5485276c99a5b7e76292053f265ea1",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/otlp-raw.toml",
         "warnings": [],
@@ -16655,7 +16655,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 950
+      "compileWallMs": 916
     },
     {
       "name": "otlp-gzip",
@@ -16663,8 +16663,8 @@
       "configSha256": "6c599f0d4ccef365265c2c484504dc9135cbe64ca9ad93c2cc34bd479ee25415",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "00ea16df25317524530d0ecd3449b55ca8bf7a7a184e0363a53104a7dfd14d56",
-      "manifestSha256": "f9df143ef73703dfeef11116147fbea25a4dc13623e0798b864fed3149cd1465",
+      "sourceSha256": "9ea354752f7ea7da1603df2b08bb2fe4615a7a82e81ac54ac86196bca327dda2",
+      "manifestSha256": "90d27d15c016d82fac077849e5ea0d95078db4cb9953e6ea9119989f6ed59070",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/otlp-gzip.toml",
         "warnings": [],
@@ -17983,7 +17983,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 1052
+      "compileWallMs": 1169
     },
     {
       "name": "otlp-brotli",
@@ -17991,8 +17991,8 @@
       "configSha256": "7a2e1c86a5e1eefd61af93ef29d549092a930248e8a56baa2c4dcfdbc4317caf",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "00ea16df25317524530d0ecd3449b55ca8bf7a7a184e0363a53104a7dfd14d56",
-      "manifestSha256": "b744815272ae8b67f89a0d7885ed5e31af13b5188ce0b9e70c6545ed5daed0d2",
+      "sourceSha256": "9ea354752f7ea7da1603df2b08bb2fe4615a7a82e81ac54ac86196bca327dda2",
+      "manifestSha256": "94381079f5c2c83035b55d6b060e9ec030c0af168fba85e677a96165e304ae1e",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/otlp-brotli.toml",
         "warnings": [],
@@ -20157,7 +20157,7 @@
         "primary_fingerprint": "512a85ec84b4287be21e2253f7ca90c114682f63ca1b8140ffdb57fc7e415348",
         "fingerprint_scope": "requested delivery and objective policies"
       },
-      "compileWallMs": 8913
+      "compileWallMs": 6598
     },
     {
       "name": "autocapture-raw",
@@ -20165,8 +20165,8 @@
       "configSha256": "a501f66c77e2bdbd44c7678888407045a2289976ba78b5012b72251b165cf32a",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "06d885f4d4048a9122d4ff6f38de8e0a9714746bbe4015e90fb784e9c8f0fa89",
-      "manifestSha256": "13c710d93b74134a6ec864a3a14c62ac0cf4513fde2e4a566d6c98de716356e3",
+      "sourceSha256": "ef635bdb8a4dbb4013b071c2333a4372ae74fbd017f245328f77d42e941f2783",
+      "manifestSha256": "35f9f29c8c9bd9ff8157b543808a3c7519e708282291eb15abbef9f7a732e8f7",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/autocapture-raw.toml",
         "warnings": [],
@@ -21485,7 +21485,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 1047
+      "compileWallMs": 1037
     },
     {
       "name": "autocapture-gzip",
@@ -21493,8 +21493,8 @@
       "configSha256": "97ca04f3e2863809cd96c147c8682d6389798aee999199144fa285e415708661",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "06d885f4d4048a9122d4ff6f38de8e0a9714746bbe4015e90fb784e9c8f0fa89",
-      "manifestSha256": "ef1693d9aeefd159ff2404057fc7cd4b37e281827e8bab005c40008e1dc7473e",
+      "sourceSha256": "ef635bdb8a4dbb4013b071c2333a4372ae74fbd017f245328f77d42e941f2783",
+      "manifestSha256": "0cae347c1c9f8e6a9efaa3b29bee6b025b3fa22d07f1e84afad69851ce7104f6",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/autocapture-gzip.toml",
         "warnings": [],
@@ -22813,7 +22813,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 2772
+      "compileWallMs": 2754
     },
     {
       "name": "autocapture-brotli",
@@ -22821,8 +22821,8 @@
       "configSha256": "97f1acdfba1c3afa383ecc4672c35ff2e4c7fe04d90974037e13d63d4d3ab012",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "06d885f4d4048a9122d4ff6f38de8e0a9714746bbe4015e90fb784e9c8f0fa89",
-      "manifestSha256": "8ee82e6e48c407e842c0e901b971855081b24d4f4a8923c5f67ca37b42e497d0",
+      "sourceSha256": "ef635bdb8a4dbb4013b071c2333a4372ae74fbd017f245328f77d42e941f2783",
+      "manifestSha256": "e26f2e203ed87356708a46414426784cca2c15f426bf865d8498ac5fadbc96e6",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/autocapture-brotli.toml",
         "warnings": [],
@@ -24987,7 +24987,7 @@
         "primary_fingerprint": "25c517dd97f6308fab8a21caf4811ea7ce356c1129274ef7a5381a5ba07c3427",
         "fingerprint_scope": "requested delivery and objective policies"
       },
-      "compileWallMs": 12221
+      "compileWallMs": 12296
     },
     {
       "name": "replay-core-raw",
@@ -24995,8 +24995,8 @@
       "configSha256": "9216b4fdfcb392ac0bb351a92c7718af5c5345c19a791b6895e943bfab2d4dad",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "7ef8a274814dfdc50fa9ede18e84483da2e61d4187ebbf7fe38d803508543725",
-      "manifestSha256": "3b3247bac67dad1b1390e137a2f8d8a9232f5a3f4414134f3fad7014ef00ea2f",
+      "sourceSha256": "ca0cc85c3c1ca1de3146a1e383ac5c317f9250fbf4cf70e743260d12fecb58c6",
+      "manifestSha256": "f4f7cce6dee79e3d05b8ba45913c616d145965a6127c86154afb703fc692884c",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/replay-core-raw.toml",
         "warnings": [],
@@ -26315,7 +26315,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 1207
+      "compileWallMs": 1226
     },
     {
       "name": "replay-core-gzip",
@@ -26323,8 +26323,8 @@
       "configSha256": "14845d9ce4f92c1174aebb6fa7454c403939416b9a5f722112b984c0caeae06f",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "7ef8a274814dfdc50fa9ede18e84483da2e61d4187ebbf7fe38d803508543725",
-      "manifestSha256": "b240840b4d7839de694b9721ad4e6de4f9a1f137d737dac8355b56e82e534dd4",
+      "sourceSha256": "ca0cc85c3c1ca1de3146a1e383ac5c317f9250fbf4cf70e743260d12fecb58c6",
+      "manifestSha256": "c7518ca6dcbc0b527ed96279dbd786dc3c3a9d749b50c292dab59788e02c4578",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/replay-core-gzip.toml",
         "warnings": [],
@@ -27643,7 +27643,7 @@
           "resources": "service ceilings intersect TOML limits; the smaller value wins"
         }
       },
-      "compileWallMs": 2970
+      "compileWallMs": 2989
     },
     {
       "name": "replay-core-brotli",
@@ -27651,8 +27651,8 @@
       "configSha256": "621e3047feeea07bf24fc456d6ce6b1f6e7b91981bf7859eca51d497a3830f87",
       "mode": "production",
       "target": "js-module",
-      "sourceSha256": "7ef8a274814dfdc50fa9ede18e84483da2e61d4187ebbf7fe38d803508543725",
-      "manifestSha256": "914fda3004cf2d9d77b5f5200383f04b4f8c30822bee2453026931421b167268",
+      "sourceSha256": "ca0cc85c3c1ca1de3146a1e383ac5c317f9250fbf4cf70e743260d12fecb58c6",
+      "manifestSha256": "7ce2671a8674b5e2c6f512cc13d6f5fc258c61a0669971801ceba0fd22400ddb",
       "resolvedPolicy": {
         "config": "/home/azureuser/posthoglil-work/full-sdk/configs/utilities/replay-core-brotli.toml",
         "warnings": [],
@@ -29817,15 +29817,15 @@
         "primary_fingerprint": "75bce19afa32b2654c8f4d02f3fd958b72b9bdd7f915187bf6c8a8d9cf7bdffb",
         "fingerprint_scope": "requested delivery and objective policies"
       },
-      "compileWallMs": 6871
+      "compileWallMs": 6888
     }
   ],
   "artifacts": {
     "posthog.raw.js": {
-      "sha256": "34e56d448c3e020c9a1d3777680472b33ac8c754e2467e1d23a0cde0760f09e3",
-      "raw": 15623,
+      "sha256": "c1e27f965bec62cf854c1c024c548ddf357d2474e0d4d2c67372a7c767f1e571",
+      "raw": 15624,
       "codec": "raw",
-      "codecBytes": 15623,
+      "codecBytes": 15624,
       "output": "posthog-raw/primary",
       "policyFingerprint": [
         94,
@@ -29863,10 +29863,10 @@
       ]
     },
     "posthog.gzip.js": {
-      "sha256": "32dabd9a5c02c1d2a991de7e3396e4643942ae587c79932ab11c3c64623171ad",
-      "raw": 16072,
+      "sha256": "eebf5cd0cc93210ea04c6d54d82130bdcea1315775d0296f6dd13c9b43cfeb96",
+      "raw": 16073,
       "codec": "gzip",
-      "codecBytes": 5719,
+      "codecBytes": 5718,
       "output": "posthog-gzip/primary",
       "policyFingerprint": [
         99,
@@ -29904,10 +29904,10 @@
       ]
     },
     "posthog.esm.js": {
-      "sha256": "99d17676f3024329a590fe5e39dd5812839f14eafbb47d9058f343e7c8d0a047",
-      "raw": 16007,
+      "sha256": "798cbb11dcba8ab8cfef5282f1aebe2fb0051f1077bbf54525da958658dc2407",
+      "raw": 15890,
       "codec": "brotli",
-      "codecBytes": 5195,
+      "codecBytes": 5160,
       "output": "posthog-brotli/primary",
       "policyFingerprint": [
         175,
@@ -29945,10 +29945,10 @@
       ]
     },
     "posthog.umd.js": {
-      "sha256": "5afddb0569e4382fa65c6872a99a376e9c66a064ad52f5abc17c6ffd1cdb7b70",
-      "raw": 14951,
+      "sha256": "ae71d0cd631793e7c90a6a0d71724ecc3db247e66e5817163ded3abc07ee2507",
+      "raw": 14948,
       "codec": "brotli",
-      "codecBytes": 5173,
+      "codecBytes": 5164,
       "output": "posthog-brotli/browser",
       "policyFingerprint": [
         17,
@@ -29986,10 +29986,10 @@
       ]
     },
     "posthog.cjs": {
-      "sha256": "643150b65726e2e08563976304d7b97bde471f5ef920cab85698e5022665f916",
-      "raw": 20635,
+      "sha256": "9bd66f34f42d7aa42e3eb3a2e3b34d5228113cb7257c5d4cf0184eff95c437c5",
+      "raw": 20557,
       "codec": "brotli",
-      "codecBytes": 5700,
+      "codecBytes": 5746,
       "output": "posthog-brotli/cjs",
       "policyFingerprint": [
         171,
@@ -30191,10 +30191,10 @@
       ]
     },
     "error-tracking.raw.js": {
-      "sha256": "16a863b4f9c4b1ff84c3fa40cf2c7987aa1a35f6be1509d33fe6e6aae856f5ad",
-      "raw": 17954,
+      "sha256": "55e6282a6a39493cad6f95cdbf8ac48cae247e4674012c9184f1d1fce4c29705",
+      "raw": 17864,
       "codec": "raw",
-      "codecBytes": 17954,
+      "codecBytes": 17864,
       "output": "error-tracking-raw/primary",
       "policyFingerprint": [
         214,
@@ -30232,10 +30232,10 @@
       ]
     },
     "error-tracking.gzip.js": {
-      "sha256": "bab756e888a315d2e0750d48c216c905f8a141b16513bb39518c9a2422c9e35d",
-      "raw": 18550,
+      "sha256": "de9949f91f7960ae9f8ac5917d114bd204a01fef0bcf2591820fd081084bfcfd",
+      "raw": 18415,
       "codec": "gzip",
-      "codecBytes": 6834,
+      "codecBytes": 6796,
       "output": "error-tracking-gzip/primary",
       "policyFingerprint": [
         100,
@@ -30273,10 +30273,10 @@
       ]
     },
     "error-tracking.esm.js": {
-      "sha256": "37f656ad783f7b70914d15d001114ec2a2914f9767c5884ac67de661f9f1117c",
-      "raw": 18414,
+      "sha256": "2ef44861a2205a3f0aaab7ee19e7a2ba8e1ee71864bacb5fab6eda84825f8304",
+      "raw": 18396,
       "codec": "brotli",
-      "codecBytes": 6236,
+      "codecBytes": 6285,
       "output": "error-tracking-brotli/primary",
       "policyFingerprint": [
         210,
@@ -30314,10 +30314,10 @@
       ]
     },
     "error-tracking.cjs": {
-      "sha256": "3fb06858254ddebdeea30b852c56514ccf24ee9409ac2731b7e02b2505672fa7",
-      "raw": 20294,
+      "sha256": "77588a4567fec1bd0f1b493ab7be1e3d247f20419cc1ecd7d703c08c078e735b",
+      "raw": 20033,
       "codec": "brotli",
-      "codecBytes": 6474,
+      "codecBytes": 6453,
       "output": "error-tracking-brotli/cjs",
       "policyFingerprint": [
         196,
@@ -30355,10 +30355,10 @@
       ]
     },
     "otlp.raw.js": {
-      "sha256": "df0e3d547305f8c62a4bc5e7b136ae89de8d454037abd1f5b2045a1113a17aa4",
-      "raw": 6359,
+      "sha256": "b273b73b54cb4628d4d13360e818046511ba223d4352133784ca828626efd232",
+      "raw": 6356,
       "codec": "raw",
-      "codecBytes": 6359,
+      "codecBytes": 6356,
       "output": "otlp-raw/primary",
       "policyFingerprint": [
         137,
@@ -30396,10 +30396,10 @@
       ]
     },
     "otlp.gzip.js": {
-      "sha256": "afb9b9581a79edcc7358073f81727febd4c6ea34ab63f8505d27ef09b5d4074f",
-      "raw": 6894,
+      "sha256": "7c80362ece507e09c6f0170dac78ea9e3b1a03eb5d8a40917eb16f48db4aeeec",
+      "raw": 6888,
       "codec": "gzip",
-      "codecBytes": 2596,
+      "codecBytes": 2595,
       "output": "otlp-gzip/primary",
       "policyFingerprint": [
         187,
@@ -30437,10 +30437,10 @@
       ]
     },
     "otlp.esm.js": {
-      "sha256": "d9886c5ac939dac3b689207b2d655782aba8a0be99c99c99433452e304d4914c",
-      "raw": 6711,
+      "sha256": "b42cd9ed5694a9114683213a1878d50576c9ef872f0a90c376e32dc6956135fc",
+      "raw": 6877,
       "codec": "brotli",
-      "codecBytes": 2378,
+      "codecBytes": 2381,
       "output": "otlp-brotli/primary",
       "policyFingerprint": [
         81,
@@ -30478,10 +30478,10 @@
       ]
     },
     "otlp.cjs": {
-      "sha256": "7eb9d5d8fd0279f88f0c84ec4a23f6608dfe219a734296b66bf8cd561ff0cb8c",
-      "raw": 7801,
+      "sha256": "ed06618307053aacfb68d5eb18b0013a068bf39a6d844de852f3c90017e9e49d",
+      "raw": 7802,
       "codec": "brotli",
-      "codecBytes": 2533,
+      "codecBytes": 2531,
       "output": "otlp-brotli/cjs",
       "policyFingerprint": [
         190,
@@ -30876,5 +30876,5 @@
     "dist/replay-core.cjs": "compiler"
   },
   "dependencyLockSha256": "db77523f9a878a8c58811cfb8d5ef35388b79705a4851c452a2ab427c886c04c",
-  "manifestSha256": "852b24d63c7a7e441cd7184251e9ab10e105ae0a18380b24aee2f1c12580af5e"
+  "manifestSha256": "25774bd3b1429342d0d0ba5cadcc060e7080e3b69d51e1b8f4871dbe66feed5b"
 }

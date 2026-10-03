@@ -2,7 +2,7 @@ import {
   copyObj,
   isStr,
   isUndef,
-  len,
+  arrayLikeLength as len,
   objectKeys,
   toStr,
   undef
@@ -57,27 +57,30 @@ JsValue createFrame(JsValue platform, JsValue filename, JsValue functionName, Js
   return frame;
 }
 
-JsValue extractSafariExtensionDetails(JsValue functionName, JsValue filename) {
+// This pair is parser-owned bookkeeping, never a public frame. Describing its
+// fields lets the compiler eliminate the temporary or choose its own layout.
+shape SafariExtensionDetails {
+  data JsValue functionName;
+  data JsValue filename;
+}
+
+SafariExtensionDetails extractSafariExtensionDetails(JsValue functionName, JsValue filename) {
   string functionText = toStr(functionName);
   bool safariExtension = functionText.indexOf("safari-extension") != -1;
   bool safariWebExtension = functionText.indexOf("safari-web-extension") != -1;
-  JsValue out = JS.array();
   if (safariExtension || safariWebExtension) {
     string parsedFunction = UNKNOWN_FUNCTION;
     if (functionText.indexOf("@") != -1) {
       parsedFunction = functionText.split("@")[0];
     }
-    JS.invoke(out, "push", parsedFunction);
     if (safariExtension) {
-      JS.invoke(out, "push", "safari-extension:" + toStr(filename));
+      return SafariExtensionDetails { functionName: parsedFunction, filename: "safari-extension:" + toStr(filename) };
     } else {
-      JS.invoke(out, "push", "safari-web-extension:" + toStr(filename));
+      return SafariExtensionDetails { functionName: parsedFunction, filename: "safari-web-extension:" + toStr(filename) };
     }
   } else {
-    JS.invoke(out, "push", functionName);
-    JS.invoke(out, "push", filename);
+    return SafariExtensionDetails { functionName: functionName, filename: filename };
   }
-  return out;
 }
 
 JsValue chromeParserMethod(JsValue line, JsValue platform) {
@@ -105,7 +108,7 @@ JsValue chromeParserMethod(JsValue line, JsValue platform) {
     if (!functionName.truthy()) {
       functionName = UNKNOWN_FUNCTION;
     }
-    JsValue details = extractSafariExtensionDetails(functionName, parts[2]);
+    SafariExtensionDetails details = extractSafariExtensionDetails(functionName, parts[2]);
     JsValue lineNumber = undef();
     JsValue columnNumber = undef();
     if (parts[3].truthy()) {
@@ -114,7 +117,7 @@ JsValue chromeParserMethod(JsValue line, JsValue platform) {
     if (parts[4].truthy()) {
       columnNumber = JS.number(parts[4]);
     }
-    return createFrame(platform, details[1], details[0], lineNumber, columnNumber);
+    return createFrame(platform, details.filename, details.functionName, lineNumber, columnNumber);
   }
   return undef();
 }
@@ -140,7 +143,7 @@ JsValue geckoParserMethod(JsValue line, JsValue platform) {
     if (!functionName.truthy()) {
       functionName = UNKNOWN_FUNCTION;
     }
-    JsValue details = extractSafariExtensionDetails(functionName, filename);
+    SafariExtensionDetails details = extractSafariExtensionDetails(functionName, filename);
     JsValue lineNumber = undef();
     JsValue columnNumber = undef();
     if (parts[4].truthy()) {
@@ -149,7 +152,7 @@ JsValue geckoParserMethod(JsValue line, JsValue platform) {
     if (parts[5].truthy()) {
       columnNumber = JS.number(parts[5]);
     }
-    return createFrame(platform, details[1], details[0], lineNumber, columnNumber);
+    return createFrame(platform, details.filename, details.functionName, lineNumber, columnNumber);
   }
   return undef();
 }
@@ -460,7 +463,10 @@ JsValue buildStackParser(JsValue platform, func(JsValue, JsValue)->JsValue parse
       if (survivingFrameCount(frames, cycles) >= 50) break;
     }
     RepeatedCycle[] sections = cycles.slice();
-    JS.invoke(sections, "sort", (RepeatedCycle a, RepeatedCycle b) => b.start - a.start);
+    // Each insertion removes overlapping suffixes, so retained cycles have
+    // strictly increasing starts. Reversal gives the required descending order
+    // without exposing these private records to an opaque comparator callback.
+    sections.reverse();
     if (sections.length > 0) {
       RepeatedCycle inner = sections[sections.length - 1];
       number trimmed = innermostPartialCycleLength(frames, inner);

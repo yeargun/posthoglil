@@ -60,3 +60,26 @@ test('default error pipeline preserves repeated reads of a valid severity getter
   }
   assert.deepEqual(run(factory),run(buildOriginal))
 })
+
+test('default error pipeline does not coerce a dynamic object tag',()=>{
+  function run(make) {
+    const input=error(),builder=make(),saved=Object.prototype.toString
+    const tag={ [Symbol.toPrimitive](){throw new Error('Object tags must not be coerced')} }
+    Object.prototype.toString=function(){return tag}
+    try {return builder.buildFromUnknown(input)}
+    finally {Object.prototype.toString=saved}
+  }
+  assert.deepEqual(run(factory),run(buildOriginal))
+})
+
+test('default error pipeline preserves the result of the host String call',()=>{
+  function run(make) {
+    const input=error(),builder=make(),saved=globalThis.String
+    globalThis.String=value=>({value,[Symbol.toPrimitive](){throw new Error('No second conversion')}})
+    try {
+      const result=builder.buildFromUnknown(input)
+      return result.$exception_list.map(exception=>exception.value.value)
+    } finally {globalThis.String=saved}
+  }
+  assert.deepEqual(run(factory),run(buildOriginal))
+})

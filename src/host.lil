@@ -74,6 +74,13 @@ export int len(JsValue value) {
   return JS.number(value["length"]).toInt();
 }
 
+// Array and string lengths at typed host boundaries are JavaScript numbers.
+// Do not add a conversion or signed overflow that the original property read
+// did not have. The access remains observable to the compiler.
+export number arrayLikeLength(JsValue value) {
+  return JS.assume(value["length"]);
+}
+
 export JsValue objectKeys(JsValue target) {
   return JS.invoke(Object, "keys", target);
 }

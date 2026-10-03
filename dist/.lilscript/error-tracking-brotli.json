@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "source_sha256": "1f51e97e97f930cd61698fa51cda47bf5981c1244cc105264066c5125f5d9b25",
+  "source_sha256": "25455c0b3bb949c896f34eb18610254993b45333974f2a22279c586b6ed31ce0",
   "inputs": {
     "root": 0,
     "entries": [
@@ -34,15 +34,15 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4312,
-        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
+        "bytes": 4618,
+        "sha256": "704d47748b9f5c65a74285a0f9938a2e69839c8879ebfe778309ad8f3340b3b3",
         "dependencies": [],
         "dynamic_dependencies": []
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-host.lil",
-        "bytes": 2359,
-        "sha256": "a4635cfaefed2c7675b2a43b39cb46fa495a45bf17c995b0da928179135c2258",
+        "bytes": 2331,
+        "sha256": "849ed3351a85431ddbc4eaace71043bbb8f45752e62732a1be982c7a8835d3c7",
         "dependencies": [
           2,
           4
@@ -51,8 +51,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
-        "bytes": 4472,
-        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "bytes": 4639,
+        "sha256": "19e18a02117b57405d563ff7211b66664af94bb941dfee9d4b5f69886ebe17c5",
         "dependencies": [
           2,
           5
@@ -80,8 +80,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-core.lil",
-        "bytes": 22806,
-        "sha256": "8c904fa8ae0fd4fe100b6d72d43fb40d162a2cc3e7b0669d85e6afb9493004ba",
+        "bytes": 22989,
+        "sha256": "728804dc200f5c7c0ca6d1b4e1fb93ce029e40cb5461b2a7db2ff3744e3528f0",
         "dependencies": [
           4,
           2,
@@ -91,8 +91,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-parsers.lil",
-        "bytes": 18687,
-        "sha256": "dde3c3e4eee6cf6c4a1aecfc4455e9df7fcd65e45e1f4aeb83398b95b32ad259",
+        "bytes": 19218,
+        "sha256": "b2ba3fefbcc05c0758338736ac9e9b8297af32204be9e46a962fa9d7bd7d9b3f",
         "dependencies": [
           2
         ],
@@ -114,8 +114,8 @@
           "closure": [
             "error-tracking.esm.js"
           ],
-          "row": 6236,
-          "raw_row": 18414
+          "row": 6285,
+          "raw_row": 18396
         }
       ],
       "files": [
@@ -140,16 +140,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 18414,
-          "codec_bytes": 6236,
-          "sha256": "37f656ad783f7b70914d15d001114ec2a2914f9767c5884ac67de661f9f1117c"
+          "bytes": 18396,
+          "codec_bytes": 6285,
+          "sha256": "2ef44861a2205a3f0aaab7ee19e7a2ba8e1ee71864bacb5fab6eda84825f8304"
         }
       ],
       "side_effects": [
         "error-tracking.esm.js"
       ],
-      "codec_total": 6236,
-      "rows_total": 6236,
+      "codec_total": 6285,
+      "rows_total": 6285,
       "setters": 0,
       "output": "primary",
       "codec": "brotli",
@@ -210,8 +210,8 @@
           "closure": [
             "error-tracking.cjs"
           ],
-          "row": 6474,
-          "raw_row": 20294
+          "row": 6453,
+          "raw_row": 20033
         }
       ],
       "files": [
@@ -234,16 +234,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 20294,
-          "codec_bytes": 6474,
-          "sha256": "3fb06858254ddebdeea30b852c56514ccf24ee9409ac2731b7e02b2505672fa7"
+          "bytes": 20033,
+          "codec_bytes": 6453,
+          "sha256": "77588a4567fec1bd0f1b493ab7be1e3d247f20419cc1ecd7d703c08c078e735b"
         }
       ],
       "side_effects": [
         "error-tracking.cjs"
       ],
-      "codec_total": 6474,
-      "rows_total": 6474,
+      "codec_total": 6453,
+      "rows_total": 6453,
       "setters": 0,
       "output": "cjs",
       "codec": "brotli",

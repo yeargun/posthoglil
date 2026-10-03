@@ -12,8 +12,8 @@
           "closure": [
             "posthog.raw.js"
           ],
-          "row": 15623,
-          "raw_row": 15623
+          "row": 15624,
+          "raw_row": 15624
         }
       ],
       "files": [
@@ -44,16 +44,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 15623,
-          "codec_bytes": 15623,
-          "sha256": "34e56d448c3e020c9a1d3777680472b33ac8c754e2467e1d23a0cde0760f09e3"
+          "bytes": 15624,
+          "codec_bytes": 15624,
+          "sha256": "c1e27f965bec62cf854c1c024c548ddf357d2474e0d4d2c67372a7c767f1e571"
         }
       ],
       "side_effects": [
         "posthog.raw.js"
       ],
-      "codec_total": 15623,
-      "rows_total": 15623,
+      "codec_total": 15624,
+      "rows_total": 15624,
       "setters": 0,
       "output": "posthog-raw/primary",
       "codec": "raw",
@@ -114,8 +114,8 @@
           "closure": [
             "posthog.gzip.js"
           ],
-          "row": 5719,
-          "raw_row": 16072
+          "row": 5718,
+          "raw_row": 16073
         }
       ],
       "files": [
@@ -146,16 +146,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 16072,
-          "codec_bytes": 5719,
-          "sha256": "32dabd9a5c02c1d2a991de7e3396e4643942ae587c79932ab11c3c64623171ad"
+          "bytes": 16073,
+          "codec_bytes": 5718,
+          "sha256": "eebf5cd0cc93210ea04c6d54d82130bdcea1315775d0296f6dd13c9b43cfeb96"
         }
       ],
       "side_effects": [
         "posthog.gzip.js"
       ],
-      "codec_total": 5719,
-      "rows_total": 5719,
+      "codec_total": 5718,
+      "rows_total": 5718,
       "setters": 0,
       "output": "posthog-gzip/primary",
       "codec": "gzip",
@@ -216,8 +216,8 @@
           "closure": [
             "posthog.esm.js"
           ],
-          "row": 5195,
-          "raw_row": 16007
+          "row": 5160,
+          "raw_row": 15890
         }
       ],
       "files": [
@@ -249,16 +249,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 16007,
-          "codec_bytes": 5195,
-          "sha256": "99d17676f3024329a590fe5e39dd5812839f14eafbb47d9058f343e7c8d0a047"
+          "bytes": 15890,
+          "codec_bytes": 5160,
+          "sha256": "798cbb11dcba8ab8cfef5282f1aebe2fb0051f1077bbf54525da958658dc2407"
         }
       ],
       "side_effects": [
         "posthog.esm.js"
       ],
-      "codec_total": 5195,
-      "rows_total": 5195,
+      "codec_total": 5160,
+      "rows_total": 5160,
       "setters": 0,
       "output": "posthog-brotli/primary",
       "codec": "brotli",
@@ -319,8 +319,8 @@
           "closure": [
             "posthog.umd.js"
           ],
-          "row": 5173,
-          "raw_row": 14951
+          "row": 5164,
+          "raw_row": 14948
         }
       ],
       "files": [
@@ -351,16 +351,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 14951,
-          "codec_bytes": 5173,
-          "sha256": "5afddb0569e4382fa65c6872a99a376e9c66a064ad52f5abc17c6ffd1cdb7b70"
+          "bytes": 14948,
+          "codec_bytes": 5164,
+          "sha256": "ae71d0cd631793e7c90a6a0d71724ecc3db247e66e5817163ded3abc07ee2507"
         }
       ],
       "side_effects": [
         "posthog.umd.js"
       ],
-      "codec_total": 5173,
-      "rows_total": 5173,
+      "codec_total": 5164,
+      "rows_total": 5164,
       "setters": 0,
       "output": "posthog-brotli/browser",
       "codec": "brotli",
@@ -421,8 +421,8 @@
           "closure": [
             "posthog.cjs"
           ],
-          "row": 5700,
-          "raw_row": 20635
+          "row": 5746,
+          "raw_row": 20557
         }
       ],
       "files": [
@@ -453,16 +453,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 20635,
-          "codec_bytes": 5700,
-          "sha256": "643150b65726e2e08563976304d7b97bde471f5ef920cab85698e5022665f916"
+          "bytes": 20557,
+          "codec_bytes": 5746,
+          "sha256": "9bd66f34f42d7aa42e3eb3a2e3b34d5228113cb7257c5d4cf0184eff95c437c5"
         }
       ],
       "side_effects": [
         "posthog.cjs"
       ],
-      "codec_total": 5700,
-      "rows_total": 5700,
+      "codec_total": 5746,
+      "rows_total": 5746,
       "setters": 0,
       "output": "posthog-brotli/cjs",
       "codec": "brotli",
@@ -889,8 +889,8 @@
           "closure": [
             "error-tracking.raw.js"
           ],
-          "row": 17954,
-          "raw_row": 17954
+          "row": 17864,
+          "raw_row": 17864
         }
       ],
       "files": [
@@ -915,16 +915,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 17954,
-          "codec_bytes": 17954,
-          "sha256": "16a863b4f9c4b1ff84c3fa40cf2c7987aa1a35f6be1509d33fe6e6aae856f5ad"
+          "bytes": 17864,
+          "codec_bytes": 17864,
+          "sha256": "55e6282a6a39493cad6f95cdbf8ac48cae247e4674012c9184f1d1fce4c29705"
         }
       ],
       "side_effects": [
         "error-tracking.raw.js"
       ],
-      "codec_total": 17954,
-      "rows_total": 17954,
+      "codec_total": 17864,
+      "rows_total": 17864,
       "setters": 0,
       "output": "error-tracking-raw/primary",
       "codec": "raw",
@@ -985,8 +985,8 @@
           "closure": [
             "error-tracking.gzip.js"
           ],
-          "row": 6834,
-          "raw_row": 18550
+          "row": 6796,
+          "raw_row": 18415
         }
       ],
       "files": [
@@ -1011,16 +1011,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 18550,
-          "codec_bytes": 6834,
-          "sha256": "bab756e888a315d2e0750d48c216c905f8a141b16513bb39518c9a2422c9e35d"
+          "bytes": 18415,
+          "codec_bytes": 6796,
+          "sha256": "de9949f91f7960ae9f8ac5917d114bd204a01fef0bcf2591820fd081084bfcfd"
         }
       ],
       "side_effects": [
         "error-tracking.gzip.js"
       ],
-      "codec_total": 6834,
-      "rows_total": 6834,
+      "codec_total": 6796,
+      "rows_total": 6796,
       "setters": 0,
       "output": "error-tracking-gzip/primary",
       "codec": "gzip",
@@ -1081,8 +1081,8 @@
           "closure": [
             "error-tracking.esm.js"
           ],
-          "row": 6236,
-          "raw_row": 18414
+          "row": 6285,
+          "raw_row": 18396
         }
       ],
       "files": [
@@ -1107,16 +1107,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 18414,
-          "codec_bytes": 6236,
-          "sha256": "37f656ad783f7b70914d15d001114ec2a2914f9767c5884ac67de661f9f1117c"
+          "bytes": 18396,
+          "codec_bytes": 6285,
+          "sha256": "2ef44861a2205a3f0aaab7ee19e7a2ba8e1ee71864bacb5fab6eda84825f8304"
         }
       ],
       "side_effects": [
         "error-tracking.esm.js"
       ],
-      "codec_total": 6236,
-      "rows_total": 6236,
+      "codec_total": 6285,
+      "rows_total": 6285,
       "setters": 0,
       "output": "error-tracking-brotli/primary",
       "codec": "brotli",
@@ -1177,8 +1177,8 @@
           "closure": [
             "error-tracking.cjs"
           ],
-          "row": 6474,
-          "raw_row": 20294
+          "row": 6453,
+          "raw_row": 20033
         }
       ],
       "files": [
@@ -1201,16 +1201,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 20294,
-          "codec_bytes": 6474,
-          "sha256": "3fb06858254ddebdeea30b852c56514ccf24ee9409ac2731b7e02b2505672fa7"
+          "bytes": 20033,
+          "codec_bytes": 6453,
+          "sha256": "77588a4567fec1bd0f1b493ab7be1e3d247f20419cc1ecd7d703c08c078e735b"
         }
       ],
       "side_effects": [
         "error-tracking.cjs"
       ],
-      "codec_total": 6474,
-      "rows_total": 6474,
+      "codec_total": 6453,
+      "rows_total": 6453,
       "setters": 0,
       "output": "error-tracking-brotli/cjs",
       "codec": "brotli",
@@ -1271,8 +1271,8 @@
           "closure": [
             "otlp.raw.js"
           ],
-          "row": 6359,
-          "raw_row": 6359
+          "row": 6356,
+          "raw_row": 6356
         }
       ],
       "files": [
@@ -1295,16 +1295,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6359,
-          "codec_bytes": 6359,
-          "sha256": "df0e3d547305f8c62a4bc5e7b136ae89de8d454037abd1f5b2045a1113a17aa4"
+          "bytes": 6356,
+          "codec_bytes": 6356,
+          "sha256": "b273b73b54cb4628d4d13360e818046511ba223d4352133784ca828626efd232"
         }
       ],
       "side_effects": [
         "otlp.raw.js"
       ],
-      "codec_total": 6359,
-      "rows_total": 6359,
+      "codec_total": 6356,
+      "rows_total": 6356,
       "setters": 0,
       "output": "otlp-raw/primary",
       "codec": "raw",
@@ -1365,8 +1365,8 @@
           "closure": [
             "otlp.gzip.js"
           ],
-          "row": 2596,
-          "raw_row": 6894
+          "row": 2595,
+          "raw_row": 6888
         }
       ],
       "files": [
@@ -1389,16 +1389,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6894,
-          "codec_bytes": 2596,
-          "sha256": "afb9b9581a79edcc7358073f81727febd4c6ea34ab63f8505d27ef09b5d4074f"
+          "bytes": 6888,
+          "codec_bytes": 2595,
+          "sha256": "7c80362ece507e09c6f0170dac78ea9e3b1a03eb5d8a40917eb16f48db4aeeec"
         }
       ],
       "side_effects": [
         "otlp.gzip.js"
       ],
-      "codec_total": 2596,
-      "rows_total": 2596,
+      "codec_total": 2595,
+      "rows_total": 2595,
       "setters": 0,
       "output": "otlp-gzip/primary",
       "codec": "gzip",
@@ -1459,8 +1459,8 @@
           "closure": [
             "otlp.esm.js"
           ],
-          "row": 2378,
-          "raw_row": 6711
+          "row": 2381,
+          "raw_row": 6877
         }
       ],
       "files": [
@@ -1483,16 +1483,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6711,
-          "codec_bytes": 2378,
-          "sha256": "d9886c5ac939dac3b689207b2d655782aba8a0be99c99c99433452e304d4914c"
+          "bytes": 6877,
+          "codec_bytes": 2381,
+          "sha256": "b42cd9ed5694a9114683213a1878d50576c9ef872f0a90c376e32dc6956135fc"
         }
       ],
       "side_effects": [
         "otlp.esm.js"
       ],
-      "codec_total": 2378,
-      "rows_total": 2378,
+      "codec_total": 2381,
+      "rows_total": 2381,
       "setters": 0,
       "output": "otlp-brotli/primary",
       "codec": "brotli",
@@ -1553,8 +1553,8 @@
           "closure": [
             "otlp.cjs"
           ],
-          "row": 2533,
-          "raw_row": 7801
+          "row": 2531,
+          "raw_row": 7802
         }
       ],
       "files": [
@@ -1575,16 +1575,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 7801,
-          "codec_bytes": 2533,
-          "sha256": "7eb9d5d8fd0279f88f0c84ec4a23f6608dfe219a734296b66bf8cd561ff0cb8c"
+          "bytes": 7802,
+          "codec_bytes": 2531,
+          "sha256": "ed06618307053aacfb68d5eb18b0013a068bf39a6d844de852f3c90017e9e49d"
         }
       ],
       "side_effects": [
         "otlp.cjs"
       ],
-      "codec_total": 2533,
-      "rows_total": 2533,
+      "codec_total": 2531,
+      "rows_total": 2531,
       "setters": 0,
       "output": "otlp-brotli/cjs",
       "codec": "brotli",
@@ -2373,5 +2373,5 @@
   ],
   "aliases": {},
   "providers": [],
-  "source_sha256": "722395dc4e9b40ce21de1045396c1150c439637cf67c5f8c379c0b448cae5efd"
+  "source_sha256": "0417e08973297c78161e0b69b0bc099a3ee610d223ea8055f69eea5c8fef9410"
 }

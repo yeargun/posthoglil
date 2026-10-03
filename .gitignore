@@ -5,6 +5,7 @@ _site/
 *.tgz
 .tmp/
 reports/
+artifacts/sdk-consumers/*/
 vendor/
 dist/posthog.dev.js
 dist/posthog.closed.js

@@ -110,7 +110,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "npm run build:utilities && npm run build:sdk && npm run measure:utilities && npm run measure:tree-shaking && npm run package:sdk",
+    "build": "npm run build:utilities && npm run build:sdk && npm run build:package-runtime && npm run measure:utilities && npm run measure:tree-shaking && npm run package:sdk",
     "build:dev": "node scripts/build-dev.mjs",
     "build:packs": "npm run build:utilities",
     "build:packs:dev": "node scripts/build-dev.mjs --packs",
@@ -120,7 +120,7 @@
     "test:packs:raw": "POSTHOGLIL_SURVEYS_ARTIFACT=dist/surveys.raw.js POSTHOGLIL_ERROR_TRACKING_ARTIFACT=dist/error-tracking.raw.js POSTHOGLIL_OTLP_ARTIFACT=dist/otlp.raw.js POSTHOGLIL_AUTOCAPTURE_ARTIFACT=dist/autocapture.raw.js POSTHOGLIL_REPLAY_CORE_ARTIFACT=dist/replay-core.raw.js node --test --test-concurrency=1 test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs test/autocapture.compat.test.mjs test/replay-core.compat.test.mjs",
     "test:packs:release": "POSTHOGLIL_SURVEYS_ARTIFACT=dist/surveys.esm.js POSTHOGLIL_ERROR_TRACKING_ARTIFACT=dist/error-tracking.esm.js POSTHOGLIL_OTLP_ARTIFACT=dist/otlp.esm.js POSTHOGLIL_AUTOCAPTURE_ARTIFACT=dist/autocapture.esm.js POSTHOGLIL_REPLAY_CORE_ARTIFACT=dist/replay-core.esm.js node --test --test-concurrency=1 test/surveys.compat.test.mjs test/error-tracking.compat.test.mjs test/otlp.compat.test.mjs test/autocapture.compat.test.mjs test/replay-core.compat.test.mjs",
     "test:packs:package": "node --test --test-concurrency=1 test/packs.api.test.mjs",
-    "test:all": "npm run test:utilities && npm run test:tree-shaking && npm run test:sdk-internals && npm run test:upstream && npm run test:sdk-browser && npm run package:sdk && npm run test:sdk-package",
+    "test:all": "npm run test:utilities && npm run test:tree-shaking && npm run test:sdk-internals && npm run test:upstream && npm run test:sdk-browser && npm run package:sdk && npm run test:sdk-package && npm run test:sdk-consumers",
     "measure": "npm run measure:utilities",
     "measure:packs": "npm run measure:utilities",
     "write:results": "node scripts/write-validation.mjs",
@@ -136,7 +136,11 @@
     "test:sdk-package": "node test/sdk-package.mjs",
     "measure:tree-shaking": "node scripts/measure-tree-shaking.mjs",
     "test:tree-shaking": "node --test --test-concurrency=1 test/tree-shaking.test.mjs",
-    "test:sdk-internals": "node scripts/test-sdk-internals.mjs"
+    "test:sdk-internals": "node scripts/test-sdk-internals.mjs",
+    "build:package-runtime": "node scripts/build-sdk-package-runtime.mjs",
+    "measure:sdk-consumers": "node scripts/measure-sdk-consumers.mjs",
+    "test:sdk-consumers": "node scripts/rebuild-sdk-consumers.mjs && node test/sdk-consumers.mjs && POSTHOGLIL_CONSUMER_RESULTS=artifacts/sdk-consumers/results.json node test/sdk-browser.mjs",
+    "measure:consumer-runtime": "POSTHOGLIL_CONSUMER_RESULTS=artifacts/sdk-consumers/results.json POSTHOGLIL_BENCH_SAMPLES=80 node test/sdk-performance.mjs"
   },
   "devDependencies": {
     "@jridgewell/source-map": "0.3.11",

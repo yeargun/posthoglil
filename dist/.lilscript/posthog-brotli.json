@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "source_sha256": "b174e8db6f2ad11b5c0ed111de589b8e3a8035d7f57db7562a23d3bc5b715d98",
+  "source_sha256": "ac692d220d6010caa3050404845520fae9e40571c99de634be2926ffb127d2e6",
   "inputs": {
     "root": 0,
     "entries": [
@@ -55,8 +55,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4312,
-        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
+        "bytes": 4618,
+        "sha256": "704d47748b9f5c65a74285a0f9938a2e69839c8879ebfe778309ad8f3340b3b3",
         "dependencies": [],
         "dynamic_dependencies": []
       },
@@ -136,8 +136,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
-        "bytes": 4472,
-        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "bytes": 4639,
+        "sha256": "19e18a02117b57405d563ff7211b66664af94bb941dfee9d4b5f69886ebe17c5",
         "dependencies": [
           3,
           10
@@ -185,8 +185,8 @@
           "closure": [
             "posthog.esm.js"
           ],
-          "row": 5195,
-          "raw_row": 16007
+          "row": 5160,
+          "raw_row": 15890
         }
       ],
       "files": [
@@ -218,16 +218,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 16007,
-          "codec_bytes": 5195,
-          "sha256": "99d17676f3024329a590fe5e39dd5812839f14eafbb47d9058f343e7c8d0a047"
+          "bytes": 15890,
+          "codec_bytes": 5160,
+          "sha256": "798cbb11dcba8ab8cfef5282f1aebe2fb0051f1077bbf54525da958658dc2407"
         }
       ],
       "side_effects": [
         "posthog.esm.js"
       ],
-      "codec_total": 5195,
-      "rows_total": 5195,
+      "codec_total": 5160,
+      "rows_total": 5160,
       "setters": 0,
       "output": "primary",
       "codec": "brotli",
@@ -288,8 +288,8 @@
           "closure": [
             "posthog.umd.js"
           ],
-          "row": 5173,
-          "raw_row": 14951
+          "row": 5164,
+          "raw_row": 14948
         }
       ],
       "files": [
@@ -320,16 +320,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 14951,
-          "codec_bytes": 5173,
-          "sha256": "5afddb0569e4382fa65c6872a99a376e9c66a064ad52f5abc17c6ffd1cdb7b70"
+          "bytes": 14948,
+          "codec_bytes": 5164,
+          "sha256": "ae71d0cd631793e7c90a6a0d71724ecc3db247e66e5817163ded3abc07ee2507"
         }
       ],
       "side_effects": [
         "posthog.umd.js"
       ],
-      "codec_total": 5173,
-      "rows_total": 5173,
+      "codec_total": 5164,
+      "rows_total": 5164,
       "setters": 0,
       "output": "browser",
       "codec": "brotli",
@@ -390,8 +390,8 @@
           "closure": [
             "posthog.cjs"
           ],
-          "row": 5700,
-          "raw_row": 20635
+          "row": 5746,
+          "raw_row": 20557
         }
       ],
       "files": [
@@ -422,16 +422,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 20635,
-          "codec_bytes": 5700,
-          "sha256": "643150b65726e2e08563976304d7b97bde471f5ef920cab85698e5022665f916"
+          "bytes": 20557,
+          "codec_bytes": 5746,
+          "sha256": "9bd66f34f42d7aa42e3eb3a2e3b34d5228113cb7257c5d4cf0184eff95c437c5"
         }
       ],
       "side_effects": [
         "posthog.cjs"
       ],
-      "codec_total": 5700,
-      "rows_total": 5700,
+      "codec_total": 5746,
+      "rows_total": 5746,
       "setters": 0,
       "output": "cjs",
       "codec": "brotli",

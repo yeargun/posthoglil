@@ -4,7 +4,7 @@ import {
   isArr,
   isStr,
   isUndef,
-  len,
+  arrayLikeLength as len,
   objectTag,
   toStr,
   undef
@@ -34,7 +34,7 @@ import {
 export { isStringValue, isNumberValue, isBooleanValue, isObjectValue, isEmptyStringValue, isPrimitiveValue, isBuiltinValue, instanceOfValue, isErrorValue, isErrorEventValue, isEventValue };
 
 export string explicitString(JsValue value) {
-  return toStr(String(value));
+  return JS.assume(String(value));
 }
 
 export JsValue getPrototypeOf(JsValue value) {
@@ -42,7 +42,7 @@ export JsValue getPrototypeOf(JsValue value) {
 }
 
 export string safeJsonStringify(JsValue value) {
-  JsValue ancestors = JS.array();
+  JsValue[] ancestors = [];
   func(JsValue, JsValue, JsValue)->JsValue replacer = (
     JsValue self,
     JsValue key,
@@ -61,15 +61,15 @@ export string safeJsonStringify(JsValue value) {
     }
     if (replacementValue.truthy() && kind == "object") {
       while (
-        len(ancestors) > 0 &&
-        !JS.strictEqual(ancestors[len(ancestors) - 1], self)
+        ancestors.length > 0 &&
+        !JS.strictEqual(ancestors[ancestors.length - 1], self)
       ) {
-        JS.invoke(ancestors, "pop");
+        ancestors.pop();
       }
-      if (JS.invoke(ancestors, "includes", replacementValue).truthy()) {
+      if (ancestors.includes(replacementValue)) {
         return "[Circular]";
       }
-      JS.invoke(ancestors, "push", replacementValue);
+      ancestors.push(replacementValue);
     }
     return replacementValue;
   };

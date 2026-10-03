@@ -1,1 +1,1 @@
-let e=e=>String(e)+``,t=function(t){return e(t)+`000000`};Array.isArray;export{t as msToUnixNano};
+let e=e=>String(e),t=function(t){return e(t)+`000000`};Array.isArray;export{t as msToUnixNano};

@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "source_sha256": "00ea16df25317524530d0ecd3449b55ca8bf7a7a184e0363a53104a7dfd14d56",
+  "source_sha256": "9ea354752f7ea7da1603df2b08bb2fe4615a7a82e81ac54ac86196bca327dda2",
   "inputs": {
     "root": 0,
     "entries": [
@@ -34,8 +34,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
-        "bytes": 4472,
-        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "bytes": 4639,
+        "sha256": "19e18a02117b57405d563ff7211b66664af94bb941dfee9d4b5f69886ebe17c5",
         "dependencies": [
           3,
           4
@@ -44,8 +44,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4312,
-        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
+        "bytes": 4618,
+        "sha256": "704d47748b9f5c65a74285a0f9938a2e69839c8879ebfe778309ad8f3340b3b3",
         "dependencies": [],
         "dynamic_dependencies": []
       },
@@ -67,8 +67,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-host.lil",
-        "bytes": 2359,
-        "sha256": "a4635cfaefed2c7675b2a43b39cb46fa495a45bf17c995b0da928179135c2258",
+        "bytes": 2331,
+        "sha256": "849ed3351a85431ddbc4eaace71043bbb8f45752e62732a1be982c7a8835d3c7",
         "dependencies": [
           3,
           2
@@ -91,8 +91,8 @@
           "closure": [
             "otlp.esm.js"
           ],
-          "row": 2378,
-          "raw_row": 6711
+          "row": 2381,
+          "raw_row": 6877
         }
       ],
       "files": [
@@ -115,16 +115,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6711,
-          "codec_bytes": 2378,
-          "sha256": "d9886c5ac939dac3b689207b2d655782aba8a0be99c99c99433452e304d4914c"
+          "bytes": 6877,
+          "codec_bytes": 2381,
+          "sha256": "b42cd9ed5694a9114683213a1878d50576c9ef872f0a90c376e32dc6956135fc"
         }
       ],
       "side_effects": [
         "otlp.esm.js"
       ],
-      "codec_total": 2378,
-      "rows_total": 2378,
+      "codec_total": 2381,
+      "rows_total": 2381,
       "setters": 0,
       "output": "primary",
       "codec": "brotli",
@@ -185,8 +185,8 @@
           "closure": [
             "otlp.cjs"
           ],
-          "row": 2533,
-          "raw_row": 7801
+          "row": 2531,
+          "raw_row": 7802
         }
       ],
       "files": [
@@ -207,16 +207,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 7801,
-          "codec_bytes": 2533,
-          "sha256": "7eb9d5d8fd0279f88f0c84ec4a23f6608dfe219a734296b66bf8cd561ff0cb8c"
+          "bytes": 7802,
+          "codec_bytes": 2531,
+          "sha256": "ed06618307053aacfb68d5eb18b0013a068bf39a6d844de852f3c90017e9e49d"
         }
       ],
       "side_effects": [
         "otlp.cjs"
       ],
-      "codec_total": 2533,
-      "rows_total": 2533,
+      "codec_total": 2531,
+      "rows_total": 2531,
       "setters": 0,
       "output": "cjs",
       "codec": "brotli",

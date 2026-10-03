@@ -6,7 +6,7 @@ import {composeMaps} from './source-maps.mjs'
 // These are delivery transformations, not claims about the LilScript compiler.
 // No payload/property name is changed by literal pooling. Pool only a complete
 // ESM chunk: imports/cycles and direct eval need their own initialization proof.
-export function poolLiterals(code) {
+export function poolLiterals(code, {propertyAccesses=true,stringLiterals=true,minLength=3,minUses=2}={}) {
   const ast=ts.createSourceFile('sdk.mjs',code,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS)
   const groups=new Map(),identifiers=new Set();let unsafe=false
   function visit(node) {
@@ -14,11 +14,11 @@ export function poolLiterals(code) {
     if(ts.isIdentifier(node))identifiers.add(node.text)
     if(ts.isImportDeclaration(node)||ts.isExportDeclaration(node)&&node.moduleSpecifier||ts.isWithStatement(node)||ts.isCallExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='eval')unsafe=true
     let value,start=node.getStart(ast),end=node.end,property=false
-    if(ts.isStringLiteral(node)&&!ts.isExpressionStatement(parent)&&parent.name!==node&&!ts.isImportSpecifier(parent)&&!ts.isExportSpecifier(parent))value=node.text
-    if(ts.isPropertyAccessExpression(node)&&!node.questionDotToken&&!ts.isPrivateIdentifier(node.name)) {
+    if(stringLiterals&&(ts.isStringLiteral(node)||ts.isNoSubstitutionTemplateLiteral(node))&&!ts.isTaggedTemplateExpression(parent)&&!ts.isExpressionStatement(parent)&&parent.name!==node&&!ts.isImportSpecifier(parent)&&!ts.isExportSpecifier(parent))value=node.text
+    if(propertyAccesses&&ts.isPropertyAccessExpression(node)&&!node.questionDotToken&&!ts.isPrivateIdentifier(node.name)) {
       value=node.name.text;start=node.expression.end;property=true
     }
-    if(value?.length>=3) {
+    if(value?.length>=minLength) {
       if(!groups.has(value))groups.set(value,[])
       groups.get(value).push({start,end,property})
     }
@@ -26,7 +26,7 @@ export function poolLiterals(code) {
   }
   visit(ast)
   if(unsafe)return {code,map:null,bindings:0,references:0,skipped:'imports, with or direct eval'}
-  const selected=[...groups].filter(([value,uses])=>uses.length>=2&&uses.length*(JSON.stringify(value).length-3)>JSON.stringify(value).length+6).sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0]))
+  const selected=[...groups].filter(([value,uses])=>uses.length>=minUses&&uses.length*(JSON.stringify(value).length-3)>JSON.stringify(value).length+6).sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0]))
   if(!selected.length)return {code,map:null,bindings:0,references:0}
   let prefix='__lil_literal_'
   while([...identifiers].some(name=>name.startsWith(prefix)))prefix+='x'
@@ -54,13 +54,17 @@ export async function optimizeSdkDelivery(output,{surface,objective}) {
   const mapped=typeof output!=='string'
   let code=mapped?output.code:output,map=mapped?output.map:null
   const receipt={literalPool:{bindings:0,references:0}}
-  if(objective==='raw') {
-    const pooled=poolLiterals(code)
+  if(objective==='raw'||objective==='package') {
+    // A distributable package has one runtime, regardless of the web server's
+    // codec. Limit pooling to frequent long property names so compression does
+    // not pay for a large dictionary. Keys and their lookup behavior are intact.
+    const options=objective==='package'?{stringLiterals:false,minLength:16,minUses:8}:{}
+    const pooled=poolLiterals(code,options)
     receipt.literalPool={bindings:pooled.bindings,references:pooled.references}
     if(pooled.map&&map)map=composeMaps(pooled.map,map)
     code=pooled.code
   }
-  if(objective!=='raw')return {output,receipt}
+  if(objective!=='raw'&&objective!=='package')return {output,receipt}
   const result=await minify(code,{
     module:true,compress:false,
     // Property mangling must run before pooling. A computed key referring to

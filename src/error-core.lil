@@ -118,10 +118,12 @@ export number getUtf8ByteLength(string value) {
   JsValue textEncoder = globalThis["TextEncoder"];
   if (!isUndef(textEncoder)) {
     JsValue encoder = JS.construct(textEncoder);
-    return len(JS.invoke(encoder, "encode", value));
+    // TextEncoder lengths are ordinary JavaScript numbers, never signed i32.
+    // Read once without coercion, matching upstream even for a replaced encoder.
+    return JS.assume(JS.invoke(encoder, "encode", value)["length"]);
   }
   string encoded = toStr(encodeURIComponent(value));
-  int byteLength = 0;
+  number byteLength = 0;
   int i = 0;
   while (i < encoded.length) {
     if (encoded[i] == "%") {
@@ -211,14 +213,19 @@ export constructor ExceptionStepsBuffer;
 // The complete SDK owns this buffer and never exports its constructor. Keep
 // mutable state in the closure; the standalone public class above still has
 // its original prototype, subclassing and receiver behavior.
+shape SdkStep {
+  data JsValue step;
+  data number bytes;
+}
+
 export JsValue createSdkExceptionStepsBuffer(JsValue input = JS.undefined()) {
   JsValue config = resolveExceptionStepsConfig(input);
-  JsValue entries = JS.array();
+  SdkStep[] entries = [];
   number totalBytes = 0;
   func()->void trim = () => {
-    while (totalBytes > JS.number(config["max_bytes"]) && len(entries) > 0) {
-      JsValue evicted = JS.invoke(entries, "shift");
-      if (evicted.truthy()) totalBytes = totalBytes - JS.number(evicted["bytes"]);
+    while (totalBytes > JS.number(config["max_bytes"]) && entries.length > 0) {
+      SdkStep? evicted = JS.assume(JS.invoke(entries, "shift"));
+      if (evicted != null) totalBytes = totalBytes - evicted.bytes;
     }
   };
   return object {
@@ -231,17 +238,17 @@ export JsValue createSdkExceptionStepsBuffer(JsValue input = JS.undefined()) {
       if (serialized != null) {
         number bytes = getUtf8ByteLength(serialized.json);
         if (!(bytes > JS.number(config["max_bytes"]))) {
-          JS.invoke(entries, "push", object { step: serialized.step, bytes: bytes });
+          entries.push(SdkStep { step: serialized.step, bytes: bytes });
           totalBytes = totalBytes + bytes;
           trim();
         }
       }
     },
     getAttachable: () => {
-      return JS.invoke(entries, "map", (JsValue entry) => { return entry["step"]; });
+      return entries.map((SdkStep entry) => entry.step);
     },
     clear: () => {
-      entries = JS.array();
+      entries = [];
       totalBytes = 0;
     }
   };

@@ -13,8 +13,8 @@
           "closure": [
             "posthog.gzip.js"
           ],
-          "row": 5719,
-          "raw_row": 16072
+          "row": 5718,
+          "raw_row": 16073
         }
       ],
       "files": [
@@ -45,16 +45,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 16072,
-          "codec_bytes": 5719,
-          "sha256": "32dabd9a5c02c1d2a991de7e3396e4643942ae587c79932ab11c3c64623171ad"
+          "bytes": 16073,
+          "codec_bytes": 5718,
+          "sha256": "eebf5cd0cc93210ea04c6d54d82130bdcea1315775d0296f6dd13c9b43cfeb96"
         }
       ],
       "side_effects": [
         "posthog.gzip.js"
       ],
-      "codec_total": 5719,
-      "rows_total": 5719,
+      "codec_total": 5718,
+      "rows_total": 5718,
       "setters": 0,
       "output": "primary",
       "codec": "gzip",
@@ -105,7 +105,7 @@
       ]
     }
   ],
-  "source_sha256": "2ae3c8e39dc83633ff802f6e2b9670ef054cd902480c48add122af5b33dc0d97",
+  "source_sha256": "7573948dc7da3d88618af55f33ac5b2be9a2374520b2195f3ecdc3dbbf1b702e",
   "inputs": {
     "root": 0,
     "entries": [
@@ -147,8 +147,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4312,
-        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
+        "bytes": 4618,
+        "sha256": "704d47748b9f5c65a74285a0f9938a2e69839c8879ebfe778309ad8f3340b3b3",
         "dependencies": [],
         "dynamic_dependencies": []
       },
@@ -228,8 +228,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
-        "bytes": 4472,
-        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "bytes": 4639,
+        "sha256": "19e18a02117b57405d563ff7211b66664af94bb941dfee9d4b5f69886ebe17c5",
         "dependencies": [
           2,
           9

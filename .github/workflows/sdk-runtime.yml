@@ -1,0 +1,51 @@
+name: Measure installed SDK runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/posthog-shaking-ports]
+    paths:
+      - '.github/workflows/sdk-runtime.yml'
+      - 'test/sdk-performance.mjs'
+      - 'artifacts/sdk/**'
+      - 'artifacts/package-runtime/**'
+      - 'artifacts/sdk-consumers/results.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-runtime
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.2'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Reproduce and validate the packed SDK and application bundles
+        run: npm run test:all
+      - name: Measure compiler objectives sequentially
+        run: npm run measure:runtime
+        env:
+          POSTHOGLIL_BENCH_SAMPLES: '30'
+      - name: Measure the installed package sequentially
+        run: npm run measure:consumer-runtime
+        env:
+          POSTHOGLIL_BENCH_CONTROL_PAIRS: '40'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: posthog-runtime-evidence
+          path: |
+            artifacts/sdk/performance.json
+            artifacts/sdk-consumers/performance.json
+            reports/full-sdk/*validation.json
+          if-no-files-found: error
