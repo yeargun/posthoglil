@@ -1,0 +1,21 @@
+// packages/core/src/utils/backoff.ts
+extern JsValue Math;
+
+export float MAX_FLUSH_BACKOFF_EXPONENT = 6.0;
+
+export float MAX_FLUSH_BACKOFF_MS = 30000.0;
+
+float JITTER = 0.25;
+
+export float drawJitter() {
+  return 1.0 - JITTER + (Math.random() as float) * JITTER * 2.0;
+}
+
+export float NO_JITTER = 1.0;
+
+export float backoffDelayMs(float baseMs, float failures, float jitter, float? maxMs) {
+  float exponent = (failures - 1.0).max(0.0).min(MAX_FLUSH_BACKOFF_EXPONENT);
+  float delay = baseMs * (Math.pow(2.0, exponent) as float);
+  float capped = if (maxMs == null) { delay } else { delay.min(maxMs.max(baseMs)) };
+  return (capped * jitter).round();
+}

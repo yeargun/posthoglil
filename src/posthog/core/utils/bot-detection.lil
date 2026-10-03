@@ -1,0 +1,96 @@
+// packages/core/src/utils/bot-detection.ts
+// List of blocked user agent strings that identify bots, shared between browser and node SDKs.
+export string[] DEFAULT_BLOCKED_UA_STRS = [
+  "amazonbot",
+  "amazonproductbot",
+  "app.hypefactors.com",
+  "applebot",
+  "archive.org_bot",
+  "awariobot",
+  "backlinksextendedbot",
+  "baiduspider",
+  "bingbot",
+  "bingpreview",
+  "chrome-lighthouse",
+  "dataforseobot",
+  "deepscan",
+  "duckduckbot",
+  "facebookexternal",
+  "facebookcatalog",
+  "http://yandex.com/bots",
+  "hubspot",
+  "ia_archiver",
+  "leikibot",
+  "linkedinbot",
+  "meta-externalagent",
+  "mj12bot",
+  "msnbot",
+  "nessus",
+  "petalbot",
+  "pinterestbot",
+  "prerender",
+  "rogerbot",
+  "screaming frog",
+  "sebot-wa",
+  "sitebulb",
+  "slackbot",
+  "slurp",
+  "trendictionbot",
+  "turnitin",
+  "twitterbot",
+  "vercel-screenshot",
+  "vercelbot",
+  "yahoo! slurp",
+  "yandexbot",
+  "zoombot",
+  "bot.htm",
+  "bot.php",
+  "(bot;",
+  "bot/",
+  "crawler",
+  "ahrefsbot",
+  "ahrefssiteaudit",
+  "semrushbot",
+  "siteauditbot",
+  "splitsignalbot",
+  "gptbot",
+  "oai-searchbot",
+  "chatgpt-user",
+  "perplexitybot",
+  "better uptime bot",
+  "sentryuptimebot",
+  "uptimerobot",
+  "headlesschrome",
+  "cypress",
+  "google-hoteladsverifier",
+  "adsbot-google",
+  "apis-google",
+  "duplexweb-google",
+  "feedfetcher-google",
+  "google favicon",
+  "google web preview",
+  "google-read-aloud",
+  "googlebot",
+  "googleother",
+  "google-cloudvertexbot",
+  "googleweblight",
+  "mediapartners-google",
+  "storebot-google",
+  "google-inspectiontool",
+  "bytespider"
+];
+
+// Block various web spiders from executing our JS and sending false capturing data.
+// `customBlockedUserAgents` comes from page config, so `concat` and the element calls stay dynamic.
+export bool isBlockedUA(string? ua, JsValue customBlockedUserAgents) {
+  if (ua == null || ua == "") {
+    return false;
+  }
+  string uaLower = ua.toLowerCase();
+  JsValue custom = if (customBlockedUserAgents === undefined) { [] as JsValue } else { customBlockedUserAgents };
+  return (DEFAULT_BLOCKED_UA_STRS as JsValue).concat(custom).some((JsValue blockedUA) => {
+    JsValue blockedUaLower = blockedUA.toLowerCase();
+    // can't use includes because IE 11 :/
+    return uaLower.indexOf(blockedUaLower as string) != -1;
+  }).truthy();
+}

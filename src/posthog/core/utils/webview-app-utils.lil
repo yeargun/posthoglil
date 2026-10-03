@@ -1,0 +1,55 @@
+// packages/core/src/utils/webview-app-utils.ts
+// App markers must be checked independently of browser detection: the host app and the browser
+// rendering its webview are separate dimensions.
+struct WebviewAppMatcher {
+  Regex regex;
+  string name;
+  Regex? versionRegex;
+}
+
+Regex facebookAppVersion = new Regex("\\bFBAV\\/(\\d+(?:\\.\\d+)*)", "i");
+
+WebviewAppMatcher[] webviewAppMatchers = [
+  WebviewAppMatcher{new Regex("\\bInstagram(?:[ /](\\d+(?:\\.\\d+)*))?\\b", "i"), "Instagram", null},
+  WebviewAppMatcher{new Regex("\\bBarcelona[ /](\\d+(?:\\.\\d+)*)?", "i"), "Threads", null},
+  // Specific Meta apps must precede Facebook, which can share their markers.
+  WebviewAppMatcher{new Regex("\\b(?:MessengerForiOS|(?:FBAN|FB_IAB)\\/Orca-Android)\\b", "i"), "Messenger", facebookAppVersion},
+  WebviewAppMatcher{new Regex("\\bFBAN\\/EMA\\b", "i"), "Facebook Lite", facebookAppVersion},
+  WebviewAppMatcher{new Regex("\\b(?:FBIOS|(?:FBAN|FB_IAB)\\/(?:FB4A|FBIOS))\\b", "i"), "Facebook", facebookAppVersion},
+  WebviewAppMatcher{new Regex("\\bLinkedInApp(?:\\]?\\/(\\d+(?:\\.\\d+)*))?\\b", "i"), "LinkedIn", null},
+  WebviewAppMatcher{new Regex("\\bTwitter(?:Android| for (?:iPhone|iPad|Android))(?:\\/(\\d+(?:\\.\\d+)*))?\\b", "i"), "Twitter", null},
+  // Android's musical_ly_/trill_ suffix can be a build number: prefer the explicit app_version token.
+  WebviewAppMatcher{new Regex("\\b(?:musical_ly|trill)(?:[_/](\\d+\\.\\d+(?:\\.\\d+)*))?(?=\\b|_)", "i"), "TikTok", new Regex("\\bapp_version\\/(\\d+(?:\\.\\d+)*)", "i")},
+  WebviewAppMatcher{new Regex("\\b(?:MicroMessenger|WeChat)\\/(\\d+(?:\\.\\d+)*)?", "i"), "WeChat", null},
+  WebviewAppMatcher{new Regex("\\bLine\\/(\\d+(?:\\.\\d+)*)?", "i"), "Line", null},
+  WebviewAppMatcher{new Regex("\\bGSA\\/(\\d+(?:\\.\\d+)*)?", "i"), "Google", null},
+  WebviewAppMatcher{new Regex("\\[Pinterest\\/(?:iOS|Android)\\b|\\bPinterest(?: for (?:Android(?: Tablet)?|iOS))?\\/(\\d+(?:\\.\\d+)*)", "i"), "Pinterest", null},
+  // Generic WhatsApp/ UAs can be link previews, not an embedded browser.
+  WebviewAppMatcher{new Regex("\\b(?:WA4A|WAiOS)\\/(\\d+(?:\\.\\d+)*)?", "i"), "WhatsApp", null},
+  WebviewAppMatcher{new Regex("\\bSnapchat[ /](\\d+(?:\\.\\d+)*)?", "i"), "Snapchat", null},
+  WebviewAppMatcher{new Regex("\\bBing(?:Web|Sapphire)\\/(\\d+(?:\\.\\d+)*)?", "i"), "Bing", null},
+  WebviewAppMatcher{new Regex("\\bNAVER\\(inapp; search;", "i"), "Naver", new Regex("\\bNAVER\\(inapp; search;[^;)]*; (\\d+(?:\\.\\d+)*)", "i")},
+  // KakaoTalk also emits integer build identifiers, not dotted app versions.
+  WebviewAppMatcher{new Regex("\\bKAKAOTALK[ /](\\d+\\.\\d+(?:\\.\\d+)*)?", "i"), "KakaoTalk", null}
+];
+
+// Best-effort detection of the app hosting a webview from explicit User-Agent markers.
+// Returns [app name, app version], using empty strings for unknown values.
+export string[] detectWebviewApp(string userAgent) {
+  for (WebviewAppMatcher matcher of webviewAppMatchers) {
+    JsValue found = JS.stringMatch(userAgent, matcher.regex);
+    if (found.truthy()) {
+      JsValue versionMatch = found;
+      Regex? versionRegex = matcher.versionRegex;
+      if (versionRegex != null) {
+        JsValue versionOnly = JS.stringMatch(userAgent, versionRegex);
+        if (versionOnly.truthy()) {
+          versionMatch = versionOnly;
+        }
+      }
+      JsValue version = versionMatch[1];
+      return [matcher.name, if (version.truthy()) { version as string } else { "" }];
+    }
+  }
+  return ["", ""];
+}
