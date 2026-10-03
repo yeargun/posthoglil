@@ -1,0 +1,512 @@
+// packages/browser/src/sessionid.ts
+// Session and window ids: rotation on idle timeout, on the 24 hour limit and after a reset,
+// bootstrap ids, cross-tab adoption, and the window id kept in sessionStorage.
+// `posthog.sessionManager` is reachable from the page: it keeps the public methods, the
+// `sessionTimeoutMs` getter, and the three fields upstream's npm build reserves
+// (`_sessionStartTimestamp`, `_sessionActivityTimestamp`, `_sessionTimeoutMs`). The other fields
+// keep upstream's names; the private methods are module functions. The persistence and the
+// session store are called through their objects, as upstream does.
+import { isArray, isNull, isPositiveNumber, isUndefined } from "../core/utils/type-utils.lil";
+import { clampToRange } from "../core/utils/number-utils.lil";
+import { sessionStore } from "./storage.lil";
+import extern { COOKIELESS_ALWAYS, DOM_EVENT_BEFOREUNLOAD, SESSION_ID } from "@upstream/browser/constants";
+import extern { uuid7ToTimestampMs, uuidv7 } from "@upstream/browser-common/utils/uuidv7";
+import extern { window } from "@upstream/browser-common/utils/globals";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { addEventListener } from "@upstream/browser-common/utils/general-utils";
+import extern { SimpleEventEmitter } from "@upstream/browser-common/utils/simple-event-emitter";
+extern string COOKIELESS_ALWAYS;
+extern string DOM_EVENT_BEFOREUNLOAD;
+extern string SESSION_ID;
+extern JsValue uuid7ToTimestampMs(JsValue uuid);
+extern JsValue uuidv7;
+extern JsValue window;
+extern JsValue createLogger(string prefix);
+extern JsValue addEventListener(JsValue element, string event, JsValue callback, JsValue options);
+extern JsValue SimpleEventEmitter;
+extern JsValue Object;
+extern JsValue Date;
+extern JsValue Error;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+JsValue logger = createLogger("[SessionId]");
+
+export float DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS = 30.0 * 60.0; // 30 minutes
+export float MAX_SESSION_IDLE_TIMEOUT_SECONDS = 10.0 * 60.0 * 60.0; // 10 hours
+export float MIN_SESSION_IDLE_TIMEOUT_SECONDS = 60; // 1 minute
+float SESSION_LENGTH_LIMIT_MILLISECONDS = 24.0 * 3600.0 * 1000.0; // 24 hours
+float BOOTSTRAP_SESSION_CLOCK_SKEW_TOLERANCE_MILLISECONDS = 60.0 * 1000.0; // 1 minute
+
+JsValue parseBootstrapSessionId(JsValue sessionID) {
+  JsValue timestamp = new Date().getTime();
+  try {
+    JsValue sessionStartTimestamp = uuid7ToTimestampMs(sessionID);
+    if (sessionStartTimestamp > timestamp + BOOTSTRAP_SESSION_CLOCK_SKEW_TOLERANCE_MILLISECONDS) {
+      logger.error("Bootstrap sessionID cannot be in the future");
+      return undefined;
+    }
+    return sessionStartTimestamp;
+  } catch (JsValue e) {
+    logger.error("Invalid sessionID in bootstrap", e);
+    return undefined;
+  }
+}
+
+// Must stay well under MIN_SESSION_IDLE_TIMEOUT_SECONDS so idle detection on other tabs cannot
+// fire on stale persisted data; sibling tabs only observe activity once it has been persisted.
+export float ACTIVITY_TIMESTAMP_PERSIST_GRANULARITY_MS = 5000;
+// Ordinary captures reconcile cookies before reaching the session manager; direct/replay checks
+// are bounded so they do not scan document.cookie for every event.
+export float SESSION_COOKIE_SYNC_INTERVAL_MS = 1000;
+
+export class SessionIdManager {
+  JsValue _lastPersistedActivityTimestamp = null;
+  JsValue _lastCookieSyncTimestamp = null;
+  JsValue _sessionIdChangedHandlers = [];
+  JsValue _beforeUnloadListener = undefined;
+  // Set by `destroy()` so an already-queued idle timer cannot re-arm onto a torn-down instance.
+  bool _destroyed = false;
+  JsValue _eventEmitter = new SimpleEventEmitter();
+  JsValue _config;
+  JsValue _persistence;
+  JsValue _windowId;
+  JsValue _sessionId;
+  JsValue _sessionStartTimestamp;
+  JsValue _pendingBootstrapSession;
+  JsValue _sessionActivityTimestamp;
+  JsValue _sessionIdGenerator;
+  JsValue _windowIdGenerator;
+  float _sessionTimeoutMs;
+  JsValue _enforceIdleTimeout;
+  string _window_id_storage_key;
+  string _primary_window_exists_storage_key;
+
+  init(JsValue instance, JsValue sessionIdGenerator, JsValue windowIdGenerator) {
+    if (!instance.persistence.truthy()) {
+      throw new Error("SessionIdManager requires a PostHogPersistence instance");
+    }
+    if (instance.config.cookieless_mode === COOKIELESS_ALWAYS) {
+      throw new Error("SessionIdManager cannot be used with cookieless_mode=\"always\"");
+    }
+    JsValue config = instance.config;
+    this._config = config;
+    this._persistence = instance.persistence;
+    this._windowId = undefined;
+    this._sessionId = undefined;
+    this._sessionStartTimestamp = null;
+    this._pendingBootstrapSession = undefined;
+    this._sessionActivityTimestamp = null;
+    this._sessionIdGenerator = sessionIdGenerator || uuidv7;
+    this._windowIdGenerator = windowIdGenerator || uuidv7;
+
+    JsValue persistenceName = config["persistence_name"] || config["token"];
+    JsValue desiredTimeout = config["session_idle_timeout_seconds"] || DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS;
+    this._sessionTimeoutMs = clampToRange(
+      desiredTimeout,
+      MIN_SESSION_IDLE_TIMEOUT_SECONDS,
+      MAX_SESSION_IDLE_TIMEOUT_SECONDS,
+      logger.createLogger("session_idle_timeout_seconds"),
+      DEFAULT_SESSION_IDLE_TIMEOUT_SECONDS
+    ) * 1000.0;
+    this._enforceIdleTimeout = undefined;
+    this._window_id_storage_key = "";
+    this._primary_window_exists_storage_key = "";
+
+    instance.register(object { $configured_session_timeout_ms: this._sessionTimeoutMs });
+    resetIdleTimer(this);
+
+    this._window_id_storage_key = "ph_" + persistenceName + "_window_id";
+    this._primary_window_exists_storage_key = "ph_" + persistenceName + "_primary_window_exists";
+
+    // primary_window_exists is set when the DOM has loaded and cleared on unload: if it exists
+    // here there was no unload, so this window is a duplicate (tab duplication, window.open, …)
+    if (canUseSessionStorage(this)) {
+      JsValue lastWindowId = sessionStore._parse(this._window_id_storage_key);
+      JsValue primaryWindowExists = sessionStore._parse(this._primary_window_exists_storage_key);
+      if (lastWindowId.truthy() && !primaryWindowExists.truthy()) {
+        // Persist window from previous storage state
+        this._windowId = lastWindowId;
+      } else {
+        // Wipe any reference to previous window id
+        sessionStore._remove(this._window_id_storage_key);
+      }
+      // Flag this session as having a primary window
+      sessionStore._set(this._primary_window_exists_storage_key, true);
+    }
+
+    JsValue bootstrap = this._config.bootstrap;
+    if ((if (bootstrap == null) { undefined } else { bootstrap.sessionID }).truthy()) {
+      this.setBootstrapSessionId(this._config.bootstrap.sessionID, false);
+    }
+
+    listenToReloadWindow(this);
+  }
+
+  JsValue on(JsValue event, JsValue handler) {
+    return this._eventEmitter.on(event, handler);
+  }
+
+  JsValue onSessionId(JsValue callback) {
+    // KLUDGE: when running in tests the handlers array was always undefined
+    if (isUndefined(this._sessionIdChangedHandlers)) {
+      this._sessionIdChangedHandlers = [];
+    }
+    this._sessionIdChangedHandlers.push(callback);
+    if (this._sessionId.truthy()) {
+      callback(this._sessionId, this._windowId);
+    }
+    SessionIdManager self = this;
+    return () => {
+      self._sessionIdChangedHandlers = self._sessionIdChangedHandlers.filter((JsValue h) => h !== callback);
+    };
+  }
+
+  // Resets the session id; the next checkAndGetSessionAndWindowId generates new ids. Also clears
+  // the idle timer so a stale fire cannot rotate the freshly-cleared session.
+  void resetSessionId() {
+    this._lastPersistedActivityTimestamp = null;
+    this._pendingBootstrapSession = undefined;
+    clearTimeout(this._enforceIdleTimeout);
+    this._enforceIdleTimeout = undefined;
+    setSessionId(this, null, null, null);
+  }
+
+  // Reset defers bootstrap assignment until the next session check so rotation listeners observe
+  // the same lifecycle as a normal reset.
+  bool setBootstrapSessionId(JsValue sessionID, bool deferUntilNextSession = false) {
+    JsValue sessionStartTimestamp = parseBootstrapSessionId(sessionID);
+    if (isUndefined(sessionStartTimestamp)) {
+      return false;
+    }
+    if (deferUntilNextSession) {
+      this._pendingBootstrapSession = object { sessionId: sessionID, sessionStartTimestamp: sessionStartTimestamp };
+    } else {
+      setSessionId(this, sessionID, new Date().getTime(), sessionStartTimestamp);
+    }
+    return true;
+  }
+
+  // Cleans up the timer, the unload listener and the handlers.
+  void destroy() {
+    this._destroyed = true;
+    flushPendingActivityTimestamp(this);
+
+    clearTimeout(this._enforceIdleTimeout);
+    this._enforceIdleTimeout = undefined;
+
+    if (this._beforeUnloadListener.truthy() && window.truthy()) {
+      window.removeEventListener(DOM_EVENT_BEFOREUNLOAD, this._beforeUnloadListener, object { capture: false });
+      this._beforeUnloadListener = undefined;
+    }
+
+    this._sessionIdChangedHandlers = [];
+  }
+
+  // Returns the current session and window ids, cycling them when appropriate: new ids when unset;
+  // unless `readOnly`, a new session after the idle timeout, and the activity timestamp extended.
+  JsValue checkAndGetSessionAndWindowId(bool readOnly = false, JsValue _timestamp = null, bool persistenceAlreadySynced = false) {
+    if (this._config.cookieless_mode === COOKIELESS_ALWAYS) {
+      throw new Error("checkAndGetSessionAndWindowId should not be called with cookieless_mode=\"always\"");
+    }
+    JsValue timestamp = _timestamp || new Date().getTime();
+
+    JsValue managedSessionIdBeforeCookieSync = this._sessionId;
+    if (persistenceAlreadySynced) {
+      this._lastCookieSyncTimestamp = timestamp;
+    } else if (isNull(this._lastCookieSyncTimestamp) ||
+      timestamp < this._lastCookieSyncTimestamp ||
+      timestamp - this._lastCookieSyncTimestamp >= SESSION_COOKIE_SYNC_INTERVAL_MS) {
+      JsValue persistence = this._persistence;
+      if (persistence.syncCookieProperties != null) {
+        persistence.syncCookieProperties();
+      }
+      this._lastCookieSyncTimestamp = timestamp;
+    }
+    JsValue sessionIdInfo = getSessionId(this);
+    JsValue sessionId = sessionIdInfo[1];
+    JsValue startTimestamp = sessionIdInfo[2];
+    bool cookieSessionAdoption = !isUndefined(managedSessionIdBeforeCookieSync) && sessionId !== managedSessionIdBeforeCookieSync;
+    float lastActivityTimestamp = freshestActivityTimestamp(this);
+    JsValue windowId = getWindowId(this);
+
+    JsValue pendingBootstrapSession = this._pendingBootstrapSession;
+    bool pendingBootstrapSessionPastMaximumLength = pendingBootstrapSession.truthy() &&
+      (pendingBootstrapSession.sessionStartTimestamp > timestamp + BOOTSTRAP_SESSION_CLOCK_SKEW_TOLERANCE_MILLISECONDS ||
+        timestamp - pendingBootstrapSession.sessionStartTimestamp > SESSION_LENGTH_LIMIT_MILLISECONDS);
+    bool sessionPastMaximumLength = if (pendingBootstrapSession.truthy()) {
+      pendingBootstrapSessionPastMaximumLength
+    } else {
+      isPositiveNumber(startTimestamp) && ((timestamp - startTimestamp) as float).abs() > SESSION_LENGTH_LIMIT_MILLISECONDS
+    };
+
+    bool valuesChanged = false;
+    bool crossTabAdoption = cookieSessionAdoption;
+    bool noSessionId = !sessionId.truthy() || pendingBootstrapSession.truthy();
+    JsValue preRefreshSessionId = sessionId;
+    bool activityTimeout = !noSessionId && !readOnly && sessionHasBeenIdleTooLong(this, timestamp, lastActivityTimestamp);
+    if (activityTimeout) {
+      // Re-check against the freshest cross-tab view: a sibling tab may have kept the session alive.
+      activityTimeout = isSessionIdleAfterCrossTabRefresh(this, timestamp);
+      if (!activityTimeout) {
+        // The rare, timing-dependent case this path exists for; logged because it is otherwise
+        // invisible in the wild.
+        logger.info("cross-tab refresh kept the session alive", object { sessionId: sessionId });
+      }
+      // The refresh may have observed a sibling's rotation: re-sample so we do not clobber the
+      // sibling's new session with our stale id.
+      JsValue refreshed = getSessionId(this);
+      sessionId = refreshed[1];
+      startTimestamp = refreshed[2];
+      // The sibling may have reset the session to null (posthog-js#5036). Only when the refresh
+      // cleared the timeout, so an idle rotation keeps `activityTimeout` as its sole reason.
+      if (!activityTimeout) {
+        noSessionId = !sessionId.truthy() || pendingBootstrapSession.truthy();
+      }
+    }
+    if (noSessionId || activityTimeout || sessionPastMaximumLength) {
+      crossTabAdoption = false;
+      bool usePendingBootstrapSession = pendingBootstrapSession.truthy() && !pendingBootstrapSessionPastMaximumLength;
+      JsValue me = this as JsValue;
+      sessionId = if (usePendingBootstrapSession) { pendingBootstrapSession.sessionId } else { me._sessionIdGenerator() };
+      windowId = me._windowIdGenerator();
+      logger.info("new session ID assigned", object {
+        sessionId: sessionId,
+        windowId: windowId,
+        bootstrapped: usePendingBootstrapSession,
+        changeReason: object {
+          noSessionId: noSessionId,
+          activityTimeout: activityTimeout,
+          sessionPastMaximumLength: sessionPastMaximumLength
+        }
+      });
+      startTimestamp = if (usePendingBootstrapSession) { pendingBootstrapSession.sessionStartTimestamp } else { timestamp };
+      this._pendingBootstrapSession = undefined;
+      valuesChanged = true;
+    } else {
+      if (!windowId.truthy()) {
+        windowId = (this as JsValue)._windowIdGenerator();
+        valuesChanged = true;
+      }
+      // Adoption is not gated on debounce: a session id change that handlers don't hear about
+      // leaves consumers (page-view state, a stopped recorder, session props) on the old session.
+      crossTabAdoption = crossTabAdoption || sessionId !== preRefreshSessionId;
+      if (crossTabAdoption) {
+        // We took a sibling tab's session id (keeping our own window id).
+        logger.info("adopted cross-tab session id", object { sessionId: sessionId, windowId: windowId });
+        valuesChanged = true;
+      }
+    }
+
+    bool noActivityTimestamp = !isPositiveNumber(lastActivityTimestamp);
+    bool shouldPreserveActivityTimestamp = !noActivityTimestamp && readOnly && !sessionPastMaximumLength;
+    JsValue newActivityTimestamp = if (shouldPreserveActivityTimestamp) { lastActivityTimestamp as JsValue } else { timestamp };
+
+    bool noStartTimestamp = !isPositiveNumber(startTimestamp);
+    JsValue sessionStartTimestamp = if (noStartTimestamp) { new Date().getTime() } else { startTimestamp };
+
+    setWindowId(this, windowId);
+    setSessionId(this, sessionId, newActivityTimestamp, sessionStartTimestamp);
+
+    if (!readOnly) {
+      resetIdleTimer(this);
+    }
+
+    JsValue changeReason = object {
+      noSessionId: noSessionId,
+      activityTimeout: activityTimeout,
+      sessionPastMaximumLength: sessionPastMaximumLength,
+      crossTabAdoption: crossTabAdoption
+    };
+    if (valuesChanged) {
+      this._sessionIdChangedHandlers.forEach((JsValue handler) => handler(sessionId, windowId, changeReason));
+    }
+
+    return object {
+      sessionId: sessionId,
+      windowId: windowId,
+      sessionStartTimestamp: sessionStartTimestamp,
+      changeReason: if (valuesChanged) { changeReason } else { undefined },
+      lastActivityTimestamp: lastActivityTimestamp
+    };
+  }
+}
+export constructor SessionIdManager;
+
+float sessionTimeoutMsOf(SessionIdManager self) {
+  return self._sessionTimeoutMs;
+}
+
+// Prototype getter, as upstream's class declares it.
+Object.defineProperty((SessionIdManager as JsValue).prototype, "sessionTimeoutMs", object {
+  get: (this JsValue receiver) => sessionTimeoutMsOf(receiver as SessionIdManager),
+  configurable: true
+});
+
+// sessionStorage only with persistence enabled and not in memory
+bool canUseSessionStorage(SessionIdManager self) {
+  return self._config.persistence !== "memory" && !self._persistence._disabled.truthy() && sessionStore._is_supported().truthy();
+}
+
+// The window id lives in sessionStorage (unique per tab, kept across reloads) when allowed,
+// otherwise in memory.
+void setWindowId(SessionIdManager self, JsValue windowId) {
+  if (windowId !== self._windowId) {
+    self._windowId = windowId;
+    if (canUseSessionStorage(self)) {
+      sessionStore._set(self._window_id_storage_key, windowId);
+    }
+  }
+}
+
+JsValue getWindowId(SessionIdManager self) {
+  if (self._windowId.truthy()) {
+    return self._windowId;
+  }
+  if (canUseSessionStorage(self)) {
+    return sessionStore._parse(self._window_id_storage_key);
+  }
+  // New window id will be generated
+  return null;
+}
+
+bool isActivityChangeBelowGranularity(SessionIdManager self, JsValue newActivityTimestamp) {
+  JsValue lastPersisted = self._lastPersistedActivityTimestamp;
+  if (isNull(lastPersisted) || isNull(newActivityTimestamp)) {
+    return false;
+  }
+  // abs guards against clock skew (NTP, devtools time travel)
+  return ((newActivityTimestamp - lastPersisted) as float).abs() < ACTIVITY_TIMESTAMP_PERSIST_GRANULARITY_MS;
+}
+
+void registerSessionId(SessionIdManager self, JsValue entry) {
+  JsValue props = object {};
+  props[SESSION_ID] = entry;
+  self._persistence.register(props);
+}
+
+// In-memory state always tracks the freshest values; the persisted write is skipped when nothing
+// changed and throttled for activity-only changes.
+void setSessionId(SessionIdManager self, JsValue sessionId, JsValue sessionActivityTimestamp, JsValue sessionStartTimestamp) {
+  bool idChanged = sessionId !== self._sessionId;
+  bool startChanged = sessionStartTimestamp !== self._sessionStartTimestamp;
+  bool activityChanged = sessionActivityTimestamp !== self._sessionActivityTimestamp;
+  bool isActivityOnlyChange = !idChanged && !startChanged;
+
+  self._sessionStartTimestamp = sessionStartTimestamp;
+  self._sessionActivityTimestamp = sessionActivityTimestamp;
+  self._sessionId = sessionId;
+
+  if (isActivityOnlyChange && !activityChanged) {
+    return;
+  }
+  if (isActivityOnlyChange && isActivityChangeBelowGranularity(self, sessionActivityTimestamp)) {
+    return;
+  }
+
+  self._lastPersistedActivityTimestamp = sessionActivityTimestamp;
+  registerSessionId(self, [sessionActivityTimestamp, sessionId, sessionStartTimestamp]);
+}
+
+// The debounce-specific per-key SESSION_ID refresh; debounce-disabled callers keep the legacy
+// whole-blob flush()+load().
+bool useCrossTabRefreshHardening(SessionIdManager self) {
+  JsValue config = self._config;
+  JsValue debounce = if (config == null) { undefined } else { config.persistence_save_debounce_ms };
+  return isPositiveNumber(debounce) && debounce > 0;
+}
+
+// Refresh this tab's SESSION_ID view from storage to pick up a sibling tab's writes.
+void refreshSessionIdFromStorage(SessionIdManager self) {
+  if (useCrossTabRefreshHardening(self)) {
+    self._persistence.refreshKey(SESSION_ID);
+  } else {
+    self._persistence.flush();
+    self._persistence.load();
+  }
+}
+
+// From destroy / beforeunload, so a tab close inside the throttle window does not leave the
+// persisted activity timestamp stale.
+void flushPendingActivityTimestamp(SessionIdManager self) {
+  if (isNull(self._sessionActivityTimestamp) || self._sessionActivityTimestamp === self._lastPersistedActivityTimestamp) {
+    return;
+  }
+  // A sibling tab may have rotated the session: skip the write if storage no longer matches.
+  refreshSessionIdFromStorage(self);
+  JsValue persisted = getSessionId(self);
+  if (persisted[1] !== self._sessionId || persisted[2] !== self._sessionStartTimestamp) {
+    return;
+  }
+  self._lastPersistedActivityTimestamp = self._sessionActivityTimestamp;
+  registerSessionId(self, [self._sessionActivityTimestamp, self._sessionId ?? null, self._sessionStartTimestamp]);
+  // Force the write past the debounce: unload paths cannot wait for a deferred timer.
+  self._persistence.flush();
+}
+
+// `max` because either view can be ahead.
+float freshestActivityTimestamp(SessionIdManager self) {
+  JsValue persistedActivity = getSessionId(self)[0];
+  float persisted = if (isPositiveNumber(persistedActivity)) { persistedActivity as float } else { 0.0 };
+  float inMemory = if (isPositiveNumber(self._sessionActivityTimestamp)) { self._sessionActivityTimestamp as float } else { 0.0 };
+  return persisted.max(inMemory);
+}
+
+// Persistence does not listen for `storage` events: refresh before deciding idle so a sibling
+// keeping the session alive is not seen as idle here.
+bool isSessionIdleAfterCrossTabRefresh(SessionIdManager self, JsValue timestamp) {
+  refreshSessionIdFromStorage(self);
+  return sessionHasBeenIdleTooLong(self, timestamp, freshestActivityTimestamp(self));
+}
+
+// Always read from persistence, the source of truth (the in-memory cache can be stale in a frozen
+// tab). Upstream destructures the result; entries are read by index.
+JsValue getSessionId(SessionIdManager self) {
+  JsValue sessionIdInfo = self._persistence.props[SESSION_ID];
+  if (isArray(sessionIdInfo) && sessionIdInfo.length == 2.0) {
+    // Storage does not yet have a session start time: use the last activity timestamp
+    sessionIdInfo.push(sessionIdInfo[0]);
+  }
+  return sessionIdInfo || [0, null, 0];
+}
+
+// Listens to window unloads and removes the primaryWindowExists key from sessionStorage, so a
+// reloaded tab does not carry it while a cloned one does.
+void listenToReloadWindow(SessionIdManager self) {
+  self._beforeUnloadListener = () => {
+    flushPendingActivityTimestamp(self);
+    if (canUseSessionStorage(self)) {
+      sessionStore._remove(self._primary_window_exists_storage_key);
+    }
+  };
+  addEventListener(window, DOM_EVENT_BEFOREUNLOAD, self._beforeUnloadListener, object { capture: false });
+}
+
+bool sessionHasBeenIdleTooLong(SessionIdManager self, JsValue timestamp, JsValue lastActivityTimestamp) {
+  if (!isPositiveNumber(timestamp) || !isPositiveNumber(lastActivityTimestamp)) {
+    return false;
+  }
+  return ((timestamp - lastActivityTimestamp) as float).abs() > (self as JsValue).sessionTimeoutMs;
+}
+
+void resetIdleTimer(SessionIdManager self) {
+  if (self._destroyed) {
+    // Torn down: a timer queued before destroy must not re-arm onto a dead manager.
+    return;
+  }
+  clearTimeout(self._enforceIdleTimeout);
+  self._enforceIdleTimeout = setTimeout(() => {
+    if (self._destroyed) {
+      return;
+    }
+    if (isSessionIdleAfterCrossTabRefresh(self, new Date().getTime())) {
+      JsValue idleSessionId = self._sessionId;
+      (self as JsValue).resetSessionId();
+      self._eventEmitter.emit("forcedIdleReset", object { idleSessionId: idleSessionId });
+    } else {
+      // A sibling tab kept the session alive: re-check after another window. Adoption of a
+      // sibling's rotated id stays on the event path.
+      resetIdleTimer(self);
+    }
+  }, (self as JsValue).sessionTimeoutMs * 1.1);
+}
