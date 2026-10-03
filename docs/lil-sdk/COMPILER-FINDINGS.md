@@ -12,6 +12,16 @@ behaviour cost, and a minimal reproduction. Generic fixes only (no port-specific
 | F5 | Parameter names of published methods are not mangled (`capture(event){…event…}`) | bytes on every published method; names are unobservable except through `Function.prototype.toString` | open |
 | F6 | `JsValue` built-in members shadow host names (`length`→`float`, `message`→`string`, `isArray()`, `truthy()`) | `v.length`/`e.message` on a dynamic value are typed reads, not host reads; write `v["length"]` | language note (STYLE §4) |
 | F7 | Compound assignment on a dynamic member prints a temporary (`let i=f;i.tokens=i.tokens+…`) | a few bytes per site | open |
+| F8 | No class statics: `Object.defineProperty(Class, "s", …)` at module level keeps an otherwise unreachable class alive and gives the function the name `value` | `UUID.fromFieldsV7`: +487 raw / +206 gzip / +198 Brotli in a whole-program build | open |
+| F9 | An exported function with an optional parameter that is also called internally gets an arrow plus a forwarding `function f(b,c){return a(b,c)}` | bytes per such export (test builds only, unless published) | open |
+| F10 | Array spread of an array copies twice (`[...[...a],...b]`); map iteration leaves a dead `d[0];` | bytes | open |
+| F11 | A lambda passed to a `JsValue` method inside an expression is hoisted into a temporary (`let c;…b.some((c=b=>…,c))`); a receiver lambda in ESM is wrapped in `(()=>{"use strict";return function(){…}})()` | bytes per site | open |
+| F12 | `w ?? object{}` prints `let b;return b=a,b===null\|\|b===void 0?b={}:b`; `if (w == null)` prints `w==null?d:w` | bytes per `??` | open |
+| F13 | A defaulted parameter of a published constructor prints `constructor(a,b=void 0){b=b;…}` | bytes | open |
+| F14 | Returning absence as `JsValue` adds `a==null?null:a`; returning `Map<string, JsValue>.get(k)` as `JsValue` turns upstream's `undefined` into `null` (semantic trap: write `JsValue \| undefined`) | bytes; a behaviour trap for ports | open |
+| F15 | `= undefined` parameter defaults print a `length`-preserving wrapper plus `p==null&&(p=void 0)` per parameter | bytes per function | open |
+| F16 | Typed loops print `a.length\|0`; `.get(i)` prints `i<(a.length\|0)?a[i]:null`; inlined multi-return functions become IIFEs; after an inline a rest call prints `f((t=[x],a),...t)` | bytes | open |
+| F17 | Language gaps met by the port: no `?.()`, no computed keys in `object {}`, no `string.substring`, typed `split` takes only a string separator, typed-array stores need `int`, no bitwise operators on `JsValue`, `match`/`object` cannot be parameter names, no `else if` inside expression-`if`, extern contracts are program-wide | workarounds in source | open |
 
 ## Reproductions
 
