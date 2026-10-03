@@ -53,13 +53,16 @@ async function esbuildBundle(entry,minify=false){
     plugins:[esbuildAliases],tsconfigRaw,define:{__BROWSER_COMMON_VERSION__:'"0.9.1"'},logLevel:'error',absWorkingDir:root})
   return r.outputFiles[0].text
 }
-async function oxcBundle(entry){
+async function rolldownBundle(entry,minify){
   const bundle=await rolldown({input:entry,platform:'browser',logLevel:'silent',tsconfig:false,
+    // as posthog-js's rollup.config.mjs: @posthog/core is a pure utility package
+    treeshake:{moduleSideEffects:[{test:/\/packages\/core\/src\//,sideEffects:false}]},
     transform:{target:'es2020',assumptions:{setPublicClassFields:true},define:{__BROWSER_COMMON_VERSION__:'"0.9.1"'}},
     plugins:[{name:'posthog-aliases',async resolveId(id,importer){const p=alias(id);return p?this.resolve(p,importer,{skipSelf:true}):null}}]})
-  const {output}=await bundle.generate({format:'esm',minify:true})
+  const {output}=await bundle.generate({format:'esm',minify})
   return output[0].code
 }
+const oxcBundle=entry=>rolldownBundle(entry,true)
 function lilscript(entry,objective){
   const out=join(root,'showcase/out',objective,entry.split('/').pop().replace(/\.lil$/,'.mjs'))
   mkdirSync(dirname(out),{recursive:true})
@@ -72,7 +75,8 @@ function lilscript(entry,objective){
 }
 
 export async function measure(group){
-  const bundled=await esbuildBundle(group.upstream)
+  // PostHog's own pipeline: Rolldown (core side-effect free) + Terser with posthog-js's settings
+  const bundled=await rolldownBundle(group.upstream,false)
   const lanes={}
   lanes['terser-upstream']=sizes(Buffer.from((await minify(bundled,upstreamTerser)).code))
   lanes['esbuild']=sizes(Buffer.from(await esbuildBundle(group.upstream,true)))

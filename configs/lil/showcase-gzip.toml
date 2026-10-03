@@ -11,6 +11,8 @@ priority = "size-first"
 ecmascript = "es2020"
 # upstream's own build compresses with Terser's unsafe_regexp/unsafe_methods/unsafe_math: the same assumption
 assume_pristine_builtins = true
+# and Terser's pure_getters: true
+assume_pure_property_reads = true
 strip_debug = false
 # upstream's npm build mangles function and class names too
 keep_published_function_names = false
