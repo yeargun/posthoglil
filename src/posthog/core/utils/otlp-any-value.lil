@@ -1,0 +1,206 @@
+// packages/core/src/utils/otlp-any-value.ts — the OTLP `AnyValue` encoder, shared by the logs,
+// metrics and traces senders. Every input is application data (JsValue); the encoded values are
+// request-body objects, written as plain object literals with OTLP's keys.
+import { isArray, isBoolean, isNull, isNullish, isUndefined } from "./type-utils.lil";
+import {
+  CIRCULAR_VALUE,
+  FUNCTION_VALUE,
+  MAX_JSON_SAFE_VALUE_DEPTH,
+  MAX_JSON_SAFE_VALUE_ITEMS,
+  MAX_JSON_SAFE_VALUE_NODES,
+  sanitizeString,
+  TRUNCATED_VALUE,
+  UNSERIALIZABLE_VALUE
+} from "./json-utils.lil";
+extern JsValue Object;
+extern JsValue Number;
+extern JsValue String;
+extern JsValue BigInt;
+extern JsValue Date;
+extern JsValue WeakSet;
+
+// 2^63 — one past int64 max.
+float INT64_RANGE_LIMIT = 9223372036854775808.0;
+
+// The same bound for the bigint branch, as a decimal string (no bigint literal in ES5 output).
+string INT64_RANGE_LIMIT_DECIMAL = "9223372036854775808";
+
+JsValue propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+class EncodeState {
+  // Containers on the current path, so a back-reference becomes a marker.
+  JsValue ancestors = JS.construct(WeakSet);
+  float remainingNodes = MAX_JSON_SAFE_VALUE_NODES;
+}
+
+export JsValue toOtlpAnyValue(JsValue value, JsValue logger) {
+  try {
+    return encodeAnyValue(value, logger, new EncodeState(), 0.0);
+  } catch (JsValue error) {
+    // An error escaping here would surface in the caller's own code.
+    return object { stringValue: UNSERIALIZABLE_VALUE };
+  }
+}
+
+export JsValue[] toOtlpKeyValueList(JsValue attrs, JsValue logger) {
+  try {
+    return encodeKeyValueList(attrs, logger, new EncodeState(), 0.0);
+  } catch (JsValue error) {
+    return [];
+  }
+}
+
+JsValue encodeBigInt(JsValue value, JsValue logger) {
+  JsValue decimal = value.toString();
+  JsValue limit = BigInt(INT64_RANGE_LIMIT_DECIMAL);
+  if (value >= limit || value < -limit) {
+    if (logger != null) {
+      logger.debug(`Attribute ${decimal} is outside the int64 range; encoding it as a string`);
+    }
+    return object { stringValue: decimal };
+  }
+  return object { intValue: decimal };
+}
+
+JsValue encodeAnyValue(JsValue value, JsValue logger, EncodeState state, float depth) {
+  if (state.remainingNodes <= 0.0) {
+    return object { stringValue: TRUNCATED_VALUE };
+  }
+  state.remainingNodes -= 1.0;
+
+  if (isBoolean(value)) {
+    return object { boolValue: value };
+  }
+  string kind = JS.typeOf(value);
+  // Reaching this branch proves BigInt exists, so the limit is built here.
+  if (kind == "bigint") {
+    return encodeBigInt(value, logger);
+  }
+  // typeof, not core's isNumber, which excludes NaN.
+  if (value is float) {
+    if (!Number.isFinite(value).truthy()) {
+      return object { stringValue: String(value) };
+    }
+    if (Number.isInteger(value).truthy()) {
+      if (Number.isSafeInteger(value).truthy()) {
+        return object { intValue: String(value) };
+      }
+      // Past MAX_SAFE_INTEGER only BigInt gives the double's exact decimal; without it the value
+      // rides as a string, which is never range-checked.
+      if (JS.typeOf(BigInt) == "undefined") {
+        return object { stringValue: String(value) };
+      }
+      JsValue decimal = BigInt(value).toString();
+      if (value >= INT64_RANGE_LIMIT || value < -INT64_RANGE_LIMIT) {
+        if (logger != null) {
+          logger.debug(`Attribute ${decimal} is outside the int64 range; encoding it as a string`);
+        }
+        return object { stringValue: decimal };
+      }
+      return object { intValue: decimal };
+    }
+    return object { doubleValue: value };
+  }
+  if (value is string) {
+    return object { stringValue: sanitizeString(value) };
+  }
+  // `String(value)` would put a function's source text on the wire.
+  if (kind == "function") {
+    return object { stringValue: FUNCTION_VALUE };
+  }
+  if (kind == "symbol") {
+    return object { stringValue: String(value) };
+  }
+  if (kind == "object" && value !== null) {
+    if (state.ancestors.has(value).truthy()) {
+      return object { stringValue: CIRCULAR_VALUE };
+    }
+    if (depth >= MAX_JSON_SAFE_VALUE_DEPTH) {
+      return object { stringValue: TRUNCATED_VALUE };
+    }
+    if (value instanceof Date) {
+      JsValue time = value.getTime();
+      JsValue iso = if (Number.isFinite(time).truthy()) { value.toISOString() } else { String(value) };
+      // An overridden toISOString can return a non-string.
+      return object { stringValue: if (iso is string) { sanitizeString(iso) as JsValue } else { String(iso) } };
+    }
+    // Registered before the toJSON probe: a toJSON returning a structure that references its own
+    // object is a cycle like any other.
+    state.ancestors.add(value);
+    try {
+      try {
+        JsValue toJSON = value.toJSON;
+        if (JS.typeOf(toJSON) == "function") {
+          return encodeAnyValue(toJSON.call(value), logger, state, depth + 1.0);
+        }
+      } catch (JsValue error) {
+        // A throwing toJSON falls through to the plain walk.
+      }
+      if (isArray(value)) {
+        return object { arrayValue: object { values: encodeArrayValues(value, logger, state, depth + 1.0) } };
+      }
+      return object { kvlistValue: object { values: encodeKeyValueList(value, logger, state, depth + 1.0) } };
+    } finally {
+      // Siblings that reference the same object are duplication, not a cycle.
+      state.ancestors["delete"](value);
+    }
+  }
+  return object { stringValue: sanitizeString(String(value) as string) };
+}
+
+JsValue[] encodeArrayValues(JsValue values, JsValue logger, EncodeState state, float depth) {
+  JsValue[] result = [];
+  float itemCount = values.length.min(MAX_JSON_SAFE_VALUE_ITEMS);
+  float index = 0.0;
+  for (; index < itemCount && state.remainingNodes > 0.0; index += 1.0) {
+    try {
+      JsValue element = if (JS.in(index, values)) { values[index] } else { undefined };
+      // Dropped: proto3 JSON has no null AnyValue.
+      if (isNullish(element)) {
+        continue;
+      }
+      result.push(encodeAnyValue(element, logger, state, depth));
+    } catch (JsValue error) {
+      result.push(object { stringValue: UNSERIALIZABLE_VALUE });
+    }
+  }
+  if (values.length > index) {
+    result.push(object { stringValue: TRUNCATED_VALUE });
+  }
+  return result;
+}
+
+JsValue[] encodeKeyValueList(JsValue attrs, JsValue logger, EncodeState state, float depth) {
+  JsValue[] result = [];
+  for (string key in attrs) {
+    // for...in walks the prototype chain once own keys are exhausted; skipped rather than broken
+    // out of, since a proxy can yield keys in any order.
+    if (!propertyIsEnumerable.call(attrs, key).truthy()) {
+      continue;
+    }
+    if (key == "") {
+      // OTLP requires a non-empty key.
+      if (logger != null) {
+        logger.debug("Dropping an attribute with an empty key");
+      }
+      continue;
+    }
+    if (result.length >= MAX_JSON_SAFE_VALUE_ITEMS || state.remainingNodes <= 0.0) {
+      if (logger != null) {
+        logger.debug("Attributes truncated: the value exceeds the OTLP encoder budget");
+      }
+      break;
+    }
+    try {
+      JsValue value = attrs[key];
+      if (isNull(value) || isUndefined(value)) {
+        continue;
+      }
+      result.push(object { key: sanitizeString(key), value: encodeAnyValue(value, logger, state, depth) });
+    } catch (JsValue error) {
+      // A getter that throws costs its own key, not the whole record.
+      result.push(object { key: sanitizeString(key), value: object { stringValue: UNSERIALIZABLE_VALUE } });
+    }
+  }
+  return result;
+}
