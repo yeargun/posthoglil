@@ -1,0 +1,69 @@
+// packages/browser/src/extensions/replay/rrweb-plugins/patch.ts
+// Portions derived from getsentry/sentry-javascript (MIT), via rrweb's `patch`.
+// Each call installs a "layer" in the wrapper chain: the wrapper calls down through the layer's
+// mutable `next`, so any layer can later be spliced out even under newer wrappers. The layer
+// object (`{ next }`) and the `__posthog_wrapped__` / `__posthog_layer__` markers are shared with
+// rrweb's own patch (`__rrweb_layer__`), so they keep upstream's names and shapes.
+import { isFunction } from "../../../../core/utils/type-utils.lil";
+extern JsValue Object;
+
+JsValue noop = () => {};
+
+JsValue spliceableLayer(JsValue method) {
+  if (!isFunction(method)) {
+    return undefined;
+  }
+  return method.__posthog_layer__ ?? method.__rrweb_layer__;
+}
+
+export JsValue patch(JsValue source, string name, JsValue replacement) {
+  try {
+    if (!(name in source)) {
+      return noop;
+    }
+    JsValue original = source[name];
+    JsValue layer = object { next: original };
+
+    // The wrapper receives this stable delegate instead of `original`, so the function it
+    // actually calls can be re-pointed when a lower layer is removed.
+    JsValue callNext = JS.methodRest((JsValue receiver, JsValue args) => layer.next.apply(receiver, args));
+    JsValue wrapped = replacement(callNext);
+
+    // defineProperties needs an object: functions get an empty prototype first
+    if (isFunction(wrapped)) {
+      wrapped.prototype = wrapped.prototype || object {};
+      Object.defineProperties(wrapped, object {
+        __posthog_wrapped__: object { enumerable: false, value: true },
+        __posthog_layer__: object { enumerable: false, value: layer }
+      });
+    }
+
+    source[name] = wrapped;
+
+    return () => {
+      // Still on top: hand back whatever we currently delegate to (lower layers may already
+      // have been removed).
+      if (source[name] === wrapped) {
+        source[name] = layer.next;
+        return;
+      }
+      // Newer wrappers sit on top: find the layer directly above us and re-point it past us.
+      // rrweb builds the identical layer under its own marker, so both markers are walked.
+      JsValue current = source[name];
+      JsValue currentLayer = spliceableLayer(current);
+      while (currentLayer.truthy()) {
+        if (currentLayer.next === wrapped) {
+          currentLayer.next = layer.next;
+          return;
+        }
+        current = currentLayer.next;
+        currentLayer = spliceableLayer(current);
+      }
+      // Buried under a non-posthog wrapper that closed over us directly, or already removed:
+      // nothing is safe to do, so the chain is left untouched.
+    };
+  } catch {
+    // multiple instrumentation layers may redefine the same non-configurable marker
+    return noop;
+  }
+}

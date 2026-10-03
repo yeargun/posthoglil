@@ -1,0 +1,236 @@
+// packages/browser/src/extensions/history-autocapture.ts
+// Captures pageviews when selected URL components change through the history API, back/forward
+// navigation or hash navigation. `posthog.historyAutocapture` keeps upstream's public methods and
+// `isEnabled` getter; `_instance` is a reserved (unmangled) name upstream, so it stays a field of
+// that name. Private methods are module functions.
+import { isNullish, isObject } from "../../core/utils/type-utils.lil";
+import { patch } from "./replay/rrweb-plugins/patch.lil";
+import extern { EVENT_PAGEVIEW } from "@upstream/browser/constants";
+import extern { window } from "@upstream/browser-common/utils/globals";
+import extern { addEventListener } from "@upstream/browser-common/utils/general-utils";
+import extern { convertToURL } from "@upstream/browser-common/utils/request-utils";
+import extern { logger } from "@upstream/browser-common/utils/logger";
+extern string EVENT_PAGEVIEW;
+extern JsValue window;
+extern JsValue addEventListener;
+extern JsValue convertToURL(JsValue url);
+extern JsValue logger;
+extern JsValue Object;
+extern JsValue Promise;
+extern JsValue String;
+
+shape HistoryLocation {
+  data JsValue pathname;
+  data JsValue search;
+  data JsValue hash;
+}
+
+export class HistoryAutocapture {
+  bool _isFlushingPageview = false;
+  JsValue _instance;
+  JsValue _lastLocation;
+  JsValue _popstateListener = undefined;
+  JsValue _hashchangeListener = undefined;
+  JsValue _pendingPageview = undefined;
+
+  init(JsValue instance) {
+    this._instance = instance;
+    this._lastLocation = getCurrentLocation();
+  }
+
+  void initialize() {
+    (this as JsValue).startIfEnabled();
+  }
+
+  void startIfEnabled() {
+    JsValue self = this as JsValue;
+    if (self.isEnabled.truthy()) {
+      logger.info("History API monitoring enabled, starting...");
+      self.monitorHistoryChanges();
+    }
+  }
+
+  void startIfEnabledOrStop() {
+    JsValue self = this as JsValue;
+    self.stop();
+    this._lastLocation = getCurrentLocation();
+    self.startIfEnabled();
+  }
+
+  void stop() {
+    if (this._popstateListener.truthy()) {
+      this._popstateListener();
+    }
+    this._popstateListener = undefined;
+    if (this._hashchangeListener.truthy()) {
+      this._hashchangeListener();
+    }
+    this._hashchangeListener = undefined;
+    logger.info("History API monitoring stopped");
+  }
+
+  void monitorHistoryChanges() {
+    if (!window.truthy() || !window.history.truthy()) {
+      return;
+    }
+    patchHistoryMethod(this, "pushState");
+    patchHistoryMethod(this, "replaceState");
+    setupPopstateListener(this);
+    if (shouldCaptureHashChanges(this, captureOptions(this))) {
+      setupHashchangeListener(this);
+    }
+  }
+}
+export constructor HistoryAutocapture;
+
+Object.defineProperty((HistoryAutocapture as JsValue).prototype, "isEnabled", object {
+  get: (this JsValue receiver) => isEnabled(receiver as HistoryAutocapture),
+  configurable: true
+});
+
+bool isEnabled(HistoryAutocapture self) {
+  JsValue options = captureOptions(self);
+  return options.path.truthy() || options.search.truthy() || shouldCaptureHashChanges(self, options);
+}
+
+void patchHistoryMethod(HistoryAutocapture self, string method) {
+  if (!window.truthy()) {
+    return;
+  }
+  JsValue current = window.history[method];
+  if (current != null && current.__posthog_wrapped__.truthy()) {
+    return;
+  }
+  patch(window.history, method, (JsValue originalMethod) => JS.method3((JsValue receiver, JsValue state, JsValue title, JsValue url) => {
+    if (isUrlChanging(url)) {
+      flushPendingPageview(self);
+    }
+    originalMethod.call(receiver, state, title, url);
+    // Navigations made while a pageview is being sent, or while routers render a back/forward
+    // traversal inside the popstate event, are captured right away so code that already ran
+    // can't precede them.
+    JsValue event = if (window == null) { undefined } else { window.event };
+    capturePageview(self, method, !self._isFlushingPageview && (if (event == null) { undefined } else { event.type }) !== "popstate");
+    return undefined;
+  }));
+}
+
+JsValue getCurrentLocation() {
+  JsValue location = if (window == null) { undefined } else { window.location };
+  if (location == null || !location.pathname.truthy()) {
+    return undefined;
+  }
+  return HistoryLocation{pathname: location.pathname, search: location.search, hash: location.hash} as JsValue;
+}
+
+JsValue captureOptions(HistoryAutocapture self) {
+  JsValue capturePageview = self._instance.config.capture_pageview;
+  if (capturePageview === "history_change") {
+    return object { path: true };
+  }
+  return if (isObject(capturePageview)) { capturePageview } else { object {} };
+}
+
+bool shouldCaptureHashChanges(HistoryAutocapture self, JsValue options) {
+  return options.hash.truthy() && !self._instance.config.disable_capture_url_hashes.truthy();
+}
+
+bool hasLocationChanged(HistoryAutocapture self, HistoryLocation currentLocation) {
+  JsValue options = captureOptions(self);
+  JsValue last = self._lastLocation;
+  if (!last.truthy()) {
+    return false;
+  }
+  HistoryLocation lastLocation = last as HistoryLocation;
+  return (options.path.truthy() && currentLocation.pathname !== lastLocation.pathname) ||
+    (options.search.truthy() && currentLocation.search !== lastLocation.search) ||
+    (shouldCaptureHashChanges(self, options) && currentLocation.hash !== lastLocation.hash);
+}
+
+void capturePageview(HistoryAutocapture self, string navigationType, bool defer) {
+  try {
+    if (!defer) {
+      flushPendingPageview(self);
+    }
+    JsValue current = getCurrentLocation();
+    if (!current.truthy()) {
+      return;
+    }
+    if (hasLocationChanged(self, current as HistoryLocation)) {
+      JsValue capture = () => self._instance.capture(EVENT_PAGEVIEW, object { navigation_type: navigationType });
+      if (defer) {
+        // Routers can set the new route's document.title after calling the history API in the
+        // same task, so the pageview (which reads the title) waits for that task's work.
+        self._pendingPageview = capture;
+        Promise.resolve().then(() => {
+          flushPendingPageview(self);
+        });
+      } else {
+        capture();
+      }
+    }
+    self._lastLocation = current;
+  } catch (JsValue error) {
+    logger.error(`Error capturing ${navigationType} pageview`, error);
+  }
+}
+
+bool isUrlChanging(JsValue url) {
+  if (isNullish(url) || !window.truthy()) {
+    return false;
+  }
+  JsValue converted = convertToURL(String(url));
+  JsValue location = window.location;
+  return (if (converted == null) { undefined } else { converted.href }) !== (if (location == null) { undefined } else { location.href });
+}
+
+// Captures a deferred pageview before the URL changes again, so it keeps the URL it was
+// scheduled for.
+void flushPendingPageview(HistoryAutocapture self) {
+  JsValue pendingPageview = self._pendingPageview;
+  if (!pendingPageview.truthy()) {
+    return;
+  }
+  self._pendingPageview = undefined;
+  self._isFlushingPageview = true;
+  try {
+    pendingPageview();
+  } catch (JsValue error) {
+    logger.error("Error capturing deferred pageview", error);
+  } finally {
+    self._isFlushingPageview = false;
+  }
+  // The URL can also change without the history API before the pageview is sent, so later
+  // changes are compared against the URL that was actually captured.
+  self._lastLocation = getCurrentLocation();
+}
+
+void setupPopstateListener(HistoryAutocapture self) {
+  if (self._popstateListener.truthy()) {
+    return;
+  }
+  JsValue handler = () => {
+    capturePageview(self, "popstate", false);
+  };
+  addEventListener(window, "popstate", handler);
+  self._popstateListener = () => {
+    if (window.truthy()) {
+      window.removeEventListener("popstate", handler);
+    }
+  };
+}
+
+void setupHashchangeListener(HistoryAutocapture self) {
+  if (self._hashchangeListener.truthy()) {
+    return;
+  }
+  JsValue handler = () => {
+    capturePageview(self, "hashchange", false);
+  };
+  addEventListener(window, "hashchange", handler);
+  self._hashchangeListener = () => {
+    if (window.truthy()) {
+      window.removeEventListener("hashchange", handler);
+    }
+  };
+}
