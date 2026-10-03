@@ -1,0 +1,681 @@
+// packages/browser/src/storage.ts
+// The stores keep upstream's object shape (`_is_supported`, `_error`, `_get`, `_parse`, `_set`,
+// `_remove`) because unported modules and posthog-persistence call them through the object.
+// Their bodies are typed module functions; calls between them are static (the `_` members are
+// mangled in upstream's npm build, so no page can patch them). Values written to storage stay
+// `JsValue`: they are page and server data, and the JSON/cookie text is the contract.
+import { isArray, isObject } from "../core/utils/type-utils.lil";
+import extern { extend } from "@upstream/browser-common/utils/general-utils";
+import extern {
+  DEVICE_ID,
+  DISTINCT_ID,
+  ENABLED_FEATURE_FLAGS,
+  ENABLE_PERSON_PROCESSING,
+  FLAG_CALL_REPORTED,
+  GROUPS,
+  INITIAL_PERSON_INFO,
+  PERSISTENCE_FACEBOOK_CLICK_ID,
+  PERSISTENCE_ACTIVE_FEATURE_FLAGS,
+  PERSISTENCE_FEATURE_FLAG_DETAILS,
+  PERSISTENCE_FEATURE_FLAG_ERRORS,
+  PERSISTENCE_FEATURE_FLAG_EVALUATED_AT,
+  PERSISTENCE_FEATURE_FLAG_PAYLOADS,
+  PERSISTENCE_FEATURE_FLAG_REQUEST_ID,
+  SESSION_ID,
+  SESSION_RECORDING_IS_SAMPLED,
+  STORED_GROUP_PROPERTIES_KEY,
+  STORED_PERSON_PROPERTIES_KEY,
+  USER_STATE,
+  USER_STATE_ANONYMOUS,
+  USER_STATE_IDENTIFIED
+} from "@upstream/browser/constants";
+import extern { logger } from "@upstream/browser-common/utils/logger";
+import extern { window, document } from "@upstream/browser-common/utils/globals";
+import extern { getCookieValue } from "@upstream/browser-common/utils/cookie-utils";
+import extern { uuidv7 } from "@upstream/browser-common/utils/uuidv7";
+extern JsValue extend(JsValue obj, JsValue source);
+extern string DEVICE_ID;
+extern string DISTINCT_ID;
+extern string ENABLED_FEATURE_FLAGS;
+extern string ENABLE_PERSON_PROCESSING;
+extern string FLAG_CALL_REPORTED;
+extern string GROUPS;
+extern string INITIAL_PERSON_INFO;
+extern string PERSISTENCE_FACEBOOK_CLICK_ID;
+extern string PERSISTENCE_ACTIVE_FEATURE_FLAGS;
+extern string PERSISTENCE_FEATURE_FLAG_DETAILS;
+extern string PERSISTENCE_FEATURE_FLAG_ERRORS;
+extern string PERSISTENCE_FEATURE_FLAG_EVALUATED_AT;
+extern string PERSISTENCE_FEATURE_FLAG_PAYLOADS;
+extern string PERSISTENCE_FEATURE_FLAG_REQUEST_ID;
+extern string SESSION_ID;
+extern string SESSION_RECORDING_IS_SAMPLED;
+extern string STORED_GROUP_PROPERTIES_KEY;
+extern string STORED_PERSON_PROPERTIES_KEY;
+extern string USER_STATE;
+extern string USER_STATE_ANONYMOUS;
+extern string USER_STATE_IDENTIFIED;
+extern JsValue logger;
+extern JsValue window;
+extern JsValue document;
+extern JsValue getCookieValue(string name);
+extern string uuidv7();
+extern JsValue JSON;
+extern JsValue Object;
+extern JsValue Date;
+extern JsValue encodeURIComponent;
+
+// we store the discovered subdomain in memory because it might be read multiple times
+string firstNonPublicSubDomain = "";
+
+// helper to allow tests to clear this "cache"
+export void resetSubDomainCache() {
+  firstNonPublicSubDomain = "";
+}
+
+// Browsers reject cookies set on public suffixes (`.co.uk`), so the first subdomain of the
+// hostname that accepts a probe cookie is the registrable domain.
+export string seekFirstNonPublicSubDomain(string hostname, JsValue cookieJar = document) {
+  if (firstNonPublicSubDomain != "") {
+    return firstNonPublicSubDomain;
+  }
+  if (!cookieJar.truthy()) {
+    return "";
+  }
+  if (hostname == "localhost" || hostname == "127.0.0.1") {
+    return "";
+  }
+  string[] list = hostname.split(".");
+  int len = if (list.length < 8) { list.length } else { 8 };
+  string key = "dmn_chk_" + uuidv7();
+  while (firstNonPublicSubDomain == "" && len != 0) {
+    len--;
+    string candidate = list.slice(len).join(".");
+    string candidateCookieValue = key + "=1;domain=." + candidate + ";path=/";
+    // try to set cookie, include a short expiry in seconds since we'll check immediately
+    cookieJar.cookie = candidateCookieValue + ";max-age=3";
+    if (cookieJar.cookie.includes(key).truthy()) {
+      // the cookie was accepted by the browser, remove the test cookie
+      cookieJar.cookie = candidateCookieValue + ";max-age=0";
+      firstNonPublicSubDomain = candidate;
+    }
+  }
+  return firstNonPublicSubDomain;
+}
+
+Regex DOMAIN_MATCH_REGEX = new Regex("[a-z0-9][a-z0-9-]+\\.[a-z]{2,}$", "i");
+
+string originalCookieDomain(string hostname) {
+  JsValue matches = DOMAIN_MATCH_REGEX.exec(hostname);
+  return if (matches != null) { matches[0] as string } else { "" };
+}
+
+export string chooseCookieDomain(string hostname, JsValue cross_subdomain) {
+  if (cross_subdomain.truthy()) {
+    string matchedSubDomain = seekFirstNonPublicSubDomain(hostname);
+    if (matchedSubDomain == "") {
+      string originalMatch = originalCookieDomain(hostname);
+      if (originalMatch != matchedSubDomain) {
+        logger.info("Warning: cookie subdomain discovery mismatch", originalMatch, matchedSubDomain);
+      }
+      matchedSubDomain = originalMatch;
+    }
+    return if (matchedSubDomain != "") { "; domain=." + matchedSubDomain } else { "" };
+  }
+  return "";
+}
+
+// ---- cookie store (methods partially borrowed from quirksmode.org/js/cookies.html)
+
+bool? cookieStorageSupported = null;
+// helper to allow tests to clear this "cache"
+export void resetCookieStorageSupported() {
+  cookieStorageSupported = null;
+}
+
+bool cookieIsSupported() {
+  bool? cached = cookieStorageSupported;
+  if (cached != null) {
+    return cached;
+  }
+  // `document` existing is not enough (a `data:` URL page throws on `document.cookie`, some
+  // embedded contexts drop every cookie): round-trip a probe cookie.
+  cookieStorageSupported = false;
+  bool supported = false;
+  if (document.truthy()) {
+    try {
+      string key = "__ph_cookie_support_" + uuidv7();
+      cookieSet(key, "xyz", undefined, undefined, undefined);
+      supported = getCookieValue(key) === "\"xyz\"";
+      cookieStorageSupported = supported;
+      cookieRemove(key, undefined);
+    } catch {
+      supported = false;
+      cookieStorageSupported = false;
+    }
+  }
+  return supported;
+}
+
+void cookieError(JsValue msg) {
+  logger.error("cookieStore error: " + msg);
+}
+
+JsValue cookieParse(string name) {
+  JsValue cookie = undefined;
+  try {
+    cookie = JSON.parse(getCookieValue(name)) || object {};
+  } catch {
+  }
+  return cookie;
+}
+
+bool cookieSet(string name, JsValue value, JsValue days, JsValue cross_subdomain, JsValue is_secure) {
+  if (!document.truthy()) {
+    return false;
+  }
+  try {
+    string expires = "";
+    string secure = "";
+    string cdomain = chooseCookieDomain(document.location.hostname as string, cross_subdomain);
+    if (days.truthy()) {
+      JsValue date = new Date();
+      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+      expires = "; expires=" + date.toUTCString();
+    }
+    if (is_secure.truthy()) {
+      secure = "; secure";
+    }
+    string new_cookie_val = name + "=" + encodeURIComponent(JSON.stringify(value)) + expires + "; SameSite=Lax; path=/" + cdomain + secure;
+    // 4096 bytes is the size at which some browsers (e.g. firefox) will not store a cookie, warn slightly before that
+    if (new_cookie_val.length > 4096.0 * 0.9) {
+      logger.warn("cookieStore warning: large cookie, len=" + new_cookie_val.length);
+    }
+    document.cookie = new_cookie_val;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+void cookieRemove(string name, JsValue cross_subdomain) {
+  if (document == null || !document.cookie.truthy()) {
+    return;
+  }
+  // Resolving the cross-subdomain domain writes probe cookies that browsers reject on public
+  // suffix hosts, so skip it when no cookie by this name is visible to delete.
+  if (cross_subdomain.truthy() && getCookieValue(name) === null) {
+    return;
+  }
+  try {
+    cookieSet(name, "", -1, cross_subdomain, undefined);
+  } catch {
+    return;
+  }
+}
+
+export JsValue cookieStore = object {
+  _is_supported: () => cookieIsSupported(),
+  _error: (JsValue msg) => cookieError(msg),
+  _get: getCookieValue,
+  _parse: (string name) => cookieParse(name),
+  _set: (string name, JsValue value, JsValue days, JsValue cross_subdomain, JsValue is_secure) => cookieSet(name, value, days, cross_subdomain, is_secure),
+  _remove: (string name, JsValue cross_subdomain) => cookieRemove(name, cross_subdomain)
+};
+
+// ---- localStorage store
+
+bool? localStorageSupported = null;
+export void resetLocalStorageSupported() {
+  localStorageSupported = null;
+}
+
+bool localIsSupported() {
+  bool? cached = localStorageSupported;
+  if (cached != null) {
+    return cached;
+  }
+  bool supported = true;
+  if (window !== undefined) {
+    try {
+      localSet("__mplssupport__", "xyz");
+      if (localGet("__mplssupport__") !== "\"xyz\"") {
+        supported = false;
+      }
+      localRemove("__mplssupport__");
+    } catch {
+      supported = false;
+    }
+  } else {
+    supported = false;
+  }
+  if (!supported) {
+    logger.error("localStorage unsupported; falling back to cookie store");
+  }
+  localStorageSupported = supported;
+  return supported;
+}
+
+void localError(JsValue msg) {
+  logger.error("localStorage error: " + msg);
+}
+
+export JsValue localGet(string name) {
+  try {
+    return if (window == null) { undefined } else { window.localStorage.getItem(name) };
+  } catch (JsValue err) {
+    localError(err);
+  }
+  return null;
+}
+
+export JsValue localParse(string name) {
+  try {
+    return JSON.parse(localGet(name)) || object {};
+  } catch {
+  }
+  return null;
+}
+
+export bool localSet(string name, JsValue value) {
+  try {
+    if (window != null) {
+      window.localStorage.setItem(name, JSON.stringify(value));
+    }
+    return true;
+  } catch (JsValue err) {
+    localError(err);
+  }
+  return false;
+}
+
+export void localRemove(string name) {
+  try {
+    if (window != null) {
+      window.localStorage.removeItem(name);
+    }
+  } catch (JsValue err) {
+    localError(err);
+  }
+}
+
+export JsValue localStore = object {
+  _is_supported: () => localIsSupported(),
+  _error: (JsValue msg) => localError(msg),
+  _get: (string name) => localGet(name),
+  _parse: (string name) => localParse(name),
+  _set: (string name, JsValue value) => localSet(name, value),
+  _remove: (string name) => localRemove(name)
+};
+
+// Use localstorage for most data but still use cookie for COOKIE_PERSISTED_PROPERTIES
+// This solves issues with cookies having too much data in them causing headers too large
+// Also makes sure we don't have to send a ton of data to the server
+export JsValue COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES = [
+  STORED_PERSON_PROPERTIES_KEY,
+  PERSISTENCE_ACTIVE_FEATURE_FLAGS,
+  ENABLED_FEATURE_FLAGS,
+  PERSISTENCE_FEATURE_FLAG_DETAILS,
+  PERSISTENCE_FEATURE_FLAG_PAYLOADS,
+  PERSISTENCE_FEATURE_FLAG_REQUEST_ID,
+  PERSISTENCE_FEATURE_FLAG_EVALUATED_AT,
+  PERSISTENCE_FEATURE_FLAG_ERRORS,
+  FLAG_CALL_REPORTED
+];
+
+export JsValue COOKIE_PERSISTED_PROPERTIES = [
+  DEVICE_ID,
+  DISTINCT_ID,
+  SESSION_ID,
+  SESSION_RECORDING_IS_SAMPLED,
+  ENABLE_PERSON_PROCESSING,
+  INITIAL_PERSON_INFO,
+  PERSISTENCE_FACEBOOK_CLICK_ID,
+  USER_STATE
+];
+
+// Snapshot metadata lives in a separate cookie so older SDKs cannot merge it into event-visible
+// persistence; it is tied to the exact main-cookie snapshot by a fingerprint.
+export string getCookiePersistedPropertiesMetadataName(string name) {
+  return name + "_cpm";
+}
+
+export JsValue getSafeCookieProperties(JsValue value) {
+  if (!isObject(value)) {
+    return object {};
+  }
+  JsValue safeProperties = object {};
+  Object.keys(value).forEach((string key) => {
+    if (key != "__proto__" && key != "constructor" && key != "prototype") {
+      safeProperties[key] = value[key];
+    }
+  });
+  return safeProperties;
+}
+
+void copyPersisted(JsValue value, JsValue keys, JsValue out) {
+  // indexed like upstream's spread: every index, holes included
+  for (int i = 0; i < keys.length; i++) {
+    JsValue key = keys[i];
+    JsValue persistedValue = value[key];
+    if (persistedValue !== undefined && persistedValue !== null && persistedValue !== "") {
+      out[key] = persistedValue;
+    }
+  }
+}
+
+export JsValue getCookiePersistedProperties(JsValue value, JsValue customCookieProperties = []) {
+  JsValue cookiePersistedProperties = object {};
+  JsValue builtIn = COOKIE_PERSISTED_PROPERTIES;
+  copyPersisted(value, builtIn, cookiePersistedProperties);
+  copyPersisted(value, customCookieProperties, cookiePersistedProperties);
+  return cookiePersistedProperties;
+}
+
+string getCookieSnapshotFingerprint(string cookieValue) {
+  // Two independent 32-bit hashes plus the length keep the sidecar compact even when the main
+  // cookie is close to its 4 KB limit. `second` starts at 2166136261 as an int32 bit pattern.
+  int first = 5381;
+  int second = -2128831035;
+  for (int i = 0; i < cookieValue.length; i++) {
+    int code = cookieValue.codeUnitAt(i);
+    first = (first * 33) ^ code;
+    second = Math.imul(second ^ code, 16777619);
+  }
+  return cookieValue.length.toString(36) + "." + first.toUnsignedString(36) + "." + second.toUnsignedString(36);
+}
+
+export JsValue getCookiePersistedPropertiesMetadata(JsValue cookieProperties, JsValue customCookieProperties) {
+  return object {
+    p: customCookieProperties,
+    f: getCookieSnapshotFingerprint(JSON.stringify(cookieProperties) as string)
+  };
+}
+
+export shape CookieMetadataState {
+  data JsValue properties;
+  data bool isValid;
+}
+
+export CookieMetadataState getCookiePersistedPropertiesMetadataState(string name, JsValue cookieValue) {
+  if (!cookieValue.truthy()) {
+    return CookieMetadataState{properties: [], isValid: false};
+  }
+  try {
+    JsValue metadata = cookieParse(name + "_cpm");
+    JsValue fingerprint = if (metadata == null) { undefined } else { metadata.f };
+    bool isValid = fingerprint === getCookieSnapshotFingerprint(cookieValue as string) && isArray(metadata.p);
+    return CookieMetadataState{properties: if (isValid) { metadata.p } else { [] }, isValid: isValid};
+  } catch {
+    return CookieMetadataState{properties: [], isValid: false};
+  }
+}
+
+export JsValue getCookiePersistedPropertiesFromMetadata(string name, JsValue cookieValue) {
+  return getCookiePersistedPropertiesMetadataState(name, cookieValue).properties;
+}
+
+export string getCookiePropertiesFingerprint(string name, string cookieValue) {
+  return cookieValue + "|" + (getCookieValue(name + "_cpm") || "");
+}
+
+// The localStorage+cookie store: localStorage holds everything, the cookie mirrors the
+// identity/session keys. With `preferCookieOnConflict` the cookie (a sibling subdomain's latest
+// snapshot) wins on merge; null/empty cookie values never override localStorage.
+JsValue localPlusCookieParse(string name, JsValue cookiePropertiesToPersist, JsValue preferCookieOnConflict, JsValue isReadOnly) {
+  try {
+    JsValue cookieValue = undefined;
+    JsValue cookieProperties = object {};
+    try {
+      // Read the main cookie once so values and metadata validation refer to the same snapshot.
+      cookieValue = getCookieValue(name) || undefined;
+      cookieProperties = if (cookieValue.truthy()) { getSafeCookieProperties(JSON.parse(cookieValue)) } else { object {} };
+    } catch {
+    }
+    JsValue localStorageData = JSON.parse(localGet(name) || "{}");
+    JsValue value = undefined;
+    if (preferCookieOnConflict.truthy()) {
+      // Built-in keys are authoritative for legacy cookies too; the metadata sidecar adds the
+      // custom keys understood by the writer.
+      CookieMetadataState metadataState = getCookiePersistedPropertiesMetadataState(name, cookieValue);
+      JsValue authoritativeCookieProperties = COOKIE_PERSISTED_PROPERTIES.concat(metadataState.properties);
+      JsValue safeCookieProperties = object {};
+      Object.keys(cookieProperties).forEach((string key) => {
+        JsValue v = cookieProperties[key];
+        if (v !== null && v !== "" && (key != USER_STATE || v === USER_STATE_ANONYMOUS || v === USER_STATE_IDENTIFIED)) {
+          safeCookieProperties[key] = v;
+        }
+      });
+      bool hasValidCookieIdentity = JS.in(DISTINCT_ID, safeCookieProperties) ||
+        safeCookieProperties[USER_STATE] === USER_STATE_ANONYMOUS ||
+        safeCookieProperties[USER_STATE] === USER_STATE_IDENTIFIED;
+      // A non-empty cookie is the complete shared snapshot for the keys its writer understood:
+      // remove omitted keys so a subdomain reopened after reset cannot resurrect old values.
+      if (Object.keys(safeCookieProperties).length > 0) {
+        JsValue previousDistinctId = localStorageData[DISTINCT_ID];
+        JsValue storedUserState = localStorageData[USER_STATE];
+        JsValue previousUserState = if (storedUserState == null) { USER_STATE_ANONYMOUS } else { storedUserState };
+        cookiePropertiesToPersist.forEach((JsValue key) => {
+          if (authoritativeCookieProperties.indexOf(key) !== -1 &&
+            !JS.in(key, cookieProperties) &&
+            (hasValidCookieIdentity || (key !== DISTINCT_ID && key !== USER_STATE))) {
+            JsValue localValue = localStorageData[key];
+            bool legacyFalsyBuiltIn = !metadataState.isValid &&
+              COOKIE_PERSISTED_PROPERTIES.indexOf(key) !== -1 &&
+              (localValue === false || localValue === 0);
+            if (!legacyFalsyBuiltIn) {
+              JS.delete(localStorageData, key);
+            }
+          }
+        });
+        if (hasValidCookieIdentity && !JS.in(USER_STATE, cookieProperties) && !JS.in(USER_STATE, localStorageData)) {
+          localStorageData[USER_STATE] = USER_STATE_ANONYMOUS;
+        }
+        JsValue nextDistinctId = if (JS.in(DISTINCT_ID, safeCookieProperties)) { safeCookieProperties[DISTINCT_ID] } else { localStorageData[DISTINCT_ID] };
+        JsValue nextUserState = if (JS.in(USER_STATE, safeCookieProperties)) { safeCookieProperties[USER_STATE] } else { localStorageData[USER_STATE] };
+        if (hasValidCookieIdentity && (nextDistinctId !== previousDistinctId || nextUserState !== previousUserState)) {
+          // Identity-bound local fields are not mirrored into the shared cookie: drop them when
+          // the authoritative cookie identity differs, as live reconciliation does.
+          COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES.forEach((JsValue key) => {
+            JS.delete(localStorageData, key);
+          });
+          if (safeCookieProperties[USER_STATE] === USER_STATE_IDENTIFIED && JS.in(DISTINCT_ID, safeCookieProperties)) {
+            localStorageData.$user_id = safeCookieProperties[DISTINCT_ID];
+          } else {
+            JS.delete(localStorageData, "$user_id");
+          }
+          if (safeCookieProperties[USER_STATE] !== USER_STATE_IDENTIFIED) {
+            JS.delete(localStorageData, GROUPS);
+            JS.delete(localStorageData, STORED_GROUP_PROPERTIES_KEY);
+          }
+          JS.delete(localStorageData, "__alias");
+        }
+      }
+      value = extend(localStorageData, safeCookieProperties);
+    } else {
+      value = extend(cookieProperties, localStorageData);
+    }
+    if (!isReadOnly().truthy()) {
+      localSet(name, value);
+    }
+    return value;
+  } catch {
+  }
+  return null;
+}
+
+bool localPlusCookieSet(string name, JsValue value, JsValue days, JsValue cross_subdomain, JsValue is_secure, JsValue customCookieProperties, JsValue preferCookieOnConflict) {
+  // The localStorage write is the durable one and reports its own success; the cookie mirror is
+  // best-effort and never flips it to `false`.
+  bool stored = localSet(name, value);
+  try {
+    JsValue cookiePersistedProperties = getCookiePersistedProperties(value, customCookieProperties);
+    if (Object.keys(cookiePersistedProperties).length > 0) {
+      if (preferCookieOnConflict.truthy()) {
+        string metadataName = name + "_cpm";
+        JsValue metadata = getCookiePersistedPropertiesMetadata(cookiePersistedProperties, customCookieProperties);
+        // Publish and verify metadata before the main snapshot; if the sidecar cannot land,
+        // publish only the built-in keys (omitted custom keys stay non-authoritative).
+        cookieSet(metadataName, metadata, days, cross_subdomain, is_secure);
+        if (getCookieValue(metadataName) !== JSON.stringify(metadata)) {
+          cookieRemove(metadataName, cross_subdomain);
+          JsValue builtInCookieProperties = getCookiePersistedProperties(value);
+          cookieSet(name, builtInCookieProperties, days, cross_subdomain, is_secure);
+          return stored;
+        }
+      }
+      cookieSet(name, cookiePersistedProperties, days, cross_subdomain, is_secure);
+    }
+  } catch (JsValue err) {
+    localError(err);
+  }
+  return stored;
+}
+
+void localPlusCookieRemove(string name, JsValue cross_subdomain) {
+  try {
+    if (window != null) {
+      window.localStorage.removeItem(name);
+    }
+    cookieRemove(name, cross_subdomain);
+    cookieRemove(name + "_cpm", cross_subdomain);
+  } catch (JsValue err) {
+    localError(err);
+  }
+}
+
+// Creates a localPlusCookieStore with custom cookie-persisted properties (see
+// `cookieWinsOnConflict` in the docs for `preferCookieOnConflict`).
+export JsValue createLocalPlusCookieStore(JsValue customCookieProperties = [], JsValue preferCookieOnConflict = false, JsValue isReadOnly = (() => false) as JsValue) {
+  // `[...COOKIE_PERSISTED_PROPERTIES, ...customCookieProperties]`: indexed, holes read as undefined
+  JsValue cookiePropertiesToPersist = [];
+  JsValue builtIn = COOKIE_PERSISTED_PROPERTIES;
+  for (int i = 0; i < builtIn.length; i++) {
+    cookiePropertiesToPersist.push(builtIn[i]);
+  }
+  for (int i = 0; i < customCookieProperties.length; i++) {
+    cookiePropertiesToPersist.push(customCookieProperties[i]);
+  }
+  return object {
+    _is_supported: localStore._is_supported,
+    _error: localStore._error,
+    _get: localStore._get,
+    _parse: (string name) => localPlusCookieParse(name, cookiePropertiesToPersist, preferCookieOnConflict, isReadOnly),
+    _set: (string name, JsValue value, JsValue days, JsValue cross_subdomain, JsValue is_secure, JsValue debug) =>
+      localPlusCookieSet(name, value, days, cross_subdomain, is_secure, customCookieProperties, preferCookieOnConflict),
+    _remove: (string name, JsValue cross_subdomain) => localPlusCookieRemove(name, cross_subdomain)
+  };
+}
+
+// ---- memory store: lasts the length of the pageview. Reads use `in` rather than `||` so a stored
+// falsy value survives (consent writes `0` to mean "opted out").
+
+JsValue memoryStorage = object {};
+
+export JsValue memoryGet(string name) {
+  if (JS.in(name, memoryStorage)) {
+    return memoryStorage[name];
+  }
+  return null;
+}
+
+export JsValue memoryStore = object {
+  _is_supported: () => true,
+  _error: (JsValue msg) => {
+    logger.error("memoryStorage error: " + msg);
+  },
+  _get: (string name) => memoryGet(name),
+  _parse: (string name) => memoryGet(name),
+  _set: (string name, JsValue value) => {
+    memoryStorage[name] = value;
+    return true;
+  },
+  _remove: (string name) => {
+    JS.delete(memoryStorage, name);
+  }
+};
+
+// ---- sessionStorage store: lasts the length of a tab/window and survives page refreshes
+
+bool? sessionStorageSupported = null;
+export void resetSessionStorageSupported() {
+  sessionStorageSupported = null;
+}
+
+export bool sessionIsSupported() {
+  bool? cached = sessionStorageSupported;
+  if (cached != null) {
+    return cached;
+  }
+  bool supported = true;
+  sessionStorageSupported = true;
+  if (window !== undefined) {
+    try {
+      sessionSet("__support__", "xyz");
+      if (sessionGet("__support__") !== "\"xyz\"") {
+        supported = false;
+        sessionStorageSupported = false;
+      }
+      sessionRemove("__support__");
+    } catch {
+      supported = false;
+      sessionStorageSupported = false;
+    }
+  } else {
+    supported = false;
+    sessionStorageSupported = false;
+  }
+  return supported;
+}
+
+void sessionError(JsValue msg) {
+  logger.error("sessionStorage error: ", msg);
+}
+
+export JsValue sessionGet(string name) {
+  try {
+    return if (window == null) { undefined } else { window.sessionStorage.getItem(name) };
+  } catch (JsValue err) {
+    sessionError(err);
+  }
+  return null;
+}
+
+export JsValue sessionParse(string name) {
+  try {
+    return JSON.parse(sessionGet(name)) || null;
+  } catch {
+  }
+  return null;
+}
+
+export bool sessionSet(string name, JsValue value) {
+  try {
+    if (window != null) {
+      window.sessionStorage.setItem(name, JSON.stringify(value));
+    }
+    return true;
+  } catch (JsValue err) {
+    sessionError(err);
+  }
+  return false;
+}
+
+export void sessionRemove(string name) {
+  try {
+    if (window != null) {
+      window.sessionStorage.removeItem(name);
+    }
+  } catch (JsValue err) {
+    sessionError(err);
+  }
+}
+
+export JsValue sessionStore = object {
+  _is_supported: () => sessionIsSupported(),
+  _error: (JsValue msg) => sessionError(msg),
+  _get: (string name) => sessionGet(name),
+  _parse: (string name) => sessionParse(name),
+  _set: (string name, JsValue value) => sessionSet(name, value),
+  _remove: (string name) => sessionRemove(name)
+};
