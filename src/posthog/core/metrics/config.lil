@@ -1,0 +1,21 @@
+// packages/core/src/metrics/config.ts — the config is page data (JsValue); the resolved config is a
+// plain object with upstream's keys and order.
+
+float DEFAULT_FLUSH_INTERVAL_MS = 10000.0;
+float DEFAULT_MAX_SERIES_PER_FLUSH = 1000.0;
+
+// Same precedence rule as logs: OTLP keys in `resourceAttributes` win over the named config fields.
+export JsValue resolveMetricsConfig(JsValue config) {
+  bool present = config != null;
+  JsValue resourceAttributes = if (present) { config.resourceAttributes } else { undefined };
+  bool hasAttributes = resourceAttributes != null;
+  return object {
+    serviceName: (if (hasAttributes) { resourceAttributes["service.name"] } else { undefined }) ?? (if (present) { config.serviceName } else { undefined }),
+    serviceVersion: (if (hasAttributes) { resourceAttributes["service.version"] } else { undefined }) ?? (if (present) { config.serviceVersion } else { undefined }),
+    environment: (if (hasAttributes) { resourceAttributes["deployment.environment"] } else { undefined }) ?? (if (present) { config.environment } else { undefined }),
+    resourceAttributes: resourceAttributes,
+    beforeSend: if (present) { config.beforeSend } else { undefined },
+    flushIntervalMs: (if (present) { config.flushIntervalMs } else { undefined }) ?? DEFAULT_FLUSH_INTERVAL_MS,
+    maxSeriesPerFlush: (if (present) { config.maxSeriesPerFlush } else { undefined }) ?? DEFAULT_MAX_SERIES_PER_FLUSH
+  };
+}

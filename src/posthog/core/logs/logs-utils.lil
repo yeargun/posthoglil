@@ -1,0 +1,133 @@
+// packages/core/src/logs/logs-utils.ts — OTLP log records and envelopes. Options, context and
+// attributes are caller data (JsValue); the severity table is private and typed.
+import { isNullish, isNumber, isUndefined } from "../utils/type-utils.lil";
+import { assignUserAttributes, sanitizeString, UNSERIALIZABLE_VALUE } from "../utils/json-utils.lil";
+import { toOtlpKeyValueList } from "../utils/otlp-any-value.lil";
+import { buildOtlpResourceAttributes, toOtlpResourceKeyValueList } from "../utils/otlp-resource.lil";
+extern JsValue Date;
+extern JsValue String;
+
+shape OtlpSeverityEntry {
+  data string text;
+  data float number;
+}
+
+OtlpSeverityEntry DEFAULT_OTLP_SEVERITY = OtlpSeverityEntry{text: "INFO", number: 9.0};
+
+Record<OtlpSeverityEntry> OTLP_SEVERITY_MAP = record {
+  trace: OtlpSeverityEntry{text: "TRACE", number: 1.0},
+  debug: OtlpSeverityEntry{text: "DEBUG", number: 5.0},
+  info: DEFAULT_OTLP_SEVERITY,
+  warn: OtlpSeverityEntry{text: "WARN", number: 13.0},
+  error: OtlpSeverityEntry{text: "ERROR", number: 17.0},
+  fatal: OtlpSeverityEntry{text: "FATAL", number: 21.0}
+};
+
+OtlpSeverityEntry severityFor(JsValue level) {
+  OtlpSeverityEntry? entry = OTLP_SEVERITY_MAP[level as string];
+  return if (entry == null) { DEFAULT_OTLP_SEVERITY } else { entry };
+}
+
+export string getOtlpSeverityText(JsValue level) {
+  return severityFor(level).text;
+}
+
+export float getOtlpSeverityNumber(JsValue level) {
+  return severityFor(level).number;
+}
+
+// `timestampMs` (default: now) as a unix-nanos string, concatenated (uint64 doesn't fit a Number).
+string timestampToUnixNano(JsValue timestampMs) {
+  return (String(if (timestampMs === undefined) { Date.now() } else { timestampMs }) as string) + "000000";
+}
+
+// `body` is typed as a string, but an untyped caller or a `beforeSend` can pass anything, and
+// `String()` throws on a value whose `toString` does, or on a null-prototype object.
+string encodeBody(JsValue body) {
+  try {
+    return sanitizeString(String(body) as string);
+  } catch (JsValue error) {
+    return UNSERIALIZABLE_VALUE;
+  }
+}
+
+// One OTLP log record. Any field present on `sdkContext` becomes the matching attribute; user
+// `options.attributes` win on conflicts (copied key by key). `occurredAtMs` stamps both timestamps.
+export JsValue buildOtlpLogRecord(JsValue options, JsValue sdkContext, JsValue logger, JsValue occurredAtMs) {
+  JsValue level = options.level || "info";
+  OtlpSeverityEntry severity = severityFor(level);
+  string eventTimeNano = timestampToUnixNano(if (isNumber(occurredAtMs)) { occurredAtMs } else { undefined });
+
+  JsValue autoAttributes = object {};
+  if (sdkContext.distinctId.truthy()) {
+    autoAttributes.posthogDistinctId = sdkContext.distinctId;
+  }
+  if (sdkContext.sessionId.truthy()) {
+    autoAttributes.sessionId = sdkContext.sessionId;
+  }
+  if (sdkContext.windowId.truthy()) {
+    autoAttributes["window.id"] = sdkContext.windowId;
+  }
+  if (!isNullish(sdkContext.sessionStartTimestamp)) {
+    autoAttributes.sessionStartTimestamp = String(sdkContext.sessionStartTimestamp);
+  }
+  if (!isNullish(sdkContext.lastActivityTimestamp)) {
+    autoAttributes.lastActivityTimestamp = String(sdkContext.lastActivityTimestamp);
+  }
+  if (sdkContext.currentUrl.truthy()) {
+    autoAttributes["url.full"] = sdkContext.currentUrl;
+  }
+  if (sdkContext.screenName.truthy()) {
+    autoAttributes["screen.name"] = sdkContext.screenName;
+  }
+  if (sdkContext.appState.truthy()) {
+    autoAttributes["app.state"] = sdkContext.appState;
+  }
+  if (sdkContext.activeFeatureFlags.truthy() && sdkContext.activeFeatureFlags["length"] > 0) {
+    autoAttributes.feature_flags = sdkContext.activeFeatureFlags;
+  }
+
+  // `{...autoAttributes}` then the user's keys, read key by key (a throwing getter costs its key).
+  JsValue mergedAttributes = assignUserAttributes(autoAttributes, options.attributes);
+
+  JsValue logRecord = object {
+    timeUnixNano: eventTimeNano,
+    observedTimeUnixNano: eventTimeNano,
+    severityNumber: severity.number,
+    severityText: severity.text,
+    body: object { stringValue: encodeBody(options.body) },
+    attributes: toOtlpKeyValueList(mergedAttributes, logger)
+  };
+  if (options.trace_id.truthy()) {
+    logRecord.traceId = options.trace_id;
+  }
+  if (options.span_id.truthy()) {
+    logRecord.spanId = options.span_id;
+  }
+  if (!isUndefined(options.trace_flags)) {
+    logRecord.flags = options.trace_flags;
+  }
+  return logRecord;
+}
+
+// OTLP resource attributes for every batch: user `resourceAttributes` first, then SDK-controlled keys.
+export JsValue buildResourceAttributes(JsValue config, string sdkName, string sdkVersion) {
+  return buildOtlpResourceAttributes(config, sdkName, sdkVersion);
+}
+
+// Wraps records in the OTLP `resourceLogs` envelope.
+export JsValue buildOtlpLogsPayload(JsValue logRecords, JsValue resourceAttributes, JsValue scopeName, JsValue scopeVersion) {
+  return object {
+    resourceLogs: [
+      object {
+        resource: object { attributes: toOtlpResourceKeyValueList(resourceAttributes, undefined) },
+        scopeLogs: [
+          object {
+            scope: object { name: scopeName, version: scopeVersion },
+            logRecords: logRecords
+          }
+        ]
+      }
+    ]
+  };
+}

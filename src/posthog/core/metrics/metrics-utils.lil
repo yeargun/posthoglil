@@ -1,0 +1,56 @@
+// packages/core/src/metrics/metrics-utils.ts
+import { buildOtlpResourceAttributes, toOtlpResourceKeyValueList } from "../utils/otlp-resource.lil";
+extern JsValue Object;
+extern JsValue JSON;
+extern JsValue String;
+
+// Default histogram bucket boundaries — the OpenTelemetry SDK defaults.
+export float[] DEFAULT_HISTOGRAM_BOUNDS = [0.0, 5.0, 10.0, 25.0, 50.0, 75.0, 100.0, 250.0, 500.0, 750.0, 1000.0, 2500.0, 5000.0, 7500.0, 10000.0];
+
+// Epoch millis as the unix-nanos string OTLP requires (concatenated: uint64 doesn't fit a Number).
+export string msToUnixNano(JsValue ms) {
+  return (String(ms) as string) + "000000";
+}
+
+// Canonical identity of a series within the aggregation window: type, name, unit and the attribute
+// set with sorted keys. NUL separators can't appear in metric names or JSON output.
+export string seriesKey(JsValue type, JsValue name, JsValue unit, JsValue attributes) {
+  string attrsKey = "";
+  if (attributes.truthy()) {
+    JsValue keys = Object.keys(attributes).sort();
+    attrsKey = keys.map((JsValue k) => `${JSON.stringify(k)}:${JSON.stringify(attributes[k])}`).join(",") as string;
+  }
+  return `${type}\u0000${name}\u0000${unit ?? ""}\u0000${attrsKey}`;
+}
+
+// The first boundary the value is `<=`, or the overflow bucket (`bounds.length`) past the last.
+export float bucketIndexFor(float value, float[] bounds) {
+  for (int i = 0; i < bounds.length; i += 1) {
+    if (value <= bounds[i]) {
+      return i;
+    }
+  }
+  return bounds.length;
+}
+
+// User `resourceAttributes` first, SDK-controlled keys layered on top.
+export JsValue buildMetricsResourceAttributes(JsValue config, string scopeName, string scopeVersion) {
+  return buildOtlpResourceAttributes(config, scopeName, scopeVersion);
+}
+
+// The OTLP `resourceMetrics` envelope (`ExportMetricsServiceRequest`, JSON encoding).
+export JsValue buildOtlpMetricsPayload(JsValue metrics, JsValue resourceAttributes, JsValue scopeName, JsValue scopeVersion) {
+  return object {
+    resourceMetrics: [
+      object {
+        resource: object { attributes: toOtlpResourceKeyValueList(resourceAttributes, undefined) },
+        scopeMetrics: [
+          object {
+            scope: object { name: scopeName, version: scopeVersion },
+            metrics: metrics
+          }
+        ]
+      }
+    ]
+  };
+}
