@@ -1,0 +1,206 @@
+// packages/browser-common/src/utils/general-utils.ts — helpers over page-supplied values (properties,
+// configs, errors, DOM targets), so most values stay dynamic. `deepCircularCopy` is private and has one
+// customizer (string truncation), so the copy applies it directly.
+import { hasOwnProperty, isArray, isError, isFormData, isNullish, isNumber, isString } from "../../core/utils/type-utils.lil";
+import { logger } from "./logger.lil";
+import extern { trySafe } from "@upstream/core/utils/index";
+extern JsValue trySafe;
+extern JsValue Object;
+extern JsValue Array;
+
+export { trySafe };
+
+export JsValue find(JsValue value, JsValue predicate) {
+  for (int i = 0; i < value.length; i++) {
+    if (predicate(value[i]).truthy()) {
+      return value[i];
+    }
+  }
+  return undefined;
+}
+
+export void eachArray(JsValue obj, JsValue iterator) {
+  if (isArray(obj)) {
+    obj.forEach(iterator);
+  }
+}
+
+export void each(JsValue obj, JsValue iterator) {
+  if (isNullish(obj)) {
+    return;
+  }
+  if (isArray(obj)) {
+    obj.forEach(iterator);
+    return;
+  }
+  if (isFormData(obj)) {
+    obj.forEach((JsValue val, JsValue key) => iterator(val, key));
+    return;
+  }
+  for (string key in obj) {
+    if (hasOwnProperty.call(obj, key).truthy()) {
+      iterator(obj[key], key);
+    }
+  }
+}
+
+export JsValue extend(JsValue obj, JsValue... args) {
+  for (JsValue source of args) {
+    for (string prop in source) {
+      if (source[prop] !== undefined) {
+        obj[prop] = source[prop];
+      }
+    }
+  }
+  return obj;
+}
+
+// Object.entries() polyfill: keys in order, values read from the last key to the first.
+export JsValue entries(JsValue obj) {
+  string[] ownProps = Object.keys(obj) as string[];
+  int i = ownProps.length;
+  // preallocate the Array
+  JsValue resArray = new Array(i);
+  while (i > 0) {
+    i--;
+    resArray[i] = [ownProps[i] as JsValue, obj[ownProps[i]]];
+  }
+  return resArray;
+}
+
+export JsValue safewrap(JsValue f) {
+  return (this JsValue receiver, JsValue... args) => {
+    try {
+      return f.apply(receiver, args);
+    } catch (JsValue e) {
+      logger.critical("Implementation error. Please turn on debug mode and open a ticket on https://app.posthog.com/home#panel=support%3Asupport%3A.");
+      logger.critical(e);
+      return undefined;
+    }
+  };
+}
+
+export void safewrapClass(JsValue klass, JsValue functions) {
+  for (int i = 0; i < functions.length; i++) {
+    klass.prototype[functions[i]] = safewrap(klass.prototype[functions[i]]);
+  }
+}
+
+export JsValue stripEmptyProperties(JsValue p) {
+  JsValue ret = object {};
+  each(p, (JsValue v, JsValue k) => {
+    if ((isString(v) && v.length > 0.0) || isNumber(v)) {
+      ret[k] = v;
+    }
+  });
+  return ret;
+}
+
+string[] ERROR_DETAILS = ["name", "message", "stack", "cause", "errors"];
+
+export JsValue errorToProperties(JsValue error) {
+  // `{ ...error }`: own enumerable properties.
+  JsValue copy = Object.assign(object {}, error);
+  for (string detail of ERROR_DETAILS) {
+    try {
+      if (detail in error) {
+        copy[detail] = error[detail];
+      }
+    } catch {
+      // An unreadable non-enumerable Error detail must not discard the rest of the event.
+    }
+  }
+  return copy;
+}
+
+// deepCircularCopy with the truncating customizer: cycles become undefined, strings are cut.
+JsValue copyTruncating(Set<JsValue> inProgress, JsValue value, JsValue maxStringLength) {
+  if (value !== Object(value)) {
+    // primitive value
+    return if (isString(value)) { value.slice(0, maxStringLength) } else { value };
+  }
+  if (inProgress.has(value)) {
+    return undefined;
+  }
+  inProgress.add(value);
+  if (isArray(value)) {
+    JsValue result = [];
+    eachArray(value, (JsValue it) => {
+      result.push(copyTruncating(inProgress, it, maxStringLength));
+    });
+    return result;
+  }
+  JsValue copy = object {};
+  each(if (isError(value)) { errorToProperties(value) } else { value }, (JsValue val, JsValue key) => {
+    if (!inProgress.has(val)) {
+      copy[key] = copyTruncating(inProgress, val, maxStringLength);
+    }
+  });
+  return copy;
+}
+
+export JsValue _copyAndTruncateStrings(JsValue obj, JsValue maxStringLength) {
+  return copyTruncating(new Set<JsValue>(), obj, maxStringLength);
+}
+
+// NOTE: Update PostHogConfig docs if you change this list
+// We will not try to catch all bullets here, but we should make an effort to catch the most common ones
+// You should be highly against adding more to this list, because ultimately customers can configure
+// their `cross_subdomain_cookie` setting to anything they want.
+string[] EXCLUDED_FROM_CROSS_SUBDOMAIN_COOKIE = ["herokuapp.com", "vercel.app", "netlify.app"];
+
+export bool isCrossDomainCookie(JsValue documentLocation) {
+  JsValue hostname = if (documentLocation == null) { undefined } else { documentLocation.hostname };
+  if (!isString(hostname)) {
+    return false;
+  }
+  // split and slice isn't a great way to match arbitrary domains,
+  // but it's good enough for ensuring we only match herokuapp.com when it is the TLD
+  // for the hostname
+  string lastTwoParts = (hostname.split(".") as string[]).slice(-2).join(".");
+  for (string excluded of EXCLUDED_FROM_CROSS_SUBDOMAIN_COOKIE) {
+    if (lastTwoParts == excluded) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Use this instead of element.addEventListener to avoid lint errors
+// this properly implements the default options for passive event listeners
+export void addEventListener(JsValue element, JsValue event, JsValue callback, JsValue options) {
+  // `const { capture = false, passive = true } = options ?? {}`: defaults apply to undefined only.
+  JsValue resolved = options ?? object {};
+  JsValue capture = resolved.capture;
+  if (capture === undefined) {
+    capture = false;
+  }
+  JsValue passive = resolved.passive;
+  if (passive === undefined) {
+    passive = true;
+  }
+  if (element != null) {
+    element.addEventListener(event, callback, object { capture: capture, passive: passive });
+  }
+}
+
+export JsValue migrateConfigField(JsValue config, string newField, string oldField, JsValue defaultValue, JsValue loggerInstance) {
+  bool hasNewField = newField in config && !isNullish(config[newField]);
+  bool hasOldField = oldField in config && !isNullish(config[oldField]);
+  if (hasNewField) {
+    return config[newField];
+  }
+  if (hasOldField) {
+    if (loggerInstance.truthy()) {
+      loggerInstance.warn(`Config field '${oldField}' is deprecated. Please use '${newField}' instead. The old field will be removed in a future major version.`);
+    }
+    return config[oldField];
+  }
+  return defaultValue;
+}
+
+string TOOLBAR_INTERNAL_INSTANCE_NAME = "ph_toolbar_internal";
+
+export bool isToolbarInstance(JsValue config) {
+  return config.name === TOOLBAR_INTERNAL_INSTANCE_NAME;
+}

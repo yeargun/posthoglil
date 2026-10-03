@@ -1,0 +1,368 @@
+// packages/browser-common/src/utils/event-utils.ts — event and person properties from the page. Host
+// values (document, location, the global navigator, persisted person info, config flags) stay dynamic;
+// the parameter lists are typed. Like upstream, `navigator` here is the global, not globals' binding.
+import { convertToURL, getQueryParam, maskQueryParams } from "./request-utils.lil";
+import { isNull, isUndefined } from "../../core/utils/type-utils.lil";
+import { stripLeadingDollar } from "../../core/utils/string-utils.lil";
+import { default as Config } from "../config.lil";
+import { SDK_DIST_CHANNEL } from "../constants.lil";
+import { each, extend, stripEmptyProperties } from "./general-utils.lil";
+import { document, location, userAgent, window } from "./globals.lil";
+import { getCookieValue } from "./cookie-utils.lil";
+import extern { stripUrlHash } from "@upstream/core/utils/index";
+import extern { detectBrowser, detectBrowserVersion, detectDevice, detectDeviceType, detectOS } from "@upstream/core/utils/user-agent-utils";
+import extern { detectWebviewApp } from "@upstream/core/utils/webview-app-utils";
+extern JsValue stripUrlHash;
+extern JsValue detectBrowser;
+extern JsValue detectBrowserVersion;
+extern JsValue detectDevice;
+extern JsValue detectDeviceType;
+extern JsValue detectOS;
+extern JsValue detectWebviewApp;
+extern JsValue navigator;
+extern JsValue Intl;
+extern JsValue Date;
+extern JsValue Math;
+
+string URL_REGEX_PREFIX = "https?://(.*)";
+
+// CAMPAIGN_PARAMS and EVENT_TO_PERSON_PROPERTIES should be kept in sync with
+// https://github.com/PostHog/posthog/blob/master/plugin-server/src/utils/db/utils.ts#L60
+
+// The list of campaign parameters that could be considered personal data under e.g. GDPR.
+// These can be masked in URLs and properties before being sent to posthog.
+export string[] PERSONAL_DATA_CAMPAIGN_PARAMS = [
+  "gclid", // google ads
+  "gclsrc", // google ads 360
+  "dclid", // google display ads
+  "gbraid", // google ads, web to app
+  "wbraid", // google ads, app to web
+  "fbclid", // facebook
+  "msclkid", // microsoft
+  "twclid", // twitter
+  "li_fat_id", // linkedin
+  "igshid", // instagram
+  "ttclid", // tiktok
+  "rdt_cid", // reddit
+  "epik", // pinterest
+  "qclid", // quora
+  "sccid", // snapchat
+  "oppref", // openai ads
+  "irclid", // impact
+  "_kx" // klaviyo
+];
+
+export string[] CAMPAIGN_PARAMS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "gad_source", // google ads source
+  "mc_cid", // mailchimp campaign id
+  ...PERSONAL_DATA_CAMPAIGN_PARAMS
+];
+
+export string[] EVENT_TO_PERSON_PROPERTIES = [
+  // mobile params
+  "$app_build",
+  "$app_name",
+  "$app_namespace",
+  "$app_version",
+  // web params
+  "$browser",
+  "$browser_version",
+  "$device_type",
+  "$current_url",
+  "$pathname",
+  "$os",
+  "$os_name", // $os_name is a special case, it's treated as an alias of $os!
+  "$os_version",
+  "$referring_domain",
+  "$referrer",
+  "$screen_height",
+  "$screen_width",
+  "$viewport_height",
+  "$viewport_width",
+  "$raw_user_agent"
+];
+
+export string MASKED = "<masked>";
+
+// Campaign params that can be read from the cookie store
+export string[] COOKIE_CAMPAIGN_PARAMS = [
+  "li_fat_id" // linkedin
+];
+
+// `maskPersonalDataProperties ? [...PERSONAL_DATA_CAMPAIGN_PARAMS, ...(custom || [])] : []`
+string[] paramsToMaskFor(JsValue maskPersonalDataProperties, JsValue customPersonalDataProperties) {
+  return if (maskPersonalDataProperties.truthy()) {
+    [...PERSONAL_DATA_CAMPAIGN_PARAMS, ...((customPersonalDataProperties || []) as string[])]
+  } else {
+    []
+  };
+}
+
+export JsValue getCampaignParams(JsValue customTrackedParams, JsValue maskPersonalDataProperties, JsValue customPersonalDataProperties) {
+  if (!document.truthy()) {
+    return object {};
+  }
+  string[] paramsToMask = paramsToMaskFor(maskPersonalDataProperties, customPersonalDataProperties);
+  // Initially get campaign params from the URL
+  JsValue urlCampaignParams = getCampaignParamsFromUrl(maskQueryParams(document.URL, paramsToMask, MASKED), customTrackedParams);
+  // But we can also get some of them from the cookie store
+  // For example: https://learn.microsoft.com/en-us/linkedin/marketing/conversions/enabling-first-party-cookies?view=li-lms-2025-05#reading-li_fat_id-from-cookies
+  JsValue cookieCampaignParams = getCampaignParamsFromCookie();
+  // Prefer the values found in the urlCampaignParams if possible
+  // `extend` will override the values if found in the second argument
+  return extend(cookieCampaignParams, urlCampaignParams);
+}
+
+JsValue getCampaignParamsFromUrl(JsValue url, JsValue customParams) {
+  JsValue campaign_keywords = (CAMPAIGN_PARAMS as JsValue).concat(customParams || []);
+  JsValue params = object {};
+  each(campaign_keywords, (JsValue kwkey) => {
+    string kw = getQueryParam(url as string, kwkey as string);
+    params[kwkey] = if (kw.length > 0) { kw as JsValue } else { null };
+  });
+  return params;
+}
+
+JsValue getCampaignParamsFromCookie() {
+  JsValue params = object {};
+  each(COOKIE_CAMPAIGN_PARAMS, (JsValue kwkey) => {
+    JsValue kw = getCookieValue(kwkey as string);
+    params[kwkey] = if (kw.truthy()) { kw } else { null };
+  });
+  return params;
+}
+
+JsValue getSearchEngine(JsValue referrer) {
+  if (!referrer.truthy()) {
+    return null;
+  }
+  if (referrer.search(URL_REGEX_PREFIX + "google.([^/?]*)") === 0) {
+    return "google";
+  } else if (referrer.search(URL_REGEX_PREFIX + "bing.com") === 0) {
+    return "bing";
+  } else if (referrer.search(URL_REGEX_PREFIX + "yahoo.com") === 0) {
+    return "yahoo";
+  } else if (referrer.search(URL_REGEX_PREFIX + "duckduckgo.com") === 0) {
+    return "duckduckgo";
+  }
+  return null;
+}
+
+JsValue getSearchInfoFromReferrer(JsValue referrer) {
+  JsValue search = getSearchEngine(referrer);
+  string param = if (search != "yahoo") { "q" } else { "p" };
+  JsValue ret = object {};
+  if (!isNull(search)) {
+    ret["$search_engine"] = search;
+    string keyword = if (document.truthy()) { getQueryParam(document.referrer as string, param) } else { "" };
+    if (keyword.length > 0) {
+      ret["ph_keyword"] = keyword;
+    }
+  }
+  return ret;
+}
+
+export JsValue getSearchInfo() {
+  JsValue referrer = if (document == null) { undefined } else { document.referrer };
+  if (!referrer.truthy()) {
+    return object {};
+  }
+  return getSearchInfoFromReferrer(referrer);
+}
+
+export JsValue getBrowserLanguage() {
+  return navigator.language || navigator.userLanguage;
+}
+
+export JsValue getBrowserLanguagePrefix() {
+  JsValue lang = getBrowserLanguage();
+  return if (JS.typeOf(lang) == "string") { lang.split("-")[0] } else { undefined };
+}
+
+string DIRECT = "$direct";
+
+export JsValue getReferrer() {
+  return (if (document == null) { undefined } else { document.referrer }) || DIRECT;
+}
+
+export JsValue getReferringDomain() {
+  if (document == null || !document.referrer.truthy()) {
+    return DIRECT;
+  }
+  JsValue url = convertToURL(document.referrer as string);
+  return (if (url == null) { undefined } else { url.host }) || DIRECT;
+}
+
+export JsValue getReferrerInfo() {
+  return object {
+    $referrer: getReferrer(),
+    $referring_domain: getReferringDomain()
+  };
+}
+
+export JsValue getPersonInfo(JsValue maskPersonalDataProperties, JsValue customPersonalDataProperties, JsValue disableCaptureUrlHashes = false) {
+  string[] paramsToMask = paramsToMaskFor(maskPersonalDataProperties, customPersonalDataProperties);
+  JsValue currentHref = if (location == null) { undefined } else { location.href };
+  JsValue href = if (disableCaptureUrlHashes.truthy()) { stripUrlHash(currentHref) } else { currentHref };
+  JsValue url = if (href == null) { undefined } else { href.substring(0, 1000) };
+  // we're being a bit more economical with bytes here because this is stored in the cookie
+  return object {
+    r: getReferrer().substring(0, 1000),
+    u: if (url.truthy()) { maskQueryParams(url, paramsToMask, MASKED) } else { undefined }
+  };
+}
+
+export JsValue getPersonPropsFromInfo(JsValue info, JsValue disableCaptureUrlHashes = false) {
+  JsValue referrer = info.r;
+  JsValue u = info.u;
+  JsValue url = if (disableCaptureUrlHashes.truthy()) { stripUrlHash(u) } else { u };
+  JsValue referring_domain = undefined;
+  if (referrer != null) {
+    if (referrer == DIRECT) {
+      referring_domain = DIRECT;
+    } else {
+      JsValue referrerUrl = convertToURL(referrer as string);
+      referring_domain = if (referrerUrl == null) { undefined } else { referrerUrl.host };
+    }
+  }
+  JsValue props = object {
+    $referrer: referrer,
+    $referring_domain: referring_domain
+  };
+  if (url.truthy()) {
+    props["$current_url"] = url;
+    JsValue parsed = convertToURL(url as string);
+    props["$host"] = if (parsed == null) { undefined } else { parsed.host };
+    props["$pathname"] = if (parsed == null) { undefined } else { parsed.pathname };
+    JsValue campaignParams = getCampaignParamsFromUrl(url, undefined);
+    extend(props, campaignParams);
+  }
+  if (referrer.truthy()) {
+    JsValue searchInfo = getSearchInfoFromReferrer(referrer);
+    extend(props, searchInfo);
+  }
+  return props;
+}
+
+export JsValue getInitialPersonPropsFromInfo(JsValue info, JsValue disableCaptureUrlHashes = false) {
+  JsValue personProps = getPersonPropsFromInfo(info, disableCaptureUrlHashes);
+  JsValue props = object {};
+  each(personProps, (JsValue val, JsValue key) => {
+    props[`$initial_${stripLeadingDollar(key as string)}`] = val;
+  });
+  return props;
+}
+
+export JsValue getTimezone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
+}
+
+export JsValue getTimezoneOffset() {
+  try {
+    return new Date().getTimezoneOffset();
+  } catch {
+    return undefined;
+  }
+}
+
+// Gathers signals that aren't in the UA string. Desktop / Android Brave is
+// Chromium-based and exposes `navigator.brave` rather than a UA marker. (Brave
+// on iOS is picked up via the `Brave/` UA marker by `detectBrowser` itself, so
+// no hint is needed there.)
+export JsValue getBrowserDetectionHints() {
+  JsValue nav = if (JS.typeOf(navigator) != "undefined") { navigator } else { undefined };
+  return if (nav != null && nav.brave.truthy()) { object { brave: true } } else { object {} };
+}
+
+export JsValue getEventProperties(JsValue maskPersonalDataProperties, JsValue customPersonalDataProperties, JsValue detectGoogleSearchApp, JsValue disableCaptureUrlHashes = false) {
+  if (!userAgent.truthy()) {
+    return object {};
+  }
+  string[] paramsToMask = paramsToMaskFor(maskPersonalDataProperties, customPersonalDataProperties);
+  JsValue os = detectOS(userAgent);
+  JsValue os_name = os[0];
+  JsValue os_version = os[1];
+  JsValue webview = detectWebviewApp(userAgent);
+  JsValue webviewApp = webview[0];
+  JsValue webviewAppVersion = webview[1];
+  JsValue browserHints = getBrowserDetectionHints();
+  JsValue browserOptions = object {};
+  if (!isUndefined(detectGoogleSearchApp)) {
+    browserOptions.detectGoogleSearchApp = detectGoogleSearchApp;
+  }
+
+  JsValue deviceOptions = object {};
+  JsValue userAgentData = if (navigator == null) { undefined } else { navigator.userAgentData };
+  JsValue userAgentDataPlatform = if (userAgentData == null) { undefined } else { userAgentData.platform };
+  JsValue maxTouchPoints = if (navigator == null) { undefined } else { navigator.maxTouchPoints };
+  JsValue screen = if (window == null) { undefined } else { window.screen };
+  JsValue screenWidth = if (screen == null) { undefined } else { screen.width };
+  JsValue screenAgain = if (window == null) { undefined } else { window.screen };
+  JsValue screenHeight = if (screenAgain == null) { undefined } else { screenAgain.height };
+  JsValue devicePixelRatio = if (window == null) { undefined } else { window.devicePixelRatio };
+  if (!isUndefined(userAgentDataPlatform)) {
+    deviceOptions.userAgentDataPlatform = userAgentDataPlatform;
+  }
+  if (!isUndefined(maxTouchPoints)) {
+    deviceOptions.maxTouchPoints = maxTouchPoints;
+  }
+  if (!isUndefined(screenWidth)) {
+    deviceOptions.screenWidth = screenWidth;
+  }
+  if (!isUndefined(screenHeight)) {
+    deviceOptions.screenHeight = screenHeight;
+  }
+  if (!isUndefined(devicePixelRatio)) {
+    deviceOptions.devicePixelRatio = devicePixelRatio;
+  }
+
+  JsValue properties = extend(
+    stripEmptyProperties(object {
+      $os: os_name,
+      $os_version: os_version,
+      $browser: detectBrowser(userAgent, navigator.vendor, browserHints, browserOptions),
+      $webview_app: webviewApp,
+      $webview_app_version: webviewAppVersion,
+      $device: detectDevice(userAgent),
+      $device_type: detectDeviceType(userAgent, deviceOptions),
+      $timezone: getTimezone(),
+      $timezone_offset: getTimezoneOffset()
+    }),
+    object {
+      $current_url: maskQueryParams(
+        if (disableCaptureUrlHashes.truthy()) { stripUrlHash(if (location == null) { undefined } else { location.href }) } else { if (location == null) { undefined } else { location.href } },
+        paramsToMask,
+        MASKED
+      ),
+      $host: if (location == null) { undefined } else { location.host },
+      $pathname: if (location == null) { undefined } else { location.pathname },
+      $raw_user_agent: if (userAgent.length > 1000.0) { userAgent.substring(0, 997) + "..." } else { userAgent },
+      $browser_version: detectBrowserVersion(userAgent, navigator.vendor, browserHints, browserOptions),
+      $browser_language: getBrowserLanguage(),
+      $browser_language_prefix: getBrowserLanguagePrefix(),
+      $screen_height: if (window == null) { undefined } else { window.screen.height },
+      $screen_width: if (window == null) { undefined } else { window.screen.width },
+      $viewport_height: if (window == null) { undefined } else { window.innerHeight },
+      $viewport_width: if (window == null) { undefined } else { window.innerWidth },
+      $lib: Config.LIB_NAME,
+      $lib_version: Config.LIB_VERSION,
+      $insert_id: Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10),
+      // epoch time in seconds
+      $time: Date.now() / 1000
+    }
+  );
+
+  if (Config.SDK_DIST_CHANNEL.truthy()) {
+    properties[SDK_DIST_CHANNEL] = Config.SDK_DIST_CHANNEL;
+  }
+  return properties;
+}
