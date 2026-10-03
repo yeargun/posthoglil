@@ -1,0 +1,8 @@
+// packages/browser-common/src/utils/promise-utils.ts — `result` is a value or a thenable, so it stays
+// dynamic; `then` is read twice, as upstream reads it.
+export JsValue continueWith(JsValue result, JsValue callback) {
+  if (result != null && result.then.truthy()) {
+    return result.then(callback);
+  }
+  return callback(result);
+}

@@ -1,0 +1,240 @@
+// packages/browser-common/src/utils/uuidv7.ts (from LiosK/uuidv7, Apache-2.0).
+// The exported UUID class keeps its constructor, methods and the `fromFieldsV7` static. The private
+// generator (V7Generator with its DefaultRandom) is unreachable from outside, so its state is module
+// state, and `uuidv7()` formats the 16 bytes without allocating a UUID object.
+import { window } from "./globals.lil";
+import { isNumber, isUndefined } from "../../core/utils/type-utils.lil";
+extern JsValue Math;
+extern JsValue Number;
+extern JsValue Date;
+extern JsValue Object;
+extern JsValue crypto;
+extern JsValue isFinite;
+extern JsValue Error;
+extern JsValue TypeError;
+extern JsValue RangeError;
+extern JsValue UUIDV7_DENY_WEAK_RNG;
+extern JsValue parseInt;
+
+// polyfill for IE11
+if (!Math.trunc.truthy()) {
+  Math.trunc = (JsValue v) => if (v < 0) { Math.ceil(v) } else { Math.floor(v) };
+}
+
+// polyfill for IE11
+if (!Number.isInteger.truthy()) {
+  Number.isInteger = (JsValue value) => isNumber(value) && isFinite(value).truthy() && Math.floor(value) === value;
+}
+
+// UUID.fromFieldsV7's validation and byte layout. Byte stores go through a dynamic view: a typed
+// array store converts each number exactly as upstream's `bytes[i] = x` does.
+Uint8Array fieldsV7(float unixTsMs, float randA, float randBHi, float randBLo) {
+  if (
+    !Number.isInteger(unixTsMs).truthy() ||
+    !Number.isInteger(randA).truthy() ||
+    !Number.isInteger(randBHi).truthy() ||
+    !Number.isInteger(randBLo).truthy() ||
+    unixTsMs < 0.0 ||
+    randA < 0.0 ||
+    randBHi < 0.0 ||
+    randBLo < 0.0 ||
+    unixTsMs > 281474976710655.0 ||
+    randA > 4095.0 ||
+    randBHi > 1073741823.0 ||
+    randBLo > 4294967295.0
+  ) {
+    throw new RangeError("invalid field value");
+  }
+  Uint8Array bytes = new Uint8Array(16);
+  JsValue view = bytes;
+  view[0] = unixTsMs / 1099511627776.0;
+  view[1] = unixTsMs / 4294967296.0;
+  view[2] = unixTsMs / 16777216.0;
+  view[3] = unixTsMs / 65536.0;
+  view[4] = unixTsMs / 256.0;
+  view[5] = unixTsMs;
+  int a = randA.toInt();
+  int hi = randBHi.toInt();
+  int lo = randBLo.toInt();
+  bytes[6] = 112 | (a >>> 8);
+  bytes[7] = a;
+  bytes[8] = 128 | (hi >>> 24);
+  bytes[9] = hi >>> 16;
+  bytes[10] = hi >>> 8;
+  bytes[11] = hi;
+  bytes[12] = lo >>> 24;
+  bytes[13] = lo >>> 16;
+  bytes[14] = lo >>> 8;
+  bytes[15] = lo;
+  return bytes;
+}
+
+// UUID.prototype.toString: the 8-4-4-4-12 canonical hexadecimal form.
+string formatBytes(Uint8Array bytes) {
+  string text = "";
+  for (int i = 0; i < bytes.length; i++) {
+    text = text + (bytes[i] >>> 4).toString(16) + (bytes[i] & 15).toString(16);
+    if (i == 3 || i == 5 || i == 7 || i == 9) {
+      text += "-";
+    }
+  }
+  if (text.length != 36) {
+    // We saw one customer whose bundling code was mangling the UUID generation
+    // rather than accept a bad UUID, we throw an error here.
+    throw new Error("Invalid UUIDv7 was generated");
+  }
+  return text;
+}
+
+export class UUID {
+  Uint8Array bytes;
+
+  init(Uint8Array bytes) {
+    this.bytes = bytes;
+    if (bytes.length != 16) {
+      throw new TypeError("not 128-bit length");
+    }
+  }
+
+  string toString() {
+    return formatBytes(this.bytes);
+  }
+
+  UUID clone() {
+    return new UUID((this.bytes as JsValue).slice(0) as Uint8Array);
+  }
+
+  bool equals(UUID other) {
+    return this.compareTo(other) == 0.0;
+  }
+
+  float compareTo(UUID other) {
+    for (int i = 0; i < 16; i++) {
+      int diff = this.bytes[i] - other.bytes[i];
+      if (diff != 0) {
+        return Math.sign(diff) as float;
+      }
+    }
+    return 0.0;
+  }
+}
+export constructor UUID;
+
+// `static fromFieldsV7(…)`: a class static is a writable, configurable, non-enumerable data property.
+Object.defineProperty(UUID as JsValue, "fromFieldsV7", object {
+  value: (float unixTsMs, float randA, float randBHi, float randBLo) => new UUID(fieldsV7(unixTsMs, randA, randBHi, randBLo)),
+  writable: true,
+  configurable: true
+});
+
+/** The largest `unix_ts_ms` field value a UUIDv7 can hold. */
+float MAX_UNIX_TS_MS = 281474976710655.0;
+
+// Reads the clock as a value that `fromFieldsV7` accepts: `Date.now()` on a host page may be negative,
+// fractional or non-finite (a wrong system clock, a script replacing it).
+float currentUnixTsMs() {
+  JsValue now = Date.now();
+  if (!isNumber(now) || !isFinite(now).truthy()) {
+    return 0.0;
+  }
+  return (now as float).floor().max(0.0).min(MAX_UNIX_TS_MS);
+}
+
+// Stores `crypto.getRandomValues()` when the environment has it; otherwise falls back on Math.random()
+// unless the UUIDV7_DENY_WEAK_RNG flag is set.
+func(JsValue)->JsValue getRandomValues = (JsValue buffer) => {
+  if (JS.typeOf(UUIDV7_DENY_WEAK_RNG) != "undefined" && UUIDV7_DENY_WEAK_RNG.truthy()) {
+    throw new Error("no cryptographically strong RNG available");
+  }
+  for (int i = 0; i < buffer.length; i++) {
+    buffer[i] = Math.trunc(Math.random() * 65536) * 65536 + Math.trunc(Math.random() * 65536);
+  }
+  return buffer;
+};
+
+// detect Web Crypto API
+if (window.truthy() && !isUndefined(window.crypto) && crypto.getRandomValues.truthy()) {
+  getRandomValues = (JsValue buffer) => crypto.getRandomValues(buffer);
+}
+
+// DefaultRandom: a small buffer of random 32-bit values, refilled when used up.
+JsValue randomBuffer = new Uint32Array(8);
+int randomCursor = 8;
+
+float nextUint32() {
+  if (randomCursor >= 8) {
+    getRandomValues(randomBuffer);
+    randomCursor = 0;
+  }
+  float value = randomBuffer[randomCursor] as float;
+  randomCursor++;
+  return value;
+}
+
+// V7Generator: the monotonic counter state of the default generator.
+float generatorTimestamp = 0.0;
+float generatorCounter = 0.0;
+
+// Initializes the counter at a 42-bit random integer.
+void resetCounter() {
+  float high = nextUint32() * 1024.0;
+  generatorCounter = high + (nextUint32().toInt() & 1023);
+}
+
+// The next UUIDv7's bytes, or absent upon a clock rollback of ten seconds or more.
+Uint8Array? generateOrAbort() {
+  float ts = currentUnixTsMs();
+  if (ts > generatorTimestamp) {
+    generatorTimestamp = ts;
+    resetCounter();
+  } else if (ts + 10000.0 > generatorTimestamp) {
+    // go on with previous timestamp if new one is not much smaller
+    generatorCounter++;
+    if (generatorCounter > 4398046511103.0) {
+      // increment timestamp at counter overflow
+      generatorTimestamp++;
+      resetCounter();
+    }
+  } else {
+    // abort if clock went backwards to unbearable extent
+    return null;
+  }
+  return fieldsV7(
+    generatorTimestamp,
+    Math.trunc(generatorCounter / 1073741824.0) as float,
+    generatorCounter.toInt() & 1073741823,
+    nextUint32()
+  );
+}
+
+Uint8Array generate() {
+  Uint8Array? value = generateOrAbort();
+  if (value != null) {
+    return value;
+  }
+  // reset state and resume
+  generatorTimestamp = 0.0;
+  Uint8Array? valueAfterReset = generateOrAbort();
+  if (valueAfterReset == null) {
+    throw new Error("Could not generate UUID after timestamp reset");
+  }
+  return valueAfterReset;
+}
+
+export string uuidv7() {
+  return formatBytes(generate());
+}
+
+export float uuid7ToTimestampMs(string uuid) {
+  // remove hyphens
+  string hex = uuid.replace(new Regex("-", "g"), "");
+  // ensure that it's a version 7 UUID
+  if (hex.length != 32) {
+    throw new Error("Not a valid UUID");
+  }
+  if (hex.charAt(12) != "7") {
+    throw new Error("Not a UUIDv7");
+  }
+  // the first 6 bytes are the timestamp, which means that we can read only the first 12 hex characters
+  return parseInt(hex.slice(0, 12), 16) as float;
+}

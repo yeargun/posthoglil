@@ -1,0 +1,11 @@
+// packages/browser/src/config.ts — the browser-common Config object itself, given posthog-js's identity
+// (upstream reads the version from ../package.json: 1.435.8).
+import { default as Config } from "../browser-common/config.lil";
+
+// overridden in posthog-core,
+// e.g.     Config.DEBUG = Config.DEBUG || instance.config.debug
+Config.DEBUG = false;
+Config.LIB_VERSION = "1.435.8";
+Config.LIB_NAME = "web";
+
+export { Config as default };

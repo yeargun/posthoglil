@@ -1,0 +1,42 @@
+// packages/browser/src/utils/globals.ts — browser-common's globals plus posthog-js's window registry
+// (`assignableWindow`) and the React Native polyfills, applied once at module load.
+import {
+  AbortController,
+  CompressionStream,
+  document,
+  fetch,
+  isBrowserOnline,
+  location,
+  navigator,
+  userAgent,
+  window,
+  XMLHttpRequest
+} from "../../browser-common/utils/globals.lil";
+extern JsValue globalThis;
+extern JsValue self;
+extern JsValue File;
+
+JsValue globalObject = if (JS.typeOf(globalThis) != "undefined") { globalThis } else { window };
+
+// React Native polyfills retained for browser-v1 compatibility.
+if (globalObject.truthy() && JS.typeOf(self) == "undefined") {
+  globalObject.self = globalObject;
+}
+if (globalObject.truthy() && JS.typeOf(File) == "undefined") {
+  globalObject.File = (this JsValue receiver) => {};
+}
+
+export {
+  AbortController,
+  CompressionStream,
+  document,
+  fetch,
+  isBrowserOnline,
+  location,
+  navigator,
+  userAgent,
+  window,
+  XMLHttpRequest
+};
+
+export JsValue assignableWindow = window ?? object {};

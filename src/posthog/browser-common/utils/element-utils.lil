@@ -1,0 +1,36 @@
+// packages/browser-common/src/utils/element-utils.ts — DOM node predicates. Nodes come from the page
+// (event targets, parents, shadow hosts), so they stay dynamic.
+import { TOOLBAR_CONTAINER_CLASS, TOOLBAR_ID } from "../constants.lil";
+extern JsValue Element;
+
+int NODE_TYPE_ELEMENT = 1;
+int NODE_TYPE_TEXT = 3;
+int NODE_TYPE_DOCUMENT_FRAGMENT = 11;
+
+export bool isElementInToolbar(JsValue el) {
+  if (el instanceof Element) {
+    if (el.id === TOOLBAR_ID) {
+      return true;
+    }
+    // `el.closest?.(…)`: the method is read once and called on `el`.
+    JsValue closest = el.closest;
+    return closest != null && closest.call(el, "." + TOOLBAR_CONTAINER_CLASS).truthy();
+  }
+  return false;
+}
+
+export bool isElementNode(JsValue el) {
+  return el.truthy() && el.nodeType === NODE_TYPE_ELEMENT;
+}
+
+export bool isTag(JsValue el, string tag) {
+  return el.truthy() && el.tagName.truthy() && el.tagName.toLowerCase() === tag.toLowerCase();
+}
+
+export bool isTextNode(JsValue el) {
+  return el.truthy() && el.nodeType === NODE_TYPE_TEXT;
+}
+
+export bool isShadowRoot(JsValue el) {
+  return el.truthy() && el.nodeType === NODE_TYPE_DOCUMENT_FRAGMENT && isElementNode(el.host);
+}

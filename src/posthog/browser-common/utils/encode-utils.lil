@@ -1,0 +1,13 @@
+// packages/browser-common/src/utils/encode-utils.ts — UTF-8 safe base64. The argument stays
+// dynamic: a falsy input (null, undefined, "") is returned as it came.
+extern JsValue btoa;
+extern JsValue encodeURIComponent;
+extern JsValue String;
+extern JsValue parseInt;
+
+export JsValue _base64Encode(JsValue data) {
+  if (!data.truthy()) {
+    return data;
+  }
+  return btoa(encodeURIComponent(data).replace(new Regex("%([0-9A-F]{2})", "g"), (JsValue whole, JsValue p1) => String.fromCharCode(parseInt(p1, 16))));
+}

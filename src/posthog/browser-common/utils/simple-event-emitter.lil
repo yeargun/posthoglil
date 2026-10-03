@@ -1,0 +1,38 @@
+// packages/browser-common/src/utils/simple-event-emitter.ts — upstream's private `_events` object
+// becomes a Map: the event names are SDK strings, and listeners stay dynamic callbacks.
+export class SimpleEventEmitter {
+  Map<string, JsValue[]> events = new Map<string, JsValue[]>();
+
+  func()->void on(string event, JsValue listener) {
+    JsValue[]? listeners = this.events.get(event);
+    if (listeners == null) {
+      JsValue[] created = [listener];
+      this.events.set(event, created);
+    } else {
+      listeners.push(listener);
+    }
+    SimpleEventEmitter self = this;
+    return () => {
+      JsValue[]? current = self.events.get(event);
+      if (current != null) {
+        self.events.set(event, current.filter((JsValue x) => x !== listener));
+      }
+    };
+  }
+
+  void emit(string event, JsValue payload) {
+    JsValue[]? listeners = this.events.get(event);
+    if (listeners != null) {
+      for (JsValue listener of listeners) {
+        listener(payload);
+      }
+    }
+    JsValue[]? wildcard = this.events.get("*");
+    if (wildcard != null) {
+      for (JsValue listener of wildcard) {
+        listener(event, payload);
+      }
+    }
+  }
+}
+export constructor SimpleEventEmitter;

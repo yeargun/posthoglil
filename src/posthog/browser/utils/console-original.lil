@@ -1,0 +1,8 @@
+// packages/browser/src/utils/console-original.ts — walks the `__rrweb_original__` markers that console
+// plugins leave behind to reach the real console method.
+export JsValue originalConsoleMethod(JsValue method) {
+  while (method != null && method.__rrweb_original__.truthy()) {
+    method = method.__rrweb_original__;
+  }
+  return method;
+}

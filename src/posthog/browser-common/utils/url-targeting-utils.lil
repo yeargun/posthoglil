@@ -1,0 +1,26 @@
+// packages/browser-common/src/utils/url-targeting-utils.ts — `instance` is the PostHog instance (or a
+// stand-in) and `get_current_url` a page-supplied hook, so both stay dynamic.
+import { isFunction, isString, isUndefined } from "../../core/utils/type-utils.lil";
+import { window } from "./globals.lil";
+import { logger } from "./logger.lil";
+
+export string applyUrlTargetingOverride(JsValue instance, string defaultUrl) {
+  JsValue config = if (instance == null) { undefined } else { instance.config };
+  JsValue override = if (config == null) { undefined } else { config.get_current_url };
+  if (!isFunction(override)) {
+    return defaultUrl;
+  }
+  try {
+    JsValue result = override(defaultUrl);
+    return if (isString(result) && result.truthy()) { result as string } else { defaultUrl };
+  } catch (JsValue e) {
+    logger.error("Error in get_current_url, falling back to window.location.href", e);
+    return defaultUrl;
+  }
+}
+
+export JsValue getTargetingUrl(JsValue instance) {
+  JsValue location = if (window == null) { undefined } else { window.location };
+  JsValue defaultUrl = if (location == null) { undefined } else { location.href };
+  return if (isUndefined(defaultUrl)) { undefined } else { applyUrlTargetingOverride(instance, defaultUrl as string) };
+}
