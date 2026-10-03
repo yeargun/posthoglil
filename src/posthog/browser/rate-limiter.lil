@@ -1,0 +1,159 @@
+// packages/browser/src/rate-limiter.ts
+// `posthog.rateLimiter` is reachable from the page, so the class keeps upstream's public members:
+// the fields (in upstream's key order), the two getters on the prototype and the public methods.
+// Private helpers are module functions.
+import { isArray, isNumber } from "../core/utils/type-utils.lil";
+import extern { CAPTURE_RATE_LIMIT } from "@upstream/browser/constants";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { location } from "@upstream/browser-common/utils/globals";
+extern string CAPTURE_RATE_LIMIT;
+extern JsValue createLogger;
+extern JsValue location;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue JSON;
+extern JsValue Object;
+
+JsValue logger = createLogger("[RateLimiter]");
+
+float ONE_MINUTE_IN_MILLISECONDS = 60000.0;
+string RATE_LIMIT_EVENT = "$$client_ingestion_warning";
+
+shape RateLimitContext {
+  data bool isRateLimited;
+  data JsValue remainingTokens;
+}
+
+export class RateLimiter {
+  JsValue serverLimits = object {};
+  bool lastEventRateLimited = false;
+  JsValue checkForLimiting = undefined;
+  JsValue instance = undefined;
+
+  init(JsValue instance) {
+    RateLimiter self = this;
+    this.checkForLimiting = (JsValue httpResponse) => {
+      JsValue text = httpResponse.text;
+      if (!text.truthy() || !text["length"].truthy()) {
+        return;
+      }
+      try {
+        JsValue response = JSON.parse(text);
+        JsValue quotaLimitedProducts = response.quota_limited || [];
+        quotaLimitedProducts.forEach((JsValue batchKey) => {
+          logger.info(`${batchKey || "events"} is quota limited.`);
+          self.serverLimits[batchKey] = new Date().getTime() + ONE_MINUTE_IN_MILLISECONDS;
+        });
+      } catch (JsValue e) {
+        JsValue message = if (e == null) { undefined } else { e["message"] };
+        logger.warn(`could not rate limit - continuing. Error: "${message}"`, object { text: text });
+        return;
+      }
+    };
+    this.instance = instance;
+    this.lastEventRateLimited = this.clientRateLimitContext(true).isRateLimited;
+  }
+
+  RateLimitContext clientRateLimitContext(bool checkOnly = false) {
+    JsValue burstLimit = burstLimitOf(this);
+    JsValue perSecond = perSecondOf(this);
+    JsValue now = new Date().getTime();
+    JsValue persistence = this.instance.persistence;
+    JsValue bucket = if (persistence == null) { undefined } else { persistence.get_property(CAPTURE_RATE_LIMIT) };
+    if (bucket == null) {
+      bucket = object { tokens: burstLimit, last: now };
+    }
+    bucket.tokens += ((now - bucket.last) / 1000) * perSecond;
+    bucket.last = now;
+    if (bucket.tokens > burstLimit) {
+      bucket.tokens = burstLimit;
+    }
+    bool isRateLimited = bucket.tokens < 1;
+    if (!isRateLimited && !checkOnly) {
+      bucket.tokens = Math.max(0, bucket.tokens - 1);
+    }
+    if (isRateLimited && !checkOnly) {
+      JsValue droppedSinceLastWarning = (if (isNumber(bucket.dropped)) { bucket.dropped } else { 0 as JsValue }) + 1;
+      bucket.dropped = droppedSinceLastWarning;
+      if (!this.lastEventRateLimited && captureWarning(this, droppedSinceLastWarning)) {
+        bucket.dropped = 0;
+      }
+    }
+    this.lastEventRateLimited = isRateLimited;
+    JsValue current = this.instance.persistence;
+    if (current != null) {
+      current.set_property(CAPTURE_RATE_LIMIT, bucket);
+    }
+    return RateLimitContext{isRateLimited: isRateLimited, remainingTokens: bucket.tokens};
+  }
+
+  bool isServerRateLimited(JsValue batchKey) {
+    JsValue retryAfter = this.serverLimits[batchKey || "events"] || false;
+    if (retryAfter === false) {
+      return false;
+    }
+    return new Date().getTime() < retryAfter;
+  }
+}
+export constructor RateLimiter;
+
+JsValue perSecondOf(RateLimiter self) {
+  JsValue rateLimiting = self.instance.config.rate_limiting;
+  JsValue value = if (rateLimiting == null) { undefined } else { rateLimiting.events_per_second };
+  return value || 10;
+}
+
+JsValue burstLimitOf(RateLimiter self) {
+  JsValue rateLimiting = self.instance.config.rate_limiting;
+  JsValue value = if (rateLimiting == null) { undefined } else { rateLimiting.events_burst_limit };
+  return Math.max(value || perSecondOf(self) * 10, perSecondOf(self));
+}
+
+// Prototype getters, as upstream's class declares them.
+Object.defineProperty((RateLimiter as JsValue).prototype, "captureEventsPerSecond", object {
+  get: (this JsValue receiver) => perSecondOf(receiver as RateLimiter),
+  configurable: true
+});
+Object.defineProperty((RateLimiter as JsValue).prototype, "captureEventsBurstLimit", object {
+  get: (this JsValue receiver) => burstLimitOf(receiver as RateLimiter),
+  configurable: true
+});
+
+bool isPropertyAllowed(RateLimiter self, string property) {
+  JsValue denylist = self.instance.config.property_denylist;
+  return !isArray(denylist) || !denylist.includes(property).truthy();
+}
+
+JsValue triggeringPage(RateLimiter self) {
+  if (!isPropertyAllowed(self, "$current_url") || !isPropertyAllowed(self, "$pathname") || location == null || !location.pathname.truthy()) {
+    return undefined;
+  }
+  JsValue origin = location.origin;
+  return `${if (origin == null) { "" as JsValue } else { origin }}${location.pathname}`;
+}
+
+bool captureWarning(RateLimiter self, JsValue droppedSinceLastWarning) {
+  JsValue burstLimit = burstLimitOf(self);
+  JsValue perSecond = perSecondOf(self);
+  JsValue page = triggeringPage(self);
+  JsValue sessionId = undefined;
+  if (isPropertyAllowed(self, "$session_id")) {
+    JsValue getSessionId = self.instance.get_session_id;
+    if (getSessionId != null) {
+      sessionId = getSessionId.call(self.instance);
+    }
+  }
+  JsValue parts = [`${droppedSinceLastWarning} event(s) dropped since the last warning`];
+  if (page.truthy()) {
+    parts.push(`triggered on ${page}`);
+  }
+  if (sessionId.truthy()) {
+    parts.push(`session ${sessionId}`);
+  }
+  JsValue context = parts.join(", ");
+  return self.instance.capture(
+    RATE_LIMIT_EVENT,
+    object { $$client_ingestion_warning_message: `posthog-js client rate limited: ${context}. Config is set to ${perSecond} events per second and ${burstLimit} events burst limit.` },
+    object { skip_client_rate_limiting: true }
+  ).truthy();
+}

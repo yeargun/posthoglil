@@ -1,0 +1,144 @@
+// packages/core/src/utils/type-utils.ts — predicates over dynamic values. They keep upstream's
+// exact tests (`Object.prototype.toString` tags, not `typeof`), so boxed primitives answer the same.
+import { knownUnsafeEditableEvent, knownUnsafeEditableEventProperty } from "../types.lil";
+import { includes } from "./string-utils.lil";
+
+extern JsValue Array;
+extern JsValue Object;
+extern JsValue FormData;
+extern JsValue File;
+extern JsValue Error;
+extern JsValue Event;
+
+JsValue ObjProto = Object.prototype;
+export JsValue hasOwnProperty = ObjProto.hasOwnProperty;
+JsValue toString = ObjProto.toString;
+
+string tag(JsValue x) {
+  return toString.call(x) as string;
+}
+
+export bool isArray(JsValue obj) {
+  return obj.isArray();
+}
+
+export bool isFunction(JsValue x) {
+  return JS.typeOf(x) == "function";
+}
+
+export bool isNativeFunction(JsValue x) {
+  return isFunction(x) && x.toString().indexOf("[native code]") !== -1;
+}
+
+export bool isObject(JsValue x) {
+  return x === Object(x) && !isArray(x);
+}
+
+export bool isEmptyObject(JsValue x) {
+  if (isObject(x)) {
+    for (string key in x) {
+      if (hasOwnProperty.call(x, key).truthy()) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+export bool isUndefined(JsValue x) {
+  return x === undefined;
+}
+
+export bool isString(JsValue x) {
+  return tag(x) == "[object String]";
+}
+
+export bool isEmptyString(JsValue x) {
+  return isString(x) && x.trim().length === 0;
+}
+
+export bool isNull(JsValue x) {
+  return x === null;
+}
+
+export bool isNullish(JsValue x) {
+  return x === undefined || x === null;
+}
+
+export bool isNumber(JsValue x) {
+  return tag(x) == "[object Number]" && x === x;
+}
+
+export bool isPositiveNumber(JsValue value) {
+  return isNumber(value) && value > 0;
+}
+
+export bool isBoolean(JsValue x) {
+  return tag(x) == "[object Boolean]";
+}
+
+export bool isFormData(JsValue x) {
+  return x instanceof FormData;
+}
+
+export bool isFile(JsValue x) {
+  return x instanceof File;
+}
+
+export bool isPlainError(JsValue x) {
+  return x instanceof Error;
+}
+
+export bool isKnownUnsafeEditableEvent(JsValue x) {
+  return includes(knownUnsafeEditableEvent, x);
+}
+
+export bool isKnownUnsafeEditableEventProperty(JsValue x) {
+  return includes(knownUnsafeEditableEventProperty, x);
+}
+
+export bool isPrimitive(JsValue value) {
+  return value === null || JS.typeOf(value) != "object";
+}
+
+export bool isBuiltin(JsValue candidate, string className) {
+  return tag(candidate) == `[object ${className}]`;
+}
+
+bool isInstanceOf(JsValue candidate, JsValue base) {
+  try {
+    return candidate instanceof base;
+  } catch (JsValue error) {
+    return false;
+  }
+}
+
+export bool isError(JsValue candidate) {
+  string t = tag(candidate);
+  if (t == "[object Error]" || t == "[object Exception]" || t == "[object DOMException]" || t == "[object DOMError]" || t == "[object WebAssembly.Exception]") {
+    return true;
+  }
+  return isInstanceOf(candidate, Error);
+}
+
+export bool isErrorEvent(JsValue event) {
+  return isBuiltin(event, "ErrorEvent");
+}
+
+export bool isEvent(JsValue candidate) {
+  return JS.typeOf(Event) != "undefined" && isInstanceOf(candidate, Event);
+}
+
+export bool isPlainObject(JsValue candidate) {
+  return isBuiltin(candidate, "Object");
+}
+
+export JsValue yesLikeValues = [true, "true", 1, "1", "yes"];
+export bool isYesLike(JsValue val) {
+  return includes(yesLikeValues, val);
+}
+export JsValue noLikeValues = [false, "false", 0, "0", "no"];
+export bool isNoLike(JsValue val) {
+  return includes(noLikeValues, val);
+}

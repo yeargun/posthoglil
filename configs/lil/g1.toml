@@ -1,0 +1,20 @@
+# G1 candidate build: every ported module is a compiler entry (split delivery), so upstream's
+# own test files can import each module. Production mode and release-like optimization.
+[policy]
+version = 3
+[language]
+absence = "unified"
+field_initialization = "explicit"
+char_code_at = "number"
+[javascript]
+priority = "size-first"
+ecmascript = "es2019"
+assume_pristine_builtins = false
+[effort]
+level = 8
+[objective]
+codecs = "brotli"
+[mangle]
+identifiers = true
+properties = true
+pool_strings = true

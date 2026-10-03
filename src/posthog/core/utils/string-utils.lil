@@ -1,0 +1,72 @@
+// packages/core/src/utils/string-utils.ts
+extern JsValue JSON;
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue Error;
+
+// `includes(stringOrArray, needle)`: upstream calls the receiver's own indexOf.
+export bool includes(JsValue str, JsValue needle) {
+  return str.indexOf(needle) !== -1;
+}
+
+export string trim(string str) {
+  return str.trim();
+}
+
+export string stripLeadingDollar(string s) {
+  return s.replace(new Regex("^\\$"), "");
+}
+
+export bool isDistinctIdStringLike(string value) {
+  string lower = value.toLowerCase();
+  return lower == "distinct_id" || lower == "distinctid";
+}
+
+export string safeJsonStringify(JsValue value) {
+  JsValue ancestors = [];
+  JsValue replacer = (this JsValue holder, JsValue key, JsValue replacementValue) => {
+    string kind = JS.typeOf(replacementValue);
+    if (kind == "bigint") {
+      return replacementValue.toString();
+    }
+    if (kind == "function" || kind == "symbol") {
+      return undefined;
+    }
+    if (replacementValue instanceof Error) {
+      return object { name: replacementValue.name, message: replacementValue.message, stack: replacementValue.stack };
+    }
+    if (replacementValue.truthy() && kind == "object") {
+      while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== holder) {
+        ancestors.pop();
+      }
+      if (ancestors.includes(replacementValue).truthy()) {
+        return "[Circular]";
+      }
+      ancestors.push(replacementValue);
+    }
+    return replacementValue;
+  };
+  JsValue result = JSON.stringify(value, replacer);
+  return if (result == null) { "null" } else { result as string };
+}
+
+JsValue deepSortKeys(JsValue value) {
+  if (value === null || JS.typeOf(value) != "object") {
+    return value;
+  }
+  if (value.isArray()) {
+    return value.map(deepSortKeys);
+  }
+  return Object.keys(value).sort().reduce((JsValue acc, JsValue key) => {
+    acc[key] = deepSortKeys(value[key]);
+    return acc;
+  }, object {});
+}
+
+export string getPersonPropertiesHash(string distinct_id, JsValue userPropertiesToSet = undefined, JsValue userPropertiesToSetOnce = undefined) {
+  return JSON.stringify(object {
+    distinct_id: distinct_id,
+    userPropertiesToSet: if (userPropertiesToSet.truthy()) { deepSortKeys(userPropertiesToSet) } else { undefined },
+    userPropertiesToSetOnce: if (userPropertiesToSetOnce.truthy()) { deepSortKeys(userPropertiesToSetOnce) } else { undefined }
+  }) as string;
+}

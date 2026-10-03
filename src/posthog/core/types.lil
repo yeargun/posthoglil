@@ -1,0 +1,120 @@
+// packages/core/src/types.ts — the runtime values. Exported objects stay plain mutable JavaScript
+// objects with upstream's keys and order, because @posthog/core and posthog-js re-export them.
+
+export JsValue PostHogPersistedProperty = object {
+  AnonymousId: "anonymous_id",
+  DistinctId: "distinct_id",
+  Props: "props",
+  EnablePersonProcessing: "enable_person_processing",
+  PersonMode: "person_mode",
+  FeatureFlagDetails: "feature_flag_details",
+  FeatureFlags: "feature_flags",
+  FeatureFlagPayloads: "feature_flag_payloads",
+  BootstrapFeatureFlagDetails: "bootstrap_feature_flag_details",
+  BootstrapFeatureFlags: "bootstrap_feature_flags",
+  BootstrapFeatureFlagPayloads: "bootstrap_feature_flag_payloads",
+  OverrideFeatureFlags: "override_feature_flags",
+  Queue: "queue",
+  AiQueue: "ai_queue",
+  AiCaptureQueue: "ai_capture_queue",
+  LogsQueue: "logs_queue",
+  OptedOut: "opted_out",
+  SessionId: "session_id",
+  SessionStartTimestamp: "session_start_timestamp",
+  SessionLastTimestamp: "session_timestamp",
+  PersonProperties: "person_properties",
+  GroupProperties: "group_properties",
+  InstalledAppBuild: "installed_app_build",
+  InstalledAppVersion: "installed_app_version",
+  SessionReplay: "session_replay",
+  PushRegistered: "push_registered",
+  SessionReplayEventTriggerActivatedSession: "session_replay_event_trigger_activated_session",
+  SurveyLastSeenDate: "survey_last_seen_date",
+  SurveysInProgress: "surveys_in_progress",
+  SurveysSeen: "surveys_seen",
+  Surveys: "surveys",
+  RemoteConfig: "remote_config",
+  FlagsEndpointWasHit: "flags_endpoint_was_hit",
+  DeviceId: "device_id"
+};
+
+export JsValue Compression = object { GZipJS: "gzip-js", Base64: "base64" };
+
+export JsValue FeatureFlagError = object {
+  ERRORS_WHILE_COMPUTING: "errors_while_computing_flags",
+  FLAG_MISSING: "flag_missing",
+  QUOTA_LIMITED: "quota_limited",
+  TIMEOUT: "timeout",
+  CONNECTION_ERROR: "connection_error",
+  UNKNOWN_ERROR: "unknown_error",
+  apiError: (JsValue status) => `api_error_${status}`
+};
+
+export JsValue SurveyPosition = object {
+  TopLeft: "top_left",
+  TopCenter: "top_center",
+  TopRight: "top_right",
+  MiddleLeft: "middle_left",
+  MiddleCenter: "middle_center",
+  MiddleRight: "middle_right",
+  Left: "left",
+  Right: "right",
+  Center: "center"
+};
+
+export JsValue SurveyWidgetType = object { Button: "button", Tab: "tab", Selector: "selector" };
+
+export JsValue SurveyType = object { Popover: "popover", API: "api", Widget: "widget", ExternalSurvey: "external_survey" };
+
+export JsValue SurveyQuestionDescriptionContentType = object { Html: "html", Text: "text" };
+
+export JsValue SurveyValidationType = object { MinLength: "min_length", MaxLength: "max_length" };
+
+export JsValue SurveyRatingDisplay = object { Number: "number", Emoji: "emoji" };
+
+export JsValue SurveyQuestionType = object {
+  Open: "open",
+  MultipleChoice: "multiple_choice",
+  SingleChoice: "single_choice",
+  Rating: "rating",
+  Link: "link"
+};
+
+export JsValue SurveyQuestionBranchingType = object {
+  NextQuestion: "next_question",
+  End: "end",
+  ResponseBased: "response_based",
+  SpecificQuestion: "specific_question"
+};
+
+export JsValue SurveyMatchType = object {
+  Regex: "regex",
+  NotRegex: "not_regex",
+  Exact: "exact",
+  IsNot: "is_not",
+  Icontains: "icontains",
+  NotIcontains: "not_icontains"
+};
+
+export JsValue SurveySchedule = object { Once: "once", Recurring: "recurring", Always: "always" };
+
+export JsValue ActionStepStringMatching = object { Contains: "contains", Exact: "exact", Regex: "regex" };
+
+export JsValue knownUnsafeEditableEvent = [
+  "$snapshot",
+  "$pageview",
+  "$pageleave",
+  "$set",
+  "survey dismissed",
+  "survey sent",
+  "survey shown",
+  "$identify",
+  "$groupidentify",
+  "$create_alias",
+  "$$client_ingestion_warning",
+  "$web_experiment_applied",
+  "$feature_enrollment_update",
+  "$feature_flag_called"
+];
+
+export JsValue knownUnsafeEditableEventProperty = ["token"];
