@@ -43,6 +43,33 @@ test('utility downloads are their separately targeted compiler outputs',()=>{
     assert.equal(sha(join(site,'utility-originals',row.baseline.file.slice('artifacts/utilities/'.length))),row.baseline.sha256)
   }
 })
+test('installed-package size and runtime evidence refers to the downloadable package',()=>{
+  const consumers=json('evidence/sdk-consumers.json'),performance=json('evidence/consumer-performance.json')
+  const pkg=json('evidence/package.json'),validation=json('evidence/validation.json')
+  assert.equal(consumers.packageIntegrity,pkg.integrity)
+  assert.equal(performance.packageIntegrity,pkg.integrity)
+  assert.equal(validation.consumers.packageIntegrity,pkg.integrity)
+  assert.equal(consumers.rows.length,18)
+  assert.equal(performance.rows.length,4)
+  for(const row of consumers.rows){
+    for(const variant of ['original','candidate'])for(const file of row[variant].files)assert.equal(sha(join(site,file.file.replace('artifacts/',''))),file.sha256)
+    for(const metric of ['raw','gzip9','brotli11']){
+      assert.equal(row.savingsPercent[metric],(1-row.candidate.total[metric]/row.original.total[metric])*100)
+      if(row.optimized)assert.ok(row.savingsPercent[metric]>0)
+      else assert.equal(row.savingsPercent[metric],0)
+    }
+  }
+  for(const row of performance.rows){
+    const measured=consumers.rows.find(item=>item.fixture===row.surface&&item.bundler===row.objective)
+    assert.equal(row.candidateSha256,measured.candidate.files.find(file=>file.entry).sha256)
+    assert.equal(row.originalSha256,measured.original.files.find(file=>file.entry).sha256)
+    assert.equal(row.pairs.length,performance.samples)
+  }
+  for(const row of json('evidence/package-runtime.json').rows){
+    assert.equal(sha(join(site,row.candidate.file.replace('artifacts/',''))),row.candidate.sha256)
+    assert.equal(pkg.replacements.find(file=>file.file===(row.surface==='standard'?'dist/module.mjs':'dist/module.full.no-external.js')).sha256,row.candidate.sha256)
+  }
+})
 test('the tested preview tarball and license notices are shipped',()=>{
   const pkg=json('evidence/package.json'),file=join(site,'downloads',pkg.tarball)
   assert.equal(pkg.integrity,json('evidence/validation.json').package.integrity)
@@ -66,5 +93,6 @@ test('page leads with full-SDK scope and never projects utility results onto it'
   assert.match(html,/Published npm build time is unknown/)
   assert.doesNotMatch(html+'\n'+app,/previous release|previous version|since the previous|1\.418\.(10|11)/i)
   assert.match(app,/Against the original source with the same optimizations/)
-  assert.match(app,/exact npm comparison/)
+  assert.match(app,/One fixed installed package/)
+  assert.match(html,/All nine application fixtures/)
 })

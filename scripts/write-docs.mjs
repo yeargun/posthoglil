@@ -1,103 +1,43 @@
-import {readFileSync,writeFileSync,mkdirSync} from 'node:fs'
+import {readFileSync,writeFileSync} from 'node:fs'
 import {join} from 'node:path'
 import {root} from './sdk-source.mjs'
 const read=file=>JSON.parse(readFileSync(join(root,file),'utf8'))
-const sdk=read('artifacts/sdk/results.json'),utilities=read('artifacts/utilities/results.json'),validation=read('artifacts/sdk/validation.json'),performance=read('artifacts/sdk/performance.json'),pkg=read('artifacts/package/receipt.json')
-const treeShaking=read('artifacts/tree-shaking/results.json')
+const sdk=read('artifacts/sdk/results.json'),utilities=read('artifacts/utilities/results.json'),validation=read('artifacts/sdk/validation.json'),pkg=read('artifacts/package/receipt.json')
+const consumers=read('artifacts/sdk-consumers/results.json'),performance=read('artifacts/sdk-consumers/performance.json')
 const n=value=>new Intl.NumberFormat('en-US').format(value)
 const delta=value=>Math.abs(value).toFixed(2)+'% '+(value>0?'smaller':value<0?'larger':'same')
-const sdkRows=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>`| ${surface.id} | ${row.objective} | ${n(row.baseline[row.metric])} | ${n(row.artifact[row.metric])} | ${delta(row.savingsPercent)} | ${row.baseline.lane} |`)).join('\n')
-const publishedRows=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>`| ${surface.id} | ${row.objective} | ${n(row.publishedOriginal[row.metric])} | ${n(row.artifact[row.metric])} | ${delta(row.publishedSavingsPercent)} |`)).join('\n')
-const publishedSummary=['raw','gzip','brotli'].map(objective=>{const values=sdk.surfaces.map(surface=>surface.objectives.find(row=>row.objective===objective).publishedSavingsPercent);return `${Math.min(...values).toFixed(2)}–${Math.max(...values).toFixed(2)}% ${objective==='brotli'?'Brotli':objective}`}).join(', ')
-const runtimeHeadline=performance.rows.filter(row=>row.objective==='brotli').map(row=>{const m=row.metrics.exception100Ms;return `${row.surface}: ${m.verdict==='no clear difference'?m.verdict:Math.abs(m.pairedImprovementPercent).toFixed(1)+'% '+(m.pairedImprovementPercent>0?'faster':'slower')} (paired 95% interval ${m.confidence95Percent.map(x=>x.toFixed(1)+'%').join(' to ')})`}).join('; ')
-const utilityRows=utilities.rows.map(module=>`| ${module.label} | ${module.objectives.map(row=>delta(row.savingsPercent)).join(' | ')} |`).join('\n')
-const runtimeRows=performance.rows.filter(row=>row.objective==='brotli').flatMap(row=>Object.entries(row.metrics).map(([metric,m])=>`| ${row.surface} | ${metric} | ${m.originalMedianMs.toFixed(2)} ms | ${m.candidateMedianMs.toFixed(2)} ms | ${m.verdict}; paired 95% interval ${m.confidence95Percent.map(x=>x.toFixed(1)+'%').join(' to ')} |`)).join('\n')
+const labels={importMs:'Parse + evaluate',initMs:'Initialize',capture1000Ms:'Queue 1,000 events',exception100Ms:'Queue 100 exceptions'}
+const appRows=consumers.rows.filter(row=>['standard','full'].includes(row.fixture))
+const sizeRows=appRows.flatMap(row=>['raw','gzip9','brotli11'].map(metric=>`| ${row.fixture} | ${row.bundler} | ${metric} | ${n(row.original.total[metric])} | ${n(row.candidate.total[metric])} | ${delta(row.savingsPercent[metric])} |`)).join('\n')
+const full=appRows.filter(row=>row.fixture==='full')
+const savings=['raw','gzip9','brotli11'].map(metric=>{const values=full.map(row=>row.savingsPercent[metric]);return `${Math.min(...values).toFixed(2)}–${Math.max(...values).toFixed(2)}% ${metric}`}).join(', ')
+const metrics=performance.rows.flatMap(row=>Object.values(row.metrics)),qualified=metrics.filter(m=>m.nonInferior).length
+const runtimeRows=performance.rows.flatMap(row=>Object.entries(row.metrics).map(([key,m])=>`| ${row.surface} / ${row.objective} | ${labels[key]} | ${m.originalMedianMs.toFixed(2)} ms | ${m.candidateMedianMs.toFixed(2)} ms | ${m.pairedImprovementPercent.toFixed(1)}% [${m.confidence95Percent.map(v=>v.toFixed(1)).join(', ')}] | ${m.nonInferior?'Pass':'Not established'} |`)).join('\n')
+const controlRows=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>`| ${surface.id} | ${row.objective} | ${n(row.baseline[row.metric])} | ${n(row.artifact[row.metric])} | ${delta(row.savingsPercent)} | ${row.baseline.lane} |`)).join('\n')
 const buildRows=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>`| ${surface.id} | ${row.objective} | ${row.originalBuildSeconds.toFixed(3)} s | ${row.totalBuildSeconds.toFixed(3)} s |`)).join('\n')
-const sdkSavings=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>row.savingsPercent))
-const sdkWins=sdkSavings.filter(value=>value>0).length
-const sizeConclusion=sdkWins===0?`The complete SDK candidates are ${Math.min(...sdkSavings.map(Math.abs)).toFixed(2)}–${Math.max(...sdkSavings.map(Math.abs)).toFixed(2)}% larger across the six objectives below.`:`${sdkWins} of the six SDK objectives are smaller than the strongest minified original; inspect each scope and objective below.`
-const utilityWins=utilities.rows.filter(module=>module.objectives.filter(row=>row.objective!=='raw').every(row=>row.savingsPercent>0)).length
-const consumerRows=treeShaking.rows.filter(row=>row.bundler==='esbuild').map(row=>`| ${row.name} | ${row.objective} | ${n(row.baseline[row.metric])} | ${n(row.artifact[row.metric])} | ${delta(row.savingsPercent)} |`).join('\n')
-const slowerRuntime=performance.rows.flatMap(row=>Object.entries(row.metrics).filter(([,metric])=>metric.verdict==='slower in this workload').map(([name,metric])=>`${row.surface} / ${row.objective} / ${{importMs:'module import',initMs:'initialization',capture1000Ms:'event preparation',exception100Ms:'exception preparation'}[name]} (${metric.originalMedianMs.toFixed(2)} ms original, ${metric.candidateMedianMs.toFixed(2)} ms candidate)`))
 const docs=`# PostHog × LilScript
 
-A complete browser SDK integration experiment, plus standalone utility ports, pinned to **posthog-js ${sdk.upstream.version}** at [\`${sdk.upstream.commit}\`](https://github.com/PostHog/posthog-js/tree/${sdk.upstream.commit}). The upstream source submodule is unmodified. The npm latest tag was checked on ${sdk.generatedAt.slice(0,10)}.
+One installable browser SDK with the same application imports, React bindings and canonical TypeScript declarations as **posthog-js ${sdk.upstream.version}**. The complete **full/no-external** entry saves **${savings}** in the two tested application bundlers. These are measurements of one fixed package runtime, not different packages selected for each codec.
 
-**Complete SDK savings against the exact published PostHog package: ${publishedSummary}.** Each format has its own compilation objective. Browser, package and API checks are listed below. The matching optimizations also make the original source smaller, so the stricter control comparison is shown separately: ${sizeConclusion} These delivery gains do not establish a general runtime speedup.
+**Status:** downloadable release candidate; not published to npm. All 14 optimized application/bundler cases are smaller in raw, gzip and Brotli. Four unchanged-entry cases equal the original. Runtime: **${qualified}/${metrics.length} workloads meet the predeclared 2% non-regression bound** at one-sided 95% confidence. ${qualified===metrics.length?'That bound applies only to the measured workloads.':'The evidence does not yet support a blanket “not slower” claim.'} The standard SDK has smaller gains, particularly after Rolldown minification; see every result below.
 
-**100-exception workload, default Brotli builds:** ${runtimeHeadline}, versus the strongest optimized original. Import, initialization and event-capture results appear in the runtime section.
+[Interactive results and download](https://yeargun.github.io/posthoglil/) · [Installed-package measurements](artifacts/sdk-consumers/results.json) · [Runtime samples](artifacts/sdk-consumers/performance.json) · [Validation](artifacts/sdk/validation.json)
 
-[Interactive results and preview](https://yeargun.github.io/posthoglil/) · [SDK receipts](artifacts/sdk/results.json) · [Runtime samples](artifacts/sdk/performance.json) · [Validation](artifacts/sdk/validation.json)
+## The package in a web application
 
-## Complete SDK versus published PostHog
+Each side installs the real tarball under the same dependency key, \`posthog-js\`, and builds identical source with esbuild ${consumers.tools?.esbuild??sdk.tools.esbuild} or Rolldown ${consumers.tools?.rolldown??sdk.tools.rolldown}, normal tree shaking, ES2020 and production settings. The original is the exact npm release. All three sizes in a row measure the same output: raw bytes, gzip level 9 and Brotli quality 11/window 22. Optional source maps are excluded.
 
-Both originals below are the exact minified files shipped by \`posthog-js ${sdk.upstream.version}\` on npm. Each candidate is independently compiled for raw, gzip-9 or Brotli-11; these are different candidate files. Numbers are bytes, including source-map URL comments and excluding optional map downloads.
+| SDK | App bundler | Format | Original npm app | PostHog Lil app | Difference |
+| --- | --- | --- | ---: | ---: | --- |
+${sizeRows}
 
-| SDK | Objective | Original npm | Candidate | Difference |
-| --- | --- | ---: | ---: | --- |
-${publishedRows}
+The standard entry is the initial analytics client; optional extension downloads are additional. The full entry embeds the upstream full/no-external feature set, including replay, surveys, logs, exception autocapture, tracing headers, web vitals and dead clicks. Product tours, conversations, toolbar and chat integrations are not embedded. No feature is removed to obtain these figures.
 
-## Strongest optimized original control
+The SDK combines typed LilScript internals with upstream client, transport, persistence, UI and recorder implementations. Generic bundling and minification account for much of the saving; the stricter source control below discloses the additional contribution from LilScript replacements. The upstream source submodule is unchanged, pinned at [\`${sdk.upstream.commit}\`](https://github.com/PostHog/posthog-js/tree/${sdk.upstream.commit}).
 
-This stricter control applies the same bundling and delivery optimizations to the unchanged original source. For each codec it selects the smallest of the npm file, Terser, Oxc, esbuild, both Terser/Oxc orders, Oxc plus private-property mangling, and raw literal-pooling alternatives. It isolates how much the LilScript source replacements add beyond generic tooling. Small differences here must not be confused with the larger savings against the published package.
+## Install without application changes
 
-| SDK | Objective | Minified original | Candidate | Difference | Winning original |
-| --- | --- | ---: | ---: | --- | --- |
-${sdkRows}
-
-The standard row is the initial client: optional extension downloads are additional. The full row is upstream's **full/no-external** entry. It embeds replay, surveys, logs, exception autocapture, tracing headers, web vitals and dead clicks; product tours, conversations, toolbar and chat integrations are not embedded. No extra recorder script is fetched in the full browser test.
-
-The receipt includes every minifier lane, all three codec sizes per artifact, SHA-256 hashes and the same-pipeline comparison. Generic bundler/minifier gains are not attributed to LilScript. The SDK mixes qualified LilScript internals with upstream client, transport, persistence, UI and recorder code; it is not a complete rewrite of every SDK implementation.
-
-The delivery pipeline shares dependency aliases only after verifying identical package versions and file hashes. Private-property mangling preserves protocol keys and cross-bundle hooks. Literal pooling is used only for the raw objective and retains property spellings; it adds no decoder or eval. Each alternative is measured before selection.
-
-The SDK integration retains upstream implementations where the complete linked result is smaller. All standalone utility ports remain available and tested. The default exception pipeline uses private typed records and direct calls; its public exception payloads and the standalone constructor API are preserved. The SDK-owned breadcrumb buffer keeps its state in a closure; the public utility class retains its constructor and prototype. Dynamic host objects remain explicit API boundaries.
-
-## Runtime
-
-Each candidate is timed against its strongest optimized-original control. ${performance.samples} measured pairs plus ${performance.warmupPairs} warmup pairs per surface/objective; alternating order, fresh browser contexts, Chromium ${performance.browser}. The table shows the default Brotli builds. Positive paired improvement means faster; an interval spanning zero supports no clear difference. These are exploratory microbenchmarks, not end-user latency guarantees.
-
-| SDK | Workload | Original median | Candidate median | Paired result |
-| --- | --- | ---: | ---: | --- |
-${runtimeRows}
-
-${slowerRuntime.length?'Across all objectives, the paired measurements showed slower results for '+slowerRuntime.join('; ')+'. See the runtime selector on the page and the complete sample receipt.':''}
-
-Import times include parse, evaluation and module scheduling from a fresh Blob URL, excluding source download. Init uses memory persistence, autocapture, bootstrapped flags and disabled recording. Capture times cover preparation and queueing of 1,000 events after 100 warmup calls; each sample asserts 1,000 accepted events. The exception workload prepares and queues 100 preconstructed simple errors, caused errors and aggregates after 20 warmups, and asserts 100 accepted exception events. Upload, ingestion and replay processing are not timed. Assess each workload's paired interval; these measurements do not establish a general application speedup.
-
-## Build time
-
-One measured run per stage, warm filesystem and compiler cache disabled. Candidate time includes compilation, source bundling and its selected minifier. Original time is the same source bundler and the candidate's selected minifier; the npm publisher's build time is unknown. Installation, lane search, declarations, packaging and transport compression are excluded. Different output scopes are not presented as build speedups.
-
-| SDK | Objective | Matching original pipeline | Candidate pipeline |
-| --- | --- | ---: | ---: |
-${buildRows}
-
-## Standalone utilities
-
-These percentages cover the listed utility exports, not the SDK. The utility kernel includes explicitly extracted router, queue and rate-limit helper contracts. Other fixtures re-export the pinned upstream modules. See [utility receipts](artifacts/utilities/results.json) for bytes, per-objective build costs and original minifier lanes.
-
-| Utility group | Raw objective | gzip objective | Brotli objective |
-| --- | --- | --- | --- |
-${utilityRows}
-
-The utility package API remains \`@itslil/posthog-js\` with \`surveys\`, \`error-tracking\`, \`otlp\`, \`autocapture\` and \`replay-core\` subpaths. Repository artifacts are refreshed; this task does not publish a new utility npm release. The separate SDK preview below preserves the PostHog client API.
-
-## Named imports and tree shaking
-
-These consumers import one helper from the complete utility ESM artifact, then bundle and minify with esbuild. Each source artifact has its own raw/gzip/Brotli compilation objective. The baseline is the smallest original consumer for that codec across the original minifier lanes. Numbers are bytes. [Consumer receipts and downloadable bundles](artifacts/tree-shaking/results.json) also cover Rolldown/Oxc.
-
-| Named import | Objective | Minified original consumer | LilScript consumer | Difference |
-| --- | --- | ---: | ---: | --- |
-${consumerRows}
-
-24 execution and elimination checks cover four named imports, two bundlers and three objectives. No side-effect override is applied: observable initialization, including the kernel's campaign-property array spread, remains. The default utility API is a native object literal, and the variadic stack-parser factory has no effectful reflection initializer. Unused functions can be discarded without changing the public API. These consumer sizes are not complete SDK savings.
-
-Private encoder, traversal, stack-cycle and serialization records have declared data fields. Fresh result records in these paths use native object literals; public payload field names remain unchanged. Differential tests cover inherited setters, subclass overrides, evaluation order and the parser's variadic arguments, arity and constructibility. Host dictionaries and public instances are not treated as private records.
-
-## Try the SDK preview
-
-Download [\`${pkg.tarball}\`](https://yeargun.github.io/posthoglil/downloads/${pkg.tarball}), then install it under the existing dependency name:
+Download [\`${pkg.tarball}\`](https://yeargun.github.io/posthoglil/downloads/${pkg.tarball}), then:
 
 \`\`\`sh
 npm install posthog-js@file:./${pkg.tarball}
@@ -111,19 +51,75 @@ posthog.init('your-project-token', { api_host: 'https://us.i.posthog.com' })
 posthog.capture('checkout', { plan: 'pro' })
 \`\`\`
 
-The package is an **unpublished experimental preview**, not an official PostHog release. Its default root and \`posthog-js/full/no-external\` entries use the Brotli-targeted candidate. ESM and CommonJS are provided. The package retains the exact canonical upstream \`dist/module.d.ts\`; React, full and root declarations share that class identity. Install under \`posthog-js\` so upstream React imports resolve to the same singleton. Other subpaths retain the upstream runtime bytes and make no optimization claim. \`SDK-BUILD.json\` inside the tarball lists all replaced files; rebuilt source maps accompany every replaced ESM/CJS file, including embedded upstream TypeScript and compiled LilScript JavaScript. Mapping back to LilScript source is not supplied.
+Installing under \`posthog-js\` keeps upstream React imports on the same singleton. Only the root and \`posthog-js/full/no-external\` runtimes are replaced. Other subpaths keep upstream runtime bytes. ESM and CommonJS, the original package layout and exact canonical \`dist/module.d.ts\` are retained. \`SDK-BUILD.json\` lists replacements. Rebuilt source maps cover replaced ESM/CJS files, with embedded upstream TypeScript and compiled LilScript JavaScript; they do not map back to LilScript source.
+
+The existing \`@itslil/posthog-js\` utility package has a separate API. The complete browser package is \`@itslil/posthog-browser\`; this candidate is available as a tarball and is not yet on the npm registry. It is an independent project, not an official PostHog release.
+
+## Tree shaking
+
+Nine application fixtures run through both bundlers: default SDK, constructor only, full SDK, side-effect import, one React hook, all React exports, React slim, no-external and dynamic import. Browser checks exercise the resulting modules.
+
+Unused React exports are removed. \`react/slim\` stays independent of the SDK. Dynamic import leaves a small initial wrapper and loads the SDK chunk only on demand. The original SDK initializes its singleton on import, so even a constructor-only import retains most of the client; this behavior is preserved. No \`sideEffects: false\` override is applied.
+
+[All fixtures, chunk sizes, hashes and build times](artifacts/sdk-consumers/results.json) · [Consumer tests](test/sdk-consumers.mjs)
+
+## Runtime of the installed package
+
+${performance.samples} measured pairs and ${performance.warmupPairs} warmup pairs per SDK/bundler, with alternating original/candidate order and fresh Chromium ${performance.browser} contexts. Run on ${performance.cpu} in ${performance.executionEnvironment?.kind??'the recorded environment'}, with fine-grained timers on a cross-origin-isolated local origin. An identical-artifact control records measurement noise separately. Positive improvement means faster. Brackets give the paired bootstrap 95% interval. The last column checks a predeclared one-sided 95% upper bound below 2% slowdown; it does not claim identical performance in every application.
+
+| SDK / app bundler | Workload | Original median | Candidate median | Improvement [95% interval] | 2% bound |
+| --- | --- | ---: | ---: | --- | --- |
+${runtimeRows}
+
+Import measures parsing, evaluation and module scheduling from a fresh Blob URL, excluding transfer. Init uses memory persistence, autocapture, bootstrapped flags and disabled recording. Capture measures synchronous preparation and queueing after warmup; every trial asserts all 1,000 events were accepted. Exceptions use 100 preconstructed simple errors, caused errors and aggregates with fixed stacks; all 100 events must be accepted. Upload, ingestion and replay processing are not timed. These are scoped microbenchmarks, not end-user latency guarantees.
+
+[Every sample and methodology](artifacts/sdk-consumers/performance.json) · [Separate compiler-objective timings against optimized-original controls](artifacts/sdk/performance.json)
+
+## The original with the same optimizations
+
+This comparison applies the same source bundling and delivery tooling to the unchanged original. Each row uses an independent raw-, gzip- or Brotli-targeted LilScript compilation. The original is the smallest for that codec among the published npm file, Terser, Oxc, esbuild, both Terser/Oxc orders, Oxc plus private-property mangling, and raw literal-pooling alternatives. These are research artifacts; the installable package above has one fixed runtime per entry.
+
+| SDK | Objective | Minified original | LilScript candidate | Difference | Original lane |
+| --- | --- | ---: | ---: | --- | --- |
+${controlRows}
+
+Dependency aliases are shared only after identical package versions and file hashes are verified. Property mangling preserves protocol keys, cross-bundle hooks and injected release/chunk IDs. The installable package shares repeated string values while keeping named member accesses intact; it introduces no decoder or eval. This additional delivery pass is also measured on unchanged source in [the package-runtime receipt](artifacts/package-runtime/results.json).
+
+Private encoder, traversal, cycle, serialization and breadcrumb records expose typed storage to the compiler. Public payload keys and constructor contracts remain intact; dynamic host objects are not treated as private records. Upstream implementations remain where the complete linked result is smaller.
+
+## Build time
+
+Application build times below use the same installed dependencies and bundler settings. Each is a single measured run, so warmup and machine noise can affect comparisons.
+
+| SDK / app bundler | Original app build | Candidate app build |
+| --- | ---: | ---: |
+${appRows.map(row=>`| ${row.fixture} / ${row.bundler} | ${(row.original.buildMs/1000).toFixed(3)} s | ${(row.candidate.buildMs/1000).toFixed(3)} s |`).join('\n')}
+
+Compiler-objective times include compilation, source bundling and the selected minifier. Original times use the matching source bundler/minifier. Filesystem caches are warm and compiler caching is disabled. Installation, lane search, declarations, packaging and final transport compression are excluded. The npm publisher's build time is unknown.
+
+| SDK | Objective | Matching original pipeline | Candidate pipeline |
+| --- | --- | ---: | ---: |
+${buildRows}
 
 ## Compatibility evidence
 
 ${validation.coverage.map(item=>'- '+item).join('\n')}
 
-${validation.scope} Hosted PostHog ingestion, every optional feature, canvas recording, CSP variants and Firefox/WebKit are not certified by these tests. Recordings are tested against a local collector and decoded to verify actual DOM data and password masking.
+${validation.scope} Hosted ingestion, every optional feature, canvas recording, CSP variants and Firefox/WebKit are not certified. Recorder tests use a local collector, decode real snapshots/mutations and inspect password masking, including compressed payloads.
 
-Public names, configuration keys and event payloads remain API boundaries. Only private SDK linker exports can lose function names. Standalone utility constructors retain their names, arity, prototypes, descriptors and host subclassing behavior. Exported constructors use LilScript's native constructor boundary. Dynamic host objects are not treated as freely renameable closed-world records.
+## Standalone utilities
+
+These savings cover each listed utility export surface, not the complete SDK. The kernel includes explicitly extracted router, queue and rate-limit helper contracts. Each row is compared with minified pinned upstream code.
+
+| Utility group | Raw objective | gzip objective | Brotli objective |
+| --- | --- | --- | --- |
+${utilities.rows.map(row=>`| ${row.label} | ${row.objectives.map(item=>delta(item.savingsPercent)).join(' | ')} |`).join('\n')}
+
+[Utility sizes and build costs](artifacts/utilities/results.json) · [24 named-import comparisons across two bundlers and three objectives](artifacts/tree-shaking/results.json). Standalone constructors preserve names, arity, prototypes, descriptors and subclassing behavior. Utility percentages are not SDK savings.
 
 ## Reproduce
 
-Use the committed lockfile and submodule. Builds are sequential; do not launch multiple compiler commands together. Recompilation needs the LilScript executable matching SHA-256 \`${sdk.surfaces[0].objectives[0].compiler.sha256}\` and the canonical codec executable. The compiler was rebuilt from the current workspace, then its fingerprint was checked again after validation.
+Builds are sequential. Use the committed lockfile, pinned submodule, LilScript executable with SHA-256 \`${sdk.surfaces[0].objectives[0].compiler.sha256}\`, and the canonical codec executable.
 
 \`\`\`sh
 git submodule update --init
@@ -131,23 +127,23 @@ npm ci
 export LILSCRIPT_COMPILER=/path/to/lilscript
 export LILSCRIPT_CODEC=/path/to/lilscript-codec
 npm run build
+npm run measure:sdk-consumers
 npx playwright install chromium
 npm run test:all
 npm run measure:runtime
+npm run measure:consumer-runtime
 npm run write:results
 node scripts/write-docs.mjs
 npm run check:site
 \`\`\`
 
-\`npm run build\` compiles the standalone raw/gzip/Brotli utilities, discovers live internal SDK exports, compiles the SDK objectives, measures the unchanged original lanes and prepares the SDK tarball. Utility ESM, CJS and browser wrappers come from compiler delivery manifests. SDK assembly/minification and its CJS format adaptation are separately identified. SDK linker inputs use effort 8 after an effort sweep; standalone utility builds use effort 13. The SDK browser target follows upstream's ES2015/browser targets; tests currently use Chromium only.
-
-\`npm run test:all\` works from committed generated artifacts without the compiler. It runs utility checks, the selected upstream suites, real browser journeys and the packed React/TypeScript consumer. Runtime benchmarking is separate so correctness checks do not compete for CPU during timing. Test source and raw receipts are available for inspection. Use the recorded compiler fingerprint when reproducing the compilation.
+The compiler produces utility ESM/CJS/browser formats and the SDK's internal replacements. SDK assembly, delivery minification and CJS adaptation are separately recorded. \`test:all\` runs from committed compiler artifacts, rebuilding application bundles from the actual tarball; it does not need the closed compiler. Runtime timing is separate from correctness tests to avoid CPU contention.
 
 ## Sponsorship
 
-Sponsorship would fund further compiler work and broader compatibility/performance validation. The evidence covers complete SDK savings against the published package, separately disclosed optimized-original controls, tested named imports and a working integration prototype. Broad runtime speedup claims require further evidence. [Discuss an integration trial or sponsorship](https://github.com/yeargun/posthoglil/issues).
+Sponsorship would fund compiler work and broader SDK compatibility and performance testing. The evidence above distinguishes measured npm-package savings, optimized-original controls and runtime limitations. [Discuss an integration trial or sponsorship](https://github.com/yeargun/posthoglil/issues).
 
 Independent work by yeargun. No affiliation with or endorsement by PostHog is implied. See [NOTICE](NOTICE.md), [LICENSE](LICENSE) and [dependency licenses](licenses).
 `
 writeFileSync(join(root,'README.md'),docs)
-console.log('Wrote current/upstream-only README')
+console.log('Wrote installed-package and current/upstream comparisons')

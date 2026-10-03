@@ -29,6 +29,13 @@ try{
     await page.waitForSelector('#sdk-sizes tr')
     assert.equal(await page.locator('#headline .metric').count(),2)
     assert.equal(await page.locator('#headline tbody tr').count(),6)
+    for(const bundler of ['rolldown','esbuild']){
+      await page.selectOption('#app-bundler',bundler)
+      assert.equal(await page.locator('#headline tbody tr').count(),6)
+      assert.match(await page.textContent('#headline'),new RegExp(bundler))
+      assert.match(await page.textContent('#hero-runtime'),/measured workloads/)
+      assert.equal(await page.inputValue('#runtime-objective'),'package-'+bundler)
+    }
     assert.match(await page.textContent('#verdict'),/same optimizations/)
     assert.doesNotMatch(await page.textContent('#verdict'),/Loading|could not load/)
     assert.equal(await page.locator('#sdk-sizes tr').count(),3)
@@ -36,7 +43,7 @@ try{
     await page.click('[data-surface="full"]')
     assert.match(await page.textContent('#scope'),/Full \/ no external scripts/)
     assert.equal(await page.getAttribute('[data-surface="full"]','aria-pressed'),'true')
-    for(const objective of ['raw','gzip','brotli']){
+    for(const objective of ['package-esbuild','package-rolldown','raw','gzip','brotli']){
       await page.selectOption('#runtime-objective',objective)
       assert.equal(await page.locator('#performance .perf').count(),4)
     }

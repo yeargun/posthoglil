@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-03T12:16:10.747Z",
+  "generatedAt": "2026-10-03T14:15:55.427Z",
   "upstreamVersion": "1.435.8",
   "upstreamCommit": "c9d890a4028b186a5e1b327161ea197001c0c46b",
   "ok": true,
@@ -10,42 +10,42 @@
       "objective": "original",
       "total": 545,
       "passed": 545,
-      "reportSha256": "53f50ba658d2f9bf57c45ec835a09f69f8df8e0cf90901ac540cff40cf09d009"
+      "reportSha256": "a82754c04cde51e406628029fe17e54b97217d341835b0939487225314fc1fed"
     },
     {
       "objective": "raw",
       "total": 545,
       "passed": 545,
-      "reportSha256": "4e1e014ded98aa1af1fd4e01cc323c48854c1a3e7f86460f7c7eb4906f9aabec"
+      "reportSha256": "10427328e76d779227086b175d6132a5f3e8e4f8cfd763152054ded57b558164"
     },
     {
       "objective": "gzip",
       "total": 545,
       "passed": 545,
-      "reportSha256": "1c39cbe4c60f6a4eddbd22cc9f7b09008fe631adc1452364b3ab94e7f44694d2"
+      "reportSha256": "fa074e1b85c7a2c10ce7cff52582e38fc4f3b3e0e933704c259b952a02905af0"
     },
     {
       "objective": "brotli",
       "total": 545,
       "passed": 545,
-      "reportSha256": "1bd1d995e16e66ea02167b073e622b9dd873ad17566da78c3483f57ddbe490df"
+      "reportSha256": "87444f6efcc36bbe34d9eed026e0aa39d06a7b6ed2f39d77b5fd2c7ad56af8b6"
     }
   ],
   "upstreamInputs": [
     {
       "objective": "raw",
       "file": "dist/sdk-internals/raw/combined.mjs",
-      "sha256": "e2ba8392894323b29d934ad87fcd2886c9f7daa481bc8f109b9833428e20f4c4"
+      "sha256": "9e417c9b678d460c9491fe528c822a5560b49ad11e105c3770fdee14c0327c45"
     },
     {
       "objective": "gzip",
       "file": "dist/sdk-internals/gzip/combined.mjs",
-      "sha256": "99c0868d1669f5ffde172a8c7dd24d99f4f31db8135f213535befe01bcb0f49d"
+      "sha256": "5c86597ba8669893fc964019cb78a485bcdb54e530a50eeaf2a13373e2265d4d"
     },
     {
       "objective": "brotli",
       "file": "dist/sdk-internals/brotli/combined.mjs",
-      "sha256": "7a97fc4d09f58db4abf8fd94c58cb20e7252c56e8d90b85470369701a6a409ed"
+      "sha256": "23beed39278ac0cbd6c65b92b3ccc9a8f29aced578abac88f3e404833018afc0"
     }
   ],
   "utilityTests": 62,
@@ -55,9 +55,9 @@
     "545 selected, unmodified upstream tests pass for each of raw, gzip and Brotli; the upstream baseline passes the same suites.",
     "62 utility/API checks, including constructor reflection, inherited setters, host subclassing and variadic parser calls.",
     "24 named-import checks: esbuild and Rolldown remove unrelated utility code and execute the selected export for each raw/gzip/Brotli objective.",
-    "28 default error-pipeline differential checks pass for each of six SDK linker artifacts, including cyclic causes, aggregate limits, getters and exception inspection order.",
-    "Seven private breadcrumb-buffer checks pass for each of six SDK linker artifacts, including UTF-8 limits, serialization/getter effects, configuration changes and mixed add/clear transitions.",
-    "Nine delivery-transform checks preserve quoted protocol keys, public property access, Proxy traps, evaluation order, super calls and direct-eval boundaries.",
+    "30 default error-pipeline differential checks pass for each of six SDK linker artifacts, including cyclic causes, aggregate limits, getters, host coercion boundaries and exception inspection order.",
+    "Eight private breadcrumb-buffer checks pass for each of six SDK linker artifacts, including nontruncated encoder lengths, UTF-8 limits, serialization/getter effects, configuration changes and mixed add/clear transitions.",
+    "Eleven delivery-transform checks preserve quoted protocol keys, public property access, Proxy traps, evaluation order, super calls, template literals and direct-eval boundaries.",
     "Six SDK browser comparisons against both the exact published npm SDK and the optimized original: matching public exports/methods, loaded callbacks, flags, identify, groups, consent, capture hooks and event payloads.",
     "Identity survives reload; reset and named-instance isolation are checked.",
     "Autocapture and exceptions reach a local HTTP collector. Passwords and no-capture controls are excluded.",
@@ -66,28 +66,31 @@
     "All four full-SDK Web Vitals callback flavors emit a real First Contentful Paint metric; attribution is checked. Injected release IDs and chunk IDs reach exception payloads.",
     "The full SDK renders an actual survey form, accepts text input and sends the matching response to the collector.",
     "Batching and an HTTP 503 retry preserve event IDs and properties in the Brotli SDKs.",
-    "Packed tarball: CommonJS, React provider/hooks, SSR, strict TypeScript and byte-identical canonical upstream declarations and rebuilt ESM/CJS source maps."
+    "Packed tarball: CommonJS, React provider/hooks, SSR, strict TypeScript and byte-identical canonical upstream declarations and rebuilt ESM/CJS source maps.",
+    "Nine unchanged application fixtures built with both esbuild and Rolldown: one installed package is smaller in raw/gzip/Brotli for all 14 optimized cases; four unchanged-entry cases match the original exactly.",
+    "Real package tree shaking: unused React exports are removed, react/slim remains independent, and dynamic import defers the SDK chunk. Singleton initialization is preserved without overriding sideEffects.",
+    "Four additional browser journeys run the installed and rebundled standard/full SDKs, checking API and event parity, persistence, replay payloads, surveys and web vitals."
   ],
   "artifacts": [
     {
       "surface": "standard",
       "objective": "raw",
       "file": "artifacts/sdk/standard/raw.mjs",
-      "raw": 262880,
-      "gzip9": 99549,
-      "brotli11": 85280,
-      "sha256": "f66ba2241479aa75bfd6fecb1839a10afdae6a7dcdce57e0de6c8d320f26ea7c",
-      "lane": "oxc-terser-pooled",
-      "minifySeconds": 3.061950218999998,
+      "raw": 262261,
+      "gzip9": 99279,
+      "brotli11": 85019,
+      "sha256": "dbf03b729ea1e3a07c620f22d0129b1c4c68832ab6746a439c2b221b13a90b5f",
+      "lane": "terser-oxc-pooled",
+      "minifySeconds": 3.386212466999998,
       "delivery": {
         "literalPool": {
-          "bindings": 765,
-          "references": 6909
+          "bindings": 764,
+          "references": 6891
         }
       },
       "sourceMap": {
-        "file": "artifacts/sdk/standard/standard-raw-oxc-terser-pooled.map",
-        "sha256": "9711171b3ba7505f158d18bff11b55693a7f63947cb25c6ed76160e47e1783d2",
+        "file": "artifacts/sdk/standard/standard-raw-terser-oxc-pooled.map",
+        "sha256": "be6b103232a38ce144caddc82a457dd6a20eb447fe3b1a2bdef81e1ab66a8fde",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -95,15 +98,15 @@
       "surface": "standard",
       "objective": "gzip",
       "file": "artifacts/sdk/standard/gzip.mjs",
-      "raw": 295142,
-      "gzip9": 96445,
-      "brotli11": 82006,
-      "sha256": "16c32aa0928b7d4e36a3a3064a804229c04e39c6b633fa793839953fae44fd35",
+      "raw": 294989,
+      "gzip9": 96394,
+      "brotli11": 81913,
+      "sha256": "630955a5074bb184ff2229fafbbc17087348daeac344f56bbf742bfc0a3cf6c8",
       "lane": "terser-oxc",
-      "minifySeconds": 2.1629253769999996,
+      "minifySeconds": 2.2326390859999954,
       "sourceMap": {
         "file": "artifacts/sdk/standard/standard-gzip-terser-oxc.map",
-        "sha256": "43f57e2e210817c1280fc9c1ff32dbb29f7cf9543e3582305fb36b078b11f652",
+        "sha256": "80e2cd7e8e02e4feef03dc330d1d5d179598e0e56642a311ea8f07a8684973a5",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -111,15 +114,15 @@
       "surface": "standard",
       "objective": "brotli",
       "file": "artifacts/sdk/standard/brotli.mjs",
-      "raw": 295066,
-      "gzip9": 96494,
-      "brotli11": 82060,
-      "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
+      "raw": 294949,
+      "gzip9": 96449,
+      "brotli11": 81981,
+      "sha256": "feba73d2b4bffc6b37d18ff54fb582844105add00a4f26d51dd4f314a8d9e337",
       "lane": "terser-oxc",
-      "minifySeconds": 2.1523244140000024,
+      "minifySeconds": 2.279909961999998,
       "sourceMap": {
         "file": "artifacts/sdk/standard/standard-brotli-terser-oxc.map",
-        "sha256": "7f711b2455466d527a11b5cb7e4fe99fdeb1ee680412414da5ee25f95fccac03",
+        "sha256": "89a4b8eedfcadc7f0b9874aff088147e10e829849577d570fa2917e68b4578ab",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -127,21 +130,21 @@
       "surface": "full",
       "objective": "raw",
       "file": "artifacts/sdk/full/raw.mjs",
-      "raw": 554277,
-      "gzip9": 198853,
-      "brotli11": 168571,
-      "sha256": "de32ea91e636e8f6f163b336bb65406f6a0b55659c639c472b9d5c4d0c5b4cc9",
+      "raw": 538366,
+      "gzip9": 198227,
+      "brotli11": 168980,
+      "sha256": "f9e438fa4f015e4ac8f05e50e2ccb1b8c261105db65c38699d917a306b83b40c",
       "lane": "oxc-private-pooled",
-      "minifySeconds": 4.665151874000003,
+      "minifySeconds": 5.450642833999998,
       "delivery": {
         "literalPool": {
-          "bindings": 1145,
-          "references": 12878
+          "bindings": 1506,
+          "references": 15150
         }
       },
       "sourceMap": {
         "file": "artifacts/sdk/full/full-raw-oxc-private-pooled.map",
-        "sha256": "8f81c2ab1f5e196c224f7a955d9287a2f5c25d7c23542ba5f66fa44a12f79d8f",
+        "sha256": "b0bc513276402c220f3b3f75acaa50849604f8c28457b3ec9a9b4e9c869ffe4c",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -149,15 +152,15 @@
       "surface": "full",
       "objective": "gzip",
       "file": "artifacts/sdk/full/gzip.mjs",
-      "raw": 612039,
-      "gzip9": 193793,
-      "brotli11": 163100,
-      "sha256": "016c53ffdbee794f3faf9ccc9f38949292dd2fbf58698e93ab13885289d80530",
+      "raw": 611890,
+      "gzip9": 193750,
+      "brotli11": 163054,
+      "sha256": "39d313acd01fd504435fb7289dd7063e9218dca4dfe1b6eacc7f6274f660f087",
       "lane": "oxc-private",
-      "minifySeconds": 1.9343222590000078,
+      "minifySeconds": 1.9508449290000136,
       "sourceMap": {
         "file": "artifacts/sdk/full/full-gzip-oxc-private.map",
-        "sha256": "51aa0cde779d3ed83c68b76e4159f66fcae4e1ba58d829840517085e8853dfc8",
+        "sha256": "203890c32a283d2b7c8b8fac3126dca53fdbb25819c31f9f3ea694131824a0b7",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -165,15 +168,15 @@
       "surface": "full",
       "objective": "brotli",
       "file": "artifacts/sdk/full/brotli.mjs",
-      "raw": 612073,
-      "gzip9": 193814,
-      "brotli11": 163086,
-      "sha256": "555a6ec04e7c9a79c3a0fdf5ca6acad5edd23575ce2edc4fad3854ed3260d184",
+      "raw": 611940,
+      "gzip9": 193782,
+      "brotli11": 163015,
+      "sha256": "d18b70de8a817d5979c44243585c7e1f07299e619080a06dd643e90ea994e34b",
       "lane": "oxc-private",
-      "minifySeconds": 1.8887832509999862,
+      "minifySeconds": 1.946230836999981,
       "sourceMap": {
         "file": "artifacts/sdk/full/full-brotli-oxc-private.map",
-        "sha256": "07f51c563ee346ea9f48bc914c6d736521cc5c4dbf5eee8a7f99f937f8c5cd1c",
+        "sha256": "977a6c0afd5e87e809fcb60e826a68138370235c4f912d04afeef67ecde12a4a",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     }
@@ -181,7 +184,7 @@
   "package": {
     "ok": true,
     "tarball": "itslil-posthog-browser-1.435.8-lil.1.tgz",
-    "integrity": "sha512-Rv2aQYv3J3VG3tSANH5zV4RpS4uT4ZaZ9t5surOhp+cjbxljexKyG3ipK039tDsGUV70URo+WOAwc9Uz4iisgA==",
+    "integrity": "sha512-C2m5cfjh3xlNMF2QN6JAdSg1VMT+tVzhPnvzAOxDPRByghqqhEMBdJSSjw/dfuFRxngO8gBK5jP7wp5zXds7oA==",
     "checks": [
       "Installed packed tarball under unchanged posthog-js dependency key",
       "CommonJS default/named export and constructor identity parity",
@@ -210,7 +213,7 @@
     {
       "surface": "standard",
       "label": "candidate",
-      "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
+      "sha256": "feba73d2b4bffc6b37d18ff54fb582844105add00a4f26d51dd4f314a8d9e337",
       "ok": true,
       "batchSize": 2,
       "statuses": [
@@ -234,7 +237,7 @@
     {
       "surface": "full",
       "label": "candidate",
-      "sha256": "555a6ec04e7c9a79c3a0fdf5ca6acad5edd23575ce2edc4fad3854ed3260d184",
+      "sha256": "d18b70de8a817d5979c44243585c7e1f07299e619080a06dd643e90ea994e34b",
       "ok": true,
       "batchSize": 2,
       "statuses": [
@@ -251,58 +254,58 @@
         "surface": "standard",
         "objective": "raw",
         "file": "dist/sdk-internals/raw/standard.mjs",
-        "tests": 35,
-        "sha256": "6c2bac3be812ee59fc2626f9acd2bbdf178e296a00a66c3a2c759e8e61647368"
+        "tests": 38,
+        "sha256": "9901e45828470b8061524157dd43fccc64b5922ba8f2e9353de1b0bf40c7ec5f"
       },
       {
         "surface": "standard",
         "objective": "gzip",
         "file": "dist/sdk-internals/gzip/standard.mjs",
-        "tests": 35,
-        "sha256": "82d0acc14b27df5ef02e0b5512c3e4729cb0f00095333f5a90009a999190b702"
+        "tests": 38,
+        "sha256": "e40efdf4bd9ea214a0b53d211d2474bd9d7858988cdc6c9b97e385304a352585"
       },
       {
         "surface": "standard",
         "objective": "brotli",
         "file": "dist/sdk-internals/brotli/standard.mjs",
-        "tests": 35,
-        "sha256": "0e47e355ad887dad171917f5a9fef72fc467e8c2c1e99368a931aae54f4f333c"
+        "tests": 38,
+        "sha256": "2da6621d1ad9595b85d5e0005f3d31edc553d89ed48d53d9daa151284adaf1f3"
       },
       {
         "surface": "full",
         "objective": "raw",
         "file": "dist/sdk-internals/raw/full.mjs",
-        "tests": 35,
-        "sha256": "c47f732577068e5415c6f69362ff00dbf0a89201032165fd5973d466013b65d5"
+        "tests": 38,
+        "sha256": "95cb3b5d5b80eee235dd8e642874afb0b509bbd9d584285fcbdc549340bc3ac5"
       },
       {
         "surface": "full",
         "objective": "gzip",
         "file": "dist/sdk-internals/gzip/full.mjs",
-        "tests": 35,
-        "sha256": "68b787d0fe7f8426cf0dc21c1b8ca0776f38e4cce8785dc70a23e80eecc67e76"
+        "tests": 38,
+        "sha256": "8955721de94b7d86489aecd367e1c83f83e5b3d9a03ca0362d782b1499da36c8"
       },
       {
         "surface": "full",
         "objective": "brotli",
         "file": "dist/sdk-internals/brotli/full.mjs",
-        "tests": 35,
-        "sha256": "30cedb958acc2fa45d5b9462884a2e4d5cf74ed304e3560e0ae1b2367bea58d2"
+        "tests": 38,
+        "sha256": "0140c51d0729367ef9d185ddb76c8238c16a0a41a5a426cbe68aacdb906d747b"
       }
     ],
-    "deliveryTests": 9
+    "deliveryTests": 11
   },
   "treeShaking": {
     "tests": 24,
     "source": "artifacts/tree-shaking/results.json",
-    "sha256": "1a67a655adeee41b7b785e1f4ee4caaf02084fe6aa6c839db249db9c954257d3"
+    "sha256": "8a67ff8141b0b03dd15b8a8ae93b640d366c3da18af7e8f0dc28fc3d3f96ca23"
   },
   "journeys": [
     {
       "surface": "standard",
       "objective": "raw",
       "ok": true,
-      "originalFile": "artifacts/sdk/standard/original-oxc-terser-pooled.mjs",
+      "originalFile": "artifacts/sdk/standard/original-terser-oxc-pooled.mjs",
       "candidateFile": "artifacts/sdk/standard/raw.mjs",
       "publicMethods": [
         {
@@ -734,13 +737,13 @@
       ],
       "events": [
         "checkout",
-        "$identify",
-        "$groupidentify",
         "identified checkout",
         "$feature_flag_called",
-        "$feature_flag_called",
-        "$feature_flag_called",
+        "$identify",
         "after consent",
+        "$groupidentify",
+        "$feature_flag_called",
+        "$feature_flag_called",
         "$autocapture",
         "$autocapture",
         "$exception",
@@ -1188,14 +1191,14 @@
         "severityLevels"
       ],
       "events": [
-        "$identify",
-        "checkout",
         "$groupidentify",
+        "checkout",
+        "$identify",
         "identified checkout",
         "$feature_flag_called",
         "$feature_flag_called",
-        "$feature_flag_called",
         "after consent",
+        "$feature_flag_called",
         "$autocapture",
         "$autocapture",
         "$exception",
@@ -1643,14 +1646,14 @@
         "severityLevels"
       ],
       "events": [
-        "$identify",
-        "checkout",
-        "$groupidentify",
         "identified checkout",
+        "checkout",
         "$feature_flag_called",
-        "$feature_flag_called",
-        "$feature_flag_called",
+        "$identify",
+        "$groupidentify",
         "after consent",
+        "$feature_flag_called",
+        "$feature_flag_called",
         "$autocapture",
         "$autocapture",
         "$exception",
@@ -2098,14 +2101,14 @@
         "severityLevels"
       ],
       "events": [
+        "checkout",
+        "$feature_flag_called",
         "$feature_flag_called",
         "$identify",
-        "checkout",
+        "after consent",
         "$groupidentify",
         "identified checkout",
         "$feature_flag_called",
-        "$feature_flag_called",
-        "after consent",
         "$autocapture",
         "$autocapture",
         "$exception",
@@ -2558,12 +2561,12 @@
       ],
       "events": [
         "checkout",
-        "$identify",
-        "$feature_flag_called",
-        "after consent",
-        "$feature_flag_called",
-        "$groupidentify",
         "identified checkout",
+        "$feature_flag_called",
+        "$identify",
+        "after consent",
+        "$groupidentify",
+        "$feature_flag_called",
         "$feature_flag_called",
         "$autocapture",
         "$autocapture",
@@ -3016,14 +3019,14 @@
         "severityLevels"
       ],
       "events": [
-        "checkout",
-        "$identify",
         "$feature_flag_called",
+        "$identify",
+        "checkout",
+        "$feature_flag_called",
+        "after consent",
         "$groupidentify",
         "identified checkout",
         "$feature_flag_called",
-        "$feature_flag_called",
-        "after consent",
         "$autocapture",
         "$autocapture",
         "$exception",
@@ -3041,8 +3044,52 @@
       }
     }
   ],
+  "consumers": {
+    "ok": true,
+    "packageIntegrity": "sha512-C2m5cfjh3xlNMF2QN6JAdSg1VMT+tVzhPnvzAOxDPRByghqqhEMBdJSSjw/dfuFRxngO8gBK5jP7wp5zXds7oA==",
+    "fixtures": 9,
+    "bundlers": 2,
+    "checks": "One installed package wins raw/gzip/Brotli for every optimized fixture; unchanged subpaths are equal. Default side-effect analysis, React named-export elimination, slim hook isolation, lazy chunking, runtime exports and constructor/singleton identity.",
+    "source": "artifacts/sdk-consumers/results.json",
+    "sha256": "1f38b780de2f1e0d9890fe28b2a2eac5f3695bd034d6508c0caf0366c663dae9",
+    "journeys": [
+      {
+        "surface": "standard",
+        "bundler": "esbuild",
+        "ok": true
+      },
+      {
+        "surface": "standard",
+        "bundler": "rolldown",
+        "ok": true
+      },
+      {
+        "surface": "full",
+        "bundler": "esbuild",
+        "ok": true
+      },
+      {
+        "surface": "full",
+        "bundler": "rolldown",
+        "ok": true
+      }
+    ],
+    "performance": {
+      "source": "artifacts/sdk-consumers/performance.json",
+      "sha256": "2848e2541ac07fc1fd48fac84be7a957b091c73489163c0be766140607297079",
+      "samples": 80,
+      "nonInferiorityMarginPercent": 2,
+      "executionEnvironment": {
+        "kind": "isolated GitHub Actions job",
+        "repository": "yeargun/posthoglil",
+        "runId": "37128506583",
+        "commit": "5df10143bf5e431153c72a4dca26b5050fbe4868"
+      },
+      "allWorkloadsNonInferior": true
+    }
+  },
   "performance": {
-    "samples": 15,
+    "samples": 30,
     "warmupPairs": 2,
     "rows": 6,
     "source": "artifacts/sdk/performance.json"
