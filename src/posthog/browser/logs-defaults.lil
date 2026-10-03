@@ -1,0 +1,97 @@
+// packages/browser/src/logs-defaults.ts — resolves the page's `logs` config into the record core's
+// PostHogLogs consumes. Config values are page-supplied, so they stay dynamic.
+import { isUndefined } from "../core/utils/type-utils.lil";
+import { navigator } from "../browser-common/utils/globals.lil";
+import extern { detectOS } from "@upstream/core/utils/user-agent-utils";
+import extern { osResourceAttributes } from "@upstream/core/utils/otlp-resource";
+extern JsValue detectOS;
+extern JsValue osResourceAttributes;
+extern JsValue Math;
+extern JsValue Object;
+
+int DEFAULT_FLUSH_INTERVAL_MS = 3000;
+int DEFAULT_MAX_BUFFER_SIZE = 100;
+int DEFAULT_MAX_LOGS_PER_INTERVAL = 1000;
+// Console runs uncapped, so this buffer depth is its only drop protection.
+int DEFAULT_CONSOLE_MAX_QUEUE_SIZE = 2048;
+int DEFAULT_MAX_BATCH_RECORDS_PER_POST = 100;
+
+// Browser resource attribute defaults: the visitor's OS, omitted (not emitted empty) when the user agent
+// can't be placed or there is no navigator; resolution never throws.
+JsValue defaultResourceAttributes() {
+  JsValue osName = "";
+  JsValue osVersion = "";
+  try {
+    JsValue userAgent = if (navigator == null) { undefined } else { navigator.userAgent };
+    if (userAgent.truthy()) {
+      JsValue os = detectOS(userAgent);
+      osName = os[0];
+      osVersion = os[1];
+    }
+  } catch {
+  }
+  return osResourceAttributes(osName, osVersion);
+}
+
+// `value ?? fallback` where the fallback is a constant.
+JsValue orDefault(JsValue value, JsValue fallback) {
+  return if (value == null) { fallback } else { value };
+}
+
+/**
+ * Resolves the public `logs` config into the shape core `PostHogLogs` consumes.
+ *
+ * `serviceNameDefault` is the console instance's `service.name` fallback
+ * (`posthog-browser-logs`); the programmatic instance falls back to core's
+ * `unknown_service`. `consoleCapture` disables the per-interval rate cap entirely
+ * (even when the user set `maxLogsPerInterval`), so console capture is never
+ * rate-dropped — the deep buffer is its only bound.
+ */
+export JsValue resolveLogsConfig(JsValue config, JsValue opts) {
+  bool hasConfig = config != null;
+  JsValue flushIntervalMs = orDefault(if (hasConfig) { config.flushIntervalMs } else { undefined }, DEFAULT_FLUSH_INTERVAL_MS);
+  JsValue maxBufferSize = orDefault(if (hasConfig) { config.maxBufferSize } else { undefined }, DEFAULT_MAX_BUFFER_SIZE);
+  JsValue maxLogsPerInterval = if (opts != null && opts.consoleCapture.truthy()) {
+    undefined
+  } else {
+    orDefault(if (hasConfig) { config.maxLogsPerInterval } else { undefined }, DEFAULT_MAX_LOGS_PER_INTERVAL)
+  };
+  JsValue maxQueueSize = if (isUndefined(maxLogsPerInterval)) {
+    Math.max(maxBufferSize, DEFAULT_CONSOLE_MAX_QUEUE_SIZE)
+  } else {
+    Math.max(maxBufferSize, maxLogsPerInterval)
+  };
+  // OTLP keys in `resourceAttributes` take precedence over the named config fields.
+  JsValue resourceAttributes = Object.assign(object {}, defaultResourceAttributes(), if (hasConfig) { config.resourceAttributes } else { undefined });
+  JsValue serviceName = resourceAttributes["service.name"];
+  if (serviceName == null) {
+    serviceName = if (hasConfig) { config.serviceName } else { undefined };
+    if (serviceName == null) {
+      serviceName = if (opts == null) { undefined } else { opts.serviceNameDefault };
+    }
+  }
+  JsValue serviceVersion = resourceAttributes["service.version"];
+  if (serviceVersion == null) {
+    serviceVersion = if (hasConfig) { config.serviceVersion } else { undefined };
+  }
+  JsValue environment = resourceAttributes["deployment.environment"];
+  if (environment == null) {
+    environment = if (hasConfig) { config.environment } else { undefined };
+  }
+  return object {
+    serviceName: serviceName,
+    serviceVersion: serviceVersion,
+    environment: environment,
+    resourceAttributes: resourceAttributes,
+    beforeSend: if (hasConfig) { config.beforeSend } else { undefined },
+    flushIntervalMs: flushIntervalMs,
+    maxBufferSize: maxBufferSize,
+    maxQueueSize: maxQueueSize,
+    maxBatchRecordsPerPost: DEFAULT_MAX_BATCH_RECORDS_PER_POST,
+    rateCapWindowMs: flushIntervalMs,
+    maxLogsPerInterval: maxLogsPerInterval,
+    // Mobile-only budgets; the browser drains on pagehide via sendBeacon.
+    backgroundFlushBudgetMs: 0,
+    terminationFlushBudgetMs: 0
+  };
+}

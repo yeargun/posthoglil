@@ -1,0 +1,207 @@
+// packages/browser/src/persistence-key-policy.ts — the policy table stays a plain object keyed by the
+// persistence constants (a lookup reads it as upstream does, inherited names included); entries are
+// fresh objects in upstream's key order. The prefix policies are a private typed list.
+import {
+  PEOPLE_DISTINCT_ID_KEY,
+  ALIAS_ID_KEY,
+  CAMPAIGN_IDS_KEY,
+  EVENT_TIMERS_KEY,
+  PERSISTENCE_FACEBOOK_CLICK_ID,
+  PERSISTENCE_FACEBOOK_BROWSER_ID,
+  AUTOCAPTURE_DISABLED_SERVER_SIDE,
+  HEATMAPS_ENABLED_SERVER_SIDE,
+  LOGS_CAPTURE_ENABLED_SERVER_SIDE,
+  EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE,
+  ERROR_TRACKING_SUPPRESSION_RULES,
+  ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS,
+  WEB_VITALS_ENABLED_SERVER_SIDE,
+  DEAD_CLICKS_ENABLED_SERVER_SIDE,
+  PRODUCT_TOURS_ENABLED_SERVER_SIDE,
+  WEB_VITALS_ALLOWED_METRICS,
+  SESSION_RECORDING_REMOTE_CONFIG,
+  SESSION_RECORDING_ENABLED_SERVER_SIDE,
+  SESSION_ID,
+  SESSION_RECORDING_IS_SAMPLED,
+  SESSION_RECORDING_SAMPLE_RATE,
+  SESSION_RECORDING_PAST_MINIMUM_DURATION,
+  SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION,
+  SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION,
+  SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP,
+  SESSION_RECORDING_FLUSHED_SIZE,
+  ENABLED_FEATURE_FLAGS,
+  PERSISTENCE_ACTIVE_FEATURE_FLAGS,
+  PERSISTENCE_EARLY_ACCESS_FEATURES,
+  PERSISTENCE_FEATURE_FLAG_DETAILS,
+  PERSISTENCE_FEATURE_FLAG_PAYLOADS,
+  PERSISTENCE_FEATURE_FLAG_REQUEST_ID,
+  PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS,
+  PERSISTENCE_OVERRIDE_FEATURE_FLAGS,
+  PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS,
+  STORED_PERSON_PROPERTIES_KEY,
+  STORED_GROUP_PROPERTIES_KEY,
+  SURVEYS,
+  SURVEYS_LOADED_AT,
+  SURVEYS_ACTIVATED,
+  SURVEYS_ACTIVATED_SESSION,
+  SURVEYS_ACTIVATED_TIMESTAMPS,
+  PRODUCT_TOURS,
+  PRODUCT_TOURS_ACTIVATED,
+  PRODUCT_TOURS_ACTIVATED_SESSION,
+  CONVERSATIONS_LEGACY_WIDGET_SESSION_ID,
+  CONVERSATIONS_LEGACY_TICKET_ID,
+  CONVERSATIONS_LEGACY_WIDGET_STATE,
+  CONVERSATIONS_LEGACY_USER_TRAITS,
+  FLAG_CALL_REPORTED,
+  FLAG_CALL_REPORTED_SESSION_ID,
+  GROUPS,
+  PERSISTENCE_FEATURE_FLAG_ERRORS,
+  PERSISTENCE_FEATURE_FLAG_EVALUATED_AT,
+  USER_STATE,
+  CLIENT_SESSION_PROPS,
+  CAPTURE_RATE_LIMIT,
+  INITIAL_CAMPAIGN_PARAMS,
+  INITIAL_REFERRER_INFO,
+  INITIAL_PERSON_INFO,
+  ENABLE_PERSON_PROCESSING,
+  SESSION_RECORDING_OVERRIDE_SAMPLING,
+  SESSION_RECORDING_OVERRIDE_LINKED_FLAG,
+  SESSION_RECORDING_OVERRIDE_URL_TRIGGER,
+  SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER,
+  SDK_DEBUG_EXTENSIONS_INIT_METHOD,
+  SDK_DEBUG_EXTENSIONS_INIT_TIME_MS,
+  SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED,
+  SDK_DEBUG_REPLAY_STALE_CONFIG,
+  SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS,
+  SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS,
+  SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS,
+  SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS,
+  SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG,
+  SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT,
+  SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS,
+  SESSION_RECORDING_START_REASON,
+  SESSION_RECORDING_TRIGGER_V2_GROUP_EVENT_PREFIX,
+  SESSION_RECORDING_TRIGGER_V2_GROUP_SAMPLING_PREFIX,
+  SESSION_RECORDING_TRIGGER_V2_GROUP_URL_PREFIX
+} from "./constants.lil";
+import { isNull } from "../core/utils/type-utils.lil";
+
+/**
+ * Keys sharing a `storageGroup` are persisted together in their own storage
+ * entry (`<name>__<group>`) instead of the main persistence blob, when the
+ * `split_storage` config is enabled. Keys without a group
+ * stay in the main blob. Members of one group are written in a single entry so
+ * an atomic `register` of the whole group lands as one write (no torn state).
+ */
+export JsValue PERSISTENCE_STORAGE_GROUPS = ["flags", "surveys"];
+
+// - `event`: include the stored key/value on captured events as-is.
+// - `hidden`: keep the key in persistence only; never expose it on captured events.
+// `volatile` keys change on every remote load and never mark their storage group dirty.
+export JsValue PERSISTENCE_KEY_POLICY = object {};
+PERSISTENCE_KEY_POLICY[PEOPLE_DISTINCT_ID_KEY] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[ALIAS_ID_KEY] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[CAMPAIGN_IDS_KEY] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[EVENT_TIMERS_KEY] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_FACEBOOK_CLICK_ID] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_FACEBOOK_BROWSER_ID] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[AUTOCAPTURE_DISABLED_SERVER_SIDE] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[HEATMAPS_ENABLED_SERVER_SIDE] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[LOGS_CAPTURE_ENABLED_SERVER_SIDE] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[ERROR_TRACKING_SUPPRESSION_RULES] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[WEB_VITALS_ENABLED_SERVER_SIDE] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[DEAD_CLICKS_ENABLED_SERVER_SIDE] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[PRODUCT_TOURS_ENABLED_SERVER_SIDE] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[WEB_VITALS_ALLOWED_METRICS] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_REMOTE_CONFIG] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_ENABLED_SERVER_SIDE] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SESSION_ID] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_IS_SAMPLED] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_SAMPLE_RATE] = object {
+  exposure: "event",
+  shouldSkipFromEventProperties: (JsValue value) => isNull(value)
+};
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_PAST_MINIMUM_DURATION] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_FLUSHED_SIZE] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[ENABLED_FEATURE_FLAGS] = object { exposure: "hidden", storageGroup: "flags" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_ACTIVE_FEATURE_FLAGS] = object { exposure: "hidden", storageGroup: "flags" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_EARLY_ACCESS_FEATURES] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_FEATURE_FLAG_DETAILS] = object { exposure: "hidden", storageGroup: "flags" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_FEATURE_FLAG_PAYLOADS] = object { exposure: "hidden", storageGroup: "flags" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_FEATURE_FLAG_REQUEST_ID] = object { exposure: "hidden", storageGroup: "flags", volatile: true };
+// Server gate for minimal $feature_flag_called events — internal state that must never
+// leak into event properties.
+PERSISTENCE_KEY_POLICY[PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS] = object { exposure: "hidden", storageGroup: "flags" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_OVERRIDE_FEATURE_FLAGS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[STORED_PERSON_PROPERTIES_KEY] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[STORED_GROUP_PROPERTIES_KEY] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SURVEYS] = object { exposure: "hidden", storageGroup: "surveys" };
+PERSISTENCE_KEY_POLICY[SURVEYS_LOADED_AT] = object { exposure: "hidden", storageGroup: "surveys", volatile: true };
+PERSISTENCE_KEY_POLICY[SURVEYS_ACTIVATED] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SURVEYS_ACTIVATED_SESSION] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SURVEYS_ACTIVATED_TIMESTAMPS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PRODUCT_TOURS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PRODUCT_TOURS_ACTIVATED] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PRODUCT_TOURS_ACTIVATED_SESSION] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[CONVERSATIONS_LEGACY_WIDGET_SESSION_ID] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[CONVERSATIONS_LEGACY_TICKET_ID] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[CONVERSATIONS_LEGACY_WIDGET_STATE] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[CONVERSATIONS_LEGACY_USER_TRAITS] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[FLAG_CALL_REPORTED] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[FLAG_CALL_REPORTED_SESSION_ID] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[GROUPS] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_FEATURE_FLAG_ERRORS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[PERSISTENCE_FEATURE_FLAG_EVALUATED_AT] = object { exposure: "hidden", storageGroup: "flags", volatile: true };
+PERSISTENCE_KEY_POLICY[USER_STATE] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[CLIENT_SESSION_PROPS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[CAPTURE_RATE_LIMIT] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[INITIAL_CAMPAIGN_PARAMS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[INITIAL_REFERRER_INFO] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[INITIAL_PERSON_INFO] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[ENABLE_PERSON_PROCESSING] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_OVERRIDE_SAMPLING] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_OVERRIDE_LINKED_FLAG] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_OVERRIDE_URL_TRIGGER] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_EXTENSIONS_INIT_METHOD] = object { exposure: "event" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_EXTENSIONS_INIT_TIME_MS] = object { exposure: "event" };
+// replay debug state: SessionRecording.sdkDebugProperties adds it to the events that carry replay debug properties
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_STALE_CONFIG] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS] = object { exposure: "hidden" };
+PERSISTENCE_KEY_POLICY[SESSION_RECORDING_START_REASON] = object { exposure: "event" };
+
+shape PrefixPolicy {
+  data string prefix;
+  data JsValue policy;
+}
+
+PrefixPolicy[] PERSISTENCE_KEY_PREFIX_POLICY = [
+  PrefixPolicy{prefix: SESSION_RECORDING_TRIGGER_V2_GROUP_EVENT_PREFIX, policy: object { exposure: "hidden" }},
+  PrefixPolicy{prefix: SESSION_RECORDING_TRIGGER_V2_GROUP_URL_PREFIX, policy: object { exposure: "hidden" }},
+  PrefixPolicy{prefix: SESSION_RECORDING_TRIGGER_V2_GROUP_SAMPLING_PREFIX, policy: object { exposure: "hidden" }}
+];
+
+export JsValue getPersistenceKeyPolicy(string key) {
+  JsValue exactMatch = PERSISTENCE_KEY_POLICY[key];
+  if (exactMatch.truthy()) {
+    return exactMatch;
+  }
+  for (PrefixPolicy entry of PERSISTENCE_KEY_PREFIX_POLICY) {
+    if (key.indexOf(entry.prefix) == 0) {
+      return entry.policy;
+    }
+  }
+  return undefined;
+}
