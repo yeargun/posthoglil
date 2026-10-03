@@ -26,12 +26,21 @@ for(const file of artifacts){
 }
 const counts=[...readFileSync(join(root,'reports/full-sdk/utilities-tests.log'),'utf8').matchAll(/^# tests (\d+)$/gm)].map(match=>Number(match[1]))
 assert.equal(counts.length,3)
+const treeShaking=read('artifacts/tree-shaking/results.json')
+assert.equal(treeShaking.rows.length,24)
+const treeCounts=[...readFileSync(join(root,'reports/full-sdk/tree-shaking-tests.log'),'utf8').matchAll(/^# tests (\d+)$/gm)].map(match=>Number(match[1]))
+assert.deepEqual(treeCounts,[24])
+for(const row of treeShaking.rows)for(const artifact of [row.artifact,...row.originals]) {
+  assert.equal(hash(artifact.file),artifact.sha256)
+  assert.equal(hash(artifact.source),artifact.sourceSha256)
+}
 const result={schema:1,generatedAt:new Date().toISOString(),upstreamVersion,upstreamCommit,ok:true,
   upstreamTestsPerObjective:480,upstreamSuites:suites,utilityTests:counts.reduce((a,b)=>a+b,0),browser:'Chromium '+perf.browser,
   scope:'Selected upstream suites, targeted differential/ABI tests and browser journeys. This is not the entire PostHog test suite or a cross-browser certification.',
   coverage:[
     '480 selected, unmodified upstream tests pass for each of raw, gzip and Brotli; the upstream baseline passes the same suites.',
-    `${counts.reduce((a,b)=>a+b,0)} utility/API checks, including constructor reflection and host subclassing.`,
+    `${counts.reduce((a,b)=>a+b,0)} utility/API checks, including constructor reflection, inherited setters, host subclassing and variadic parser calls.`,
+    '24 named-import checks: esbuild and Rolldown remove unrelated utility code and execute the selected export for each raw/gzip/Brotli objective.',
     'Six paired browser journeys: matching public exports/methods, loaded callbacks, flags, identify, groups, consent, capture hooks and event payloads.',
     'Identity survives reload; reset and named-instance isolation are checked.',
     'Autocapture and exceptions reach a local HTTP collector. Passwords and no-capture controls are excluded.',
@@ -40,7 +49,7 @@ const result={schema:1,generatedAt:new Date().toISOString(),upstreamVersion,upst
     'Batching and an HTTP 503 retry preserve event IDs and properties in the Brotli SDKs.',
     'Packed tarball: CommonJS, React provider/hooks, SSR, strict TypeScript and byte-identical canonical upstream declarations and rebuilt ESM/CJS source maps.',
   ],
-  artifacts,package:pkg,transport,
+  artifacts,package:pkg,transport,treeShaking:{tests:24,source:'artifacts/tree-shaking/results.json',sha256:hash('artifacts/tree-shaking/results.json')},
   journeys:journeys.map(row=>({surface:row.surface,objective:row.objective,ok:row.ok,originalFile:row.baseline.file,candidateFile:row.candidate.file,publicMethods:row.candidate.result.api.methods,exports:row.candidate.result.api.exports,events:row.candidate.eventNames,persistence:row.candidate.persistence})),
   performance:{samples:perf.samples,warmupPairs:perf.warmupPairs,rows:perf.rows.length,source:'artifacts/sdk/performance.json'}}
 writeFileSync(join(root,'artifacts/sdk/validation.json'),JSON.stringify(result,null,2)+'\n')

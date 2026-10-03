@@ -30,22 +30,8 @@ extern JsValue Map;
 extern JsValue Set;
 extern JsValue Number;
 
-JsValue makeInternalFields() {
-  JsValue fields = JS.object();
-  fields["MESSAGE"] = "$message";
-  fields["TIMESTAMP"] = "$timestamp";
-  return fields;
-}
-
-JsValue makeDefaultStepsConfig() {
-  JsValue config = JS.object();
-  config["enabled"] = true;
-  config["max_bytes"] = 32768;
-  return config;
-}
-
-export JsValue EXCEPTION_STEP_INTERNAL_FIELDS = makeInternalFields();
-export JsValue DEFAULT_EXCEPTION_STEPS_CONFIG = makeDefaultStepsConfig();
+export JsValue EXCEPTION_STEP_INTERNAL_FIELDS = object { MESSAGE: "$message", TIMESTAMP: "$timestamp" };
+export JsValue DEFAULT_EXCEPTION_STEPS_CONFIG = object { enabled: true, max_bytes: 32768 };
 
 number normalizePositiveInteger(JsValue input, number fallback) {
   if (!isNumberValue(input) || !isFiniteNum(toNum(input))) {
@@ -91,38 +77,38 @@ export JsValue stripReservedExceptionStepFields(JsValue properties = JS.undefine
       i = i + 1;
     }
   }
-  JsValue out = JS.object();
-  out["sanitizedProperties"] = sanitizedProperties;
-  out["droppedKeys"] = droppedKeys;
+  JsValue out = object { "sanitizedProperties": sanitizedProperties, "droppedKeys": droppedKeys };
   return out;
 }
 
-JsValue normalizeAndSerializeStep(JsValue step) {
+shape SerializedStep {
+  data JsValue step;
+  data string json;
+}
+
+SerializedStep? normalizeAndSerializeStep(JsValue step) {
   string json = "";
   try {
     json = safeJsonStringify(step);
   } catch {
-    return undef();
+    return null;
   }
   try {
     JsValue parsed = jsonParse(json);
     if (!isObjectValue(parsed)) {
-      return undef();
+      return null;
     }
     JsValue message = parsed["$message"];
     JsValue timestamp = parsed["$timestamp"];
     if (!isStringValue(message) || toStr(message).trim().length == 0) {
-      return undef();
+      return null;
     }
     if (!isStringValue(timestamp) && !isNumberValue(timestamp)) {
-      return undef();
+      return null;
     }
-    JsValue out = JS.object();
-    out["step"] = parsed;
-    out["json"] = json;
-    return out;
+    return SerializedStep { step: parsed, json: json };
   } catch {
-    return undef();
+    return null;
   }
 }
 
@@ -147,10 +133,10 @@ export number getUtf8ByteLength(string value) {
   return byteLength;
 }
 
-JsValue stepsConstructor(JsValue self, JsValue args) {
+JsValue stepsConstructor(JsValue self, JsValue config) {
   self["_entries"] = JS.array();
   self["_totalBytes"] = 0;
-  self["_config"] = resolveExceptionStepsConfig(args[0]);
+  self["_config"] = resolveExceptionStepsConfig(config);
   return undef();
 }
 
@@ -174,17 +160,15 @@ JsValue stepsSetConfig(JsValue self, JsValue config) {
 }
 
 JsValue stepsAdd(JsValue self, JsValue step) {
-  JsValue serialized = normalizeAndSerializeStep(step);
-  if (!serialized.truthy()) {
+  SerializedStep? serialized = normalizeAndSerializeStep(step);
+  if (serialized == null) {
     return undef();
   }
-  number bytes = getUtf8ByteLength(toStr(serialized["json"]));
+  number bytes = getUtf8ByteLength(serialized.json);
   if (bytes > JS.number(self["_config"]["max_bytes"])) {
     return undef();
   }
-  JsValue entry = JS.object();
-  entry["step"] = serialized["step"];
-  entry["bytes"] = bytes;
+  JsValue entry = object { "step": serialized.step, "bytes": bytes };
   JS.invoke(self["_entries"], "push", entry);
   self["_totalBytes"] = JS.number(self["_totalBytes"]) + bytes;
   JS.invoke(self, "_trimToMaxBytes");
@@ -212,7 +196,7 @@ JsValue stepsSize(JsValue self) {
 }
 
 export class ExceptionStepsBuffer {
-  init(JsValue config) { stepsConstructor(this, JS.array(config)); }
+  init(JsValue config) { stepsConstructor(this, config); }
   JsValue setConfig(JsValue a0) { return stepsSetConfig(this, a0); }
   JsValue add(JsValue a0) { return stepsAdd(this, a0); }
   JsValue getAttachable() { return stepsGetAttachable(this); }
@@ -222,8 +206,8 @@ export class ExceptionStepsBuffer {
 }
 export constructor ExceptionStepsBuffer;
 
-JsValue cacheConstructor(JsValue self, JsValue args) {
-  self["_maxSize"] = args[0];
+JsValue cacheConstructor(JsValue self, JsValue maxSize) {
+  self["_maxSize"] = maxSize;
   self["_cache"] = JS.construct(Map);
   return undef();
 }
@@ -255,7 +239,7 @@ JsValue cacheReduce(JsValue self) {
 }
 
 export class ReduceableCache {
-  init(JsValue maxSize) { cacheConstructor(this, JS.array(maxSize)); }
+  init(JsValue maxSize) { cacheConstructor(this, maxSize); }
   JsValue get(JsValue a0) { return cacheGet(this, a0); }
   JsValue set(JsValue a0, JsValue a1) { return cacheSet(this, a0, a1); }
   JsValue reduce() { return cacheReduce(this); }
@@ -313,17 +297,8 @@ JsValue getFilenameToChunkIdMap(JsValue stackParser) {
 }
 
 JsValue fallbackException(JsValue self, JsValue context) {
-  JsValue out = JS.object();
-  out["type"] = "Error";
-  out["value"] = "Unknown error";
-  JsValue syntheticException = context["syntheticException"];
-  if (!isNullish(syntheticException)) {
-    out["stack"] = syntheticException["stack"];
-  } else {
-    out["stack"] = undef();
-  }
-  out["synthetic"] = true;
-  return out;
+JsValue syntheticException = context["syntheticException"];
+  return object { type: "Error", value: "Unknown error", stack: if (isNullish(syntheticException)) { undef() } else { syntheticException["stack"] }, synthetic: true };
 }
 
 JsValue builderApplyCoercers(JsValue self, JsValue input, JsValue context) {
@@ -357,13 +332,23 @@ JsValue builderGetAggregateErrors(JsValue self, JsValue input) {
   return undef();
 }
 
-JsValue createCoercingContext(JsValue builder, JsValue mechanism, JsValue hint, JsValue state, int depth, int wrapperDepth) {
+// Shared only by the traversal and its closures, never a public error/payload.
+shape CoercingState {
+  data number count;
+  data number memberInspections;
+  data bool hasAggregate;
+  data JsValue seen;
+  data JsValue wrappers;
+  data JsValue skipped;
+}
+
+JsValue createCoercingContext(JsValue builder, JsValue mechanism, JsValue hint, CoercingState state, int depth, int wrapperDepth) {
   JsValue context = copyObj(hint);
   context["syntheticException"] = if (depth == 0) { hint["syntheticException"] } else { undef() };
   context["mechanism"] = if (depth == 0) { mechanism } else { JS.object() };
   func(JsValue, JsValue)->JsValue apply = (JsValue ignored, JsValue input) => {
     JsValue exception = coerceGraph(builder, input, mechanism, hint, state, depth, wrapperDepth + 1);
-    if (!exception.truthy()) throw state["skipped"];
+    if (!exception.truthy()) throw state.skipped;
     return exception;
   };
   func(JsValue, JsValue)->JsValue next = (JsValue ignored, JsValue input) => coerceGraph(builder, input, mechanism, hint, state, depth + 1, 0);
@@ -372,47 +357,47 @@ JsValue createCoercingContext(JsValue builder, JsValue mechanism, JsValue hint, 
   return context;
 }
 
-JsValue coerceGraph(JsValue builder, JsValue input, JsValue mechanism, JsValue hint, JsValue state, int depth, int wrapperDepth) {
+JsValue coerceGraph(JsValue builder, JsValue input, JsValue mechanism, JsValue hint, CoercingState state, int depth, int wrapperDepth) {
   JsValue context = createCoercingContext(builder, mechanism, hint, state, depth, wrapperDepth);
   JsValue forward = context["apply"];
   func(JsValue, JsValue)->JsValue apply = (JsValue ignored, JsValue nextInput) => {
-    JS.invoke(state["wrappers"], "push", input);
+    JS.invoke(state.wrappers, "push", input);
     try { return JS.call(forward, undef(), nextInput); }
-    finally { JS.invoke(state["wrappers"], "pop"); }
+    finally { JS.invoke(state.wrappers, "pop"); }
   };
   context["apply"] = JS.method1(apply);
-  if (wrapperDepth > 4 || (wrapperDepth > 0 && !JS.strictEqual(JS.invoke(state["wrappers"], "indexOf", input), -1))) {
+  if (wrapperDepth > 4 || (wrapperDepth > 0 && !JS.strictEqual(JS.invoke(state.wrappers, "indexOf", input), -1))) {
     return JS.invoke(builder, "coerceFallback", context);
   }
   bool reference = (JS.typeOf(input) == "object" && !JS.strictEqual(input, null)) || JS.typeOf(input) == "function";
-  if ((wrapperDepth == 0 && JS.number(state["count"]) >= 50) || (reference && JS.invoke(state["seen"], "has", input).truthy())) return undef();
-  if (reference) JS.invoke(state["seen"], "add", input);
-  if (wrapperDepth == 0) state["count"] = JS.number(state["count"]) + 1;
+  if ((wrapperDepth == 0 && state.count >= 50) || (reference && JS.invoke(state.seen, "has", input).truthy())) return undef();
+  if (reference) JS.invoke(state.seen, "add", input);
+  if (wrapperDepth == 0) state.count = state.count + 1;
   JsValue errors = JS.invoke(builder, "getAggregateErrors", input);
-  if (errors.truthy()) state["hasAggregate"] = true;
+  if (errors.truthy()) state.hasAggregate = true;
   JsValue exception = undef();
   try {
     exception = JS.invoke(builder, "applyCoercers", input, context);
-    if (!exception.truthy()) throw state["skipped"];
+    if (!exception.truthy()) throw state.skipped;
   } catch (JsValue error) {
-    if (JS.strictEqual(error, state["skipped"])) {
-      if (wrapperDepth == 0) state["count"] = JS.number(state["count"]) - 1;
+    if (JS.strictEqual(error, state.skipped)) {
+      if (wrapperDepth == 0) state.count = state.count - 1;
       return undef();
     }
-    if (!state["hasAggregate"].truthy()) throw error;
+    if (!state.hasAggregate) throw error;
     exception = JS.invoke(builder, "coerceFallback", context);
   }
-  if (!errors.truthy() || JS.number(state["count"]) >= 50) return exception;
+  if (!errors.truthy() || state.count >= 50) return exception;
   JsValue length = undef();
   try { length = errors["length"]; } catch { return exception; }
   if (!JS.invoke(Number, "isInteger", length).truthy() || JS.lessThan(length, 0) || JS.greaterThan(length, 4294967295.0)) return exception;
   JsValue children = JS.array();
-  for (int index = 0; JS.number(state["count"]) < 50 && JS.number(state["memberInspections"]) < 1000 && JS.lessThan(index, length); index = index + 1) {
-    state["memberInspections"] = JS.number(state["memberInspections"]) + 1;
+  for (int index = 0; state.count < 50 && state.memberInspections < 1000 && JS.lessThan(index, length); index = index + 1) {
+    state.memberInspections = state.memberInspections + 1;
     JsValue child = undef();
     try { child = JS.invoke(context, "next", errors[index]); }
     catch {
-      state["count"] = JS.number(state["count"]) + 1;
+      state.count = state.count + 1;
       child = JS.invoke(builder, "coerceFallback", createCoercingContext(builder, mechanism, hint, state, depth + 1, 0));
     }
     if (child.truthy()) JS.invoke(children, "push", child);
@@ -424,7 +409,7 @@ JsValue coerceGraph(JsValue builder, JsValue input, JsValue mechanism, JsValue h
 
 JsValue builderBuildCoercingContext(JsValue self, JsValue mechanism, JsValue hint, JsValue depthValue) {
   int depth = if (isUndef(depthValue)) { 0 } else { JS.number(depthValue).toInt() };
-  JsValue state = object { count: 0, memberInspections: 0, hasAggregate: false, seen: JS.construct(Set), wrappers: JS.array(), skipped: JS.object() };
+  CoercingState state = CoercingState { count: 0, memberInspections: 0, hasAggregate: false, seen: JS.construct(Set), wrappers: JS.array(), skipped: JS.object() };
   JsValue context = createCoercingContext(self, mechanism, hint, state, depth, 0);
   JsValue result = copyObj(context);
   func(JsValue, JsValue)->JsValue apply = (JsValue ignored, JsValue input) => {
@@ -496,8 +481,7 @@ JsValue builderConvertList(JsValue self, JsValue exceptionWithStack, JsValue mec
 }
 
 JsValue builderBuildParsingContext(JsValue self, JsValue hint) {
-  JsValue out = JS.object();
-  out["chunkIdMap"] = getFilenameToChunkIdMap(self["stackParser"]);
+  JsValue out = object { "chunkIdMap": getFilenameToChunkIdMap(self["stackParser"]) };
   if (isNullish(hint["skipFirstLines"])) {
     out["skipFirstLines"] = 1;
   } else {
@@ -517,18 +501,14 @@ JsValue builderBuildFromUnknown(JsValue self, JsValue input, JsValue hintValue) 
   }
   JsValue mechanism = providedMechanism;
   if (!mechanism.truthy()) {
-    mechanism = JS.object();
-    mechanism["handled"] = true;
-    mechanism["type"] = "generic";
+    mechanism = object { handled: true, type: "generic" };
   }
   JsValue coercingContext = JS.invoke(self, "buildCoercingContext", mechanism, hint, 0);
   JsValue exceptionWithCause = JS.invoke(coercingContext, "apply", input);
   JsValue parsingContext = JS.invoke(self, "buildParsingContext", hint);
   JsValue exceptionWithStack = JS.invoke(self, "parseStacktrace", exceptionWithCause, parsingContext);
   JsValue exceptionList = JS.invoke(self, "convertToExceptionList", exceptionWithStack, mechanism);
-  JsValue out = JS.object();
-  out["$exception_list"] = exceptionList;
-  out["$exception_level"] = "error";
+  JsValue out = object { "$exception_list": exceptionList, "$exception_level": "error" };
   return out;
 }
 
@@ -568,19 +548,15 @@ JsValue builderModifyFrames(JsValue self, JsValue exceptionList) {
   return builderModifyFramesAsync(self, exceptionList);
 }
 
-JsValue builderConstructor(JsValue self, JsValue args) {
-  self["coercers"] = args[0];
-  self["stackParser"] = args[1];
-  if (isUndef(args[2])) {
-    self["modifiers"] = JS.array();
-  } else {
-    self["modifiers"] = args[2];
-  }
+JsValue builderConstructor(JsValue self, JsValue coercers, JsValue stackParser, JsValue modifiers) {
+self["coercers"] = coercers;
+  self["stackParser"] = stackParser;
+  self["modifiers"] = modifiers;
   return undef();
 }
 
 export class ErrorPropertiesBuilder {
-  init(JsValue coercers, JsValue stackParser, JsValue modifiers = JS.array()) { builderConstructor(this, JS.array(coercers, stackParser, modifiers)); }
+  init(JsValue coercers, JsValue stackParser, JsValue modifiers = JS.array()) { builderConstructor(this, coercers, stackParser, modifiers); }
   JsValue buildFromUnknown(JsValue input, JsValue hint = JS.object()) { return builderBuildFromUnknown(this, input, hint); }
   JsValue buildCoercingContext(JsValue mechanism, JsValue hint, JsValue depth = 0) { return builderBuildCoercingContext(this, mechanism, hint, depth); }
   JsValue modifyFrames(JsValue a0) { return builderModifyFrames(this, a0); }

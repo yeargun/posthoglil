@@ -47,11 +47,21 @@ test('the tested preview tarball and license notices are shipped',()=>{
   assert.equal('sha512-'+createHash('sha512').update(readFileSync(file)).digest('base64'),pkg.integrity)
   for(const name of ['LICENSE','NOTICE.md','licenses/rrweb-MIT-LICENSE','.nojekyll'])assert.ok(existsSync(join(site,name)))
 })
+test('named-import comparisons use the current consumers and strongest original for each codec',()=>{
+  const evidence=json('evidence/tree-shaking.json')
+  assert.equal(evidence.upstreamVersion,upstreamVersion)
+  assert.equal(evidence.rows.length,24)
+  for(const row of evidence.rows) {
+    for(const artifact of [row.artifact,...row.originals])assert.equal(sha(join(site,artifact.file.replace('artifacts/',''))),artifact.sha256)
+    assert.equal(row.baseline[row.metric],Math.min(...row.originals.map(artifact=>artifact[row.metric])))
+    assert.equal(row.savingsPercent,(1-row.artifact[row.metric]/row.baseline[row.metric])*100)
+  }
+})
 test('page leads with full-SDK scope and never projects utility results onto it',()=>{
   const html=readFileSync(join(site,'index.html'),'utf8'),app=readFileSync(join(site,'app.js'),'utf8')
   assert.ok(html.indexOf('id="headline"')<html.indexOf('id="utilities"'))
   assert.match(html,/Utility-level percentages are never presented as whole-SDK savings/)
   assert.match(html,/Published npm build time is unknown/)
   assert.doesNotMatch(html+'\n'+app,/previous release|previous version|since the previous|1\.418\.(10|11)/i)
-  assert.match(app,/larger than the best minified original today/)
+  assert.match(app,/larger than the best minified original in this Brotli comparison/)
 })

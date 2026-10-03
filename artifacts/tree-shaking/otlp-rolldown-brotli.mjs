@@ -1,0 +1,1 @@
+let e=e=>String(e)+``,t=function(t){return e(t)+`000000`};export{t as msToUnixNano};

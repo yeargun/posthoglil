@@ -82,31 +82,27 @@ JsValue identityRequest(JsValue ignored, JsValue data) {
   return data;
 }
 
-JsValue makeDefaultNetworkOptions() {
-  JsValue options = JS.object();
-  options["initiatorTypes"] = [
+export JsValue defaultNetworkOptions = object {
+  initiatorTypes: [
     "audio", "beacon", "body", "css", "early-hint", "embed", "fetch", "frame",
     "iframe", "icon", "image", "img", "input", "link", "navigation", "object",
     "ping", "script", "track", "video", "xmlhttprequest"
-  ];
-  options["maskRequestFn"] = JS.method1(identityRequest);
-  options["recordHeaders"] = false;
-  options["recordBody"] = false;
-  options["recordInitialRequests"] = false;
-  options["recordPerformance"] = false;
-  options["performanceEntryTypeToObserve"] = ["first-input", "navigation", "paint", "resource"];
-  options["payloadSizeLimitBytes"] = MAX_PAYLOAD_SIZE_BYTES;
-  options["payloadHostDenyList"] = [
+  ],
+  maskRequestFn: JS.method1(identityRequest),
+  recordHeaders: false,
+  recordBody: false,
+  recordInitialRequests: false,
+  recordPerformance: false,
+  performanceEntryTypeToObserve: ["first-input", "navigation", "paint", "resource"],
+  payloadSizeLimitBytes: MAX_PAYLOAD_SIZE_BYTES,
+  payloadHostDenyList: [
     ".lr-ingest.io", ".ingest.sentry.io", ".clarity.ms", "google-analytics.com",
     "analytics.google.com", "nr-data.net", "datadoghq.com", "datadoghq.eu",
     "ddog-gov.com", "segment.io", "rudderstack.com", "amplitude.com",
     "mixpanel.com", "hotjar.com", "hotjar.io", "fullstory.com"
-  ];
-  options["streamNetworkBody"] = false;
-  return options;
-}
-
-export JsValue defaultNetworkOptions = makeDefaultNetworkOptions();
+  ],
+  streamNetworkBody: false
+};
 
 bool deniedHeader(string header) {
   string lower = header.toLowerCase();

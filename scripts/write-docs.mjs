@@ -3,17 +3,24 @@ import {join} from 'node:path'
 import {root} from './sdk-source.mjs'
 const read=file=>JSON.parse(readFileSync(join(root,file),'utf8'))
 const sdk=read('artifacts/sdk/results.json'),utilities=read('artifacts/utilities/results.json'),validation=read('artifacts/sdk/validation.json'),performance=read('artifacts/sdk/performance.json'),pkg=read('artifacts/package/receipt.json')
+const treeShaking=read('artifacts/tree-shaking/results.json')
 const n=value=>new Intl.NumberFormat('en-US').format(value)
 const delta=value=>Math.abs(value).toFixed(2)+'% '+(value>0?'smaller':value<0?'larger':'same')
 const sdkRows=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>`| ${surface.id} | ${row.objective} | ${n(row.baseline[row.metric])} | ${n(row.artifact[row.metric])} | ${delta(row.savingsPercent)} | ${row.baseline.lane} |`)).join('\n')
 const utilityRows=utilities.rows.map(module=>`| ${module.label} | ${module.objectives.map(row=>delta(row.savingsPercent)).join(' | ')} |`).join('\n')
 const runtimeRows=performance.rows.filter(row=>row.objective==='brotli').flatMap(row=>Object.entries(row.metrics).map(([metric,m])=>`| ${row.surface} | ${metric} | ${m.originalMedianMs.toFixed(2)} ms | ${m.candidateMedianMs.toFixed(2)} ms | ${m.verdict}; paired 95% interval ${m.confidence95Percent.map(x=>x.toFixed(1)+'%').join(' to ')} |`)).join('\n')
 const buildRows=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>`| ${surface.id} | ${row.objective} | ${row.originalBuildSeconds.toFixed(3)} s | ${row.totalBuildSeconds.toFixed(3)} s |`)).join('\n')
+const sdkSavings=sdk.surfaces.flatMap(surface=>surface.objectives.map(row=>row.savingsPercent))
+const sdkWins=sdkSavings.filter(value=>value>0).length
+const sizeConclusion=sdkWins===0?`The complete SDK candidates are ${Math.min(...sdkSavings.map(Math.abs)).toFixed(2)}–${Math.max(...sdkSavings.map(Math.abs)).toFixed(2)}% larger across the six objectives below.`:`${sdkWins} of the six SDK objectives are smaller than the strongest minified original; inspect each scope and objective below.`
+const utilityWins=utilities.rows.filter(module=>module.objectives.filter(row=>row.objective!=='raw').every(row=>row.savingsPercent>0)).length
+const consumerRows=treeShaking.rows.filter(row=>row.bundler==='esbuild').map(row=>`| ${row.name} | ${row.objective} | ${n(row.baseline[row.metric])} | ${n(row.artifact[row.metric])} | ${delta(row.savingsPercent)} |`).join('\n')
+const slowerRuntime=performance.rows.flatMap(row=>Object.entries(row.metrics).filter(([,metric])=>metric.verdict==='slower in this workload').map(([name,metric])=>`${row.surface} / ${row.objective} / ${{importMs:'module import',initMs:'initialization',capture1000Ms:'event preparation'}[name]} (${metric.originalMedianMs.toFixed(2)} ms original, ${metric.candidateMedianMs.toFixed(2)} ms candidate)`))
 const docs=`# PostHog × LilScript
 
 A complete browser SDK integration experiment, plus standalone utility ports, pinned to **posthog-js ${sdk.upstream.version}** at [\`${sdk.upstream.commit}\`](https://github.com/PostHog/posthog-js/tree/${sdk.upstream.commit}). The upstream source submodule is unmodified. The npm latest tag was checked on ${sdk.generatedAt.slice(0,10)}.
 
-**The full-SDK experiment works in the tested browser journeys, but it has not established a size or general performance win.** Against the strongest minified original, the candidate is approximately 0.5–1.4% larger across the SDK objectives below. Five standalone utility groups have compression wins; error tracking is larger. These are different scopes.
+**The complete SDK works in the tested browser journeys.** ${sizeConclusion} ${utilityWins} of ${utilities.rows.length} standalone utility groups are smaller for both gzip and Brotli. These are different scopes; runtime results are measured separately.
 
 [Interactive results and preview](https://yeargun.github.io/posthoglil/) · [SDK receipts](artifacts/sdk/results.json) · [Runtime samples](artifacts/sdk/performance.json) · [Validation](artifacts/sdk/validation.json)
 
@@ -37,7 +44,9 @@ ${performance.samples} measured pairs plus ${performance.warmupPairs} warmup pai
 | --- | --- | ---: | ---: | --- |
 ${runtimeRows}
 
-Import times include parse, evaluation and module scheduling from a fresh Blob URL, excluding source download. Init uses memory persistence, autocapture, bootstrapped flags and disabled recording. Capture times cover preparation and queueing of 1,000 events after 100 warmup calls; each sample asserts 1,000 accepted events. Upload, ingestion and replay processing are not timed. The results do not support a consistent event-processing speedup.
+${slowerRuntime.length?'Across all objectives, the paired measurements showed slower results for '+slowerRuntime.join('; ')+'. See the runtime selector on the page and the complete sample receipt.':''}
+
+Import times include parse, evaluation and module scheduling from a fresh Blob URL, excluding source download. Init uses memory persistence, autocapture, bootstrapped flags and disabled recording. Capture times cover preparation and queueing of 1,000 events after 100 warmup calls; each sample asserts 1,000 accepted events. Upload, ingestion and replay processing are not timed. Assess each workload's paired interval; these measurements do not establish a general application speedup.
 
 ## Build time
 
@@ -56,6 +65,18 @@ These percentages cover the listed utility exports, not the SDK. The utility ker
 ${utilityRows}
 
 The utility package API remains \`@itslil/posthog-js\` with \`surveys\`, \`error-tracking\`, \`otlp\`, \`autocapture\` and \`replay-core\` subpaths. Repository artifacts are refreshed; this task does not publish a new utility npm release. The separate SDK preview below preserves the PostHog client API.
+
+## Named imports and tree shaking
+
+These consumers import one helper from the complete utility ESM artifact, then bundle and minify with esbuild. Each source artifact has its own raw/gzip/Brotli compilation objective. The baseline is the smallest original consumer for that codec across the original minifier lanes. Numbers are bytes. [Consumer receipts and downloadable bundles](artifacts/tree-shaking/results.json) also cover Rolldown/Oxc.
+
+| Named import | Objective | Minified original consumer | LilScript consumer | Difference |
+| --- | --- | ---: | ---: | --- |
+${consumerRows}
+
+24 execution and elimination checks cover four named imports, two bundlers and three objectives. No side-effect override is applied: observable initialization, including the kernel's campaign-property array spread, remains. The default utility API is a native object literal, and the variadic stack-parser factory has no effectful reflection initializer. Unused functions can be discarded without changing the public API. These consumer sizes are not complete SDK savings.
+
+Private encoder, traversal, stack-cycle and serialization records have declared data fields. Fresh result records in these paths use native object literals; public payload field names remain unchanged. Differential tests cover inherited setters, subclass overrides, evaluation order and the parser's variadic arguments, arity and constructibility. Host dictionaries and public instances are not treated as private records.
 
 ## Try the SDK preview
 
@@ -79,7 +100,7 @@ The package is an **unpublished experimental preview**, not an official PostHog 
 
 ${validation.coverage.map(item=>'- '+item).join('\n')}
 
-This is ${validation.scope.toLowerCase()} Hosted PostHog ingestion, every optional feature, canvas recording, CSP variants and Firefox/WebKit are not certified by these tests. Recordings are tested against a local collector and decoded to verify actual DOM data and password masking.
+${validation.scope} Hosted PostHog ingestion, every optional feature, canvas recording, CSP variants and Firefox/WebKit are not certified by these tests. Recordings are tested against a local collector and decoded to verify actual DOM data and password masking.
 
 Public names, configuration keys and event payloads remain API boundaries. Only private SDK linker exports can lose function names. Standalone utility constructors retain their names, arity, prototypes, descriptors and host subclassing behavior. Exported constructors use LilScript's native constructor boundary. Dynamic host objects are not treated as freely renameable closed-world records.
 
@@ -107,7 +128,7 @@ npm run check:site
 
 ## Sponsorship
 
-Sponsorship would fund further compiler work and broader compatibility/performance validation. The evidence supports useful standalone utility savings and a working integration prototype. It does **not** yet support a claim that LilScript delivers a substantially smaller or consistently faster complete PostHog SDK. [Discuss an integration trial or sponsorship](https://github.com/yeargun/posthoglil/issues).
+Sponsorship would fund further compiler work and broader compatibility/performance validation. The evidence supports useful standalone utility savings, tested named imports and a working integration prototype. Substantial complete SDK savings and general performance claims require further evidence. [Discuss an integration trial or sponsorship](https://github.com/yeargun/posthoglil/issues).
 
 Independent work by yeargun. No affiliation with or endorsement by PostHog is implied. See [NOTICE](NOTICE.md), [LICENSE](LICENSE) and [dependency licenses](licenses).
 `

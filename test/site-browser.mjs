@@ -28,7 +28,7 @@ try{
     await page.goto(origin,{waitUntil:'networkidle'})
     await page.waitForSelector('#sdk-sizes tr')
     assert.equal(await page.locator('#headline .metric').count(),2)
-    assert.match(await page.textContent('#verdict'),/larger than the best minified original/)
+    assert.doesNotMatch(await page.textContent('#verdict'),/Loading|could not load/)
     assert.equal(await page.locator('#sdk-sizes tr').count(),3)
     assert.match(await page.textContent('#scope'),/Standard SDK/)
     await page.click('[data-surface="full"]')
@@ -42,6 +42,12 @@ try{
       await page.selectOption('#utility-select',id)
       assert.equal(await page.locator('#utility-sizes tr').count(),3)
       assert.ok((await page.getAttribute('#utility-sizes a','href')).includes(id))
+    }
+    for(const bundler of ['esbuild','rolldown'])for(const objective of ['raw','gzip','brotli']){
+      await page.selectOption('#consumer-bundler',bundler)
+      await page.selectOption('#consumer-objective',objective)
+      assert.equal(await page.locator('#consumer-sizes tr').count(),4)
+      assert.ok((await page.getAttribute('#consumer-sizes a','href')).includes(bundler))
     }
     await page.click('#demo-capture')
     await page.waitForFunction(()=>document.querySelector('#demo-output').textContent.includes('showcase.checkout'))

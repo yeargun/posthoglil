@@ -134,75 +134,72 @@ export {
   consumeBucketedRateLimit
 };
 
-JsValue kernel() {
-  JsValue api = JS.object();
-  api["uuidv7"] = uuidv7;
-  api["uuidv4"] = uuidv4;
-  api["parseUuid"] = parseUuid;
-  api["uuidFromFieldsV7"] = uuidFromFieldsV7;
-  api["uuidToHex"] = uuidToHex;
-  api["MINIMAL_FLAG_CALLED_EVENT_PROPERTIES"] = MINIMAL_FLAG_CALLED_EVENT_PROPERTIES;
-  api["MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES"] = MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES;
-  api["normalizeFlagsResponse"] = normalizeFlagsResponse;
-  api["getFeatureFlagValue"] = getFeatureFlagValue;
-  api["getFlagValuesFromFlags"] = getFlagValuesFromFlags;
-  api["getPayloadsFromFlags"] = getPayloadsFromFlags;
-  api["createFlagsResponseFromFlagsAndPayloads"] = createFlagsResponseFromFlagsAndPayloads;
-  api["minimizeFlagCalledEventProperties"] = minimizeFlagCalledEventProperties;
-  api["parsePayload"] = parsePayload;
-  api["updateFlagValue"] = updateFlagValue;
-  api["flagDetailsToResults"] = flagDetailsToResults;
-  api["getPostHogCookieName"] = getPostHogCookieName;
-  api["serializePostHogCookie"] = serializePostHogCookie;
-  api["parsePostHogCookie"] = parsePostHogCookie;
-  api["cookieStoreFromHeader"] = cookieStoreFromHeader;
-  api["readPostHogCookie"] = readPostHogCookie;
-  api["cookieStateToProperties"] = cookieStateToProperties;
-  api["getConsentCookieName"] = getConsentCookieName;
-  api["isOptedOut"] = isOptedOut;
-  api["apiHostFromConfig"] = apiHostFromConfig;
-  api["flagsApiHostFromConfig"] = flagsApiHostFromConfig;
-  api["uiHostFromConfig"] = uiHostFromConfig;
-  api["regionForHost"] = regionForHost;
-  api["endpointFor"] = endpointFor;
-  api["rateLimitContext"] = rateLimitContext;
-  api["clampFlushInterval"] = clampFlushInterval;
-  api["formatQueue"] = formatQueue;
-  api["applyOffsets"] = applyOffsets;
-  api["sortUnloadRequests"] = sortUnloadRequests;
-  api["DEFAULT_BLOCKED_UA_STRS"] = DEFAULT_BLOCKED_UA_STRS;
-  api["isBlockedUA"] = isBlockedUA;
-  api["includes"] = includes;
-  api["trim"] = trim;
-  api["stripLeadingDollar"] = stripLeadingDollar;
-  api["isDistinctIdStringLike"] = isDistinctIdStringLike;
-  api["getPersonPropertiesHash"] = getPersonPropertiesHash;
-  api["clampToRange"] = clampToRange;
-  api["getRemoteConfigBool"] = getRemoteConfigBool;
-  api["getRemoteConfigNumber"] = getRemoteConfigNumber;
-  api["isValidSampleRate"] = isValidSampleRate;
-  api["isNumber"] = isNumber;
-  api["isEmptyObject"] = isEmptyObject;
-  api["isEmptyString"] = isEmptyString;
-  api["isPositiveNumber"] = isPositiveNumber;
-  api["isPrimitive"] = isPrimitive;
-  api["isBuiltin"] = isBuiltin;
-  api["isYesLike"] = isYesLike;
-  api["isNoLike"] = isNoLike;
-  api["isKnownUnsafeEditableEvent"] = isKnownUnsafeEditableEvent;
-  api["isKnownUnsafeEditableEventProperty"] = isKnownUnsafeEditableEventProperty;
-  api["knownUnsafeEditableEvent"] = knownUnsafeEditableEvent;
-  api["knownUnsafeEditableEventProperty"] = knownUnsafeEditableEventProperty;
-  api["yesLikeValues"] = yesLikeValues;
-  api["noLikeValues"] = noLikeValues;
-  api["sanitizeString"] = sanitizeString;
-  api["removeTrailingSlash"] = removeTrailingSlash;
-  api["stripUrlHash"] = stripUrlHash;
-  api["DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE"] = DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE;
-  api["DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE"] = DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE;
-  api["resolveExceptionRateLimiterConfig"] = resolveExceptionRateLimiterConfig;
-  api["consumeBucketedRateLimit"] = consumeBucketedRateLimit;
-  return api;
-}
-
-export JsValue default = kernel();
+// A data literal keeps the default namespace discardable for named consumers.
+export JsValue default = object {
+  uuidv7: uuidv7,
+  uuidv4: uuidv4,
+  parseUuid: parseUuid,
+  uuidFromFieldsV7: uuidFromFieldsV7,
+  uuidToHex: uuidToHex,
+  MINIMAL_FLAG_CALLED_EVENT_PROPERTIES: MINIMAL_FLAG_CALLED_EVENT_PROPERTIES,
+  MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES: MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES,
+  normalizeFlagsResponse: normalizeFlagsResponse,
+  getFeatureFlagValue: getFeatureFlagValue,
+  getFlagValuesFromFlags: getFlagValuesFromFlags,
+  getPayloadsFromFlags: getPayloadsFromFlags,
+  createFlagsResponseFromFlagsAndPayloads: createFlagsResponseFromFlagsAndPayloads,
+  minimizeFlagCalledEventProperties: minimizeFlagCalledEventProperties,
+  parsePayload: parsePayload,
+  updateFlagValue: updateFlagValue,
+  flagDetailsToResults: flagDetailsToResults,
+  getPostHogCookieName: getPostHogCookieName,
+  serializePostHogCookie: serializePostHogCookie,
+  parsePostHogCookie: parsePostHogCookie,
+  cookieStoreFromHeader: cookieStoreFromHeader,
+  readPostHogCookie: readPostHogCookie,
+  cookieStateToProperties: cookieStateToProperties,
+  getConsentCookieName: getConsentCookieName,
+  isOptedOut: isOptedOut,
+  apiHostFromConfig: apiHostFromConfig,
+  flagsApiHostFromConfig: flagsApiHostFromConfig,
+  uiHostFromConfig: uiHostFromConfig,
+  regionForHost: regionForHost,
+  endpointFor: endpointFor,
+  rateLimitContext: rateLimitContext,
+  clampFlushInterval: clampFlushInterval,
+  formatQueue: formatQueue,
+  applyOffsets: applyOffsets,
+  sortUnloadRequests: sortUnloadRequests,
+  DEFAULT_BLOCKED_UA_STRS: DEFAULT_BLOCKED_UA_STRS,
+  isBlockedUA: isBlockedUA,
+  includes: includes,
+  trim: trim,
+  stripLeadingDollar: stripLeadingDollar,
+  isDistinctIdStringLike: isDistinctIdStringLike,
+  getPersonPropertiesHash: getPersonPropertiesHash,
+  clampToRange: clampToRange,
+  getRemoteConfigBool: getRemoteConfigBool,
+  getRemoteConfigNumber: getRemoteConfigNumber,
+  isValidSampleRate: isValidSampleRate,
+  isNumber: isNumber,
+  isEmptyObject: isEmptyObject,
+  isEmptyString: isEmptyString,
+  isPositiveNumber: isPositiveNumber,
+  isPrimitive: isPrimitive,
+  isBuiltin: isBuiltin,
+  isYesLike: isYesLike,
+  isNoLike: isNoLike,
+  isKnownUnsafeEditableEvent: isKnownUnsafeEditableEvent,
+  isKnownUnsafeEditableEventProperty: isKnownUnsafeEditableEventProperty,
+  knownUnsafeEditableEvent: knownUnsafeEditableEvent,
+  knownUnsafeEditableEventProperty: knownUnsafeEditableEventProperty,
+  yesLikeValues: yesLikeValues,
+  noLikeValues: noLikeValues,
+  sanitizeString: sanitizeString,
+  removeTrailingSlash: removeTrailingSlash,
+  stripUrlHash: stripUrlHash,
+  DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE: DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+  DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE: DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE,
+  resolveExceptionRateLimiterConfig: resolveExceptionRateLimiterConfig,
+  consumeBucketedRateLimit: consumeBucketedRateLimit
+};

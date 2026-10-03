@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": "2026-10-03T01:52:15.045Z",
+  "generatedAt": "2026-10-03T08:53:35.306Z",
   "upstreamVersion": "1.435.8",
   "upstreamCommit": "c9d890a4028b186a5e1b327161ea197001c0c46b",
   "ok": true,
@@ -10,33 +10,34 @@
       "objective": "original",
       "total": 480,
       "passed": 480,
-      "reportSha256": "ceedd5c5082b23cd24e24da34b406816d5b43f5281da3a17c742cd9954cede5b"
+      "reportSha256": "ec80f37b4678bfff7e434f8b39398e64510d11bc4b7ca92521134001f4f0c378"
     },
     {
       "objective": "raw",
       "total": 480,
       "passed": 480,
-      "reportSha256": "059106e9bc40922c77c9a99aa8cf44abc2f55833bee67ccdf52aadc1e9d7bf82"
+      "reportSha256": "14c8fc67d2f2163216a35e7eb3954db6093c244eb350c21733ca752a8f70980a"
     },
     {
       "objective": "gzip",
       "total": 480,
       "passed": 480,
-      "reportSha256": "33bfe44045c6ef92bdbff54e3c97e2411c7a9a3d6e4f4d7b7d52872578c9088d"
+      "reportSha256": "0ab55765b513d2a45d066cf6a507b7fc861c3ede4ae530cd5ab9e934e2c5aba9"
     },
     {
       "objective": "brotli",
       "total": 480,
       "passed": 480,
-      "reportSha256": "3434d02c7e4c19ea7f90ed32cf58e1a7216e3eabd557b41ebe93bbff472dc3dd"
+      "reportSha256": "842f777a439337ef7966543f3560a9c6327231ab4a121ea8e6e8f5315fe8e8dd"
     }
   ],
-  "utilityTests": 55,
+  "utilityTests": 59,
   "browser": "Chromium 139.0.7258.5",
   "scope": "Selected upstream suites, targeted differential/ABI tests and browser journeys. This is not the entire PostHog test suite or a cross-browser certification.",
   "coverage": [
     "480 selected, unmodified upstream tests pass for each of raw, gzip and Brotli; the upstream baseline passes the same suites.",
-    "55 utility/API checks, including constructor reflection and host subclassing.",
+    "59 utility/API checks, including constructor reflection, inherited setters, host subclassing and variadic parser calls.",
+    "24 named-import checks: esbuild and Rolldown remove unrelated utility code and execute the selected export for each raw/gzip/Brotli objective.",
     "Six paired browser journeys: matching public exports/methods, loaded callbacks, flags, identify, groups, consent, capture hooks and event payloads.",
     "Identity survives reload; reset and named-instance isolation are checked.",
     "Autocapture and exceptions reach a local HTTP collector. Passwords and no-capture controls are excluded.",
@@ -50,15 +51,15 @@
       "surface": "standard",
       "objective": "raw",
       "file": "artifacts/sdk/standard/raw.mjs",
-      "raw": 326376,
-      "gzip9": 102390,
-      "brotli11": 86689,
-      "sha256": "bc3ea9fd47cb028c418cd5aa8507f7fdfcde21c463a3290da80c616f17a16e4b",
+      "raw": 325830,
+      "gzip9": 102239,
+      "brotli11": 86422,
+      "sha256": "8bd36a92a43426da1456c35a4053eb0dbf4edd890028c056fbc886d5400edd8e",
       "lane": "terser",
-      "minifySeconds": 3.1150832839999993,
+      "minifySeconds": 2.4774083299999994,
       "sourceMap": {
         "file": "artifacts/sdk/standard/standard-raw-terser.map",
-        "sha256": "48c6494bd3dbf25ef7d5eb8a3e1450a2f3558c8996fc8d9ff831fa01924e9fed",
+        "sha256": "6eb9d6daf98f533cdf0d30e6f5861aba49aba8be611e0ff355b543c09936ea32",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -66,15 +67,15 @@
       "surface": "standard",
       "objective": "gzip",
       "file": "artifacts/sdk/standard/gzip.mjs",
-      "raw": 327676,
-      "gzip9": 102339,
-      "brotli11": 86461,
-      "sha256": "8846c924314b1040ac109044890f838bbb5920a21151c8676cf1bcdaede86a3b",
+      "raw": 326704,
+      "gzip9": 102147,
+      "brotli11": 86194,
+      "sha256": "b757b884806dd0a9423bd9744cd20afb410aad6c398cebb73527b184723e432e",
       "lane": "terser",
-      "minifySeconds": 3.050452029,
+      "minifySeconds": 2.355741237,
       "sourceMap": {
         "file": "artifacts/sdk/standard/standard-gzip-terser.map",
-        "sha256": "ed56a72e8487bcf53113cd870445332cdc81a2e26f7501c992e7fccc45c73dcb",
+        "sha256": "c97c57fcbffe0dd5a616ddd852d5e4263892ed7c4cf9278f2f34bcd26a757610",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -82,15 +83,15 @@
       "surface": "standard",
       "objective": "brotli",
       "file": "artifacts/sdk/standard/brotli.mjs",
-      "raw": 327510,
-      "gzip9": 102366,
-      "brotli11": 86472,
-      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "raw": 326323,
+      "gzip9": 102218,
+      "brotli11": 86320,
+      "sha256": "69a1fc4ef39e5a252212d2ac0eea7075d8bbfb3ffd9238af4f2a403b66dfad76",
       "lane": "terser",
-      "minifySeconds": 2.9143176310000016,
+      "minifySeconds": 2.2836599150000003,
       "sourceMap": {
         "file": "artifacts/sdk/standard/standard-brotli-terser.map",
-        "sha256": "4a9c6b17645bd96f4feca14beb6f961a4bbb7155f0ec21069cca426107cc1b12",
+        "sha256": "41fedae36914d546bfd9461f60f5a118c6879025940becea6b677c78b9cc2b01",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -98,15 +99,15 @@
       "surface": "full",
       "objective": "raw",
       "file": "artifacts/sdk/full/raw.mjs",
-      "raw": 709154,
-      "gzip9": 204584,
-      "brotli11": 171248,
-      "sha256": "4a8401c3550cfc5e084716df3e92c74393fd827213223c294eb06f579d75f93a",
+      "raw": 708301,
+      "gzip9": 204317,
+      "brotli11": 170989,
+      "sha256": "188ebac9690edaa9d0f802a903422b2ea7d025daeb3dc4ea631ffac7059db8e0",
       "lane": "oxc",
-      "minifySeconds": 0.2501394170000058,
+      "minifySeconds": 0.16524204800000006,
       "sourceMap": {
         "file": "artifacts/sdk/full/full-raw-oxc.map",
-        "sha256": "77673460fd921174e739f3a689e25c3467467baa6e078fb72b6d0c323516b037",
+        "sha256": "95177550010917cff2a5f80bf6cdbb055d807e4a899c92d9c13cab28bbf35aa5",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -114,15 +115,15 @@
       "surface": "full",
       "objective": "gzip",
       "file": "artifacts/sdk/full/gzip.mjs",
-      "raw": 710467,
-      "gzip9": 204346,
-      "brotli11": 170902,
-      "sha256": "d7a51394aafbe63e786acb88fa17ec2436c16a51b3a41f0c7ffc6a64c593fa3b",
+      "raw": 709612,
+      "gzip9": 204044,
+      "brotli11": 170585,
+      "sha256": "9e460439de2c0adc7dd2e863caa2a1e9dc24321e5daa70de882e3d5bcf01dca3",
       "lane": "oxc",
-      "minifySeconds": 0.2638545999999988,
+      "minifySeconds": 0.1590162049999999,
       "sourceMap": {
         "file": "artifacts/sdk/full/full-gzip-oxc.map",
-        "sha256": "a16fde3864aa29ce98e1d43a50d5d62ad02967d983d9676a8e10badda2f6781a",
+        "sha256": "90d6364fc628dc4a38b53504597e239410d1d0ab341e0e08ed157e9f6b9b0e5a",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     },
@@ -130,15 +131,15 @@
       "surface": "full",
       "objective": "brotli",
       "file": "artifacts/sdk/full/brotli.mjs",
-      "raw": 710460,
-      "gzip9": 204376,
-      "brotli11": 170998,
-      "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+      "raw": 709643,
+      "gzip9": 204072,
+      "brotli11": 170704,
+      "sha256": "588f1636a170e24505674ab89c461675844ad8a7a8110bca40efc92fe22c8c1d",
       "lane": "oxc",
-      "minifySeconds": 0.2461923999999999,
+      "minifySeconds": 0.15478691799999797,
       "sourceMap": {
         "file": "artifacts/sdk/full/full-brotli-oxc.map",
-        "sha256": "520078220270cac9318c6d1a030fcccd7efeae68e96100f55b7c4b4aebb0471b",
+        "sha256": "50577aaa2abf68c9e91ff45b9d83dbbebb6fd2916f3c25dc01c290f1be2f1293",
         "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
       }
     }
@@ -146,7 +147,7 @@
   "package": {
     "ok": true,
     "tarball": "itslil-posthog-browser-1.435.8-lil.0.tgz",
-    "integrity": "sha512-uWlg/CmBCZof8iESNIo9Lgx1y9W7P1kZb5FQqxfAIMeVdfzydsbPIHQrYu/WNc00s8xW2dGiIADM6BVYlRZxdw==",
+    "integrity": "sha512-Pv4Ec/tPSpEaMPGYoUUXfdA4cp+WA5aBKSkQWKteAtIdAt6YsND1b2MOIKE7iUUI0XydE27S58mH3UQOsHRwdw==",
     "checks": [
       "Installed packed tarball under unchanged posthog-js dependency key",
       "CommonJS default/named export and constructor identity parity",
@@ -175,7 +176,7 @@
     {
       "surface": "standard",
       "label": "candidate",
-      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "sha256": "69a1fc4ef39e5a252212d2ac0eea7075d8bbfb3ffd9238af4f2a403b66dfad76",
       "ok": true,
       "batchSize": 2,
       "statuses": [
@@ -199,7 +200,7 @@
     {
       "surface": "full",
       "label": "candidate",
-      "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+      "sha256": "588f1636a170e24505674ab89c461675844ad8a7a8110bca40efc92fe22c8c1d",
       "ok": true,
       "batchSize": 2,
       "statuses": [
@@ -209,6 +210,11 @@
       "identifiersPreserved": true
     }
   ],
+  "treeShaking": {
+    "tests": 24,
+    "source": "artifacts/tree-shaking/results.json",
+    "sha256": "4efb655ef4172517e693c084162f23144c2b3f6011e339e5cfdae1428e1ef3d8"
+  },
   "journeys": [
     {
       "surface": "standard",
@@ -646,10 +652,10 @@
       ],
       "events": [
         "checkout",
-        "$feature_flag_called",
         "$identify",
         "$groupidentify",
         "identified checkout",
+        "$feature_flag_called",
         "$feature_flag_called",
         "$feature_flag_called",
         "after consent",
@@ -1553,9 +1559,9 @@
         "severityLevels"
       ],
       "events": [
+        "$groupidentify",
         "checkout",
         "$identify",
-        "$groupidentify",
         "identified checkout",
         "$feature_flag_called",
         "$feature_flag_called",
@@ -2008,10 +2014,10 @@
       ],
       "events": [
         "checkout",
-        "$feature_flag_called",
         "$identify",
         "$groupidentify",
         "identified checkout",
+        "$feature_flag_called",
         "$feature_flag_called",
         "$feature_flag_called",
         "after consent",
@@ -2915,8 +2921,8 @@
         "severityLevels"
       ],
       "events": [
-        "$identify",
         "checkout",
+        "$identify",
         "$groupidentify",
         "identified checkout",
         "$feature_flag_called",

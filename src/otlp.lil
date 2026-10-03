@@ -63,11 +63,14 @@ export JsValue getOtlpSeverityNumber(JsValue level) {
   return severityFor(level)["number"];
 }
 
-JsValue newState() {
-  JsValue state = JS.object();
-  state["ancestors"] = JS.construct(WeakSet);
-  state["remainingNodes"] = maxNodes;
-  return state;
+// The encoder creates and owns this state; callers only see encoded values.
+shape EncodingState {
+  data JsValue ancestors;
+  data number remainingNodes;
+}
+
+EncodingState newState() {
+  return EncodingState { ancestors: JS.construct(WeakSet), remainingNodes: maxNodes };
 }
 
 void logDebug(JsValue logger, string message) {
@@ -77,20 +80,18 @@ void logDebug(JsValue logger, string message) {
 }
 
 JsValue stringAny(JsValue value) {
-  JsValue out = JS.object();
-  out["stringValue"] = value;
+  JsValue out = object { "stringValue": value };
   return out;
 }
 
-JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) {
-  if (JS.number(state["remainingNodes"]) <= 0.0) {
+JsValue encodeAnyValue(JsValue value, JsValue logger, EncodingState state, int depth) {
+  if (state.remainingNodes <= 0.0) {
     return stringAny(truncatedValue);
   }
-  state["remainingNodes"] = JS.number(state["remainingNodes"]) - 1.0;
+  state.remainingNodes = state.remainingNodes - 1.0;
 
   if (isBooleanValue(value)) {
-    JsValue out = JS.object();
-    out["boolValue"] = value;
+    JsValue out = object { "boolValue": value };
     return out;
   }
   if (JS.typeOf(value) == "bigint") {
@@ -123,8 +124,7 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) 
       }
       return JS.object("intValue", decimal);
     }
-    JsValue out = JS.object();
-    out["doubleValue"] = value;
+    JsValue out = object { "doubleValue": value };
     return out;
   }
   if (JS.typeOf(value) == "string") {
@@ -137,7 +137,7 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) 
     return stringAny(explicitString(value));
   }
   if (JS.typeOf(value) == "object" && !JS.strictEqual(value, null)) {
-    if (JS.invoke(state["ancestors"], "has", value).truthy()) {
+    if (JS.invoke(state.ancestors, "has", value).truthy()) {
       return stringAny(circularValue);
     }
     if (depth >= maxDepth) {
@@ -156,7 +156,7 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) 
       }
       return stringAny(explicitString(iso));
     }
-    JS.invoke(state["ancestors"], "add", value);
+    JS.invoke(state.ancestors, "add", value);
     try {
       try {
         JsValue toJSON = value["toJSON"];
@@ -166,30 +166,26 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) 
       } catch {
       }
       if (isArr(value)) {
-        JsValue arrayValue = JS.object();
-        arrayValue["values"] = encodeArrayValues(value, logger, state, depth + 1);
-        JsValue out = JS.object();
-        out["arrayValue"] = arrayValue;
+        JsValue arrayValue = object { "values": encodeArrayValues(value, logger, state, depth + 1) };
+        JsValue out = object { "arrayValue": arrayValue };
         return out;
       }
-      JsValue listValue = JS.object();
-      listValue["values"] = encodeKeyValueList(value, logger, state, depth + 1);
-      JsValue out = JS.object();
-      out["kvlistValue"] = listValue;
+      JsValue listValue = object { "values": encodeKeyValueList(value, logger, state, depth + 1) };
+      JsValue out = object { "kvlistValue": listValue };
       return out;
     } finally {
-      JS.invoke(state["ancestors"], "delete", value);
+      JS.invoke(state.ancestors, "delete", value);
     }
   }
   return stringAny(sanitizeString(explicitString(value)));
 }
 
-JsValue[] encodeArrayValues(JsValue values, JsValue logger, JsValue state, int depth) {
+JsValue[] encodeArrayValues(JsValue values, JsValue logger, EncodingState state, int depth) {
   JsValue[] result = [];
   number total = JS.number(values["length"]);
   int itemCount = if (total > 1000.0) { maxItems } else { total.toInt() };
   int index = 0;
-  for (; index < itemCount && JS.number(state["remainingNodes"]) > 0.0; index++) {
+  for (; index < itemCount && state.remainingNodes > 0.0; index++) {
     try {
       if (JS.in(index, values)) {
         JsValue element = values[index];
@@ -212,7 +208,7 @@ bool propertyEnumerable(JsValue target, string key) {
   return JS.invoke(Object["prototype"]["propertyIsEnumerable"], "call", target, key).truthy();
 }
 
-JsValue[] encodeKeyValueList(JsValue attrs, JsValue logger, JsValue state, int depth) {
+JsValue[] encodeKeyValueList(JsValue attrs, JsValue logger, EncodingState state, int depth) {
   JsValue[] result = [];
   for (string key in attrs) {
     if (propertyEnumerable(attrs, key)) {
@@ -220,7 +216,7 @@ JsValue[] encodeKeyValueList(JsValue attrs, JsValue logger, JsValue state, int d
         logDebug(logger, "Dropping an attribute with an empty key");
         continue;
       }
-      if (result.length >= maxItems || JS.number(state["remainingNodes"]) <= 0.0) {
+      if (result.length >= maxItems || state.remainingNodes <= 0.0) {
         logDebug(logger, "Attributes truncated: the value exceeds the OTLP encoder budget");
         break;
       }
@@ -263,11 +259,7 @@ JsValue spreadOwn(JsValue target, JsValue source) {
   while (i < len(keys)) {
     JsValue key = keys[i];
     if (JS.invoke(Object["prototype"]["propertyIsEnumerable"], "call", boxed, key).truthy()) {
-      JsValue descriptor = JS.object();
-      descriptor["value"] = JS.invoke(Reflect, "get", boxed, key);
-      descriptor["enumerable"] = true;
-      descriptor["writable"] = true;
-      descriptor["configurable"] = true;
+      JsValue descriptor = object { "value": JS.invoke(Reflect, "get", boxed, key), "enumerable": true, "writable": true, "configurable": true };
       JS.invoke(Object, "defineProperty", target, key, descriptor);
     }
     i = i + 1;
@@ -276,11 +268,7 @@ JsValue spreadOwn(JsValue target, JsValue source) {
 }
 
 void defineData(JsValue target, JsValue key, JsValue value) {
-  JsValue descriptor = JS.object();
-  descriptor["value"] = value;
-  descriptor["enumerable"] = true;
-  descriptor["writable"] = true;
-  descriptor["configurable"] = true;
+  JsValue descriptor = object { "value": value, "enumerable": true, "writable": true, "configurable": true };
   JS.invoke(Object, "defineProperty", target, key, descriptor);
 }
 

@@ -13,8 +13,8 @@
           "closure": [
             "replay-core.gzip.js"
           ],
-          "row": 3668,
-          "raw_row": 8595
+          "row": 3686,
+          "raw_row": 8567
         }
       ],
       "files": [
@@ -34,16 +34,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8595,
-          "codec_bytes": 3668,
-          "sha256": "db905eae11d20a4bd818625d296e278f930a8174bd52517e4fd9afa94c7ecc11"
+          "bytes": 8567,
+          "codec_bytes": 3686,
+          "sha256": "3e896cdcc22df454fd6a059c7137648cbc36e137555490924b2fce6957d15fc1"
         }
       ],
       "side_effects": [
         "replay-core.gzip.js"
       ],
-      "codec_total": 3668,
-      "rows_total": 3668,
+      "codec_total": 3686,
+      "rows_total": 3686,
       "setters": 0,
       "output": "primary",
       "codec": "gzip",
@@ -94,7 +94,7 @@
       ]
     }
   ],
-  "source_sha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+  "source_sha256": "55c008b36bcfcb8121400b9caba39c7a33c1d7211d340bf2399c578d702f4f08",
   "inputs": {
     "root": 0,
     "entries": [
@@ -115,8 +115,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core.lil",
-        "bytes": 16638,
-        "sha256": "f17e6a5dcc2c162b58b4e22f023c66f3962e28d7ee0b22c7927ae7fda81e0383",
+        "bytes": 16408,
+        "sha256": "c1cae66ff5da8d32aba83374d83b2007d86bf3d9a265800efee34cd160832a44",
         "dependencies": [
           2,
           3

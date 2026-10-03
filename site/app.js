@@ -4,8 +4,8 @@ const kb=n=>(n/1024).toFixed(1)+' KiB'
 const seconds=n=>n.toFixed(n<1?3:2)+' s'
 const escape=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))
 const delta=n=>`<span class="${n>0?'positive':n<0?'negative':''}">${Math.abs(n).toFixed(2)}% ${n>0?'smaller':n<0?'larger':'same'}</span>`
-const artifactUrl=file=>file.startsWith('artifacts/sdk/')?'./sdk/'+file.slice('artifacts/sdk/'.length):file.startsWith('dist/')?'./utilities/'+file.slice(5):'./utility-originals/'+file.slice('artifacts/utilities/'.length)
-let surface='standard',sdk,utilities,performance,validation,pkg
+const artifactUrl=file=>file.startsWith('artifacts/sdk/')?'./sdk/'+file.slice('artifacts/sdk/'.length):file.startsWith('artifacts/tree-shaking/')?'./tree-shaking/'+file.slice('artifacts/tree-shaking/'.length):file.startsWith('dist/')?'./utilities/'+file.slice(5):'./utility-originals/'+file.slice('artifacts/utilities/'.length)
+let surface='standard',sdk,utilities,performance,validation,pkg,treeShaking
 async function json(path){const response=await fetch(path);if(!response.ok)throw Error(`Could not load ${path}`);return response.json()}
 function drawSizes(){
   const current=sdk.surfaces.find(row=>row.id===surface)
@@ -26,15 +26,21 @@ function drawUtility(){
   const module=utilities.rows.find(row=>row.id===$('#utility-select').value)
   $('#utility-sizes').innerHTML=module.objectives.map(row=>`<tr><td><a href="${artifactUrl(row.artifact.file)}">${row.objective}</a></td><td>${bytes(row.baseline[row.metric])}<small>${escape(row.baseline.lane)}</small></td><td>${bytes(row.artifact[row.metric])}</td><td>${delta(row.savingsPercent)}</td><td>${seconds(row.originalBuildSeconds)}</td><td>${seconds(row.compilerSeconds)}</td></tr>`).join('')
 }
+function drawTreeShaking(){
+  const bundler=$('#consumer-bundler').value,objective=$('#consumer-objective').value
+  $('#consumer-sizes').innerHTML=treeShaking.rows.filter(row=>row.bundler===bundler&&row.objective===objective).map(row=>`<tr><td><code>${escape(row.name)}</code><small>${escape(row.id)}</small></td><td><a href="${artifactUrl(row.baseline.file)}">${bytes(row.baseline[row.metric])}</a></td><td><a href="${artifactUrl(row.artifact.file)}">${bytes(row.artifact[row.metric])}</a></td><td>${delta(row.savingsPercent)}</td></tr>`).join('')
+}
 async function initialize(){
-  [sdk,utilities,performance,validation,pkg]=await Promise.all(['sdk','utilities','performance','validation','package'].map(name=>json('./evidence/'+name+'.json')))
+  [sdk,utilities,performance,validation,pkg,treeShaking]=await Promise.all(['sdk','utilities','performance','validation','package','tree-shaking'].map(name=>json('./evidence/'+name+'.json')))
   $('#pin').textContent='posthog-js '+sdk.upstream.version+' · checked '+sdk.generatedAt.slice(0,10)
   const headlines=sdk.surfaces.map(s=>({surface:s,...s.objectives.find(o=>o.objective==='brotli')}))
-  const gains=headlines.every(row=>row.savingsPercent>0)
-  $('#verdict').textContent=gains?'Both complete SDK builds are smaller in this Brotli comparison. Review the scope, runtime measurements and compatibility evidence below.':'The complete SDK candidate is larger than the best minified original today. It is an integration preview, not a demonstrated SDK size upgrade. Standalone utility results are separate.'
+  const gains=headlines.filter(row=>row.savingsPercent>0).length
+  $('#verdict').textContent=gains===2?'Both complete SDK builds are smaller in this Brotli comparison. Review the scope, runtime measurements and compatibility evidence below.':gains===0?'Both complete SDK candidates are larger than the best minified original in this Brotli comparison. Standalone utility savings and named-import sizes are measured separately below.':'The Brotli result depends on SDK scope: one candidate is smaller and one is not. Review each scope and objective below; standalone utility savings are measured separately.'
   $('#headline').innerHTML=headlines.map(row=>`<article class="metric"><h3>${escape(row.surface.label)} · Brotli-11</h3><span class="large">${kb(row.artifact.brotli11)}</span><span class="delta">${delta(row.savingsPercent)}</span><p>Minified original ${kb(row.baseline.brotli11)} · ${escape(row.baseline.lane)}<br>Whole SDK scope shown below; no extrapolation from utility results.</p></article>`).join('')
   const performanceSummary=['standard','full'].map(id=>{const row=performance.rows.find(row=>row.surface===id&&row.objective==='brotli');return `${id==='standard'?'Standard':'Full'}: capture processing ${row.metrics.capture1000Ms.verdict}; initialization ${row.metrics.initMs.verdict}.`}).join(' ')
-  $('#hero-runtime').textContent='Runtime, Brotli builds — '+performanceSummary
+  const workloadNames={importMs:'module import',initMs:'initialization',capture1000Ms:'event preparation'}
+  const slower=performance.rows.flatMap(row=>Object.entries(row.metrics).filter(([,metric])=>metric.verdict==='slower in this workload').map(([name])=>`${row.surface} / ${row.objective} / ${workloadNames[name]}`))
+  $('#hero-runtime').textContent='Runtime, Brotli builds — '+performanceSummary+(slower.length?' Slower paired results in this run: '+slower.join('; ')+'.':'')
   $('#download').href='./downloads/'+pkg.tarball
   $('#install').textContent=`# Download the preview tarball, then install under the existing name:\nnpm install posthog-js@file:./${pkg.tarball}\n\n# Experimental; not published to the npm registry.`
   $('#test-count').textContent=`${validation.upstreamTestsPerObjective} selected upstream tests × 3 objectives`
@@ -48,7 +54,9 @@ async function initialize(){
   })
   $('#runtime-objective').addEventListener('change',drawPerformance)
   $('#utility-select').addEventListener('change',drawUtility)
-  drawSizes();drawUtility()
+  $('#consumer-bundler').addEventListener('change',drawTreeShaking)
+  $('#consumer-objective').addEventListener('change',drawTreeShaking)
+  drawSizes();drawUtility();drawTreeShaking()
 }
 let demo
 async function captureDemo(kind){

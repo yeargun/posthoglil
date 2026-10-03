@@ -13,8 +13,8 @@
           "closure": [
             "error-tracking.raw.js"
           ],
-          "row": 18534,
-          "raw_row": 18534
+          "row": 17892,
+          "raw_row": 17892
         }
       ],
       "files": [
@@ -37,16 +37,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 18534,
-          "codec_bytes": 18534,
-          "sha256": "ba104197a2a2486b017be57526fe5f4fb32a531179d958a11847a917e314ee51"
+          "bytes": 17892,
+          "codec_bytes": 17892,
+          "sha256": "fa5fd3e6fd0c2c9eb0522b7bd2ac3a5d2c8651eb6b49d6784f573c790cc40e52"
         }
       ],
       "side_effects": [
         "error-tracking.raw.js"
       ],
-      "codec_total": 18534,
-      "rows_total": 18534,
+      "codec_total": 17892,
+      "rows_total": 17892,
       "setters": 0,
       "output": "primary",
       "codec": "raw",
@@ -97,7 +97,7 @@
       ]
     }
   ],
-  "source_sha256": "88fbce1295efea7dc4ba806b63ed0e1b616c1cf01645f4262bf8ddabff86ebc1",
+  "source_sha256": "2179526b26a84c1dd5bb818df1869e1f19dee0666b94464af4cd3376db6e1415",
   "inputs": {
     "root": 0,
     "entries": [
@@ -120,8 +120,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-coercer-api.lil",
-        "bytes": 14664,
-        "sha256": "4a1dcee150e598c3a3e90fdb8f9e9591cb56d45ce36da9e58671e1e1acd834db",
+        "bytes": 14071,
+        "sha256": "a262895669ed238454e9f35fb99554afce63ac8d1e54969feaa7dcea0b810b56",
         "dependencies": [
           2,
           3,
@@ -138,8 +138,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-host.lil",
-        "bytes": 3627,
-        "sha256": "f2984842f93068a84cb935dd473dd306b5a43b069d733d76048c79f10208608b",
+        "bytes": 3553,
+        "sha256": "cfe2b5a3967bfe350ec9df4437a7cf563e8d9b18fc21b5d6c380fb70b3e84ad4",
         "dependencies": [
           2
         ],
@@ -157,8 +157,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-core.lil",
-        "bytes": 21712,
-        "sha256": "ba5b01d78c13d521da6ae0208de6e64ed18f7fd297a940409159abfa2911bf5b",
+        "bytes": 21337,
+        "sha256": "b36d1a1eb493df8543434275dee93c258d58ef2f7dab0a8f249cfa99044b9674",
         "dependencies": [
           2,
           3
@@ -167,8 +167,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-parsers.lil",
-        "bytes": 18495,
-        "sha256": "e8cacdedde62cd9ab515d9583edd2f800e3f711d9623bc3b36f1b57ca2b6ed9c",
+        "bytes": 17889,
+        "sha256": "c2a557ec9bf17dca599cca24a2209619e403007a0927d5401387b186b9bef443",
         "dependencies": [
           2
         ],

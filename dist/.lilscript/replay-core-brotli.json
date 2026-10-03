@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "source_sha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+  "source_sha256": "55c008b36bcfcb8121400b9caba39c7a33c1d7211d340bf2399c578d702f4f08",
   "inputs": {
     "root": 0,
     "entries": [
@@ -21,8 +21,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core.lil",
-        "bytes": 16638,
-        "sha256": "f17e6a5dcc2c162b58b4e22f023c66f3962e28d7ee0b22c7927ae7fda81e0383",
+        "bytes": 16408,
+        "sha256": "c1cae66ff5da8d32aba83374d83b2007d86bf3d9a265800efee34cd160832a44",
         "dependencies": [
           2,
           3
@@ -61,8 +61,8 @@
           "closure": [
             "replay-core.esm.js"
           ],
-          "row": 3321,
-          "raw_row": 8598
+          "row": 3361,
+          "raw_row": 8616
         }
       ],
       "files": [
@@ -82,16 +82,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8598,
-          "codec_bytes": 3321,
-          "sha256": "ad6e4aad9d4236b86a6edff955d4ddbba18a463e881ec09b567c08cd69499daf"
+          "bytes": 8616,
+          "codec_bytes": 3361,
+          "sha256": "de346927aa769a0c5e25ffc8e282fa4508bb0b320034884f4d25ccb446da17ef"
         }
       ],
       "side_effects": [
         "replay-core.esm.js"
       ],
-      "codec_total": 3321,
-      "rows_total": 3321,
+      "codec_total": 3361,
+      "rows_total": 3361,
       "setters": 0,
       "output": "primary",
       "codec": "brotli",
@@ -152,8 +152,8 @@
           "closure": [
             "replay-core.cjs"
           ],
-          "row": 3496,
-          "raw_row": 9998
+          "row": 3535,
+          "raw_row": 9977
         }
       ],
       "files": [
@@ -172,16 +172,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 9998,
-          "codec_bytes": 3496,
-          "sha256": "a82e1717af591e00ffae508c74cebae22e6d8f543382574d8270f541954da349"
+          "bytes": 9977,
+          "codec_bytes": 3535,
+          "sha256": "f2a8d87b45d76237aa15808107d18646be1d7b84a6291786cc12baffbb2aac59"
         }
       ],
       "side_effects": [
         "replay-core.cjs"
       ],
-      "codec_total": 3496,
-      "rows_total": 3496,
+      "codec_total": 3535,
+      "rows_total": 3535,
       "setters": 0,
       "output": "cjs",
       "codec": "brotli",

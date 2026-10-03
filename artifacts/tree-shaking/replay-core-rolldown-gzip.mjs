@@ -1,0 +1,1 @@
+let e=function(e){let t=e.payloadSizeLimitBytes;if(t==null)return 1e6;let n=t|0;return n<1e6?n:1e6};export{e as effectivePayloadLimitBytes};

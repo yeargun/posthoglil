@@ -37,20 +37,17 @@ Regex opera11Regex = new Regex(" line (\\d+), column (\\d+)\\s*(?:in (?:<anonymo
 Regex winjsRegex = new Regex("^\\s*at (?:((?:\\[object object\\])?.+) )?\\(?((?:[-a-z]+):.*?):(\\d+)(?::(\\d+))?\\)?\\s*$", "i");
 
 JsValue createFrame(JsValue platform, JsValue filename, JsValue functionName, JsValue lineno, JsValue colno) {
-  JsValue frame = JS.object();
-  frame["platform"] = platform;
-  frame["filename"] = filename;
-  if (JS.strictEqual(functionName, "<anonymous>")) {
-    frame["function"] = UNKNOWN_FUNCTION;
-  } else {
-    frame["function"] = functionName;
-  }
   bool inApp = filename.truthy() && !JS.strictEqual(filename, "<anonymous>");
   if (inApp) {
     JsValue scheme = JS.invoke(appUrlScheme, "exec", filename);
     if (scheme.truthy()) inApp = appUrlSchemes.includes(toStr(scheme[1]).toLowerCase());
   }
-  frame["in_app"] = inApp;
+  JsValue frame = object {
+    platform: platform,
+    filename: filename,
+    "function": if (JS.strictEqual(functionName, "<anonymous>")) { UNKNOWN_FUNCTION } else { functionName },
+    in_app: inApp
+  };
   if (!isUndef(lineno)) {
     frame["lineno"] = lineno;
   }
@@ -364,10 +361,16 @@ bool sameStackFrame(JsValue a, JsValue b) {
   return JS.strictEqual(a["filename"], b["filename"]) && JS.strictEqual(a["function"], b["function"]) && JS.strictEqual(a["module"], b["module"]) && JS.strictEqual(a["lineno"], b["lineno"]) && JS.strictEqual(a["colno"], b["colno"]);
 }
 
-JsValue collapseRepeatedCycle(JsValue frames) {
+// Compiler-owned bookkeeping: frames remain host values, but cycle slots are plain data.
+shape RepeatedCycle {
+  data int start;
+  data int length;
+}
+
+RepeatedCycle? collapseRepeatedCycle(JsValue frames) {
   for (int length = 1; length <= 10; length = length + 1) {
     int start = len(frames) - 2 * length;
-    if (start < 0) return undef();
+    if (start < 0) return null;
     bool cycle = true;
     for (int offset = 0; offset < length; offset = offset + 1) {
       if (!sameStackFrame(frames[start + offset], frames[start + length + offset])) { cycle = false; break; }
@@ -375,32 +378,32 @@ JsValue collapseRepeatedCycle(JsValue frames) {
     if (cycle) {
       for (int offset = 0; offset < length; offset = offset + 1) frames[start + offset] = frames[start + length + offset];
       frames["length"] = start + length;
-      return object { start: start, length: length };
+      return RepeatedCycle { start: start, length: length };
     }
   }
-  return undef();
+  return null;
 }
 
-int innermostPartialCycleLength(JsValue frames, JsValue cycle) {
-  int start = JS.number(cycle["start"]).toInt();
-  int length = JS.number(cycle["length"]).toInt();
+int innermostPartialCycleLength(JsValue frames, RepeatedCycle cycle) {
+  int start = cycle.start;
+  int length = cycle.length;
   int partial = start;
   while (partial > 0 && sameStackFrame(frames[partial - 1], frames[partial - 1 + length])) partial = partial - 1;
   return start - partial;
 }
 
-int partialCycleLength(JsValue frames, JsValue cycle) {
-  int length = JS.number(cycle["length"]).toInt();
-  int copyEnd = JS.number(cycle["start"]).toInt() + length;
+int partialCycleLength(JsValue frames, RepeatedCycle cycle) {
+  int length = cycle.length;
+  int copyEnd = cycle.start + length;
   int partialEnd = copyEnd;
   while (partialEnd < len(frames) && sameStackFrame(frames[partialEnd], frames[partialEnd - length])) partialEnd = partialEnd + 1;
   return partialEnd - copyEnd;
 }
 
-int survivingFrameCount(JsValue frames, JsValue cycles) {
+int survivingFrameCount(JsValue frames, RepeatedCycle[] cycles) {
   int count = len(frames);
-  if (cycles[0].truthy()) count = count - innermostPartialCycleLength(frames, cycles[0]);
-  for (int i = 0; i < len(cycles); i = i + 1) count = count - partialCycleLength(frames, cycles[i]);
+  if (cycles.length > 0) count = count - innermostPartialCycleLength(frames, cycles[0]);
+  for (int i = 0; i < cycles.length; i = i + 1) count = count - partialCycleLength(frames, cycles[i]);
   return count;
 }
 
@@ -432,7 +435,7 @@ JsValue buildStackParser(JsValue platform, JsValue parsers) {
     JsValue lines = JS.invoke(stack, "split", "\n");
     int end = len(lines);
     if (end > skip + 1000) end = skip + 1000;
-    JsValue cycles = JS.array();
+    RepeatedCycle[] cycles = [];
     for (int i = skip; i < end; i = i + 1) {
       JsValue line = lines[i];
       if (len(line) > 1024) continue;
@@ -443,58 +446,47 @@ JsValue buildStackParser(JsValue platform, JsValue parsers) {
         JsValue frame = JS.call(parsers[p], undef(), cleaned, platform);
         if (frame.truthy()) {
           JS.invoke(frames, "push", frame);
-          JsValue cycle = collapseRepeatedCycle(frames);
-          if (cycle.truthy()) {
-            for (int c = len(cycles) - 1; c >= 0; c = c - 1) {
-              JsValue previous = cycles[c];
-              if (JS.number(previous["start"]) + JS.number(previous["length"]) <= JS.number(cycle["start"])) break;
-              JS.invoke(cycles, "pop");
+          RepeatedCycle? cycle = collapseRepeatedCycle(frames);
+          if (cycle != null) {
+            for (int c = cycles.length - 1; c >= 0; c = c - 1) {
+              RepeatedCycle previous = cycles[c];
+              if (previous.start + previous.length <= cycle.start) break;
+              cycles.pop();
             }
-            JS.invoke(cycles, "push", cycle);
+            cycles.push(cycle);
           }
           break;
         }
       }
       if (survivingFrameCount(frames, cycles) >= 50) break;
     }
-    JsValue sections = JS.invoke(cycles, "slice");
-    func(JsValue, JsValue)->number compare = (JsValue a, JsValue b) => JS.number(b["start"]) - JS.number(a["start"]);
-    JS.invoke(sections, "sort", compare);
-    JsValue inner = sections[len(sections) - 1];
-    if (inner.truthy()) {
+    RepeatedCycle[] sections = cycles.slice();
+    JS.invoke(sections, "sort", (RepeatedCycle a, RepeatedCycle b) => b.start - a.start);
+    if (sections.length > 0) {
+      RepeatedCycle inner = sections[sections.length - 1];
       int trimmed = innermostPartialCycleLength(frames, inner);
-      JS.invoke(frames, "splice", JS.number(inner["start"]) - trimmed, trimmed);
-      for (int i = 0; i < len(sections); i = i + 1) sections[i]["start"] = JS.number(sections[i]["start"]) - trimmed;
+      JS.invoke(frames, "splice", inner.start - trimmed, trimmed);
+      for (int i = 0; i < sections.length; i = i + 1) sections[i].start = sections[i].start - trimmed;
     }
-    for (int i = 0; i < len(sections); i = i + 1) {
-      JsValue cycle = sections[i];
-      int copyEnd = JS.number(cycle["start"]).toInt() + JS.number(cycle["length"]).toInt();
+    for (int i = 0; i < sections.length; i = i + 1) {
+      RepeatedCycle cycle = sections[i];
+      int copyEnd = cycle.start + cycle.length;
       int partial = partialCycleLength(frames, cycle);
-      if (partial > 0) JS.invoke(frames, "splice", if (copyEnd + partial == len(frames)) { copyEnd } else { JS.number(cycle["start"]).toInt() }, partial);
+      if (partial > 0) JS.invoke(frames, "splice", if (copyEnd + partial == len(frames)) { copyEnd } else { cycle.start }, partial);
     }
-    for (int i = 0; i < len(cycles); i = i + 1) {
-      if (JS.strictEqual(cycles[i]["start"], 0) && JS.strictEqual(cycles[i]["length"], len(frames))) { canonicalizeCycleRotation(frames); break; }
+    for (int i = 0; i < cycles.length; i = i + 1) {
+      if (cycles[i].start == 0 && cycles[i].length == len(frames)) { canonicalizeCycleRotation(frames); break; }
     }
     return reverseAndStripFrames(frames);
   };
   return JS.method2(parser);
 }
 
-JsValue createStackParserRest(JsValue args) {
-  JsValue all = JS.invoke(Array, "from", args);
-  return buildStackParser(all[0], JS.invoke(all, "slice", 1));
+// Native rest parameters preserve length=1 without an effectful module initializer.
+export JsValue createStackParser(JsValue platform, JsValue... parsers) {
+  return buildStackParser(platform, parsers);
 }
 
-JsValue createStackParserValue = JS.staticRest(createStackParserRest);
-JsValue createStackParserLength = JS.object();
-createStackParserLength["value"] = 1;
-createStackParserLength["configurable"] = true;
-JS.invoke(Object, "defineProperty", createStackParserValue, "length", createStackParserLength);
-export JsValue createStackParser = createStackParserValue;
-
 export JsValue createDefaultStackParser() {
-  JsValue parsers = JS.array();
-  JS.invoke(parsers, "push", chromeStackLineParser);
-  JS.invoke(parsers, "push", geckoStackLineParser);
-  return buildStackParser("web:javascript", parsers);
+  return buildStackParser("web:javascript", JS.array(chromeStackLineParser, geckoStackLineParser));
 }

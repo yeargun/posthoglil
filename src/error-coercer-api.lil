@@ -74,21 +74,13 @@ JsValue domGetValue(JsValue self, JsValue error) {
 }
 
 JsValue domCoerce(JsValue self, JsValue error, JsValue context) {
-  JsValue out = JS.object();
-  out["type"] = JS.invoke(self, "getType", error);
-  out["value"] = JS.invoke(self, "getValue", error);
-  if (isStringValue(error["stack"])) {
-    out["stack"] = error["stack"];
-  } else {
-    out["stack"] = undef();
-  }
-  if (error["cause"].truthy()) {
-    out["cause"] = JS.invoke(context, "next", error["cause"]);
-  } else {
-    out["cause"] = undef();
-  }
-  out["synthetic"] = false;
-  return out;
+  return object {
+    type: JS.invoke(self, "getType", error),
+    value: JS.invoke(self, "getValue", error),
+    stack: if (isStringValue(error["stack"])) { error["stack"] } else { undef() },
+    cause: if (error["cause"].truthy()) { JS.invoke(context, "next", error["cause"]) } else { undef() },
+    synthetic: false
+  };
 }
 
 export class DOMExceptionCoercer {
@@ -134,21 +126,13 @@ JsValue errorCoerce(JsValue self, JsValue error, JsValue context) {
   JsValue stack = JS.invoke(self, "getStack", error);
   JsValue replacementStack = if (isUndef(stack)) { optionalSyntheticStack(context) } else { undef() };
   bool synthetic = replacementStack.truthy();
-  JsValue out = JS.object();
-  out["type"] = JS.invoke(self, "getType", error);
-  out["value"] = JS.invoke(self, "getMessage", error, context);
-  if (isUndef(stack)) {
-    out["stack"] = replacementStack;
-  } else {
-    out["stack"] = stack;
-  }
-  if (error["cause"].truthy()) {
-    out["cause"] = JS.invoke(context, "next", error["cause"]);
-  } else {
-    out["cause"] = undef();
-  }
-  out["synthetic"] = synthetic;
-  return out;
+  return object {
+    type: JS.invoke(self, "getType", error),
+    value: JS.invoke(self, "getMessage", error, context),
+    stack: if (isNullish(stack)) { replacementStack } else { stack },
+    cause: if (error["cause"].truthy()) { JS.invoke(context, "next", error["cause"]) } else { undef() },
+    synthetic: synthetic
+  };
 }
 
 export class ErrorCoercer {
@@ -216,12 +200,12 @@ JsValue eventMatch(JsValue self, JsValue error) {
 
 JsValue eventCoerce(JsValue self, JsValue event, JsValue context) {
   JsValue constructorName = event["constructor"]["name"];
-  JsValue out = JS.object();
-  out["type"] = constructorName;
-  out["value"] = toStr(constructorName) + " captured as exception with keys: " + extractExceptionKeysForMessage(event);
-  out["stack"] = optionalSyntheticStack(context);
-  out["synthetic"] = true;
-  return out;
+  return object {
+    type: constructorName,
+    value: toStr(constructorName) + " captured as exception with keys: " + extractExceptionKeysForMessage(event),
+    stack: optionalSyntheticStack(context),
+    synthetic: true
+  };
 }
 
 export class EventCoercer {
@@ -312,24 +296,18 @@ JsValue objectGetValue(JsValue self, JsValue error) {
 
 JsValue objectCoerce(JsValue self, JsValue candidate, JsValue context) {
   JsValue errorProperty = JS.invoke(self, "getErrorPropertyFromObject", candidate);
-  if (errorProperty.truthy()) {
-    return JS.invoke(context, "apply", errorProperty);
-  }
-  JsValue out = JS.object();
-  out["type"] = JS.invoke(self, "getType", candidate);
-  out["value"] = JS.invoke(self, "getValue", candidate);
+  if (errorProperty.truthy()) return JS.invoke(context, "apply", errorProperty);
+  JsValue type = JS.invoke(self, "getType", candidate);
+  JsValue value = JS.invoke(self, "getValue", candidate);
   JsValue stack = JS.invoke(self, "getStack", candidate);
-  if (isNullish(stack)) {
-    stack = optionalSyntheticStack(context);
-  }
-  out["stack"] = stack;
-  if (JS.invoke(self, "isSeverityLevel", candidate["level"]).truthy()) {
-    out["level"] = candidate["level"];
-  } else {
-    out["level"] = "error";
-  }
-  out["synthetic"] = true;
-  return out;
+  if (isNullish(stack)) stack = optionalSyntheticStack(context);
+  return object {
+    type: type,
+    value: value,
+    stack: stack,
+    level: if (JS.invoke(self, "isSeverityLevel", candidate["level"]).truthy()) { candidate["level"] } else { "error" },
+    synthetic: true
+  };
 }
 
 export class ObjectCoercer {
@@ -349,12 +327,12 @@ JsValue primitiveMatch(JsValue self, JsValue value) {
 }
 
 JsValue primitiveCoerce(JsValue self, JsValue value, JsValue context) {
-  JsValue out = JS.object();
-  out["type"] = "Error";
-  out["value"] = "Primitive value captured as exception: " + explicitString(value);
-  out["stack"] = optionalSyntheticStack(context);
-  out["synthetic"] = true;
-  return out;
+  return object {
+    type: "Error",
+    value: "Primitive value captured as exception: " + explicitString(value),
+    stack: optionalSyntheticStack(context),
+    synthetic: true
+  };
 }
 
 export class PrimitiveCoercer {
@@ -399,14 +377,12 @@ JsValue promiseGetReason(JsValue self, JsValue error) {
 
 JsValue promiseCoerce(JsValue self, JsValue error, JsValue context) {
   JsValue reason = JS.invoke(self, "getUnhandledRejectionReason", error);
-  if (isPrimitiveValue(reason)) {
-    JsValue out = JS.object();
-    out["type"] = "UnhandledRejection";
-    out["value"] = "Non-Error promise rejection captured with value: " + explicitString(reason);
-    out["stack"] = optionalSyntheticStack(context);
-    out["synthetic"] = true;
-    return out;
-  }
+  if (isPrimitiveValue(reason)) return object {
+    type: "UnhandledRejection",
+    value: "Non-Error promise rejection captured with value: " + explicitString(reason),
+    stack: optionalSyntheticStack(context),
+    synthetic: true
+  };
   return JS.invoke(context, "apply", reason);
 }
 
@@ -430,28 +406,17 @@ JsValue stringGetInfos(JsValue self, JsValue candidate) {
     type = groups[1];
     value = groups[2];
   }
-  JsValue out = JS.array();
-  JS.invoke(out, "push", type);
-  JS.invoke(out, "push", value);
-  return out;
+  return JS.array(type, value);
 }
 
 JsValue stringCoerce(JsValue self, JsValue input, JsValue context) {
   JsValue infos = JS.invoke(self, "getInfos", input);
-  JsValue out = JS.object();
-  if (isNullish(infos[0])) {
-    out["type"] = "Error";
-  } else {
-    out["type"] = infos[0];
-  }
-  if (isNullish(infos[1])) {
-    out["value"] = input;
-  } else {
-    out["value"] = infos[1];
-  }
-  out["stack"] = optionalSyntheticStack(context);
-  out["synthetic"] = true;
-  return out;
+  return object {
+    type: if (isNullish(infos[0])) { "Error" } else { infos[0] },
+    value: if (isNullish(infos[1])) { input } else { infos[1] },
+    stack: optionalSyntheticStack(context),
+    synthetic: true
+  };
 }
 
 export class StringCoercer {

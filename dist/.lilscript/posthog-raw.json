@@ -13,8 +13,8 @@
           "closure": [
             "posthog.raw.js"
           ],
-          "row": 16085,
-          "raw_row": 16085
+          "row": 15346,
+          "raw_row": 15346
         }
       ],
       "files": [
@@ -45,16 +45,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 16085,
-          "codec_bytes": 16085,
-          "sha256": "cc5c54aee170b1fe2a918d112902f94c95b89e3ad4189df3bc533c9e9e6a796f"
+          "bytes": 15346,
+          "codec_bytes": 15346,
+          "sha256": "df19ded1caed4eb198f6cb1ae2249e6c8fc9d6f0db2c5d54c8bac387d03b6637"
         }
       ],
       "side_effects": [
         "posthog.raw.js"
       ],
-      "codec_total": 16085,
-      "rows_total": 16085,
+      "codec_total": 15346,
+      "rows_total": 15346,
       "setters": 0,
       "output": "primary",
       "codec": "raw",
@@ -105,7 +105,7 @@
       ]
     }
   ],
-  "source_sha256": "b6656f479bf535f110b1daf0b69a972e31d3a77345a198aa53d5e86b10e30dd6",
+  "source_sha256": "f9de781a3b18498145a6589a91344486ae5d87d1fc1e063651e9c5b2b8e7a31b",
   "inputs": {
     "root": 0,
     "entries": [
@@ -117,8 +117,8 @@
     "modules": [
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/entry.lil",
-        "bytes": 6827,
-        "sha256": "50344ec8ce10be75f91e0ede30e4cd575d1aa3ff325b1f7ada17573b7bef317c",
+        "bytes": 6314,
+        "sha256": "d4e8fd637ff8326d600fb5887985e7c00242c1f28f7ea57705f7d0f146afb6ad",
         "dependencies": [
           1,
           3,

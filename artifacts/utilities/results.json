@@ -17,9 +17,9 @@
           "gzip9": 6774,
           "brotli11": 6194,
           "sha256": "534f5267b7b11dd734f2425d9a20d55cde00ecda0f81e4ed67e0b5860ec06379",
-          "bundleSeconds": 0.020385042,
-          "minifySeconds": 0.086197022,
-          "formatSeconds": 0.039391249999999954
+          "bundleSeconds": 0.018878390000000026,
+          "minifySeconds": 0.08056725499999999,
+          "formatSeconds": 0.03717342900000003
         },
         {
           "lane": "terser-mangle",
@@ -28,9 +28,9 @@
           "gzip9": 6652,
           "brotli11": 6064,
           "sha256": "a7adb5aec301a4f216594c1836be6c3fd3bceef063fc373be201b9931d7c55dd",
-          "bundleSeconds": 0.020385042,
-          "minifySeconds": 0.31376301100000004,
-          "formatSeconds": 0.03328807600000005
+          "bundleSeconds": 0.018878390000000026,
+          "minifySeconds": 0.29042994000000005,
+          "formatSeconds": 0.033196144000000004
         },
         {
           "lane": "esbuild-esnext",
@@ -39,9 +39,9 @@
           "gzip9": 7661,
           "brotli11": 6984,
           "sha256": "2a4d3476065ae5e591cd87207a0c085b66e0c094dbc658c4fd6e1d37c5f7c882",
-          "bundleSeconds": 0.020385042,
-          "minifySeconds": 0.004468512000000032,
-          "formatSeconds": 0.03723262299999999
+          "bundleSeconds": 0.018878390000000026,
+          "minifySeconds": 0.00413438199999996,
+          "formatSeconds": 0.03661526000000003
         }
       ],
       "objectives": [
@@ -50,10 +50,10 @@
           "metric": "raw",
           "artifact": {
             "file": "dist/posthog.raw.js",
-            "raw": 16085,
-            "gzip9": 6369,
-            "brotli11": 5675,
-            "sha256": "cc5c54aee170b1fe2a918d112902f94c95b89e3ad4189df3bc533c9e9e6a796f"
+            "raw": 15346,
+            "gzip9": 5818,
+            "brotli11": 5213,
+            "sha256": "df19ded1caed4eb198f6cb1ae2249e6c8fc9d6f0db2c5d54c8bac387d03b6637"
           },
           "baseline": {
             "lane": "oxc-mangle",
@@ -62,14 +62,14 @@
             "gzip9": 6774,
             "brotli11": 6194,
             "sha256": "534f5267b7b11dd734f2425d9a20d55cde00ecda0f81e4ed67e0b5860ec06379",
-            "bundleSeconds": 0.020385042,
-            "minifySeconds": 0.086197022,
-            "formatSeconds": 0.039391249999999954
+            "bundleSeconds": 0.018878390000000026,
+            "minifySeconds": 0.08056725499999999,
+            "formatSeconds": 0.03717342900000003
           },
-          "savingsPercent": 7.9594872968642765,
-          "compilerSeconds": 2.692,
-          "originalBuildSeconds": 0.106582064,
-          "sourceSha256": "b6656f479bf535f110b1daf0b69a972e31d3a77345a198aa53d5e86b10e30dd6",
+          "savingsPercent": 12.188143739986268,
+          "compilerSeconds": 2.749,
+          "originalBuildSeconds": 0.09944564500000001,
+          "sourceSha256": "f9de781a3b18498145a6589a91344486ae5d87d1fc1e063651e9c5b2b8e7a31b",
           "configSha256": "b8c6587e6c8c4dab1be63d270e87e5e4e20a747203eced21ce6850ec4737020c"
         },
         {
@@ -77,10 +77,10 @@
           "metric": "gzip9",
           "artifact": {
             "file": "dist/posthog.gzip.js",
-            "raw": 17047,
-            "gzip9": 6030,
-            "brotli11": 5428,
-            "sha256": "c11c8786888fec48bfccd25a2cd4b9295954e9554be05bd974dd63fd5eb77317"
+            "raw": 15790,
+            "gzip9": 5666,
+            "brotli11": 5093,
+            "sha256": "964c2673a3783683b1c90a7c4384435ff54d39d53df31689ed8e29272a65c30a"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -89,14 +89,14 @@
             "gzip9": 6652,
             "brotli11": 6064,
             "sha256": "a7adb5aec301a4f216594c1836be6c3fd3bceef063fc373be201b9931d7c55dd",
-            "bundleSeconds": 0.020385042,
-            "minifySeconds": 0.31376301100000004,
-            "formatSeconds": 0.03328807600000005
+            "bundleSeconds": 0.018878390000000026,
+            "minifySeconds": 0.29042994000000005,
+            "formatSeconds": 0.033196144000000004
           },
-          "savingsPercent": 9.350571256764884,
-          "compilerSeconds": 4.625,
-          "originalBuildSeconds": 0.33414805300000006,
-          "sourceSha256": "b6656f479bf535f110b1daf0b69a972e31d3a77345a198aa53d5e86b10e30dd6",
+          "savingsPercent": 14.822609741431148,
+          "compilerSeconds": 4.057,
+          "originalBuildSeconds": 0.3093083300000001,
+          "sourceSha256": "f9de781a3b18498145a6589a91344486ae5d87d1fc1e063651e9c5b2b8e7a31b",
           "configSha256": "bc695f447fef6b2873298951b0b371d9d0e03ca27efc08f90a728f39f173220e"
         },
         {
@@ -104,10 +104,10 @@
           "metric": "brotli11",
           "artifact": {
             "file": "dist/posthog.esm.js",
-            "raw": 16983,
-            "gzip9": 6132,
-            "brotli11": 5466,
-            "sha256": "969e09739c077665710fde546a29de5fd26a8e0b4be377e1ff2e31b6365a1353"
+            "raw": 15881,
+            "gzip9": 5708,
+            "brotli11": 5105,
+            "sha256": "d222ffddb3d79e0010b254b944bc3b6e7b5bd9b2bb357e0ea44809b6f3642f81"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -116,14 +116,14 @@
             "gzip9": 6652,
             "brotli11": 6064,
             "sha256": "a7adb5aec301a4f216594c1836be6c3fd3bceef063fc373be201b9931d7c55dd",
-            "bundleSeconds": 0.020385042,
-            "minifySeconds": 0.31376301100000004,
-            "formatSeconds": 0.03328807600000005
+            "bundleSeconds": 0.018878390000000026,
+            "minifySeconds": 0.29042994000000005,
+            "formatSeconds": 0.033196144000000004
           },
-          "savingsPercent": 9.861477572559362,
-          "compilerSeconds": 30.182,
-          "originalBuildSeconds": 0.3674361290000001,
-          "sourceSha256": "c490f87b04b2893493457ee09bd3cfdb77de94a5d16e691460ddd2b0dce2f816",
+          "savingsPercent": 15.814643799472295,
+          "compilerSeconds": 24.028,
+          "originalBuildSeconds": 0.34250447400000006,
+          "sourceSha256": "b30c4856bd8e5e2d5d4066bfac8f5e9d0a6622dd6462e1cf017eeb60e2c28c28",
           "configSha256": "4c64d61524994daffc02e0fe8839c6b8c924841528ac4ec6efe68e46de81e0cc"
         }
       ]
@@ -139,9 +139,9 @@
           "gzip9": 3257,
           "brotli11": 2913,
           "sha256": "4820bc3a9d688e403e2d2d23df7fd33a3d1293018838544bb6d2e71d6f1c5bd3",
-          "bundleSeconds": 0.0083096690000001,
-          "minifySeconds": 0.0022285859999999504,
-          "formatSeconds": 0.015679527000000006
+          "bundleSeconds": 0.0073679180000000314,
+          "minifySeconds": 0.001953139999999962,
+          "formatSeconds": 0.015597091999999976
         },
         {
           "lane": "terser-mangle",
@@ -150,9 +150,9 @@
           "gzip9": 3067,
           "brotli11": 2735,
           "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
-          "bundleSeconds": 0.0083096690000001,
-          "minifySeconds": 0.13786208699999997,
-          "formatSeconds": 0.017735116999999946
+          "bundleSeconds": 0.0073679180000000314,
+          "minifySeconds": 0.11169050599999991,
+          "formatSeconds": 0.017340667999999938
         },
         {
           "lane": "esbuild-esnext",
@@ -161,9 +161,9 @@
           "gzip9": 4029,
           "brotli11": 3634,
           "sha256": "d1c501e0c735e161dbccc52bf0f6589cda637080db70dd7509cdb31f7a1a8cb4",
-          "bundleSeconds": 0.0083096690000001,
-          "minifySeconds": 0.0023044470000000957,
-          "formatSeconds": 0.01928887800000007
+          "bundleSeconds": 0.0073679180000000314,
+          "minifySeconds": 0.004152680000000032,
+          "formatSeconds": 0.019197798000000033
         }
       ],
       "objectives": [
@@ -184,13 +184,13 @@
             "gzip9": 3067,
             "brotli11": 2735,
             "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
-            "bundleSeconds": 0.0083096690000001,
-            "minifySeconds": 0.13786208699999997,
-            "formatSeconds": 0.017735116999999946
+            "bundleSeconds": 0.0073679180000000314,
+            "minifySeconds": 0.11169050599999991,
+            "formatSeconds": 0.017340667999999938
           },
           "savingsPercent": 3.9954192645374698,
-          "compilerSeconds": 1.087,
-          "originalBuildSeconds": 0.14617175600000007,
+          "compilerSeconds": 0.942,
+          "originalBuildSeconds": 0.11905842399999994,
           "sourceSha256": "43ac4c61da89e49408686c3cca7387a06339b02e239e0449811947dc8abbcd59",
           "configSha256": "be0cb0438a41c084c7fad86798d797df996dd27b186678c65b64ac11a6a8a2e9"
         },
@@ -211,13 +211,13 @@
             "gzip9": 3067,
             "brotli11": 2735,
             "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
-            "bundleSeconds": 0.0083096690000001,
-            "minifySeconds": 0.13786208699999997,
-            "formatSeconds": 0.017735116999999946
+            "bundleSeconds": 0.0073679180000000314,
+            "minifySeconds": 0.11169050599999991,
+            "formatSeconds": 0.017340667999999938
           },
           "savingsPercent": 12.846429735898269,
-          "compilerSeconds": 1.17,
-          "originalBuildSeconds": 0.14617175600000007,
+          "compilerSeconds": 1.03,
+          "originalBuildSeconds": 0.11905842399999994,
           "sourceSha256": "43ac4c61da89e49408686c3cca7387a06339b02e239e0449811947dc8abbcd59",
           "configSha256": "d41c4ad7d1091d505bcbabee88af6b794ca411c133b21f0328eca14ac3307a19"
         },
@@ -238,13 +238,13 @@
             "gzip9": 3067,
             "brotli11": 2735,
             "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
-            "bundleSeconds": 0.0083096690000001,
-            "minifySeconds": 0.13786208699999997,
-            "formatSeconds": 0.017735116999999946
+            "bundleSeconds": 0.0073679180000000314,
+            "minifySeconds": 0.11169050599999991,
+            "formatSeconds": 0.017340667999999938
           },
           "savingsPercent": 13.967093235831808,
-          "compilerSeconds": 5.6,
-          "originalBuildSeconds": 0.163906873,
+          "compilerSeconds": 4.864,
+          "originalBuildSeconds": 0.1363990919999999,
           "sourceSha256": "43ac4c61da89e49408686c3cca7387a06339b02e239e0449811947dc8abbcd59",
           "configSha256": "99effc0b70527fd8dd1c98e2e09dc0e520174bcf296fe8f13575e0eaf96f3cba"
         }
@@ -261,9 +261,9 @@
           "gzip9": 6911,
           "brotli11": 6374,
           "sha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
-          "bundleSeconds": 0.009250641000000087,
-          "minifySeconds": 0.00452838399999996,
-          "formatSeconds": 0.02982394599999998
+          "bundleSeconds": 0.009173566999999935,
+          "minifySeconds": 0.0034722150000000055,
+          "formatSeconds": 0.029036872000000016
         },
         {
           "lane": "terser-mangle",
@@ -272,9 +272,9 @@
           "gzip9": 6731,
           "brotli11": 6162,
           "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
-          "bundleSeconds": 0.009250641000000087,
-          "minifySeconds": 0.25881348200000004,
-          "formatSeconds": 0.028134911000000103
+          "bundleSeconds": 0.009173566999999935,
+          "minifySeconds": 0.21593824699999994,
+          "formatSeconds": 0.029835297000000083
         },
         {
           "lane": "esbuild-esnext",
@@ -283,9 +283,9 @@
           "gzip9": 7806,
           "brotli11": 7197,
           "sha256": "e9e1546bd7fbba31fe06097da10501caee80e5cea809854e71ce7d827b8994f4",
-          "bundleSeconds": 0.009250641000000087,
-          "minifySeconds": 0.004993454999999813,
-          "formatSeconds": 0.03193969000000015
+          "bundleSeconds": 0.009173566999999935,
+          "minifySeconds": 0.005151832000000013,
+          "formatSeconds": 0.03140015900000003
         }
       ],
       "objectives": [
@@ -294,10 +294,10 @@
           "metric": "raw",
           "artifact": {
             "file": "dist/error-tracking.raw.js",
-            "raw": 18534,
-            "gzip9": 7301,
-            "brotli11": 6618,
-            "sha256": "ba104197a2a2486b017be57526fe5f4fb32a531179d958a11847a917e314ee51"
+            "raw": 17892,
+            "gzip9": 7068,
+            "brotli11": 6403,
+            "sha256": "fa5fd3e6fd0c2c9eb0522b7bd2ac3a5d2c8651eb6b49d6784f573c790cc40e52"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -306,14 +306,14 @@
             "gzip9": 6731,
             "brotli11": 6162,
             "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
-            "bundleSeconds": 0.009250641000000087,
-            "minifySeconds": 0.25881348200000004,
-            "formatSeconds": 0.028134911000000103
+            "bundleSeconds": 0.009173566999999935,
+            "minifySeconds": 0.21593824699999994,
+            "formatSeconds": 0.029835297000000083
           },
-          "savingsPercent": -4.558275978788218,
-          "compilerSeconds": 15.074,
-          "originalBuildSeconds": 0.26806412300000015,
-          "sourceSha256": "88fbce1295efea7dc4ba806b63ed0e1b616c1cf01645f4262bf8ddabff86ebc1",
+          "savingsPercent": -0.936477490691634,
+          "compilerSeconds": 16.29,
+          "originalBuildSeconds": 0.22511181399999988,
+          "sourceSha256": "2179526b26a84c1dd5bb818df1869e1f19dee0666b94464af4cd3376db6e1415",
           "configSha256": "2b49dd7f481f4fa5d446486773bc22aa2ba98833b95a7355ef7fc69223b53db7"
         },
         {
@@ -321,10 +321,10 @@
           "metric": "gzip9",
           "artifact": {
             "file": "dist/error-tracking.gzip.js",
-            "raw": 19180,
-            "gzip9": 7081,
-            "brotli11": 6492,
-            "sha256": "91cbd9075e539119214fe101329e9154d5f433d3523c247b7159f1302025a42d"
+            "raw": 18524,
+            "gzip9": 6846,
+            "brotli11": 6286,
+            "sha256": "e5c1f8559b21b6bd4e77c3d0746bf7757bcdef933fd855e670ca456b7709466c"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -333,14 +333,14 @@
             "gzip9": 6731,
             "brotli11": 6162,
             "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
-            "bundleSeconds": 0.009250641000000087,
-            "minifySeconds": 0.25881348200000004,
-            "formatSeconds": 0.028134911000000103
+            "bundleSeconds": 0.009173566999999935,
+            "minifySeconds": 0.21593824699999994,
+            "formatSeconds": 0.029835297000000083
           },
-          "savingsPercent": -5.199821720398168,
-          "compilerSeconds": 20.681,
-          "originalBuildSeconds": 0.26806412300000015,
-          "sourceSha256": "88fbce1295efea7dc4ba806b63ed0e1b616c1cf01645f4262bf8ddabff86ebc1",
+          "savingsPercent": -1.7085128509879643,
+          "compilerSeconds": 12.231,
+          "originalBuildSeconds": 0.22511181399999988,
+          "sourceSha256": "2179526b26a84c1dd5bb818df1869e1f19dee0666b94464af4cd3376db6e1415",
           "configSha256": "b92e1d002e87a64f65c00fcd7fb10d1f2461131bd2a85910fd23910b55695b07"
         },
         {
@@ -348,10 +348,10 @@
           "metric": "brotli11",
           "artifact": {
             "file": "dist/error-tracking.esm.js",
-            "raw": 19086,
-            "gzip9": 7127,
-            "brotli11": 6460,
-            "sha256": "d1549172f45bed50535967911bd66430d073fd67c8a6cfc50544c91b8885e80d"
+            "raw": 18369,
+            "gzip9": 6893,
+            "brotli11": 6249,
+            "sha256": "2ff4b0a9c62ccadc7d00e48c71983b5c331a50dd91b7eaf4626f14cf0cd52a2b"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -360,14 +360,14 @@
             "gzip9": 6731,
             "brotli11": 6162,
             "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
-            "bundleSeconds": 0.009250641000000087,
-            "minifySeconds": 0.25881348200000004,
-            "formatSeconds": 0.028134911000000103
+            "bundleSeconds": 0.009173566999999935,
+            "minifySeconds": 0.21593824699999994,
+            "formatSeconds": 0.029835297000000083
           },
-          "savingsPercent": -4.836092177864337,
-          "compilerSeconds": 176.435,
-          "originalBuildSeconds": 0.29619903400000025,
-          "sourceSha256": "88fbce1295efea7dc4ba806b63ed0e1b616c1cf01645f4262bf8ddabff86ebc1",
+          "savingsPercent": -1.4118792599805197,
+          "compilerSeconds": 82.255,
+          "originalBuildSeconds": 0.25494711099999995,
+          "sourceSha256": "2179526b26a84c1dd5bb818df1869e1f19dee0666b94464af4cd3376db6e1415",
           "configSha256": "44c9bc04e46c28d9416301dc5efd4c7a5b66422ae6cc5e237a3d1a19009f9b93"
         }
       ]
@@ -383,9 +383,9 @@
           "gzip9": 3106,
           "brotli11": 2844,
           "sha256": "44757d68536293047d7d5f7f02848cec420d8c4549c4187bbcdc200f788f3f2b",
-          "bundleSeconds": 0.008807420999999977,
-          "minifySeconds": 0.0019134350000001633,
-          "formatSeconds": 0.015718740000000026
+          "bundleSeconds": 0.008372195999999804,
+          "minifySeconds": 0.0016898370000001251,
+          "formatSeconds": 0.01556200600000011
         },
         {
           "lane": "terser-mangle",
@@ -394,9 +394,9 @@
           "gzip9": 2944,
           "brotli11": 2692,
           "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
-          "bundleSeconds": 0.008807420999999977,
-          "minifySeconds": 0.06475164399999994,
-          "formatSeconds": 0.018473469999999905
+          "bundleSeconds": 0.008372195999999804,
+          "minifySeconds": 0.06116228899999988,
+          "formatSeconds": 0.016926091000000042
         },
         {
           "lane": "esbuild-esnext",
@@ -405,9 +405,9 @@
           "gzip9": 3874,
           "brotli11": 3535,
           "sha256": "c7c53bc0a3761b2632b6b8ed46c1e3537f98e38259f0762368cda29807fd3bfa",
-          "bundleSeconds": 0.008807420999999977,
-          "minifySeconds": 0.0025883890000000065,
-          "formatSeconds": 0.019205332
+          "bundleSeconds": 0.008372195999999804,
+          "minifySeconds": 0.003258474999999862,
+          "formatSeconds": 0.017303567999999814
         }
       ],
       "objectives": [
@@ -416,10 +416,10 @@
           "metric": "raw",
           "artifact": {
             "file": "dist/otlp.raw.js",
-            "raw": 6561,
-            "gzip9": 2752,
-            "brotli11": 2501,
-            "sha256": "93e9bc213f75396067f905cdc1657245943a54fc976d13c0c77f4d597851736f"
+            "raw": 6331,
+            "gzip9": 2714,
+            "brotli11": 2457,
+            "sha256": "50ae1d650089a69cb0e2d5cfa3223063b428945d0c02ce6aba671bc803f9efa6"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -428,14 +428,14 @@
             "gzip9": 2944,
             "brotli11": 2692,
             "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
-            "bundleSeconds": 0.008807420999999977,
-            "minifySeconds": 0.06475164399999994,
-            "formatSeconds": 0.018473469999999905
+            "bundleSeconds": 0.008372195999999804,
+            "minifySeconds": 0.06116228899999988,
+            "formatSeconds": 0.016926091000000042
           },
-          "savingsPercent": 12.227424749163884,
-          "compilerSeconds": 1.089,
-          "originalBuildSeconds": 0.07355906499999992,
-          "sourceSha256": "46130d01d9025f7c280a00ee6b242e425830d359af5cb11f3c44f31c69536e6c",
+          "savingsPercent": 15.30434782608696,
+          "compilerSeconds": 1.027,
+          "originalBuildSeconds": 0.06953448499999967,
+          "sourceSha256": "38cf748f527157ca7afc4c6dded1ed6437642e61fec47ed2ffc6834098bfb8ba",
           "configSha256": "d18a4d11d65ff005b7800392db41ea5b1105cc4d7512c0afbef16325808b84f1"
         },
         {
@@ -443,10 +443,10 @@
           "metric": "gzip9",
           "artifact": {
             "file": "dist/otlp.gzip.js",
-            "raw": 6925,
-            "gzip9": 2672,
-            "brotli11": 2444,
-            "sha256": "7019959b711af48538b814b1721bc7aa8d172d5376adb9d1b9d91c77c05e5045"
+            "raw": 6856,
+            "gzip9": 2599,
+            "brotli11": 2378,
+            "sha256": "8456d82bd5fc35337081f1333d80cb40d9a7f0074530d0fd4f3b3d070e22663f"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -455,14 +455,14 @@
             "gzip9": 2944,
             "brotli11": 2692,
             "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
-            "bundleSeconds": 0.008807420999999977,
-            "minifySeconds": 0.06475164399999994,
-            "formatSeconds": 0.018473469999999905
+            "bundleSeconds": 0.008372195999999804,
+            "minifySeconds": 0.06116228899999988,
+            "formatSeconds": 0.016926091000000042
           },
-          "savingsPercent": 9.239130434782606,
-          "compilerSeconds": 1.704,
-          "originalBuildSeconds": 0.07355906499999992,
-          "sourceSha256": "46130d01d9025f7c280a00ee6b242e425830d359af5cb11f3c44f31c69536e6c",
+          "savingsPercent": 11.71875,
+          "compilerSeconds": 1.752,
+          "originalBuildSeconds": 0.06953448499999967,
+          "sourceSha256": "38cf748f527157ca7afc4c6dded1ed6437642e61fec47ed2ffc6834098bfb8ba",
           "configSha256": "6c599f0d4ccef365265c2c484504dc9135cbe64ca9ad93c2cc34bd479ee25415"
         },
         {
@@ -470,10 +470,10 @@
           "metric": "brotli11",
           "artifact": {
             "file": "dist/otlp.esm.js",
-            "raw": 6912,
-            "gzip9": 2675,
-            "brotli11": 2442,
-            "sha256": "f5d47057da1fc202e4b9e1761d901054fa1d3d3df41d366eb6ccf869365600e9"
+            "raw": 6714,
+            "gzip9": 2610,
+            "brotli11": 2377,
+            "sha256": "ced6aa4c3441811ae2f234b1a442f7590221a37a97cba949f5f6c1a9d57039bb"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -482,14 +482,14 @@
             "gzip9": 2944,
             "brotli11": 2692,
             "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
-            "bundleSeconds": 0.008807420999999977,
-            "minifySeconds": 0.06475164399999994,
-            "formatSeconds": 0.018473469999999905
+            "bundleSeconds": 0.008372195999999804,
+            "minifySeconds": 0.06116228899999988,
+            "formatSeconds": 0.016926091000000042
           },
-          "savingsPercent": 9.286775631500744,
-          "compilerSeconds": 8.094,
-          "originalBuildSeconds": 0.09203253499999983,
-          "sourceSha256": "46130d01d9025f7c280a00ee6b242e425830d359af5cb11f3c44f31c69536e6c",
+          "savingsPercent": 11.701337295690939,
+          "compilerSeconds": 6.208,
+          "originalBuildSeconds": 0.08646057599999972,
+          "sourceSha256": "38cf748f527157ca7afc4c6dded1ed6437642e61fec47ed2ffc6834098bfb8ba",
           "configSha256": "7a2e1c86a5e1eefd61af93ef29d549092a930248e8a56baa2c4dcfdbc4317caf"
         }
       ]
@@ -505,9 +505,9 @@
           "gzip9": 4720,
           "brotli11": 4296,
           "sha256": "1c7dc0f76ef522b520bb7f42ba7426c45ac51f6ec39a55b131a400a2b6629cc8",
-          "bundleSeconds": 0.012065725000000157,
-          "minifySeconds": 0.002736687999999958,
-          "formatSeconds": 0.02187098500000002
+          "bundleSeconds": 0.011731599999999844,
+          "minifySeconds": 0.002362856999999849,
+          "formatSeconds": 0.020939307999999983
         },
         {
           "lane": "terser-mangle",
@@ -516,9 +516,9 @@
           "gzip9": 4441,
           "brotli11": 4023,
           "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
-          "bundleSeconds": 0.012065725000000157,
-          "minifySeconds": 0.1590330819999999,
-          "formatSeconds": 0.02211235799999986
+          "bundleSeconds": 0.011731599999999844,
+          "minifySeconds": 0.12576232000000004,
+          "formatSeconds": 0.02214268500000003
         },
         {
           "lane": "esbuild-esnext",
@@ -527,9 +527,9 @@
           "gzip9": 5584,
           "brotli11": 5097,
           "sha256": "50870766f8f047152e1deb3fe4a14118b1c2e537026746f19c63ee6a02af8888",
-          "bundleSeconds": 0.012065725000000157,
-          "minifySeconds": 0.005594751999999971,
-          "formatSeconds": 0.02375658899999985
+          "bundleSeconds": 0.011731599999999844,
+          "minifySeconds": 0.003963469000000032,
+          "formatSeconds": 0.023171492000000172
         }
       ],
       "objectives": [
@@ -550,13 +550,13 @@
             "gzip9": 4441,
             "brotli11": 4023,
             "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
-            "bundleSeconds": 0.012065725000000157,
-            "minifySeconds": 0.1590330819999999,
-            "formatSeconds": 0.02211235799999986
+            "bundleSeconds": 0.011731599999999844,
+            "minifySeconds": 0.12576232000000004,
+            "formatSeconds": 0.02214268500000003
           },
           "savingsPercent": 19.175088773559136,
-          "compilerSeconds": 1.256,
-          "originalBuildSeconds": 0.17109880700000007,
+          "compilerSeconds": 0.996,
+          "originalBuildSeconds": 0.13749391999999988,
           "sourceSha256": "3e5b2d5e100ded0b53e457992ba4f524ab1b6916c44e8f3936f428a804f9bcd5",
           "configSha256": "a501f66c77e2bdbd44c7678888407045a2289976ba78b5012b72251b165cf32a"
         },
@@ -577,13 +577,13 @@
             "gzip9": 4441,
             "brotli11": 4023,
             "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
-            "bundleSeconds": 0.012065725000000157,
-            "minifySeconds": 0.1590330819999999,
-            "formatSeconds": 0.02211235799999986
+            "bundleSeconds": 0.011731599999999844,
+            "minifySeconds": 0.12576232000000004,
+            "formatSeconds": 0.02214268500000003
           },
           "savingsPercent": 22.35982886737221,
-          "compilerSeconds": 3.197,
-          "originalBuildSeconds": 0.17109880700000007,
+          "compilerSeconds": 2.393,
+          "originalBuildSeconds": 0.13749391999999988,
           "sourceSha256": "3e5b2d5e100ded0b53e457992ba4f524ab1b6916c44e8f3936f428a804f9bcd5",
           "configSha256": "97ca04f3e2863809cd96c147c8682d6389798aee999199144fa285e415708661"
         },
@@ -604,13 +604,13 @@
             "gzip9": 4441,
             "brotli11": 4023,
             "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
-            "bundleSeconds": 0.012065725000000157,
-            "minifySeconds": 0.1590330819999999,
-            "formatSeconds": 0.02211235799999986
+            "bundleSeconds": 0.011731599999999844,
+            "minifySeconds": 0.12576232000000004,
+            "formatSeconds": 0.02214268500000003
           },
           "savingsPercent": 21.84936614466816,
-          "compilerSeconds": 11.445,
-          "originalBuildSeconds": 0.19321116499999993,
+          "compilerSeconds": 10.278,
+          "originalBuildSeconds": 0.1596366049999999,
           "sourceSha256": "3e5b2d5e100ded0b53e457992ba4f524ab1b6916c44e8f3936f428a804f9bcd5",
           "configSha256": "97f1acdfba1c3afa383ecc4672c35ff2e4c7fe04d90974037e13d63d4d3ab012"
         }
@@ -627,9 +627,9 @@
           "gzip9": 4717,
           "brotli11": 4312,
           "sha256": "bab4c6d245fd1445890f81848df807309bf23e4dd0ccd9b11942c13d1236e76f",
-          "bundleSeconds": 0.011855373999999983,
-          "minifySeconds": 0.0029544559999999365,
-          "formatSeconds": 0.01901291100000003
+          "bundleSeconds": 0.011725755000000162,
+          "minifySeconds": 0.002231881999999814,
+          "formatSeconds": 0.01884257200000002
         },
         {
           "lane": "terser-mangle",
@@ -638,9 +638,9 @@
           "gzip9": 4443,
           "brotli11": 4062,
           "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
-          "bundleSeconds": 0.011855373999999983,
-          "minifySeconds": 0.11338245399999983,
-          "formatSeconds": 0.020506468999999923
+          "bundleSeconds": 0.011725755000000162,
+          "minifySeconds": 0.1128364019999999,
+          "formatSeconds": 0.020518732
         },
         {
           "lane": "esbuild-esnext",
@@ -649,9 +649,9 @@
           "gzip9": 5581,
           "brotli11": 5128,
           "sha256": "d19bc0ecbffe5d35bb3f077cbb559574f127da72431b6acd0f4afd6f0f82b886",
-          "bundleSeconds": 0.011855373999999983,
-          "minifySeconds": 0.003529812999999649,
-          "formatSeconds": 0.023425637999999707
+          "bundleSeconds": 0.011725755000000162,
+          "minifySeconds": 0.0034443659999999453,
+          "formatSeconds": 0.022511565999999903
         }
       ],
       "objectives": [
@@ -660,10 +660,10 @@
           "metric": "raw",
           "artifact": {
             "file": "dist/replay-core.raw.js",
-            "raw": 8442,
-            "gzip9": 3847,
-            "brotli11": 3493,
-            "sha256": "8dc24e5dda28eb19a157af2089453eea10e138e763ddb70dbdf8ee019ac09ab3"
+            "raw": 8413,
+            "gzip9": 3844,
+            "brotli11": 3508,
+            "sha256": "4042018fd9ad847bdbf9dd6bfbe2f08ad1536975f844bf6e34589b2b92229d17"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -672,14 +672,14 @@
             "gzip9": 4443,
             "brotli11": 4062,
             "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
-            "bundleSeconds": 0.011855373999999983,
-            "minifySeconds": 0.11338245399999983,
-            "formatSeconds": 0.020506468999999923
+            "bundleSeconds": 0.011725755000000162,
+            "minifySeconds": 0.1128364019999999,
+            "formatSeconds": 0.020518732
           },
-          "savingsPercent": 16.548042704626333,
-          "compilerSeconds": 1.364,
-          "originalBuildSeconds": 0.1252378279999998,
-          "sourceSha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+          "savingsPercent": 16.834717279557132,
+          "compilerSeconds": 1.175,
+          "originalBuildSeconds": 0.12456215700000006,
+          "sourceSha256": "55c008b36bcfcb8121400b9caba39c7a33c1d7211d340bf2399c578d702f4f08",
           "configSha256": "9216b4fdfcb392ac0bb351a92c7718af5c5345c19a791b6895e943bfab2d4dad"
         },
         {
@@ -687,10 +687,10 @@
           "metric": "gzip9",
           "artifact": {
             "file": "dist/replay-core.gzip.js",
-            "raw": 8595,
-            "gzip9": 3668,
-            "brotli11": 3353,
-            "sha256": "db905eae11d20a4bd818625d296e278f930a8174bd52517e4fd9afa94c7ecc11"
+            "raw": 8567,
+            "gzip9": 3686,
+            "brotli11": 3374,
+            "sha256": "3e896cdcc22df454fd6a059c7137648cbc36e137555490924b2fce6957d15fc1"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -699,14 +699,14 @@
             "gzip9": 4443,
             "brotli11": 4062,
             "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
-            "bundleSeconds": 0.011855373999999983,
-            "minifySeconds": 0.11338245399999983,
-            "formatSeconds": 0.020506468999999923
+            "bundleSeconds": 0.011725755000000162,
+            "minifySeconds": 0.1128364019999999,
+            "formatSeconds": 0.020518732
           },
-          "savingsPercent": 17.443169029934722,
-          "compilerSeconds": 3.093,
-          "originalBuildSeconds": 0.1252378279999998,
-          "sourceSha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+          "savingsPercent": 17.0380373621427,
+          "compilerSeconds": 1.576,
+          "originalBuildSeconds": 0.12456215700000006,
+          "sourceSha256": "55c008b36bcfcb8121400b9caba39c7a33c1d7211d340bf2399c578d702f4f08",
           "configSha256": "14845d9ce4f92c1174aebb6fa7454c403939416b9a5f722112b984c0caeae06f"
         },
         {
@@ -714,10 +714,10 @@
           "metric": "brotli11",
           "artifact": {
             "file": "dist/replay-core.esm.js",
-            "raw": 8598,
-            "gzip9": 3705,
-            "brotli11": 3321,
-            "sha256": "ad6e4aad9d4236b86a6edff955d4ddbba18a463e881ec09b567c08cd69499daf"
+            "raw": 8616,
+            "gzip9": 3710,
+            "brotli11": 3361,
+            "sha256": "de346927aa769a0c5e25ffc8e282fa4508bb0b320034884f4d25ccb446da17ef"
           },
           "baseline": {
             "lane": "terser-mangle",
@@ -726,14 +726,14 @@
             "gzip9": 4443,
             "brotli11": 4062,
             "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
-            "bundleSeconds": 0.011855373999999983,
-            "minifySeconds": 0.11338245399999983,
-            "formatSeconds": 0.020506468999999923
+            "bundleSeconds": 0.011725755000000162,
+            "minifySeconds": 0.1128364019999999,
+            "formatSeconds": 0.020518732
           },
-          "savingsPercent": 18.242245199409158,
-          "compilerSeconds": 17.349,
-          "originalBuildSeconds": 0.14574429699999972,
-          "sourceSha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+          "savingsPercent": 17.257508616445104,
+          "compilerSeconds": 4.866,
+          "originalBuildSeconds": 0.14508088900000007,
+          "sourceSha256": "55c008b36bcfcb8121400b9caba39c7a33c1d7211d340bf2399c578d702f4f08",
           "configSha256": "621e3047feeea07bf24fc456d6ce6b1f6e7b91981bf7859eca51d497a3830f87"
         }
       ]

@@ -105,10 +105,7 @@ export string safeJsonStringify(JsValue value) {
       return undef();
     }
     if (instanceOfCtor(replacementValue, Error)) {
-      JsValue serializedError = JS.object();
-      serializedError["name"] = replacementValue["name"];
-      serializedError["message"] = replacementValue["message"];
-      serializedError["stack"] = replacementValue["stack"];
+      JsValue serializedError = object { "name": replacementValue["name"], "message": replacementValue["message"], "stack": replacementValue["stack"] };
       return serializedError;
     }
     if (replacementValue.truthy() && kind == "object") {

@@ -106,6 +106,99 @@ describe("@posthog/core/error-tracking compatibility", () => {
     assert.equal(lil.createStackParser.length, official.createStackParser.length)
   })
 
+  it("preserves variadic parser arguments and the public function boundary", () => {
+    function exercise(api) {
+      const calls = []
+      const parsers = Array.from({ length: 9 }, (_, index) => (line, platform) => {
+        calls.push([index, line, platform])
+        if (index === 8) return { filename: line, function: "fixture", platform }
+      })
+      const parser = api.createStackParser("custom", ...parsers)
+      const frames = parser("skip\nfirst\nsecond", 1)
+      const constructed = new api.createStackParser("custom", ...parsers)
+      const descriptor = Object.getOwnPropertyDescriptor(api.createStackParser, "prototype")
+      return {
+        frames, calls, constructed: typeof constructed,
+        name: api.createStackParser.name, length: api.createStackParser.length,
+        prototype: { writable: descriptor.writable, enumerable: descriptor.enumerable, configurable: descriptor.configurable },
+      }
+    }
+    assert.deepEqual(exercise(lil), exercise(official))
+  })
+
+  it("creates coercer payload fields without invoking inherited setters", () => {
+    const error = new Error("fixture")
+    error.stack = "Error: fixture\n    at fixture (https://example.test/app.js:1:2)"
+    const cases = [
+      ["PrimitiveCoercer", 42], ["StringCoercer", "TypeError: fixture"],
+      ["ErrorCoercer", error], ["ObjectCoercer", { message: "fixture" }],
+      ["DOMExceptionCoercer", new DOMException("fixture", "InvalidStateError")],
+      ["EventCoercer", new Event("click")],
+      ["PromiseRejectionEventCoercer", { reason: 42 }],
+    ]
+    function exercise(api) {
+      const previous = Object.getOwnPropertyDescriptor(Object.prototype, "type")
+      let setterCalls = 0
+      try {
+        Object.defineProperty(Object.prototype, "type", { configurable: true, set() { setterCalls++ } })
+        const results = cases.map(([name, input]) => {
+          const value = new api[name]().coerce(input, {})
+          return { value, descriptor: Object.getOwnPropertyDescriptor(value, "type") }
+        })
+        return { setterCalls, results }
+      } finally {
+        if (previous) Object.defineProperty(Object.prototype, "type", previous)
+        else delete Object.prototype.type
+      }
+    }
+    const expected = exercise(official), actual = exercise(lil)
+    assert.equal(expected.setterCalls, 0)
+    assert.ok(expected.results.every(row => row.descriptor?.enumerable && row.descriptor.writable && row.descriptor.configurable))
+    assert.deepEqual(actual, expected)
+  })
+
+  it("preserves override evaluation order and null stack results", () => {
+    function exercise(api) {
+      const calls = []
+      const context = { get syntheticException() { calls.push("synthetic"); return { stack: "fallback" } } }
+      class CustomObject extends api.ObjectCoercer {
+        getErrorPropertyFromObject() { calls.push("nested"); return undefined }
+        getType() { calls.push("type"); return "Custom" }
+        getValue() { calls.push("value"); return "fixture" }
+        getStack() { calls.push("stack"); return null }
+        isSeverityLevel() { calls.push("level"); return false }
+      }
+      class CustomError extends api.ErrorCoercer {
+        getStack() { calls.push("error-stack"); return null }
+        getType() { calls.push("error-type"); return "Custom" }
+        getMessage() { calls.push("error-message"); return "fixture" }
+      }
+      return { object: new CustomObject().coerce({}, context), error: new CustomError().coerce({}, context), calls }
+    }
+    assert.deepEqual(exercise(lil), exercise(official))
+  })
+
+  it("defines required browser frame fields as own data properties", () => {
+    function exercise(api) {
+      const fields = ["platform", "filename", "function", "in_app"]
+      const previous = fields.map(key => Object.getOwnPropertyDescriptor(Object.prototype, key))
+      let setterCalls = 0
+      try {
+        for (const key of fields) Object.defineProperty(Object.prototype, key, { configurable: true, set() { setterCalls++ } })
+        const frame = api.chromeStackLineParser("    at fixture (https://example.test/app.js:1:2)", "web:javascript")
+        return { frame, setterCalls, descriptors: fields.map(key => Object.getOwnPropertyDescriptor(frame, key)) }
+      } finally {
+        fields.forEach((key, index) => {
+          if (previous[index]) Object.defineProperty(Object.prototype, key, previous[index])
+          else delete Object.prototype[key]
+        })
+      }
+    }
+    const expected = exercise(official)
+    assert.equal(expected.setterCalls, 0)
+    assert.deepEqual(exercise(lil), expected)
+  })
+
   it("preserves host subclassing, overrides and constructor identity", () => {
     function exercise(api) {
       class NamedError extends api.ErrorCoercer {

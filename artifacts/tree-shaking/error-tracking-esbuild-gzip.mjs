@@ -1,0 +1,1 @@
+var l=function(r){let n=globalThis.TextEncoder;if(n!==void 0)return new n().encode(r).length;let i=encodeURIComponent(r)+"",e=0,t=0;for(;t<i.length;++t)i[t]=="%"?(e=e+1|0,t+=2):e=e+1|0;return e};export{l as getUtf8ByteLength};

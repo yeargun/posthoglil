@@ -14,35 +14,35 @@
   "replacements": [
     {
       "file": "dist/module.js",
-      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "sha256": "69a1fc4ef39e5a252212d2ac0eea7075d8bbfb3ffd9238af4f2a403b66dfad76",
       "objective": "brotli"
     },
     {
       "file": "dist/module.mjs",
-      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "sha256": "69a1fc4ef39e5a252212d2ac0eea7075d8bbfb3ffd9238af4f2a403b66dfad76",
       "objective": "brotli"
     },
     {
       "file": "dist/main.js",
-      "sha256": "317d46d4f479657e7108c3ed9532aca39f5e99034bc518505665421d54f51aed",
+      "sha256": "6ca80396e07359c368a68b36856a8e43a2ebabc8641bd0fa5f6298ae5d1f9480",
       "objective": "brotli",
       "formatAdapter": "esbuild CJS"
     },
     {
       "file": "dist/module.full.no-external.js",
-      "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+      "sha256": "588f1636a170e24505674ab89c461675844ad8a7a8110bca40efc92fe22c8c1d",
       "objective": "brotli"
     },
     {
       "file": "dist/module.full.no-external.cjs",
-      "sha256": "00306ead41922abb810a1caa91b1ea9cb6f0924adb0699c2f4df44e7a776d968",
+      "sha256": "dc2078d9f4865559c5ee95eece33c0deb85373150d796d9bab52412aa322ff23",
       "objective": "brotli",
       "formatAdapter": "esbuild CJS"
     }
   ],
   "tarball": "itslil-posthog-browser-1.435.8-lil.0.tgz",
-  "integrity": "sha512-uWlg/CmBCZof8iESNIo9Lgx1y9W7P1kZb5FQqxfAIMeVdfzydsbPIHQrYu/WNc00s8xW2dGiIADM6BVYlRZxdw==",
-  "shasum": "27a07580f98a089c994c29c1436619d5b16d61ea",
-  "size": 14848422,
-  "unpackedSize": 52373213
+  "integrity": "sha512-Pv4Ec/tPSpEaMPGYoUUXfdA4cp+WA5aBKSkQWKteAtIdAt6YsND1b2MOIKE7iUUI0XydE27S58mH3UQOsHRwdw==",
+  "shasum": "280eedbf01ad32d1966ae48e3666564945f1be8a",
+  "size": 14837196,
+  "unpackedSize": 52334389
 }
