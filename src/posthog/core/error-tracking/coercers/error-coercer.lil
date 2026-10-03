@@ -1,0 +1,56 @@
+// packages/core/src/error-tracking/coercers/error-coercer.ts — the TypeScript-private helpers are
+// module functions.
+import { isError } from "../../utils/type-utils.lil";
+extern JsValue String;
+
+export class ErrorCoercer {
+  bool match(JsValue err) {
+    return isError(err);
+  }
+
+  JsValue coerce(JsValue err, JsValue ctx) {
+    JsValue stack = getStack(err);
+    // Errors with no usable stack (e.g. a Firefox network `fetch` TypeError) fall back to the
+    // synthetic exception captured at the call site, marked synthetic so the parser trims the
+    // SDK's own frames.
+    JsValue replacementStack = undefined;
+    if (stack === undefined) {
+      JsValue syntheticException = ctx.syntheticException;
+      replacementStack = if (syntheticException == null) { undefined } else { syntheticException.stack };
+    }
+    bool synthetic = replacementStack.truthy();
+    return object {
+      type: getType(err),
+      value: getMessage(err),
+      stack: stack ?? replacementStack,
+      cause: if (err.cause.truthy()) { ctx.next(err.cause) } else { undefined },
+      synthetic: synthetic
+    };
+  }
+}
+export constructor ErrorCoercer;
+
+JsValue getType(JsValue err) {
+  return err.name || err.constructor.name;
+}
+
+string getMessage(JsValue err) {
+  JsValue message = err["message"];
+  if (message.error.truthy() && message.error["message"] is string) {
+    return String(message.error["message"]) as string;
+  }
+  return String(message) as string;
+}
+
+JsValue getStack(JsValue err) {
+  try {
+    JsValue stacktrace = err.stacktrace;
+    if (stacktrace is string && stacktrace.length > 0) {
+      return stacktrace;
+    }
+    JsValue stack = err.stack;
+    return if (stack is string && stack.length > 0) { stack } else { undefined };
+  } catch (JsValue error) {
+    return undefined;
+  }
+}

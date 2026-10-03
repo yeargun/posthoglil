@@ -1,0 +1,378 @@
+// packages/core/src/logs/index.ts — the core logs pipeline. The SDKs keep a `PostHogLogs` in a
+// private field (the browser wraps it), so its own calls to `flush` are static and its private
+// members are typed fields and module functions. The host, config, logger and callbacks are JS
+// values called through their objects; `_retryAfter` and `_flushPromise` keep upstream's names
+// (upstream's tests read them).
+import { buildOtlpLogRecord, buildOtlpLogsPayload, buildResourceAttributes } from "./logs-utils.lil";
+import { PostHogPersistedProperty } from "../types.lil";
+import { isArray } from "../utils/type-utils.lil";
+import { raceWithTimeout } from "../utils/index.lil";
+import { FlushTimer } from "../utils/flush-timer.lil";
+import { RetryAfterWindow } from "../utils/retry-after.lil";
+import { MAX_FLUSH_BACKOFF_MS, NO_JITTER, backoffDelayMs, drawJitter } from "../utils/backoff.lil";
+extern JsValue Date;
+extern JsValue Promise;
+
+export class PostHogLogs {
+  JsValue instance;
+  JsValue config;
+  JsValue logger;
+  JsValue getContext;
+  JsValue onReady;
+  JsValue waitForStoragePersist;
+  JsValue scopeName;
+  // The FlushTimer (its callback captures this instance, so it is stored once construction is done).
+  JsValue flushTimerValue = undefined;
+  // Serializes concurrent flushes: the second caller awaits the first.
+  JsValue _flushPromise = null;
+  // Head records evicted (FIFO) while a batch is in flight.
+  float evictedSinceAdvance = 0.0;
+  // A batch captures this when assembled, to tell that the queue was cleared under it.
+  float queueGeneration = 0.0;
+  RetryAfterWindow _retryAfter = new RetryAfterWindow();
+  // Consecutive failed flushes; drives exponential backoff on the retry timer.
+  float consecutiveFlushFailures = 0.0;
+  float flushJitter = NO_JITTER;
+  // Fixed-window (tumbling) rate cap.
+  float intervalWindowStart = 0.0;
+  float intervalLogCount = 0.0;
+  bool droppedWarned = false;
+  float maxBufferSize = 0.0;
+  // Eviction cap; `maxBufferSize` only triggers a flush.
+  float maxQueueSize = 0.0;
+  float flushIntervalMs = 0.0;
+  // Halved on 413, ramped back up by one record after each successful send.
+  float maxBatchRecordsPerPost = 0.0;
+  float rateCapWindowMs = 0.0;
+  JsValue maxLogsPerInterval = undefined;
+
+  init(
+    JsValue instance,
+    JsValue config,
+    JsValue logger,
+    JsValue getContext,
+    JsValue onReady,
+    JsValue waitForStoragePersist,
+    JsValue scopeName
+  ) {
+    this.instance = instance;
+    this.config = config;
+    this.logger = logger;
+    this.getContext = getContext;
+    this.onReady = onReady;
+    // Waits for the logs-storage persist between batches (a no-op for synchronous storage).
+    this.waitForStoragePersist = if (waitForStoragePersist === undefined) { ((() => Promise.resolve()) as JsValue) } else { waitForStoragePersist };
+    // OTLP instrumentation scope name; `getLibraryId()` when omitted.
+    this.scopeName = scopeName;
+    PostHogLogs self = this;
+    this.flushTimerValue = new FlushTimer(() => flushInBackground(self));
+    this.maxBufferSize = config.maxBufferSize as float;
+    // Never below the flush trigger, so the size-based flush can always fire.
+    this.maxQueueSize = ((config.maxQueueSize ?? config.maxBufferSize) as float).max(config.maxBufferSize as float);
+    this.flushIntervalMs = config.flushIntervalMs as float;
+    this.maxBatchRecordsPerPost = config.maxBatchRecordsPerPost as float;
+    this.rateCapWindowMs = config.rateCapWindowMs as float;
+    this.maxLogsPerInterval = config.maxLogsPerInterval;
+  }
+
+  // Drops every queued record; a batch in flight is retired with them.
+  void clearQueue() {
+    this.queueGeneration += 1.0;
+    this.instance.setPersistedProperty(PostHogPersistedProperty.LogsQueue, []);
+  }
+
+  // Clears the flush timer and rate-cap state; the host owns the record queue.
+  void reset() {
+    flushTimerOf(this).clear();
+    // `_flushPromise` is left alone: clearing it would let a second flush run alongside.
+    this.intervalWindowStart = 0.0;
+    this.intervalLogCount = 0.0;
+    this.droppedWarned = false;
+    this.consecutiveFlushFailures = 0.0;
+    this.flushJitter = NO_JITTER;
+    this._retryAfter.reset();
+    this.maxBatchRecordsPerPost = this.config.maxBatchRecordsPerPost as float;
+  }
+
+  // Connectivity restored: clear the failure backoff and flush now. A `Retry-After` window
+  // survives this.
+  void onReconnect() {
+    this.consecutiveFlushFailures = 0.0;
+    this.flushJitter = NO_JITTER;
+    if (this._retryAfter.isOpen()) {
+      // Something still has to schedule the retry: an explicit `flush()` leaves no timer behind.
+      if (hasQueuedRecords(this)) {
+        armFlushTimer(this);
+      }
+      return;
+    }
+    flushInBackground(this);
+  }
+
+  // Captures one log record; `capturedAt` carries state snapshotted when the event occurred.
+  void captureLog(JsValue options, JsValue capturedAt) {
+    if (this.instance.isDisabled.truthy()) {
+      return;
+    }
+    if (this.instance.optedOut.truthy()) {
+      return;
+    }
+    if (options == null || !options.body.truthy()) {
+      return;
+    }
+    // beforeSend → rate cap → OTLP build: user-dropped records don't consume the budget.
+    JsValue filtered = runBeforeSend(this, options);
+    if (filtered === null) {
+      return;
+    }
+    if (!filtered.body.truthy()) {
+      this.logger.info("Log was rejected in beforeSend function");
+      return;
+    }
+    if (!checkRateLimit(this)) {
+      return;
+    }
+    // Built before deferring, so attributes reflect state at capture time.
+    JsValue context = if (capturedAt == null) { undefined } else { capturedAt.context };
+    JsValue logRecord = buildOtlpLogRecord(
+      filtered,
+      context ?? this.getContext(),
+      this.logger,
+      if (capturedAt == null) { undefined } else { capturedAt.occurredAtMs }
+    );
+    JsValue entry = object { record: logRecord };
+    PostHogLogs self = this;
+    this.onReady(() => enqueue(self, entry));
+  }
+
+  // Drains `LogsQueue` in `maxBatchRecordsPerPost` slices; concurrent calls share one flush.
+  async JsValue flush() {
+    if (this.instance.isDisabled.truthy()) {
+      return undefined;
+    }
+    if (this._flushPromise.truthy()) {
+      return this._flushPromise;
+    }
+    PostHogLogs self = this;
+    this._flushPromise = (flushInner(this) as JsValue).finally(() => {
+      self._flushPromise = null;
+    });
+    return this._flushPromise;
+  }
+
+  // Stops the timer-based flush and sends what is queued, swallowing errors; `timeoutMs` bounds it.
+  async void shutdown(JsValue timeoutMs) {
+    flushTimerOf(this).clear();
+    Task<JsValue> flushing = JS.assume((this.flush() as JsValue).catch(() => undefined));
+    if (timeoutMs === undefined) {
+      await flushing;
+      return;
+    }
+    await raceWithTimeout(flushing, timeoutMs, undefined);
+  }
+
+  // Time-bounded flush for lifecycle events; leaves the periodic timer in place. A late rejection
+  // after a lost race is silenced.
+  async void flushWithTimeout(JsValue timeoutMs) {
+    JsValue flushPromise = this.flush();
+    Task<JsValue> raced = JS.assume(raceWithTimeout(flushPromise, timeoutMs, () => {
+      flushPromise.catch(() => undefined);
+    }));
+    await raced;
+  }
+}
+export constructor PostHogLogs;
+
+FlushTimer flushTimerOf(PostHogLogs self) {
+  return self.flushTimerValue as FlushTimer;
+}
+
+// Runs the `beforeSend` hook(s): one function or an array (left to right); a falsy result or a
+// throw drops the record.
+JsValue runBeforeSend(PostHogLogs self, JsValue options) {
+  JsValue beforeSend = self.config.beforeSend;
+  if (!beforeSend.truthy()) {
+    return options;
+  }
+  JsValue fns = if (isArray(beforeSend)) { beforeSend } else { [beforeSend] };
+  JsValue result = options;
+  for (float i = 0.0; i < fns.length; i += 1.0) {
+    JsValue fn = fns[i];
+    try {
+      JsValue next = fn(result);
+      if (!next.truthy()) {
+        self.logger.info("Log was rejected in beforeSend function");
+        return null;
+      }
+      result = next;
+    } catch (JsValue e) {
+      self.logger.error("Error in beforeSend function for log:", e);
+      return null;
+    }
+  }
+  return result;
+}
+
+// True if this capture fits within the current rate-cap window. A backward clock jump resets the
+// window instead of blocking until the clock catches up.
+bool checkRateLimit(PostHogLogs self) {
+  if (self.maxLogsPerInterval === undefined) {
+    return true;
+  }
+  float now = Date.now() as float;
+  float elapsed = now - self.intervalWindowStart;
+  if (elapsed >= self.rateCapWindowMs || elapsed < 0.0) {
+    self.intervalWindowStart = now;
+    self.intervalLogCount = 0.0;
+    self.droppedWarned = false;
+  }
+  if (self.intervalLogCount >= self.maxLogsPerInterval) {
+    if (!self.droppedWarned) {
+      self.logger.warn(`captureLog dropping logs: exceeded ${self.maxLogsPerInterval} logs per ${self.rateCapWindowMs}ms`);
+      self.droppedWarned = true;
+    }
+    return false;
+  }
+  self.intervalLogCount += 1.0;
+  return true;
+}
+
+JsValue persistedQueue(PostHogLogs self) {
+  return self.instance.getPersistedProperty(PostHogPersistedProperty.LogsQueue) ?? [];
+}
+
+// Network error → keep and re-throw; 413 → halve the batch and retry; other errors → drop the
+// batch and re-throw.
+async void flushInner(PostHogLogs self) {
+  FlushTimer flushTimer = flushTimerOf(self);
+  flushTimer.clear();
+  JsValue queue = persistedQueue(self);
+  if (queue.length == 0.0) {
+    return;
+  }
+  float originalQueueLength = queue.length;
+  float sentCount = 0.0;
+  while (queue.length > 0.0 && sentCount < originalQueueLength) {
+    // Captured per batch: a clear between batches leaves the next one from a fresh queue.
+    float generation = self.queueGeneration;
+    // Counts only evictions during this batch's send.
+    self.evictedSinceAdvance = 0.0;
+    float batchSize = queue.length.min(self.maxBatchRecordsPerPost);
+    JsValue batch = queue.slice(0, batchSize);
+    JsValue records = batch.map((JsValue e) => e.record);
+    JsValue payload = buildOtlpLogsPayload(
+      records,
+      buildResourceAttributes(self.config, self.instance.getLibraryId() as string, self.instance.getLibraryVersion() as string),
+      self.scopeName ?? self.instance.getLibraryId(),
+      self.instance.getLibraryVersion()
+    );
+    Task<JsValue> sending = JS.assume(self.instance._sendLogsBatch(payload));
+    JsValue outcome = await sending;
+    if (self.queueGeneration != generation) {
+      // The queue was cleared while this batch was in flight: retire the batch.
+      return;
+    }
+    if (outcome.kind === "too-large" && batch.length > 1.0) {
+      self.maxBatchRecordsPerPost = (batch.length / 2.0).floor().max(1.0);
+      self.logger.warn(`Logs batch of size ${batch.length} was too large for the ingestion endpoint, reducing batch size to ${self.maxBatchRecordsPerPost}`);
+      // Don't advance the queue: retry the same records with the smaller cap.
+      continue;
+    }
+    // Not on the background wrapper: every lifecycle hook takes `flush()`.
+    self._retryAfter.record(outcome);
+    // Outright: a timer a mid-flight capture armed is measured against this outcome's window.
+    if (flushTimer.timer.truthy()) {
+      flushTimer.arm(self.flushIntervalMs.max(self._retryAfter.remainingMs()));
+    }
+    if (outcome.kind === "retry-later") {
+      // Transient failure: keep records for the next flush cycle.
+      throw outcome.error;
+    }
+    if (outcome.kind === "too-large") {
+      self.logger.warn("Dropping a single log record with batch size 1 — the record is larger than the server cap and cannot be split further.");
+    } else if (outcome.kind === "ok" && self.maxBatchRecordsPerPost < self.config.maxBatchRecordsPerPost) {
+      // Linear recovery toward the configured maximum.
+      self.maxBatchRecordsPerPost = (self.config.maxBatchRecordsPerPost as float).min(self.maxBatchRecordsPerPost + 1.0);
+    }
+    await persistQueueAdvance(self, batch.length);
+    queue = persistedQueue(self);
+    sentCount += batch.length;
+    if (outcome.kind === "fatal") {
+      throw outcome.error;
+    }
+  }
+}
+
+// Drops the sent records still present (minus head records the FIFO cap evicted during the send),
+// then waits for the persist so a crash after HTTP success can't duplicate them.
+async void persistQueueAdvance(PostHogLogs self, float consumed) {
+  float evicted = self.evictedSinceAdvance;
+  float drop = (consumed - evicted).max(0.0);
+  JsValue refreshed = persistedQueue(self);
+  self.instance.setPersistedProperty(PostHogPersistedProperty.LogsQueue, refreshed.slice(drop));
+  Task<JsValue> persisted = JS.assume(self.waitForStoragePersist());
+  await persisted;
+}
+
+void enqueue(PostHogLogs self, JsValue entry) {
+  // Re-check optedOut: it may have changed while this was deferred.
+  if (self.instance.optedOut.truthy()) {
+    return;
+  }
+  JsValue queue = persistedQueue(self);
+  // Drop the oldest only above the eviction cap, so a burst is held while the async flush drains.
+  if (queue.length >= self.maxQueueSize) {
+    queue.shift();
+    self.evictedSinceAdvance += 1.0;
+    self.logger.info("Logs queue is full, dropping oldest record.");
+  }
+  queue.push(entry);
+  self.instance.setPersistedProperty(PostHogPersistedProperty.LogsQueue, queue);
+  // Flush trigger, unless the endpoint has asked us to wait.
+  if (queue.length >= self.maxBufferSize && !self._retryAfter.isOpen()) {
+    flushInBackground(self);
+    return;
+  }
+  // Arm one timer at a time; re-arming on every enqueue would push the flush out.
+  armFlushTimer(self);
+}
+
+void armFlushTimer(PostHogLogs self) {
+  FlushTimer flushTimer = flushTimerOf(self);
+  if (flushTimer.timer.truthy()) {
+    return;
+  }
+  // Floored by any open window.
+  flushTimer.arm(self.flushIntervalMs.max(self._retryAfter.remainingMs()));
+}
+
+// Retry delay after a flush that left records: exponential backoff, floored by `Retry-After`.
+float nextFlushDelay(PostHogLogs self) {
+  return backoffDelayMs(self.flushIntervalMs, self.consecutiveFlushFailures, self.flushJitter, MAX_FLUSH_BACKOFF_MS).max(self._retryAfter.remainingMs());
+}
+
+bool hasQueuedRecords(PostHogLogs self) {
+  JsValue queue = self.instance.getPersistedProperty(PostHogPersistedProperty.LogsQueue);
+  return queue.truthy() && queue.length > 0.0;
+}
+
+void flushInBackground(PostHogLogs self) {
+  (self.flush() as JsValue)
+    .then(
+      () => {
+        self.consecutiveFlushFailures = 0.0;
+        self.flushJitter = NO_JITTER;
+      },
+      (JsValue err) => {
+        self.consecutiveFlushFailures += 1.0;
+        self.flushJitter = drawJitter();
+        self.logger.error("PostHog logs flush failed:", err);
+      }
+    )
+    .finally(() => {
+      // Remaining records would sit undelivered on a quiet page: re-arm, backing off on failures.
+      if (!self.instance.isDisabled.truthy() && hasQueuedRecords(self)) {
+        flushTimerOf(self).armNoEarlierThan(nextFlushDelay(self));
+      }
+    });
+}

@@ -1,0 +1,34 @@
+// packages/core/src/error-tracking/parsers/gecko.ts — `(?:bundle|\d+\.js)` covers React Native
+// bundles and RAM bundles (filenames like `42.js`).
+import { createFrame, UNKNOWN_FUNCTION } from "./base.lil";
+import { extractSafariExtensionDetails } from "./safari.lil";
+extern JsValue Number;
+
+Regex geckoREgex = new Regex("^\\s*(.*?)(?:\\((.*?)\\))?(?:^|@)?((?:[-a-z]+)?:\\/.*?|\\[native code\\]|[^@]*(?:bundle|\\d+\\.js)|\\/[\\w\\-. /=]+)(?::(\\d+))?(?::(\\d+))?\\s*$", "i");
+Regex geckoEvalRegex = new Regex("(\\S+) line (\\d+)(?: > eval line \\d+)* > eval", "i");
+
+export JsValue geckoStackLineParser(string line, JsValue platform) {
+  JsValue parts = JS.regexExec(geckoREgex, line);
+  if (parts.truthy()) {
+    JsValue url = parts[3];
+    if (url.truthy() && url.indexOf(" > eval") > -1) {
+      JsValue subMatch = JS.regexExec(geckoEvalRegex, parts[3]);
+      if (subMatch.truthy()) {
+        // throw out eval line/column and use top-most line number
+        parts[1] = parts[1] || "eval";
+        parts[3] = subMatch[1];
+        parts[4] = subMatch[2];
+        parts[5] = ""; // no column when eval
+      }
+    }
+    string[] details = extractSafariExtensionDetails((parts[1] || UNKNOWN_FUNCTION) as string, parts[3] as string);
+    return createFrame(
+      platform,
+      details[1],
+      details[0],
+      if (parts[4].truthy()) { Number(parts[4]) } else { undefined },
+      if (parts[5].truthy()) { Number(parts[5]) } else { undefined }
+    );
+  }
+  return undefined;
+}

@@ -1,0 +1,85 @@
+// packages/core/src/utils/otlp-resource.ts — OTLP resource attributes shared by the logs, metrics
+// and traces envelopes. Object spreads of fresh objects are written as stores into one fresh object
+// (same keys, order and values).
+import { assignUserAttributes } from "./json-utils.lil";
+import { toOtlpKeyValueList } from "./otlp-any-value.lil";
+import { hasOwnProperty } from "./type-utils.lil";
+
+// User `resourceAttributes` first (read key by key), then the SDK-controlled keys on top.
+export JsValue buildOtlpResourceAttributes(JsValue config, string sdkName, string sdkVersion) {
+  JsValue attributes = assignUserAttributes(object {}, config.resourceAttributes);
+  attributes["service.name"] = config.serviceName || "unknown_service";
+  if (config.environment.truthy()) {
+    attributes["deployment.environment"] = config.environment;
+  }
+  if (config.serviceVersion.truthy()) {
+    attributes["service.version"] = config.serviceVersion;
+  }
+  attributes["telemetry.sdk.name"] = sdkName;
+  attributes["telemetry.sdk.version"] = sdkVersion;
+  return attributes;
+}
+
+// The keys `buildOtlpResourceAttributes` sets itself, in the order it sets them.
+string[] SDK_RESOURCE_KEYS = [
+  "service.name",
+  "deployment.environment",
+  "service.version",
+  "telemetry.sdk.name",
+  "telemetry.sdk.version"
+];
+
+// Encodes resource attributes for an OTLP envelope; the SDK-set keys get a traversal budget of
+// their own, after the user's.
+export JsValue[] toOtlpResourceKeyValueList(JsValue attributes, JsValue logger) {
+  JsValue user = assignUserAttributes(object {}, attributes);
+  JsValue sdk = object {};
+  for (string key of SDK_RESOURCE_KEYS) {
+    if (hasOwnProperty.call(user, key).truthy()) {
+      sdk[key] = user[key];
+      JS.delete(user, key);
+    }
+  }
+  return [...toOtlpKeyValueList(user, logger), ...toOtlpKeyValueList(sdk, logger)];
+}
+
+// OTLP `os.name` values, keyed by `node:os` `platform()` identifiers and `detectOS` names.
+Record<string> OS_NAMES = record {
+  darwin: "macOS",
+  win32: "Windows",
+  // Cygwin is a POSIX layer over Windows, so it belongs under the same filter.
+  cygwin: "Windows",
+  linux: "Linux",
+  android: "Android",
+  freebsd: "FreeBSD",
+  openbsd: "OpenBSD",
+  netbsd: "NetBSD",
+  sunos: "SunOS",
+  aix: "AIX",
+  haiku: "Haiku",
+  "Mac OS X": "macOS"
+};
+
+// Unrecognized names pass through.
+export string | undefined normalizeOsName(string? name) {
+  if (name == null || name == "") {
+    return undefined;
+  }
+  if (hasOwnProperty.call(OS_NAMES, name).truthy()) {
+    return OS_NAMES[name];
+  }
+  return name;
+}
+
+// The `os.name` / `os.version` pair, with either key omitted when unknown.
+export JsValue osResourceAttributes(string? name, string? version) {
+  string? osName = normalizeOsName(name);
+  JsValue attributes = object {};
+  if (osName != null && osName != "") {
+    attributes["os.name"] = osName;
+  }
+  if (version != null && version != "") {
+    attributes["os.version"] = version;
+  }
+  return attributes;
+}

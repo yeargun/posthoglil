@@ -1,0 +1,58 @@
+// packages/core/src/error-tracking/chunk-ids.ts — the parsed-stack cache is private (a typed map
+// keyed by stack strings); the filename map handed out is a plain object, as upstream's.
+extern JsValue globalThis;
+extern JsValue Object;
+
+shape CachedResult {
+  data JsValue filename;
+  data JsValue chunkId;
+}
+
+Map<string, CachedResult>? parsedStackResults = null;
+float lastKeysCount = -1.0;
+JsValue cachedFilenameChunkIds = undefined;
+
+Map<string, CachedResult> stackResults() {
+  Map<string, CachedResult>? existing = parsedStackResults;
+  if (existing != null) {
+    return existing;
+  }
+  Map<string, CachedResult> created = new Map<string, CachedResult>();
+  parsedStackResults = created;
+  return created;
+}
+
+export JsValue getFilenameToChunkIdMap(JsValue stackParser) {
+  JsValue chunkIdMap = globalThis._posthogChunkIds;
+  if (!chunkIdMap.truthy()) {
+    return undefined;
+  }
+  JsValue chunkIdKeys = Object.keys(chunkIdMap);
+  if (cachedFilenameChunkIds.truthy() && chunkIdKeys.length == lastKeysCount) {
+    return cachedFilenameChunkIds;
+  }
+  lastKeysCount = chunkIdKeys.length;
+  JsValue acc = object {};
+  for (int k = 0; k < chunkIdKeys.length; k += 1) {
+    string stackKey = chunkIdKeys[k] as string;
+    Map<string, CachedResult> cache = stackResults();
+    CachedResult? result = cache.get(stackKey);
+    if (result != null) {
+      acc[result.filename] = result.chunkId;
+    } else {
+      JsValue parsedStack = stackParser(stackKey);
+      for (float i = parsedStack.length - 1.0; i >= 0.0; i -= 1.0) {
+        JsValue stackFrame = parsedStack[i];
+        JsValue filename = if (stackFrame == null) { undefined } else { stackFrame.filename };
+        JsValue chunkId = chunkIdMap[stackKey];
+        if (filename.truthy() && chunkId.truthy()) {
+          acc[filename] = chunkId;
+          cache.set(stackKey, CachedResult{filename: filename, chunkId: chunkId});
+          break;
+        }
+      }
+    }
+  }
+  cachedFilenameChunkIds = acc;
+  return cachedFilenameChunkIds;
+}

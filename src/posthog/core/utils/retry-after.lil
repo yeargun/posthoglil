@@ -1,0 +1,101 @@
+// packages/core/src/utils/retry-after.ts
+// `RetryAfterWindow` is constructed by the logs, metrics and traces queues and kept in their
+// private fields; it keeps upstream's public methods, and its own calls to them are static
+// (upstream's npm build mangles the fields that hold it, so no page can patch them first).
+extern JsValue Date;
+extern JsValue Number;
+
+// Longest `Retry-After` the SDK will wait.
+export float MAX_RETRY_AFTER_MS = 300000.0;
+
+// How far the wall clock may run behind the moment a window was installed before it is discarded.
+float CLOCK_STEP_TOLERANCE_MS = 5000.0;
+
+// `Retry-After` as milliseconds from now: delta-seconds or an HTTP-date, capped at
+// `MAX_RETRY_AFTER_MS`; anything else, a past date or a non-positive delta yields `undefined`.
+export float | undefined parseRetryAfterMs(JsValue value, float now = Date.now() as float) {
+  if (!(value is string) || value == "") {
+    return undefined;
+  }
+  string raw = value.trim();
+  // Repeated headers arrive joined with ", "; read the first, but only for delta-seconds, since an
+  // HTTP-date carries a comma of its own.
+  string trimmed = if (new Regex("^\\d+\\s*,").test(raw)) { raw.slice(0, raw.indexOf(",")).trim() } else { raw };
+  // Integer seconds. Not parseFloat: "10 minutes" must not read as 10 seconds.
+  if (new Regex("^\\d+$").test(trimmed)) {
+    // Cap before multiplication: even a valid integer can overflow to Infinity.
+    float seconds = (Number(trimmed) as float).min(MAX_RETRY_AFTER_MS / 1000.0) * 1000.0;
+    if (seconds > 0.0) {
+      return seconds;
+    }
+    return undefined;
+  }
+  // HTTP dates start with a weekday.
+  if (!new Regex("^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[ ,]").test(trimmed)) {
+    return undefined;
+  }
+  // The obsolete asctime HTTP-date omits the timezone, but is still GMT.
+  string date = if (new Regex("^\\w{3} \\w{3} ").test(trimmed)) { trimmed + " GMT" } else { trimmed };
+  float ms = (Date.parse(date) as float) - now;
+  if (!Number.isFinite(ms).truthy() || ms <= 0.0) {
+    return undefined;
+  }
+  return ms.min(MAX_RETRY_AFTER_MS);
+}
+
+// The wait an ingestion endpoint asked for, held as an absolute deadline.
+export class RetryAfterWindow {
+  float until = 0.0;
+  float installedAt = 0.0;
+
+  // Folds one export outcome (`{kind, retryAfterMs?}`) into the window. The deadline is pushed out
+  // but never past `MAX_RETRY_AFTER_MS` from where the window was installed, and never pulled in.
+  void record(JsValue outcome) {
+    JsValue kind = outcome.kind;
+    if (kind === "too-large") {
+      return;
+    }
+    if (kind !== "retry-later") {
+      this.reset();
+      return;
+    }
+    JsValue retryAfterMs = outcome.retryAfterMs;
+    if (!retryAfterMs.truthy()) {
+      return;
+    }
+    // Read before `installedAt` is used: a spent window resets it.
+    bool open = this.isOpen();
+    float now = Date.now() as float;
+    float asked = (retryAfterMs as float).min(MAX_RETRY_AFTER_MS);
+    if (!open) {
+      this.installedAt = now;
+      this.until = now + asked;
+      return;
+    }
+    this.until = this.until.max((now + asked).min(this.installedAt + MAX_RETRY_AFTER_MS));
+  }
+
+  // Milliseconds left of the wait, `0` when none is open; closes a window it finds spent.
+  float remainingMs() {
+    float now = Date.now() as float;
+    if (now < this.installedAt - CLOCK_STEP_TOLERANCE_MS) {
+      this.reset();
+      return 0.0;
+    }
+    float remaining = MAX_RETRY_AFTER_MS.min((this.until - now).max(0.0));
+    if (remaining == 0.0) {
+      this.reset();
+    }
+    return remaining;
+  }
+
+  bool isOpen() {
+    return this.remainingMs() > 0.0;
+  }
+
+  void reset() {
+    this.until = 0.0;
+    this.installedAt = 0.0;
+  }
+}
+export constructor RetryAfterWindow;

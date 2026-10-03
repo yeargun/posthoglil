@@ -1,0 +1,75 @@
+// packages/core/src/utils/bucketed-rate-limiter.ts
+// The bucket map stays a plain object read by key, as upstream's (`String(key)` lookups see the
+// same inherited names); it keeps upstream's private name `_buckets`, which upstream's own tests
+// read. The `_logger` / `_onBucketRateLimited` option keys are read by name.
+import { clampToRange } from "./number-utils.lil";
+extern JsValue Date;
+extern JsValue String;
+
+float ONE_DAY_IN_MS = 86400000.0;
+
+export float DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE = 1.0;
+export float DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE = 10.0;
+
+// Resolves `refillRate` and `bucketSize` from SDK config with the shared defaults; the deprecated
+// double-underscore options are honoured as a fallback.
+export JsValue resolveExceptionRateLimiterConfig(JsValue config) {
+  JsValue options = if (config === undefined) { object {} } else { config };
+  return object {
+    refillRate: options.exceptionRateLimiterRefillRate ?? options.__exceptionRateLimiterRefillRate ?? DEFAULT_EXCEPTION_RATE_LIMITER_REFILL_RATE,
+    bucketSize: options.exceptionRateLimiterBucketSize ?? options.__exceptionRateLimiterBucketSize ?? DEFAULT_EXCEPTION_RATE_LIMITER_BUCKET_SIZE
+  };
+}
+
+export class BucketedRateLimiter {
+  JsValue _buckets = object {};
+  JsValue onBucketRateLimited = undefined;
+  float bucketSize = 0.0;
+  float refillRate = 0.0;
+  float refillInterval = 0.0;
+
+  init(JsValue options) {
+    this.onBucketRateLimited = options._onBucketRateLimited;
+    this.bucketSize = clampToRange(options.bucketSize, 0.0, 100.0, options._logger);
+    this.refillRate = clampToRange(options.refillRate, 0.0, this.bucketSize, options._logger);
+    this.refillInterval = clampToRange(options.refillInterval, 0.0, ONE_DAY_IN_MS, options._logger);
+  }
+
+  bool consumeRateLimit(JsValue key) {
+    float now = Date.now() as float;
+    JsValue keyStr = String(key);
+    JsValue bucket = this._buckets[keyStr];
+    if (!bucket.truthy()) {
+      bucket = object { tokens: this.bucketSize, lastAccess: now };
+      this._buckets[keyStr] = bucket;
+    } else {
+      applyRefill(this, bucket, now);
+    }
+    if (bucket.tokens === 0) {
+      return true;
+    }
+    bucket.tokens = bucket.tokens - 1;
+    if (bucket.tokens === 0) {
+      JsValue onRateLimited = this.onBucketRateLimited;
+      if (onRateLimited != null) {
+        onRateLimited.call(this, key);
+      }
+    }
+    return bucket.tokens === 0;
+  }
+
+  void stop() {
+    this._buckets = object {};
+  }
+}
+export constructor BucketedRateLimiter;
+
+void applyRefill(BucketedRateLimiter self, JsValue bucket, float now) {
+  float elapsedMs = now - (bucket.lastAccess as float);
+  float refillIntervals = (elapsedMs / self.refillInterval).floor();
+  if (refillIntervals > 0.0) {
+    float tokensToAdd = refillIntervals * self.refillRate;
+    bucket.tokens = ((bucket.tokens as float) + tokensToAdd).min(self.bucketSize);
+    bucket.lastAccess = (bucket.lastAccess as float) + refillIntervals * self.refillInterval;
+  }
+}

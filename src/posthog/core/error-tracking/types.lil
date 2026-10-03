@@ -1,0 +1,3 @@
+// packages/core/src/error-tracking/types.ts — the one runtime value (the rest is types).
+// Levels originally copied from Sentry, to work with the sentry integration.
+export string[] severityLevels = ["fatal", "error", "warning", "log", "info", "debug"];

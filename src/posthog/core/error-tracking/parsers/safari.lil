@@ -1,0 +1,16 @@
+// packages/core/src/error-tracking/parsers/safari.ts
+import { UNKNOWN_FUNCTION } from "./base.lil";
+
+// Safari web extensions can produce "frames-only" stacktraces (`function@url:row:col` lines with no
+// `at`), which fall into the Gecko branch; both parsers share this extraction.
+export string[] extractSafariExtensionDetails(string functionName, string filename) {
+  bool isSafariExtension = functionName.indexOf("safari-extension") != -1;
+  bool isSafariWebExtension = functionName.indexOf("safari-web-extension") != -1;
+  if (isSafariExtension || isSafariWebExtension) {
+    return [
+      if (functionName.indexOf("@") != -1) { functionName.split("@")[0] } else { UNKNOWN_FUNCTION },
+      if (isSafariExtension) { `safari-extension:${filename}` } else { `safari-web-extension:${filename}` }
+    ];
+  }
+  return [functionName, filename];
+}

@@ -1,0 +1,35 @@
+// packages/core/src/error-tracking/coercers/dom-exception-coercer.ts — the TypeScript-private
+// helpers are module functions.
+import { isBuiltin, isString } from "../../utils/type-utils.lil";
+
+export class DOMExceptionCoercer {
+  bool match(JsValue err) {
+    return isDOMException(err) || isDOMError(err);
+  }
+
+  JsValue coerce(JsValue err, JsValue ctx) {
+    bool hasStack = isString(err.stack);
+    return object {
+      type: if (isDOMError(err)) { "DOMError" } else { "DOMException" },
+      value: getValue(err),
+      stack: if (hasStack) { err.stack } else { undefined },
+      cause: if (err.cause.truthy()) { ctx.next(err.cause) } else { undefined },
+      synthetic: false
+    };
+  }
+}
+export constructor DOMExceptionCoercer;
+
+JsValue getValue(JsValue err) {
+  JsValue name = err.name || (if (isDOMError(err)) { "DOMError" } else { "DOMException" });
+  JsValue message = err["message"];
+  return if (message.truthy()) { `${name}: ${err["message"]}` } else { name };
+}
+
+bool isDOMException(JsValue err) {
+  return isBuiltin(err, "DOMException");
+}
+
+bool isDOMError(JsValue err) {
+  return isBuiltin(err, "DOMError");
+}

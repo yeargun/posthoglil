@@ -1,0 +1,50 @@
+// packages/core/src/utils/flush-timer.ts — the pending flush timer of an export queue, and when it
+// is due. The queues keep it in a private field, so its own calls to `arm`/`clear` are static.
+import { safeSetTimeout } from "./index.lil";
+extern JsValue Date;
+extern JsValue Object;
+extern JsValue clearTimeout;
+
+export class FlushTimer {
+  JsValue onFire = undefined;
+  float firesAt = 0.0;
+  JsValue timer = undefined;
+
+  // `onFire` runs when the timer elapses, after the handle is released.
+  init(JsValue onFire) {
+    this.onFire = onFire;
+  }
+
+  // Schedules a flush in `delayMs`, replacing any timer already pending.
+  void arm(float delayMs) {
+    this.clear();
+    this.firesAt = (Date.now() as float) + delayMs;
+    FlushTimer self = this;
+    this.timer = safeSetTimeout(() => {
+      self.timer = undefined;
+      self.onFire.call(self);
+    }, delayMs);
+  }
+
+  // Arms only if it moves the flush later.
+  void armNoEarlierThan(float delayMs) {
+    if (this.timer.truthy() && (Date.now() as float) + delayMs <= this.firesAt) {
+      return;
+    }
+    this.arm(delayMs);
+  }
+
+  void clear() {
+    if (this.timer.truthy()) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+  }
+}
+export constructor FlushTimer;
+
+// Whether a flush is already scheduled (a prototype getter, as upstream's class declares it).
+Object.defineProperty((FlushTimer as JsValue).prototype, "pending", object {
+  get: (this JsValue receiver) => (receiver as FlushTimer).timer.truthy(),
+  configurable: true
+});

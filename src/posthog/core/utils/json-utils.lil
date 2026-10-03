@@ -1,0 +1,165 @@
+// packages/core/src/utils/json-utils.ts — the traversal state is a private class; every value it
+// walks is caller data (JsValue), read with upstream's exact tests and exception boundaries.
+extern JsValue Date;
+extern JsValue Object;
+extern JsValue Number;
+extern JsValue WeakSet;
+
+export float MAX_JSON_SAFE_VALUE_DEPTH = 20.0;
+export float MAX_JSON_SAFE_VALUE_ITEMS = 1000.0;
+export float MAX_JSON_SAFE_VALUE_NODES = 10000.0;
+export string CIRCULAR_VALUE = "[Circular]";
+export string TRUNCATED_VALUE = "[Truncated]";
+export string UNSERIALIZABLE_VALUE = "[Unserializable]";
+export string FUNCTION_VALUE = "[Function]";
+
+JsValue dateGetTime = Date.prototype.getTime;
+JsValue dateToISOString = Date.prototype.toISOString;
+JsValue propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
+
+class JsonSafeValueConversionState {
+  JsValue ancestors = JS.construct(WeakSet);
+  float remainingNodes = MAX_JSON_SAFE_VALUE_NODES;
+}
+
+// Replaces unpaired surrogates with U+FFFD (strict JSON parsers reject a lone `\uD800` escape).
+export string sanitizeString(string value) {
+  string output = "";
+  for (int index = 0; index < value.length; index += 1) {
+    float codeUnit = value.charCodeAt(index);
+    if (codeUnit >= 55296.0 && codeUnit <= 56319.0) {
+      float nextCodeUnit = value.charCodeAt(index + 1);
+      if (nextCodeUnit >= 56320.0 && nextCodeUnit <= 57343.0) {
+        output += value[index] + value[index + 1];
+        index += 1;
+      } else {
+        output += "�";
+      }
+    } else {
+      output += if (codeUnit >= 56320.0 && codeUnit <= 57343.0) { "�" } else { value[index] };
+    }
+  }
+  return output;
+}
+
+JsValue convert(JsValue current, float depth, JsonSafeValueConversionState state) {
+  if (state.remainingNodes <= 0.0) {
+    return TRUNCATED_VALUE;
+  }
+  state.remainingNodes -= 1.0;
+  try {
+    string kind = JS.typeOf(current);
+    if (current === null || current === undefined || kind == "boolean") {
+      return current;
+    }
+    if (current is string) {
+      return sanitizeString(current);
+    }
+    if (current is float) {
+      return if (Number.isFinite(current).truthy()) { current } else { null as JsValue };
+    }
+    if (kind == "bigint") {
+      return current.toString();
+    }
+    if (kind == "function") {
+      return FUNCTION_VALUE;
+    }
+    if (kind == "symbol") {
+      JsValue description = current.description;
+      return if (description.truthy()) { `Symbol(${description})` } else { "Symbol()" };
+    }
+    if (depth >= MAX_JSON_SAFE_VALUE_DEPTH) {
+      return TRUNCATED_VALUE;
+    }
+    if (state.ancestors.has(current).truthy()) {
+      return CIRCULAR_VALUE;
+    }
+    state.ancestors.add(current);
+    try {
+      if (current instanceof Date) {
+        return if (Number.isFinite(dateGetTime.call(current)).truthy()) { dateToISOString.call(current) } else { null as JsValue };
+      }
+      bool hasToJSONResult = false;
+      JsValue toJSONResult = undefined;
+      try {
+        JsValue toJSON = current.toJSON;
+        if (JS.typeOf(toJSON) == "function") {
+          toJSONResult = toJSON.call(current);
+          hasToJSONResult = true;
+        }
+      } catch (JsValue error) {
+        hasToJSONResult = false;
+      }
+      if (hasToJSONResult) {
+        return convert(toJSONResult, depth + 1.0, state);
+      }
+      if (current.isArray()) {
+        float itemCount = current.length.min(MAX_JSON_SAFE_VALUE_ITEMS);
+        JsValue[] items = [];
+        float index = 0.0;
+        for (; index < itemCount && state.remainingNodes > 0.0; index += 1.0) {
+          items.push(convert(current[index], depth + 1.0, state));
+        }
+        if (current.length > index) {
+          items.push(TRUNCATED_VALUE);
+        }
+        return items;
+      }
+      JsValue output = object {};
+      float count = 0.0;
+      bool truncated = false;
+      for (string key in current) {
+        // for...in visits own enumerable keys before walking the prototype chain.
+        if (!propertyIsEnumerable.call(current, key).truthy()) {
+          break;
+        }
+        if (count >= MAX_JSON_SAFE_VALUE_ITEMS || state.remainingNodes <= 0.0) {
+          truncated = true;
+          break;
+        }
+        JsValue converted = convert(current[key], depth + 1.0, state);
+        Object.defineProperty(output, key, object { value: converted, enumerable: true, configurable: true, writable: true });
+        count += 1.0;
+      }
+      if (truncated) {
+        output[TRUNCATED_VALUE] = "Additional properties omitted";
+      }
+      return output;
+    } finally {
+      state.ancestors["delete"](current);
+    }
+  } catch (JsValue error) {
+    return UNSERIALIZABLE_VALUE;
+  }
+}
+
+// Converts an arbitrary value, sanitizing `toJSON` results when available. The limits keep
+// pathological values from causing unbounded recursion or traversal.
+export JsValue toJsonSafeValue(JsValue value) {
+  return convert(value, 0.0, new JsonSafeValueConversionState());
+}
+
+// Copies caller-supplied attributes onto `target`, own enumerable keys only, read key by key.
+export JsValue assignUserAttributes(JsValue target, JsValue source) {
+  if (!source.truthy()) {
+    return target;
+  }
+  JsValue keys = [];
+  try {
+    keys = Object.keys(source);
+  } catch (JsValue error) {
+    keys = [];
+  }
+  for (int i = 0; i < keys.length; i += 1) {
+    JsValue key = keys[i];
+    JsValue value = undefined;
+    try {
+      value = source[key];
+    } catch (JsValue error) {
+      value = UNSERIALIZABLE_VALUE;
+    }
+    // defineProperty, not assignment: `attributes['__proto__'] = v` hits the prototype setter.
+    Object.defineProperty(target, key, object { value: value, enumerable: true, writable: true, configurable: true });
+  }
+  return target;
+}

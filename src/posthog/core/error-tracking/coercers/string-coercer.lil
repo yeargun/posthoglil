@@ -1,0 +1,32 @@
+// packages/core/src/error-tracking/coercers/string-coercer.ts
+Regex ERROR_TYPES_PATTERN = new Regex("^(?:[Uu]ncaught (?:exception: )?)?(?:((?:Eval|Internal|Range|Reference|Syntax|Type|URI|)Error): )?(.*)$", "i");
+
+export class StringCoercer {
+  bool match(JsValue input) {
+    return input is string;
+  }
+
+  JsValue coerce(JsValue input, JsValue ctx) {
+    JsValue[] infos = this.getInfos(input as string);
+    JsValue synthetic = ctx.syntheticException;
+    return object {
+      type: infos[0] ?? "Error",
+      value: infos[1] ?? input,
+      stack: if (synthetic == null) { undefined } else { synthetic.stack },
+      synthetic: true
+    };
+  }
+
+  // [type, value]; the type is `undefined` when the string names no error type.
+  JsValue[] getInfos(string candidate) {
+    JsValue type = "Error";
+    JsValue value = candidate;
+    JsValue groups = JS.stringMatch(candidate, ERROR_TYPES_PATTERN);
+    if (groups.truthy()) {
+      type = groups[1];
+      value = groups[2];
+    }
+    return [type, value];
+  }
+}
+export constructor StringCoercer;

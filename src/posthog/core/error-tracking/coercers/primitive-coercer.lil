@@ -1,0 +1,20 @@
+// packages/core/src/error-tracking/coercers/primitive-coercer.ts
+import { isPrimitive } from "../../utils/type-utils.lil";
+extern JsValue String;
+
+export class PrimitiveCoercer {
+  bool match(JsValue candidate) {
+    return isPrimitive(candidate);
+  }
+
+  JsValue coerce(JsValue value, JsValue ctx) {
+    JsValue synthetic = ctx.syntheticException;
+    return object {
+      type: "Error",
+      value: `Primitive value captured as exception: ${String(value)}`,
+      stack: if (synthetic == null) { undefined } else { synthetic.stack },
+      synthetic: true
+    };
+  }
+}
+export constructor PrimitiveCoercer;

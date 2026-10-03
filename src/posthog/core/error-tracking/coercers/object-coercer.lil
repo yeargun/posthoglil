@@ -1,0 +1,94 @@
+// packages/core/src/error-tracking/coercers/object-coercer.ts — `getType` and `getValue` are public
+// in upstream and stay on the prototype; the TypeScript-private helpers are module functions.
+import { hasOwnProperty, isEmptyString, isError, isEvent, isString } from "../../utils/type-utils.lil";
+import { severityLevels } from "../types.lil";
+import { extractExceptionKeysForMessage } from "./utils.lil";
+extern JsValue Object;
+
+export class ObjectCoercer {
+  bool match(JsValue candidate) {
+    return JS.typeOf(candidate) == "object" && candidate !== null;
+  }
+
+  JsValue coerce(JsValue candidate, JsValue ctx) {
+    JsValue errorProperty = getErrorPropertyFromObject(candidate);
+    if (errorProperty.truthy()) {
+      return ctx.apply(errorProperty);
+    }
+    JsValue type = this.getType(candidate);
+    string value = this.getValue(candidate);
+    JsValue stack = getStack(candidate);
+    if (stack == null) {
+      JsValue synthetic = ctx.syntheticException;
+      stack = if (synthetic == null) { undefined } else { synthetic.stack };
+    }
+    return object {
+      type: type,
+      value: value,
+      stack: stack,
+      level: if (isSeverityLevel(candidate.level)) { candidate.level } else { "error" },
+      synthetic: true
+    };
+  }
+
+  JsValue getType(JsValue err) {
+    if (isEvent(err)) {
+      return err.constructor.name;
+    }
+    JsValue name = if (JS.in("name", err)) { err.name } else { undefined };
+    return if (isString(name) && !isEmptyString(name)) { name } else { "Error" };
+  }
+
+  string getValue(JsValue err) {
+    if (JS.in("name", err) && err.name is string) {
+      string message = `'${err.name}' captured as exception`;
+      if (JS.in("message", err) && err["message"] is string) {
+        message += ` with message: '${err["message"]}'`;
+      }
+      return message;
+    } else if (JS.in("message", err) && err["message"] is string) {
+      return err["message"] as string;
+    }
+    JsValue className = getObjectClassName(err);
+    string keys = extractExceptionKeysForMessage(err, 40.0);
+    return `${if (className.truthy() && className !== "Object") { `'${className}'` } else { "Object" }} captured as exception with keys: ${keys}`;
+  }
+}
+export constructor ObjectCoercer;
+
+bool isSeverityLevel(JsValue x) {
+  return isString(x) && !isEmptyString(x) && severityLevels.indexOf(x as string) >= 0;
+}
+
+JsValue getStack(JsValue candidate) {
+  try {
+    if (isString(candidate.stacktrace) && candidate.stacktrace["length"] > 0) {
+      return candidate.stacktrace;
+    }
+    return if (isString(candidate.stack) && candidate.stack["length"] > 0) { candidate.stack } else { undefined };
+  } catch (JsValue error) {
+    return undefined;
+  }
+}
+
+// If a plain object has a property that is an `Error`, return this error.
+JsValue getErrorPropertyFromObject(JsValue obj) {
+  for (string prop in obj) {
+    if (hasOwnProperty.call(obj, prop).truthy()) {
+      JsValue value = obj[prop];
+      if (isError(value)) {
+        return value;
+      }
+    }
+  }
+  return undefined;
+}
+
+JsValue getObjectClassName(JsValue obj) {
+  try {
+    JsValue prototype = Object.getPrototypeOf(obj);
+    return if (prototype.truthy()) { prototype.constructor.name } else { undefined };
+  } catch (JsValue e) {
+    return undefined;
+  }
+}

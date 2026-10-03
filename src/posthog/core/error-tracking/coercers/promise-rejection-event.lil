@@ -1,0 +1,54 @@
+// packages/core/src/error-tracking/coercers/promise-rejection-event.ts (web only) — the
+// TypeScript-private helpers are module functions.
+import { isBuiltin, isEvent, isPrimitive } from "../../utils/type-utils.lil";
+extern JsValue String;
+
+export class PromiseRejectionEventCoercer {
+  bool match(JsValue err) {
+    return isBuiltin(err, "PromiseRejectionEvent") || isCustomEventWrappingRejection(err);
+  }
+
+  JsValue coerce(JsValue err, JsValue ctx) {
+    JsValue reason = getUnhandledRejectionReason(err);
+    if (isPrimitive(reason)) {
+      JsValue synthetic = ctx.syntheticException;
+      return object {
+        type: "UnhandledRejection",
+        value: `Non-Error promise rejection captured with value: ${String(reason)}`,
+        stack: if (synthetic == null) { undefined } else { synthetic.stack },
+        synthetic: true
+      };
+    }
+    return ctx.apply(reason);
+  }
+}
+export constructor PromiseRejectionEventCoercer;
+
+bool isCustomEventWrappingRejection(JsValue err) {
+  if (!isEvent(err)) {
+    return false;
+  }
+  try {
+    JsValue detail = err.detail;
+    return detail != null && JS.typeOf(detail) == "object" && JS.in("reason", detail);
+  } catch (JsValue error) {
+    return false;
+  }
+}
+
+JsValue getUnhandledRejectionReason(JsValue error) {
+  try {
+    // PromiseRejectionEvents store the object of the rejection under 'reason'.
+    if (JS.in("reason", error)) {
+      return error.reason;
+    }
+    // Something (likely a browser extension) casts PromiseRejectionEvents to CustomEvents, moving
+    // `promise` and `reason` into `detail`; unwrap `detail.reason`.
+    if (JS.in("detail", error) && error.detail != null && JS.typeOf(error.detail) == "object" && JS.in("reason", error.detail)) {
+      return error.detail.reason;
+    }
+  } catch (JsValue ignored) {
+    // no-empty
+  }
+  return error;
+}

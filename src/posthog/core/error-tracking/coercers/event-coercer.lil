@@ -1,0 +1,21 @@
+// packages/core/src/error-tracking/coercers/event-coercer.ts
+import { isEvent } from "../../utils/type-utils.lil";
+import { extractExceptionKeysForMessage } from "./utils.lil";
+
+export class EventCoercer {
+  bool match(JsValue err) {
+    return isEvent(err);
+  }
+
+  JsValue coerce(JsValue evt, JsValue ctx) {
+    JsValue constructorName = evt.constructor.name;
+    JsValue synthetic = ctx.syntheticException;
+    return object {
+      type: constructorName,
+      value: `${constructorName} captured as exception with keys: ${extractExceptionKeysForMessage(evt, 40.0)}`,
+      stack: if (synthetic == null) { undefined } else { synthetic.stack },
+      synthetic: true
+    };
+  }
+}
+export constructor EventCoercer;

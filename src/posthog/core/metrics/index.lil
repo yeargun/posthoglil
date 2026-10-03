@@ -1,0 +1,509 @@
+// packages/core/src/metrics/index.ts — the statsd-style pre-aggregating metrics client. The SDKs
+// keep a `PostHogMetrics` in a private field (the browser wraps it), so its own calls to `flush`
+// are static. The aggregation window is private typed state: series in insertion order with a key
+// index (upstream's `Map`), typed counters and histograms. Samples, attributes, the host, config
+// and logger are JS values. `_retryAfter` keeps upstream's name (upstream's tests read it).
+import { isArray } from "../utils/type-utils.lil";
+import { FlushTimer } from "../utils/flush-timer.lil";
+import { RetryAfterWindow } from "../utils/retry-after.lil";
+import { MAX_FLUSH_BACKOFF_MS, NO_JITTER, backoffDelayMs, drawJitter } from "../utils/backoff.lil";
+import { toOtlpKeyValueList } from "../utils/otlp-any-value.lil";
+import {
+  DEFAULT_HISTOGRAM_BOUNDS,
+  bucketIndexFor,
+  buildMetricsResourceAttributes,
+  buildOtlpMetricsPayload,
+  msToUnixNano,
+  seriesKey
+} from "./metrics-utils.lil";
+import { resolveMetricsConfig } from "./config.lil";
+extern JsValue Date;
+extern JsValue Number;
+extern JsValue Object;
+
+export { buildOtlpMetricsPayload, buildMetricsResourceAttributes, DEFAULT_HISTOGRAM_BOUNDS };
+export { resolveMetricsConfig };
+
+float OTLP_TEMPORALITY_DELTA = 1.0;
+
+shape HistogramState {
+  data float count;
+  data float sum;
+  data float min;
+  data float max;
+  data float[] bucketCounts;
+}
+
+// Stands for "no histogram yet" (upstream's absent `hist`), so the field is never optional.
+HistogramState NO_HISTOGRAM = HistogramState{count: 0.0, sum: 0.0, min: 0.0, max: 0.0, bucketCounts: []};
+
+// One aggregated series within the current flush window; `total` (count), `last` (gauge) or `hist`
+// is used, matching `type`. `total` and `last` start at 0, which is what upstream's `?? 0` reads
+// of the absent fields give.
+shape SeriesState {
+  data string key;
+  data JsValue name;
+  data JsValue type;
+  data JsValue unit;
+  data JsValue attributes;
+  data float windowStartMs;
+  data float total;
+  data float last;
+  data HistogramState hist;
+}
+
+class SeriesWindow {
+  Map<string, SeriesState> byKey = new Map<string, SeriesState>();
+  SeriesState[] ordered = [];
+}
+
+void addSeries(SeriesWindow window, SeriesState state) {
+  window.byKey.set(state.key, state);
+  window.ordered.push(state);
+}
+
+// `{...source}`: own enumerable string keys, copied as data properties (`__proto__` included).
+JsValue copyOwnEnumerable(JsValue source) {
+  JsValue target = object {};
+  JsValue keys = Object.keys(source);
+  for (int i = 0; i < keys.length; i += 1) {
+    JsValue key = keys[i];
+    Object.defineProperty(target, key, object { value: source[key], writable: true, enumerable: true, configurable: true });
+  }
+  return target;
+}
+
+export class PostHogMetrics {
+  JsValue instance;
+  JsValue config;
+  JsValue logger;
+  SeriesWindow series = new SeriesWindow();
+  JsValue flushTimerValue = undefined;
+  // Serializes flushes: a manual flush during an in-flight timer flush queues behind it.
+  JsValue flushPromise = null;
+  // One cardinality warning per window.
+  bool seriesCapWarned = false;
+  // Type seen per metric name this window (a name reused with another type gets a one-time hint).
+  Map<string, JsValue> typeByName = new Map<string, JsValue>();
+  Set<string> typeCollisionWarned = new Set<string>();
+  RetryAfterWindow _retryAfter = new RetryAfterWindow();
+  float consecutiveFlushFailures = 0.0;
+  float flushJitter = NO_JITTER;
+  // Bumped by reset(): a flush in flight across a reset discards its window.
+  float generation = 0.0;
+
+  init(JsValue instance, JsValue config, JsValue logger) {
+    this.instance = instance;
+    this.config = config;
+    this.logger = logger;
+    PostHogMetrics self = this;
+    this.flushTimerValue = new FlushTimer(() =>
+      (self.flush() as JsValue).catch((JsValue e) => {
+        self.logger.error("Metrics flush failed:", e);
+      })
+    );
+  }
+
+  void count(JsValue name, JsValue value, JsValue options) {
+    capture(this, object {
+      name: name,
+      type: "count",
+      value: if (value === undefined) { 1 as JsValue } else { value },
+      unit: if (options == null) { undefined } else { options.unit },
+      attributes: if (options == null) { undefined } else { options.attributes }
+    });
+  }
+
+  void gauge(JsValue name, JsValue value, JsValue options) {
+    capture(this, object {
+      name: name,
+      type: "gauge",
+      value: value,
+      unit: if (options == null) { undefined } else { options.unit },
+      attributes: if (options == null) { undefined } else { options.attributes }
+    });
+  }
+
+  void histogram(JsValue name, JsValue value, JsValue options) {
+    capture(this, object {
+      name: name,
+      type: "histogram",
+      value: value,
+      unit: if (options == null) { undefined } else { options.unit },
+      attributes: if (options == null) { undefined } else { options.attributes }
+    });
+  }
+
+  // Sends everything aggregated so far without waiting for the flush interval.
+  JsValue flush() {
+    JsValue prev = this.flushPromise;
+    PostHogMetrics self = this;
+    JsValue p = undefined;
+    p = (runFlush(this, prev) as JsValue).finally(() => {
+      if (self.flushPromise === p) {
+        self.flushPromise = null;
+      }
+    });
+    this.flushPromise = p;
+    return p;
+  }
+
+  // Synchronously snapshots and resets the current window as an OTLP payload (for unload-time
+  // sendBeacon drains); `null` when there is nothing to send.
+  JsValue drainWindow() {
+    if (this.series.ordered.length == 0) {
+      return null;
+    }
+    SeriesWindow window = this.series;
+    resetWindow(this);
+    return buildPayload(this, window);
+  }
+
+  // Clears the flush timer, drops the current window, and invalidates in-flight flushes.
+  void reset() {
+    this.generation += 1.0;
+    this._retryAfter.reset();
+    this.consecutiveFlushFailures = 0.0;
+    this.flushJitter = NO_JITTER;
+    flushTimerOf(this).clear();
+    this.series = new SeriesWindow();
+    this.flushPromise = null;
+    this.seriesCapWarned = false;
+    this.typeByName = new Map<string, JsValue>();
+    this.typeCollisionWarned = new Set<string>();
+  }
+}
+export constructor PostHogMetrics;
+
+FlushTimer flushTimerOf(PostHogMetrics self) {
+  return self.flushTimerValue as FlushTimer;
+}
+
+void resetWindow(PostHogMetrics self) {
+  self.series = new SeriesWindow();
+  self.seriesCapWarned = false;
+  self.typeByName = new Map<string, JsValue>();
+  self.typeCollisionWarned = new Set<string>();
+}
+
+async void runFlush(PostHogMetrics self, JsValue prev) {
+  if (prev.truthy()) {
+    Task<JsValue> settled = JS.assume(prev.catch(() => undefined));
+    await settled;
+  }
+  await doFlush(self);
+}
+
+void capture(PostHogMetrics self, JsValue sample) {
+  if (self.instance.isDisabled.truthy() || self.instance.optedOut.truthy()) {
+    return;
+  }
+  JsValue filtered = runBeforeSend(self, sample);
+  if (filtered === null) {
+    return;
+  }
+  if (!filtered.name.truthy() || !(filtered.name is string)) {
+    self.logger.warn("Dropping metric with empty name");
+    return;
+  }
+  if (!(filtered.value is float) || !Number.isFinite(filtered.value).truthy()) {
+    self.logger.warn(`Dropping metric '${filtered.name}': value must be a finite number`);
+    return;
+  }
+  // Checked after beforeSend so a hook can't turn a count negative either.
+  if (filtered.type === "count" && filtered.value < 0) {
+    self.logger.warn(`Dropping count '${filtered.name}': counters are monotonic, value must be >= 0`);
+    return;
+  }
+  // Snapshot the attributes; reading or serializing them can throw (BigInt values, throwing
+  // getters), and such a sample is dropped, never thrown.
+  JsValue attributes = undefined;
+  string key = "";
+  try {
+    attributes = if (filtered.attributes.truthy()) { copyOwnEnumerable(filtered.attributes) } else { undefined };
+    key = seriesKey(filtered.type, filtered.name, filtered.unit, attributes);
+  } catch (JsValue e) {
+    self.logger.warn(`Dropping metric '${filtered.name}': attributes could not be serialized`, e);
+    return;
+  }
+  SeriesState? state = seriesFor(self, key, filtered, attributes);
+  if (state == null) {
+    return;
+  }
+  // Bookkeeping only for admitted samples, so name cardinality can't grow past the series cap.
+  string name = filtered.name as string;
+  if (!self.typeByName.has(name)) {
+    self.typeByName.set(name, filtered.type);
+  } else {
+    JsValue? seen = self.typeByName.get(name);
+    JsValue seenType = if (seen == null) { undefined } else { seen };
+    if (seenType !== filtered.type && !self.typeCollisionWarned.has(name)) {
+      self.typeCollisionWarned.add(name);
+      self.logger.warn(
+        `Metric name '${filtered.name}' is already used as a ${seenType}; ` +
+          `recording it as a ${filtered.type} too will blend both series in charts. Use a distinct name.`
+      );
+    }
+  }
+  fold(state, filtered.value as float);
+  armFlushTimer(self);
+}
+
+// The live series for `key`, or a new one unless the cardinality cap refuses it (`null`).
+SeriesState? seriesFor(PostHogMetrics self, string key, JsValue filtered, JsValue attributes) {
+  SeriesState? existing = self.series.byKey.get(key);
+  if (existing != null) {
+    return existing;
+  }
+  if (!admitNewSeries(self)) {
+    return null;
+  }
+  SeriesState state = SeriesState{
+    key: key,
+    name: filtered.name,
+    type: filtered.type,
+    unit: filtered.unit,
+    attributes: attributes,
+    windowStartMs: Date.now() as float,
+    total: 0.0,
+    last: 0.0,
+    hist: NO_HISTOGRAM
+  };
+  addSeries(self.series, state);
+  return state;
+}
+
+// Cardinality gate for adding a series to the live window; warns once per window.
+bool admitNewSeries(PostHogMetrics self) {
+  if (self.series.byKey.size < self.config.maxSeriesPerFlush) {
+    return true;
+  }
+  if (!self.seriesCapWarned) {
+    self.seriesCapWarned = true;
+    self.logger.warn(
+      `Metric series cap reached (${self.config.maxSeriesPerFlush} per flush window); ` +
+        `dropping new series until the next flush. Reduce attribute cardinality.`
+    );
+  }
+  return false;
+}
+
+void fold(SeriesState state, float value) {
+  if (state.type === "count") {
+    state.total = state.total + value;
+  } else if (state.type === "gauge") {
+    state.last = value;
+  } else if (state.type === "histogram") {
+    if (state.hist == NO_HISTOGRAM) {
+      state.hist = newHistogram(value);
+    }
+    HistogramState hist = state.hist;
+    hist.count += 1.0;
+    hist.sum += value;
+    hist.min = hist.min.min(value);
+    hist.max = hist.max.max(value);
+    hist.bucketCounts[bucketIndexFor(value, DEFAULT_HISTOGRAM_BOUNDS).toInt()] += 1.0;
+  }
+}
+
+HistogramState newHistogram(float value) {
+  float[] bucketCounts = [];
+  for (int i = 0; i < DEFAULT_HISTOGRAM_BOUNDS.length + 1; i += 1) {
+    bucketCounts.push(0.0);
+  }
+  return HistogramState{count: 0.0, sum: 0.0, min: value, max: value, bucketCounts: bucketCounts};
+}
+
+JsValue runBeforeSend(PostHogMetrics self, JsValue sample) {
+  JsValue beforeSend = self.config.beforeSend;
+  if (!beforeSend.truthy()) {
+    return sample;
+  }
+  JsValue fns = if (isArray(beforeSend)) { beforeSend } else { [beforeSend] };
+  JsValue result = sample;
+  for (float i = 0.0; i < fns.length; i += 1.0) {
+    JsValue fn = fns[i];
+    try {
+      JsValue next = fn(result);
+      if (!next.truthy()) {
+        self.logger.info("Metric was rejected in beforeSend function");
+        return null;
+      }
+      result = next;
+    } catch (JsValue e) {
+      self.logger.error("Error in beforeSend function for metric:", e);
+      return null;
+    }
+  }
+  return result;
+}
+
+// Every capture calls this, so a pending timer is left alone.
+void armFlushTimer(PostHogMetrics self) {
+  FlushTimer flushTimer = flushTimerOf(self);
+  if (flushTimer.timer.truthy()) {
+    return;
+  }
+  flushTimer.arm(nextFlushDelay(self));
+}
+
+// Exponential backoff with per-failure jitter, floored by `Retry-After`.
+float nextFlushDelay(PostHogMetrics self) {
+  return backoffDelayMs(
+    self.config.flushIntervalMs as float,
+    self.consecutiveFlushFailures,
+    self.flushJitter,
+    MAX_FLUSH_BACKOFF_MS
+  ).max(self._retryAfter.remainingMs());
+}
+
+async void doFlush(PostHogMetrics self) {
+  // A flush retires the pending timer.
+  FlushTimer flushTimer = flushTimerOf(self);
+  flushTimer.clear();
+  if (self.series.ordered.length == 0) {
+    return;
+  }
+  // Snapshot and reset the window; samples captured during the send fold into a fresh one.
+  SeriesWindow window = self.series;
+  resetWindow(self);
+  float generation = self.generation;
+  Task<JsValue> sending = JS.assume(self.instance._sendMetricsBatch(buildPayload(self, window)));
+  JsValue outcome = await sending;
+  if (generation != self.generation) {
+    // reset() ran while the send was in flight: the window is dropped.
+    return;
+  }
+  self._retryAfter.record(outcome);
+  if (outcome.kind === "retry-later") {
+    self.consecutiveFlushFailures += 1.0;
+    self.flushJitter = drawJitter();
+  } else {
+    self.consecutiveFlushFailures = 0.0;
+    self.flushJitter = NO_JITTER;
+  }
+  // Outright: a timer a mid-flight capture armed is measured against this outcome's window.
+  if (flushTimer.timer.truthy()) {
+    flushTimer.arm(nextFlushDelay(self));
+  }
+  JsValue kind = outcome.kind;
+  if (kind === "ok") {
+    return;
+  } else if (kind === "retry-later") {
+    // Merge the unsent window back and re-arm, since nothing else would schedule that flush.
+    mergeWindowBack(self, window);
+    flushTimer.armNoEarlierThan(nextFlushDelay(self));
+  } else if (kind === "too-large") {
+    self.logger.warn("Metrics batch exceeded the server size limit and was dropped");
+  } else if (kind === "fatal") {
+    self.logger.error("Failed to send metrics batch:", outcome.error);
+  }
+}
+
+JsValue buildPayload(PostHogMetrics self, SeriesWindow window) {
+  JsValue metrics = buildMetrics(self, window);
+  return buildOtlpMetricsPayload(
+    metrics,
+    buildMetricsResourceAttributes(self.config, self.instance.getLibraryId() as string, self.instance.getLibraryVersion() as string),
+    self.instance.getLibraryId(),
+    self.instance.getLibraryVersion()
+  );
+}
+
+// One OTLP metric per (type, name, unit), one data point per attribute combination.
+JsValue[] buildMetrics(PostHogMetrics self, SeriesWindow window) {
+  string nowNano = msToUnixNano(Date.now());
+  Map<string, JsValue> byMetric = new Map<string, JsValue>();
+  JsValue[] metrics = [];
+  for (SeriesState state of window.ordered) {
+    string metricKey = seriesKey(state.type, state.name, state.unit, undefined);
+    JsValue? found = byMetric.get(metricKey);
+    JsValue metric = if (found == null) { undefined } else { found };
+    if (found == null) {
+      metric = object { name: state.name };
+      if (state.unit.truthy()) {
+        metric.unit = state.unit;
+      }
+      if (state.type === "count") {
+        metric.sum = object { aggregationTemporality: OTLP_TEMPORALITY_DELTA, isMonotonic: true, dataPoints: [] };
+      } else if (state.type === "gauge") {
+        metric.gauge = object { dataPoints: [] };
+      } else {
+        metric.histogram = object { aggregationTemporality: OTLP_TEMPORALITY_DELTA, dataPoints: [] };
+      }
+      byMetric.set(metricKey, metric);
+      metrics.push(metric);
+    }
+    JsValue attributes = toOtlpKeyValueList(state.attributes ?? object {}, self.logger);
+    string startNano = msToUnixNano(state.windowStartMs);
+    if (state.type === "count") {
+      metric.sum.dataPoints.push(object {
+        attributes: attributes,
+        startTimeUnixNano: startNano,
+        timeUnixNano: nowNano,
+        asDouble: state.total
+      });
+    } else if (state.type === "gauge") {
+      metric.gauge.dataPoints.push(object {
+        attributes: attributes,
+        timeUnixNano: nowNano,
+        asDouble: state.last
+      });
+    } else {
+      HistogramState hist = state.hist;
+      if (hist != NO_HISTOGRAM) {
+        metric.histogram.dataPoints.push(object {
+          attributes: attributes,
+          startTimeUnixNano: startNano,
+          timeUnixNano: nowNano,
+          count: hist.count,
+          sum: hist.sum,
+          min: hist.min,
+          max: hist.max,
+          bucketCounts: hist.bucketCounts,
+          explicitBounds: DEFAULT_HISTOGRAM_BOUNDS
+        });
+      }
+    }
+  }
+  return metrics;
+}
+
+// Folds an unsent window back into the live one after a transient send failure.
+void mergeWindowBack(PostHogMetrics self, SeriesWindow window) {
+  for (SeriesState old of window.ordered) {
+    SeriesState? current = self.series.byKey.get(old.key);
+    if (current == null) {
+      // The cap still applies: a failed flush must not reintroduce series past the cap.
+      if (admitNewSeries(self)) {
+        addSeries(self.series, old);
+      }
+    } else {
+      mergeSeries(current, old);
+    }
+  }
+}
+
+void mergeSeries(SeriesState current, SeriesState old) {
+  current.windowStartMs = current.windowStartMs.min(old.windowStartMs);
+  if (current.type === "count") {
+    current.total = current.total + old.total;
+  } else if (current.type === "histogram") {
+    HistogramState oldHist = old.hist;
+    if (oldHist != NO_HISTOGRAM) {
+      HistogramState currentHist = current.hist;
+      if (currentHist == NO_HISTOGRAM) {
+        current.hist = oldHist;
+      } else {
+        currentHist.count += oldHist.count;
+        currentHist.sum += oldHist.sum;
+        currentHist.min = currentHist.min.min(oldHist.min);
+        currentHist.max = currentHist.max.max(oldHist.max);
+        for (int i = 0; i < currentHist.bucketCounts.length; i += 1) {
+          currentHist.bucketCounts[i] += oldHist.bucketCounts[i];
+        }
+      }
+    }
+  }
+  // gauge: the live window's value is newer — keep it.
+}
