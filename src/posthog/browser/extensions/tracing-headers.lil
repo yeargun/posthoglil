@@ -1,0 +1,130 @@
+// packages/browser/src/extensions/tracing-headers.ts
+// `posthog.tracingHeaders` keeps upstream's public methods; `_instance` is a reserved (unmangled)
+// name upstream, so it stays a field of that name. The header patches load lazily through
+// `window.__PosthogExtensions__.tracingHeadersPatchFns` (`_patchXHR` / `_patchFetch`, reserved
+// cross-bundle names). The hostnames array handed to the patches is updated in place, as upstream
+// does, because the installed patches keep reading it.
+import { isArray, isUndefined } from "../../core/utils/type-utils.lil";
+import extern { assignableWindow } from "@upstream/browser/utils/globals";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+extern JsValue assignableWindow;
+extern JsValue createLogger;
+
+JsValue logger = createLogger("[TracingHeaders]");
+
+export class TracingHeaders {
+  JsValue _instance;
+  JsValue _restoreXHRPatch = undefined;
+  JsValue _restoreFetchPatch = undefined;
+  JsValue _hostnamesForPatch = undefined;
+
+  init(JsValue _instance) {
+    this._instance = _instance;
+  }
+
+  void initialize() {
+    (this as JsValue).startIfEnabledOrStop();
+  }
+
+  void startIfEnabledOrStop() {
+    if (syncHostnamesForPatch(this).truthy()) {
+      TracingHeaders self = this;
+      loadScript(this, () => {
+        startCapturing(self);
+      });
+    } else {
+      stopCapturing(this);
+    }
+  }
+}
+export constructor TracingHeaders;
+
+void loadScript(TracingHeaders self, func()->void cb) {
+  JsValue extensions = assignableWindow.__PosthogExtensions__;
+  if (extensions != null && extensions.tracingHeadersPatchFns.truthy()) {
+    // already loaded
+    cb();
+    return;
+  }
+  JsValue current = assignableWindow.__PosthogExtensions__;
+  JsValue loader = if (current == null) { undefined } else { current.loadExternalDependency };
+  if (loader != null) {
+    loader.call(current, self._instance, "tracing-headers", (JsValue err) => {
+      if (err.truthy()) {
+        return logger.error("failed to load script", err);
+      }
+      cb();
+      return undefined;
+    });
+  }
+}
+
+// Prefers the public `tracing_headers` option, then the deprecated aliases.
+JsValue configuredHostnames(TracingHeaders self) {
+  return self._instance.config.tracing_headers ?? self._instance.config.addTracingHeaders ?? self._instance.config.__add_tracing_headers;
+}
+
+JsValue syncHostnamesForPatch(TracingHeaders self) {
+  JsValue hostnames = configuredHostnames(self);
+  if (isArray(hostnames)) {
+    if (isArray(self._hostnamesForPatch)) {
+      JsValue current = self._hostnamesForPatch;
+      current.splice(0, current["length"]);
+      for (JsValue hostname of hostnames) {
+        current.push(hostname);
+      }
+    } else {
+      JsValue copy = [];
+      for (JsValue hostname of hostnames) {
+        copy.push(hostname);
+      }
+      self._hostnamesForPatch = copy;
+    }
+    return if (hostnames["length"] > 0) { self._hostnamesForPatch } else { undefined };
+  }
+  if (isArray(self._hostnamesForPatch)) {
+    // emptied before reassignment: existing fetch/XHR patches may still read this array, so a
+    // failed re-patch at least sends no headers to stale hostnames
+    self._hostnamesForPatch.splice(0);
+  }
+  self._hostnamesForPatch = hostnames || undefined;
+  return self._hostnamesForPatch;
+}
+
+void stopCapturing(TracingHeaders self) {
+  if (self._restoreXHRPatch != null) {
+    self._restoreXHRPatch();
+  }
+  if (self._restoreFetchPatch != null) {
+    self._restoreFetchPatch();
+  }
+  // reset so they are not called twice
+  self._restoreXHRPatch = undefined;
+  self._restoreFetchPatch = undefined;
+}
+
+void startCapturing(TracingHeaders self) {
+  JsValue hostnames = syncHostnamesForPatch(self);
+  if (!hostnames.truthy()) {
+    stopCapturing(self);
+    return;
+  }
+  if (isUndefined(self._restoreXHRPatch)) {
+    JsValue extensions = assignableWindow.__PosthogExtensions__;
+    JsValue patchFns = if (extensions == null) { undefined } else { extensions.tracingHeadersPatchFns };
+    self._restoreXHRPatch = if (patchFns == null) {
+      undefined
+    } else {
+      patchFns._patchXHR(hostnames, () => self._instance.get_distinct_id(), self._instance.sessionManager)
+    };
+  }
+  if (isUndefined(self._restoreFetchPatch)) {
+    JsValue extensions = assignableWindow.__PosthogExtensions__;
+    JsValue patchFns = if (extensions == null) { undefined } else { extensions.tracingHeadersPatchFns };
+    self._restoreFetchPatch = if (patchFns == null) {
+      undefined
+    } else {
+      patchFns._patchFetch(hostnames, () => self._instance.get_distinct_id(), self._instance.sessionManager)
+    };
+  }
+}
