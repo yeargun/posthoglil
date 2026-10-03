@@ -26,7 +26,7 @@ bool hasGzipMagic(JsValue bytes) {
   return bytes.length >= 2.0 && bytes[0] === 31 && bytes[1] === 139;
 }
 
-export bool isGzipData(JsValue body) {
+export func(JsValue)->bool isGzipData = (JsValue body) => {
   if (body instanceof ArrayBuffer) {
     return hasGzipMagic(JS.construct(Uint8Array, body));
   }
@@ -34,30 +34,29 @@ export bool isGzipData(JsValue body) {
     return hasGzipMagic(JS.construct(Uint8Array, body.buffer, body.byteOffset, body.byteLength));
   }
   return false;
-}
+};
 
-export bool isGzipRequest(JsValue compression, JsValue urlCompression) {
-  return compression === Compression.GZipJS || urlCompression === Compression.GZipJS || urlCompression === "gzip";
-}
+export func(JsValue, JsValue)->bool isGzipRequest = (JsValue compression, JsValue urlCompression) =>
+  compression === Compression.GZipJS || urlCompression === Compression.GZipJS || urlCompression === "gzip";
 
 JsValue errorName(JsValue error) {
   return if (JS.in("name", error)) { String(error.name) } else { "" };
 }
 
-export bool isNativeAsyncGzipReadError(JsValue error) {
+export func(JsValue)->bool isNativeAsyncGzipReadError = (JsValue error) => {
   if (!error.truthy() || JS.typeOf(error) != "object") {
     return false;
   }
   return errorName(error) === "NotReadableError";
-}
+};
 
-export bool isNativeAsyncGzipError(JsValue error) {
+export func(JsValue)->bool isNativeAsyncGzipError = (JsValue error) => {
   if (!error.truthy() || JS.typeOf(error) != "object") {
     return false;
   }
   JsValue name = errorName(error);
   return isNativeAsyncGzipReadError(error) || name === NATIVE_GZIP_VALIDATION_ERROR;
-}
+};
 
 int[]? crc32Table = null;
 
@@ -99,13 +98,11 @@ async void validateNativeGzip(JsValue compressed, Uint8Array inputBytes) {
   if (compressed.size < 18) {
     throwNativeGzipValidationError("too-short");
   }
-  Task<JsValue> headerBuffer = JS.assume(compressed.slice(0, 10).arrayBuffer());
-  JsValue header = JS.construct(Uint8Array, await headerBuffer);
+  JsValue header = JS.construct(Uint8Array, await (JS.assume(compressed.slice(0, 10).arrayBuffer()) as Task<JsValue>));
   if (!hasGzipMagic(header) || header[2] !== 8) {
     throwNativeGzipValidationError("invalid-header");
   }
-  Task<JsValue> trailerBuffer = JS.assume(compressed.slice(compressed.size - 8).arrayBuffer());
-  JsValue trailer = JS.construct(DataView, await trailerBuffer);
+  JsValue trailer = JS.construct(DataView, await (JS.assume(compressed.slice(compressed.size - 8).arrayBuffer()) as Task<JsValue>));
   if (trailer.getUint32(0, true) !== crc32(inputBytes)) {
     throwNativeGzipValidationError("invalid-crc");
   }

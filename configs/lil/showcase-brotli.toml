@@ -15,6 +15,8 @@ assume_pristine_builtins = true
 assume_pure_property_reads = true
 # and its mangle.properties: `_` names are private except rollup.config.mjs's reserved list
 assume_private_underscore_properties = true
+# and its compress folds `x === null || x === undefined` into `null == x`: no value is document.all
+assume_no_document_all = true
 strip_debug = false
 # upstream's npm build mangles function and class names too
 keep_published_function_names = false
