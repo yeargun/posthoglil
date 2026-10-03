@@ -1,0 +1,445 @@
+// packages/browser/src/extensions/web-vitals/index.ts
+// `posthog.webVitalsAutocapture` keeps upstream's public getters and methods; `_instance` is a
+// reserved (unmangled) name upstream, so it stays a field of that name. Upstream's private arrow
+// fields (`_flushToCapture`, `_addToBuffer`, `_startCapturing`) and getters (`_perfConfig`,
+// `_callbackFlavor`, `_maxAllowedValue`) are module functions; the observer callbacks are closures.
+// The web-vitals bundle loads lazily through `window.__PosthogExtensions__`.
+import { isArray, isBoolean, isNullish, isNumber, isObject, isUndefined } from "../../../core/utils/type-utils.lil";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { stripUrlHash } from "@upstream/core/utils/index";
+import extern { WEB_VITALS_ALLOWED_METRICS, WEB_VITALS_ENABLED_SERVER_SIDE } from "@upstream/browser/constants";
+import extern { window, location } from "@upstream/browser-common/utils/globals";
+import extern { assignableWindow } from "@upstream/browser/utils/globals";
+import extern { maskQueryParams } from "@upstream/browser-common/utils/request-utils";
+import extern { PERSONAL_DATA_CAMPAIGN_PARAMS, MASKED } from "@upstream/browser-common/utils/event-utils";
+extern JsValue createLogger;
+extern JsValue stripUrlHash(JsValue url);
+extern string WEB_VITALS_ALLOWED_METRICS;
+extern string WEB_VITALS_ENABLED_SERVER_SIDE;
+extern JsValue window;
+extern JsValue location;
+extern JsValue assignableWindow;
+extern JsValue maskQueryParams(JsValue url, JsValue maskedParams, JsValue mask);
+extern JsValue PERSONAL_DATA_CAMPAIGN_PARAMS;
+extern JsValue MASKED;
+extern JsValue Object;
+extern JsValue Date;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+JsValue logger = createLogger("[Web Vitals]");
+
+export float DEFAULT_FLUSH_TO_CAPTURE_TIMEOUT_MILLISECONDS = 5000.0;
+float ONE_MINUTE_IN_MILLIS = 60.0 * 1000.0;
+export float FIFTEEN_MINUTES_IN_MILLIS = 15.0 * 60.0 * 1000.0;
+
+// INP and LCP are attributed by default: their attribution names the slow interaction target and
+// the load-phase breakdown. CLS is excluded because onCLS with attribution holds detached DOM
+// nodes and leaks in single-page apps. The getters hand these arrays out, as upstream does.
+JsValue ALL_WEB_VITALS_METRICS = ["CLS", "FCP", "INP", "LCP"];
+JsValue DEFAULT_WEB_VITALS_ATTRIBUTION_METRICS = ["INP", "LCP"];
+
+// web-vitals attribution objects can carry DOM nodes and large PerformanceEntry arrays; only these
+// small scalar fields are kept so the captured payload stays bounded.
+string[] WEB_VITALS_ATTRIBUTION_ALLOWLIST = [
+  // INP: which element was interacted with, plus the phase breakdown
+  "interactionTarget",
+  "interactionType",
+  "inputDelay",
+  "processingDuration",
+  "presentationDelay",
+  "loadState",
+  // LCP: which element rendered, plus the load-phase breakdown
+  "target",
+  "url",
+  "timeToFirstByte",
+  "resourceLoadDelay",
+  "resourceLoadDuration",
+  "elementRenderDelay",
+  // CLS: the single largest shift
+  "largestShiftTarget",
+  "largestShiftTime",
+  "largestShiftValue",
+  // FCP
+  "firstByteToFCP"
+];
+
+shape WebVitalsEventBuffer {
+  data JsValue navigationKey;
+  data JsValue url;
+  data JsValue[] metrics;
+  data JsValue firstMetricTimestamp;
+}
+
+WebVitalsEventBuffer emptyBuffer() {
+  return WebVitalsEventBuffer{navigationKey: undefined, url: undefined, metrics: [], firstMetricTimestamp: undefined};
+}
+
+export class WebVitalsAutocapture {
+  JsValue _instance;
+  bool _enabledServerSide = false;
+  bool _initialized = false;
+  WebVitalsEventBuffer _buffer = emptyBuffer();
+  JsValue _delayedFlushTimer = undefined;
+
+  init(JsValue _instance) {
+    this._instance = _instance;
+    JsValue persistence = this._instance.persistence;
+    this._enabledServerSide = if (persistence == null) { false } else { persistence.props[WEB_VITALS_ENABLED_SERVER_SIDE].truthy() };
+    this.startIfEnabled();
+  }
+
+  void startIfEnabled() {
+    if ((this as JsValue).isEnabled.truthy() && !this._initialized) {
+      logger.info("enabled, starting...");
+      WebVitalsAutocapture self = this;
+      loadScript(this, () => {
+        startCapturing(self);
+      });
+    }
+  }
+
+  void onRemoteConfig(JsValue result) {
+    if (!result.ok.truthy()) {
+      // Failure behaves like a response without a capturePerformance key.
+      return;
+    }
+    JsValue response = result.config;
+    if (!("capturePerformance" in response)) {
+      return;
+    }
+    bool webVitalsOptIn = isObject(response.capturePerformance) && response.capturePerformance.web_vitals.truthy();
+    JsValue allowedMetrics = if (isObject(response.capturePerformance)) { response.capturePerformance.web_vitals_allowed_metrics } else { undefined };
+    if (this._instance.persistence.truthy()) {
+      JsValue enabled = object {};
+      enabled[WEB_VITALS_ENABLED_SERVER_SIDE] = webVitalsOptIn;
+      this._instance.persistence.register(enabled);
+      JsValue allowed = object {};
+      allowed[WEB_VITALS_ALLOWED_METRICS] = allowedMetrics;
+      this._instance.persistence.register(allowed);
+    }
+    // kept in memory in case persistence is disabled
+    this._enabledServerSide = webVitalsOptIn;
+    (this as JsValue).startIfEnabled();
+  }
+}
+export constructor WebVitalsAutocapture;
+
+JsValue proto = (WebVitalsAutocapture as JsValue).prototype;
+Object.defineProperty(proto, "allowedMetrics", object {
+  get: (this JsValue receiver) => allowedMetricsOf(receiver as WebVitalsAutocapture),
+  configurable: true
+});
+Object.defineProperty(proto, "flushToCaptureTimeoutMs", object {
+  get: (this JsValue receiver) => flushToCaptureTimeoutOf(receiver as WebVitalsAutocapture),
+  configurable: true
+});
+Object.defineProperty(proto, "attributionMetrics", object {
+  get: (this JsValue receiver) => attributionMetricsOf(receiver as WebVitalsAutocapture),
+  configurable: true
+});
+Object.defineProperty(proto, "useAttribution", object {
+  get: (this JsValue receiver) => receiver.attributionMetrics["length"] > 0,
+  configurable: true
+});
+Object.defineProperty(proto, "useSoftNavs", object {
+  get: (this JsValue receiver) => useSoftNavsOf(receiver as WebVitalsAutocapture),
+  configurable: true
+});
+Object.defineProperty(proto, "isEnabled", object {
+  get: (this JsValue receiver) => isEnabledOf(receiver as WebVitalsAutocapture),
+  configurable: true
+});
+
+// upstream's private `_perfConfig` getter
+JsValue perfConfig(WebVitalsAutocapture self) {
+  return self._instance.config.capture_performance;
+}
+
+JsValue allowedMetricsOf(WebVitalsAutocapture self) {
+  JsValue clientConfigMetricAllowList = undefined;
+  if (isObject(perfConfig(self))) {
+    JsValue config = perfConfig(self);
+    clientConfigMetricAllowList = if (config == null) { undefined } else { config.web_vitals_allowed_metrics };
+  }
+  if (!isNullish(clientConfigMetricAllowList)) {
+    return clientConfigMetricAllowList;
+  }
+  JsValue persistence = self._instance.persistence;
+  return (if (persistence == null) { undefined } else { persistence.props[WEB_VITALS_ALLOWED_METRICS] }) || ALL_WEB_VITALS_METRICS;
+}
+
+JsValue flushToCaptureTimeoutOf(WebVitalsAutocapture self) {
+  JsValue clientConfig = if (isObject(perfConfig(self))) { perfConfig(self).web_vitals_delayed_flush_ms } else { undefined };
+  return clientConfig || DEFAULT_FLUSH_TO_CAPTURE_TIMEOUT_MILLISECONDS;
+}
+
+// The metrics attribution is captured for: `true` attributes all metrics, `false` none, an array
+// names them explicitly, and the default attributes INP and LCP only.
+JsValue attributionMetricsOf(WebVitalsAutocapture self) {
+  JsValue clientConfig = if (isObject(perfConfig(self))) { perfConfig(self).web_vitals_attribution } else { undefined };
+  if (isBoolean(clientConfig)) {
+    return if (clientConfig.truthy()) { ALL_WEB_VITALS_METRICS } else { [] as JsValue };
+  }
+  if (isArray(clientConfig)) {
+    return clientConfig;
+  }
+  return DEFAULT_WEB_VITALS_ATTRIBUTION_METRICS;
+}
+
+JsValue useSoftNavsOf(WebVitalsAutocapture self) {
+  JsValue clientConfig = if (isObject(perfConfig(self))) { perfConfig(self).__preview_web_vitals_soft_navs } else { undefined };
+  return clientConfig ?? false;
+}
+
+// upstream's `_maxAllowedValue` getter (mangled in the npm build)
+JsValue maxAllowedValue(WebVitalsAutocapture self) {
+  JsValue configured = if (isObject(perfConfig(self)) && isNumber(perfConfig(self).__web_vitals_max_value)) {
+    perfConfig(self).__web_vitals_max_value
+  } else {
+    FIFTEEN_MINUTES_IN_MILLIS
+  };
+  // 0 disables the check; 1 ms to 1 minute would be a silly low maximum and becomes 15 minutes
+  return if (0 < configured && configured <= ONE_MINUTE_IN_MILLIS) { FIFTEEN_MINUTES_IN_MILLIS } else { configured };
+}
+
+JsValue isEnabledOf(WebVitalsAutocapture self) {
+  // Always disabled when not on http or https
+  JsValue protocol = if (location == null) { undefined } else { location.protocol };
+  if (protocol !== "http:" && protocol !== "https:") {
+    logger.info("Web Vitals are disabled on non-http/https protocols");
+    return false;
+  }
+  JsValue clientConfig = if (isObject(perfConfig(self))) {
+    perfConfig(self).web_vitals
+  } else {
+    if (isBoolean(perfConfig(self))) { perfConfig(self) } else { undefined }
+  };
+  return if (isBoolean(clientConfig)) { clientConfig } else { self._enabledServerSide };
+}
+
+// upstream's private `_callbackFlavor` getter
+string callbackFlavor(WebVitalsAutocapture self) {
+  JsValue receiver = self as JsValue;
+  if (receiver.useSoftNavs.truthy()) {
+    return if (receiver.useAttribution.truthy()) { "web-vitals-with-attribution-soft-navs" } else { "web-vitals-soft-navs" };
+  }
+  return if (receiver.useAttribution.truthy()) { "web-vitals-with-attribution" } else { "web-vitals" };
+}
+
+void loadScript(WebVitalsAutocapture self, func()->void cb) {
+  JsValue posthogExtensions = assignableWindow.__PosthogExtensions__;
+  string flavor = callbackFlavor(self);
+  JsValue callbacksByFlavor = if (posthogExtensions == null) { undefined } else { posthogExtensions.postHogWebVitalsCallbacksByFlavor };
+  if (
+    (if (callbacksByFlavor == null) { undefined } else { callbacksByFlavor[flavor] }).truthy() ||
+    (flavor == "web-vitals" && isUndefined(callbacksByFlavor) && (if (posthogExtensions == null) { undefined } else { posthogExtensions.postHogWebVitalsCallbacks }).truthy())
+  ) {
+    cb();
+    return;
+  }
+  JsValue loader = if (posthogExtensions == null) { undefined } else { posthogExtensions.loadExternalDependency };
+  if (loader != null) {
+    loader.call(posthogExtensions, self._instance, flavor, (JsValue err) => {
+      if (err.truthy()) {
+        logger.error("failed to load script", err);
+        return;
+      }
+      cb();
+    });
+  }
+}
+
+JsValue maskedURL(WebVitalsAutocapture self, JsValue url) {
+  JsValue href = url || (if (window == null) { undefined } else { window.location.href });
+  if (!href.truthy()) {
+    logger.error("Could not determine current URL");
+    return undefined;
+  }
+  JsValue urlWithoutHash = if (self._instance.config.disable_capture_url_hashes.truthy()) { stripUrlHash(href) } else { href };
+
+  // mask url query params
+  JsValue maskPersonalDataProperties = self._instance.config.mask_personal_data_properties;
+  JsValue customPersonalDataProperties = self._instance.config.custom_personal_data_properties;
+  JsValue[] paramsToMask = [];
+  if (maskPersonalDataProperties.truthy()) {
+    for (JsValue param of PERSONAL_DATA_CAMPAIGN_PARAMS) {
+      paramsToMask.push(param);
+    }
+    if (customPersonalDataProperties.truthy()) {
+      for (JsValue param of customPersonalDataProperties) {
+        paramsToMask.push(param);
+      }
+    }
+  }
+  return maskQueryParams(urlWithoutHash, paramsToMask as JsValue, MASKED);
+}
+
+void flushToCapture(WebVitalsAutocapture self) {
+  clearTimeout(self._delayedFlushTimer);
+  self._delayedFlushTimer = undefined;
+  WebVitalsEventBuffer buffer = self._buffer;
+  if (buffer.metrics.length == 0) {
+    return;
+  }
+  JsValue properties = object { $current_url: buffer.url };
+  for (JsValue metric of buffer.metrics) {
+    // the entire event so it can be used in the future, e.g. google's rating
+    properties[`$web_vitals_${metric.name}_event`] = Object.assign(object {}, metric);
+    properties[`$web_vitals_${metric.name}_value`] = metric.value;
+  }
+  self._instance.capture("$web_vitals", properties);
+  self._buffer = emptyBuffer();
+}
+
+void addToBuffer(WebVitalsAutocapture self, JsValue metric) {
+  if (isNullish(if (metric == null) { undefined } else { metric.name }) || isNullish(if (metric == null) { undefined } else { metric.value })) {
+    logger.error("Invalid metric received", metric);
+    return;
+  }
+
+  JsValue navigationURL = if (metric.navigationURL is string) { metric.navigationURL } else { undefined };
+  JsValue currentUrl = maskedURL(self, navigationURL);
+  if (isUndefined(currentUrl)) {
+    return;
+  }
+  bool hasNavigationId = isNumber(metric.navigationId) || metric.navigationId is string;
+  JsValue navigationKey = if (hasNavigationId) { `navigation:${metric.navigationId}` as JsValue } else { `url:${currentUrl}` as JsValue };
+
+  // very large values are ignored: an LCP over an hour is very unlikely to be correct
+  JsValue maxValue = maxAllowedValue(self);
+  if (maxValue.truthy() && metric.value >= maxValue) {
+    logger.error("Ignoring metric with value >= " + maxAllowedValue(self), metric);
+    return;
+  }
+
+  if (self._buffer.navigationKey !== navigationKey) {
+    // send what there is
+    flushToCapture(self);
+    // poor performance is >4s; waiting twice that gathers at least some metrics
+    self._delayedFlushTimer = setTimeout(() => {
+      flushToCapture(self);
+    }, (self as JsValue).flushToCaptureTimeoutMs);
+  }
+
+  WebVitalsEventBuffer buffer = self._buffer;
+  if (isUndefined(buffer.navigationKey)) {
+    buffer.navigationKey = navigationKey;
+    buffer.url = currentUrl;
+  }
+  buffer.firstMetricTimestamp = if (isUndefined(buffer.firstMetricTimestamp)) { Date.now() } else { buffer.firstMetricTimestamp };
+
+  JsValue sessionManager = self._instance.sessionManager;
+  JsValue sessionIds = if (sessionManager == null) { undefined } else { sessionManager.checkAndGetSessionAndWindowId(true) };
+  JsValue bufferedMetric = Object.assign(object {}, metric);
+  if (navigationURL.truthy()) {
+    bufferedMetric.navigationURL = currentUrl;
+  }
+  bufferedMetric.$current_url = currentUrl;
+  bufferedMetric.timestamp = Date.now();
+
+  // `entries` holds raw PerformanceEntry objects that serialise to `[{}]`: always dropped
+  JS.delete(bufferedMetric, "entries");
+
+  // attribution only for the attributed metrics, bounded to small fields
+  if (isObject(metric.attribution) && (self as JsValue).attributionMetrics.indexOf(metric.name) > -1) {
+    JsValue attribution = object {};
+    for (string key of WEB_VITALS_ATTRIBUTION_ALLOWLIST) {
+      JsValue value = if (key == "url" && metric.attribution[key] is string) { maskedURL(self, metric.attribution[key]) } else { metric.attribution[key] };
+      if (!isUndefined(value)) {
+        attribution[key] = value;
+      }
+    }
+    bufferedMetric.attribution = attribution;
+  } else {
+    JS.delete(bufferedMetric, "attribution");
+  }
+  if (!isUndefined(sessionIds)) {
+    bufferedMetric.$session_id = sessionIds.sessionId;
+    bufferedMetric.$window_id = sessionIds.windowId;
+  }
+
+  self._buffer.metrics.push(bufferedMetric);
+
+  if (self._buffer.metrics.length == (self as JsValue).allowedMetrics["length"]) {
+    // all allowed metrics are in
+    flushToCapture(self);
+  }
+}
+
+void startCapturing(WebVitalsAutocapture self) {
+  // web-vitals has no cleanup functions and warns against calling them more than once per page
+  // load: each call creates PerformanceObservers that persist for the page lifetime.
+  if (self._initialized) {
+    return;
+  }
+
+  JsValue onLCP = undefined;
+  JsValue onCLS = undefined;
+  JsValue onFCP = undefined;
+  JsValue onINP = undefined;
+  // only the attribution bundle exposes unattributed observers alongside the attributed ones, so
+  // its presence tells that the attribution-only opts are understood
+  bool isAttributionBundle = false;
+
+  JsValue posthogExtensions = assignableWindow.__PosthogExtensions__;
+  JsValue callbacksByFlavor = if (posthogExtensions == null) { undefined } else { posthogExtensions.postHogWebVitalsCallbacksByFlavor };
+  JsValue byFlavor = if (callbacksByFlavor == null) { undefined } else { callbacksByFlavor[callbackFlavor(self)] };
+  JsValue callbacks = byFlavor || (if (callbackFlavor(self) == "web-vitals" && isUndefined(callbacksByFlavor)) {
+    if (posthogExtensions == null) { undefined } else { posthogExtensions.postHogWebVitalsCallbacks }
+  } else {
+    undefined
+  });
+  if (!isUndefined(callbacks)) {
+    JsValue withoutAttribution = callbacks.withoutAttribution;
+    JsValue attributionMetrics = (self as JsValue).attributionMetrics;
+    isAttributionBundle = !isUndefined(withoutAttribution);
+    bool plain = withoutAttribution == null;
+    onLCP = if (attributionMetrics.indexOf("LCP") > -1) { callbacks.onLCP } else { (if (plain) { undefined } else { withoutAttribution.onLCP }) || callbacks.onLCP };
+    onCLS = if (attributionMetrics.indexOf("CLS") > -1) { callbacks.onCLS } else { (if (plain) { undefined } else { withoutAttribution.onCLS }) || callbacks.onCLS };
+    onFCP = if (attributionMetrics.indexOf("FCP") > -1) { callbacks.onFCP } else { (if (plain) { undefined } else { withoutAttribution.onFCP }) || callbacks.onFCP };
+    onINP = if (attributionMetrics.indexOf("INP") > -1) { callbacks.onINP } else { (if (plain) { undefined } else { withoutAttribution.onINP }) || callbacks.onINP };
+  }
+
+  if (!onLCP.truthy() || !onCLS.truthy() || !onFCP.truthy() || !onINP.truthy()) {
+    logger.error("web vitals callbacks not loaded - not starting");
+    return;
+  }
+
+  // Metrics are scoped to the browser's Soft Navigation entries when opted in, so SPA route
+  // changes don't keep inflating the metric against the original hard navigation.
+  JsValue reportSoftNavs = (self as JsValue).useSoftNavs;
+  JsValue reportOpts = object { reportSoftNavs: reportSoftNavs };
+
+  // `processedEventEntries` is never read, so the attributed onINP is asked not to populate it;
+  // the option only exists in the attribution build.
+  JsValue inpReportOpts = if (isAttributionBundle && (self as JsValue).attributionMetrics.indexOf("INP") > -1) {
+    object { reportSoftNavs: reportSoftNavs, includeProcessedEventEntries: false }
+  } else {
+    reportOpts
+  };
+
+  // register performance observers
+  if ((self as JsValue).allowedMetrics.indexOf("LCP") > -1) {
+    onLCP((JsValue metric) => {
+      addToBuffer(self, metric);
+    }, reportOpts);
+  }
+  if ((self as JsValue).allowedMetrics.indexOf("CLS") > -1) {
+    onCLS((JsValue metric) => {
+      addToBuffer(self, metric);
+    }, reportOpts);
+  }
+  if ((self as JsValue).allowedMetrics.indexOf("FCP") > -1) {
+    onFCP((JsValue metric) => {
+      addToBuffer(self, metric);
+    }, reportOpts);
+  }
+  if ((self as JsValue).allowedMetrics.indexOf("INP") > -1) {
+    onINP((JsValue metric) => {
+      addToBuffer(self, metric);
+    }, inpReportOpts);
+  }
+
+  self._initialized = true;
+}
