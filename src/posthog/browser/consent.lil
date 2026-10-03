@@ -1,0 +1,156 @@
+// packages/browser/src/consent.ts
+// ConsentManager provides tools for managing user consent as configured by the application.
+// `posthog.consent` is reachable from the page: it keeps `_instance` (reserved in upstream's npm
+// build), the `consent` getter and the public methods, which call each other through the object.
+// The private getters (`_config`, `_storageKey`, `_storedConsent`, `_storage`) and `_getDnt` are
+// module functions. The chosen store is still one of the storage objects, compared by identity.
+import { isNoLike, isYesLike } from "../core/utils/type-utils.lil";
+import { cookieStore, localStore, memoryStore } from "./storage.lil";
+import extern { COOKIELESS_ALWAYS, COOKIELESS_ON_REJECT } from "@upstream/browser/constants";
+import extern { navigator } from "@upstream/browser-common/utils/globals";
+import extern { assignableWindow } from "@upstream/browser/utils/globals";
+extern string COOKIELESS_ALWAYS;
+extern string COOKIELESS_ON_REJECT;
+extern JsValue navigator;
+extern JsValue assignableWindow;
+extern JsValue Object;
+
+string OPT_OUT_PREFIX = "__ph_opt_in_out_";
+
+export JsValue ConsentStatus = object {
+  PENDING: -1,
+  DENIED: 0,
+  GRANTED: 1
+};
+
+export class ConsentManager {
+  JsValue _instance;
+  JsValue _persistentStore = undefined;
+
+  init(JsValue _instance) {
+    this._instance = _instance;
+  }
+
+  JsValue isOptedOut() {
+    if (configOf(this).cookieless_mode === COOKIELESS_ALWAYS) {
+      return true;
+    }
+    // we are opted out if we are rejected, or if consent is pending and we are in cookieless
+    // mode "on_reject"
+    JsValue rejected = (this as JsValue).isRejected();
+    if (rejected.truthy()) {
+      return rejected;
+    }
+    return (this as JsValue).consent === -1 && configOf(this).cookieless_mode === COOKIELESS_ON_REJECT;
+  }
+
+  bool isOptedIn() {
+    return !(this as JsValue).isOptedOut().truthy();
+  }
+
+  bool isExplicitlyOptedOut() {
+    return (this as JsValue).consent === 0;
+  }
+
+  JsValue isRejected() {
+    // `consent === DENIED || (consent === PENDING && opt_out_capturing_by_default)`, reading the
+    // getter once per comparison like upstream
+    if ((this as JsValue).consent === 0) {
+      return true;
+    }
+    if ((this as JsValue).consent !== -1) {
+      return false;
+    }
+    return configOf(this).opt_out_capturing_by_default;
+  }
+
+  void optInOut(bool isOptedIn) {
+    storageOf(this)._set(
+      storageKeyOf(this),
+      if (isOptedIn) { 1 } else { 0 },
+      configOf(this).cookie_expiration,
+      configOf(this).cross_subdomain_cookie,
+      configOf(this).secure_cookie
+    );
+  }
+
+  void reset() {
+    storageOf(this)._remove(storageKeyOf(this), configOf(this).cross_subdomain_cookie);
+  }
+}
+export constructor ConsentManager;
+
+JsValue configOf(ConsentManager self) {
+  return self._instance.config;
+}
+
+int consentOf(ConsentManager self) {
+  if (getDnt(self)) {
+    return 0;
+  }
+  return storedConsentOf(self);
+}
+
+// Prototype getter, as upstream's class declares it.
+Object.defineProperty((ConsentManager as JsValue).prototype, "consent", object {
+  get: (this JsValue receiver) => consentOf(receiver as ConsentManager),
+  configurable: true
+});
+
+JsValue storageKeyOf(ConsentManager self) {
+  JsValue config = self._instance.config;
+  JsValue token = config.token;
+  JsValue opt_out_capturing_cookie_prefix = config.opt_out_capturing_cookie_prefix;
+  JsValue consent_persistence_name = config.consent_persistence_name;
+  if (consent_persistence_name.truthy()) {
+    return consent_persistence_name;
+  }
+  if (opt_out_capturing_cookie_prefix.truthy()) {
+    // Deprecated (differs from storage.ts and appends the token), still supported.
+    return opt_out_capturing_cookie_prefix + token;
+  }
+  return OPT_OUT_PREFIX + token;
+}
+
+int storedConsentOf(ConsentManager self) {
+  JsValue value = storageOf(self)._get(storageKeyOf(self));
+  // be somewhat permissive in what we accept as yes/opt-in
+  return if (isYesLike(value)) { 1 } else { if (isNoLike(value)) { 0 } else { -1 } };
+}
+
+JsValue storageOf(ConsentManager self) {
+  // Re-evaluate the store on every access so that a config change after the first access is
+  // picked up and a value stored under the old backend is migrated across. Where neither
+  // backend works (a `data:` URL), consent lives in memory for the pageview.
+  JsValue persistenceType = configOf(self).opt_out_capturing_persistence_type;
+  JsValue preferredStore = if (persistenceType === "localStorage") { localStore } else { cookieStore };
+  JsValue expectedStore = if (preferredStore._is_supported().truthy()) { preferredStore } else { memoryStore };
+  if (!self._persistentStore.truthy() || self._persistentStore !== expectedStore) {
+    self._persistentStore = expectedStore;
+    JsValue otherStorage = if (persistenceType === "localStorage") { cookieStore } else { localStore };
+    if (otherStorage._get(storageKeyOf(self)).truthy()) {
+      if (!self._persistentStore._get(storageKeyOf(self)).truthy()) {
+        // This indicates we have moved to a new storage format so we migrate the value over
+        (self as JsValue).optInOut(isYesLike(otherStorage._get(storageKeyOf(self))));
+      }
+      otherStorage._remove(storageKeyOf(self), configOf(self).cross_subdomain_cookie);
+    }
+  }
+  return self._persistentStore;
+}
+
+JsValue navigatorKey(string key) {
+  return if (navigator == null) { undefined } else { navigator[key] };
+}
+
+bool getDnt(ConsentManager self) {
+  if (!configOf(self).respect_dnt.truthy()) {
+    return false;
+  }
+  // standard, legacy IE, window, and the DNT replacement (Global Privacy Control)
+  JsValue doNotTrack = navigatorKey("doNotTrack");
+  JsValue msDoNotTrack = navigatorKey("msDoNotTrack");
+  JsValue windowDoNotTrack = assignableWindow["doNotTrack"];
+  JsValue globalPrivacyControl = navigatorKey("globalPrivacyControl");
+  return isYesLike(doNotTrack) || isYesLike(msDoNotTrack) || isYesLike(windowDoNotTrack) || isYesLike(globalPrivacyControl);
+}
