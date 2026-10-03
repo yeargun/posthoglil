@@ -1,0 +1,232 @@
+// packages/browser/src/extensions/network-metrics.ts
+// Records a duration histogram for every HTTP(S) `fetch` and `XMLHttpRequest` the page makes,
+// except the SDK's own. Observation only: the wrappers never change the request arguments or its
+// settlement. Request objects and attributes handed to the page's callbacks keep upstream's keys.
+import { isFunction, isString } from "../../core/utils/type-utils.lil";
+import { patch } from "./replay/rrweb-plugins/patch.lil";
+import extern { addEventListener } from "@upstream/browser-common/utils/general-utils";
+import extern { convertToURL } from "@upstream/browser-common/utils/request-utils";
+import extern { window } from "@upstream/browser-common/utils/globals";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { isPostHogXHR } from "@upstream/browser/request";
+extern JsValue addEventListener;
+extern JsValue convertToURL(JsValue url);
+extern JsValue window;
+extern JsValue createLogger;
+extern JsValue isPostHogXHR;
+extern JsValue Object;
+extern JsValue Date;
+extern JsValue Number;
+extern JsValue String;
+extern JsValue WeakMap;
+
+JsValue logger = createLogger("[NetworkMetrics]");
+
+string DEFAULT_METRIC_NAME = "http.client.request.duration";
+
+float now() {
+  JsValue performance = if (window == null) { undefined } else { window.performance };
+  return (if ((if (performance == null) { undefined } else { performance.now }).truthy()) { window.performance.now() } else { Date.now() }) as float;
+}
+
+// All-digit segments, or hex/uuid-like segments of 8+ characters that contain a digit.
+Regex ALL_DIGITS = new Regex("^\\d+$");
+Regex HEX_WITH_DIGIT = new Regex("^[0-9a-f-]*\\d[0-9a-f-]*$", "i");
+
+bool isIdLikeSegment(string segment) {
+  return ALL_DIGITS.test(segment) || (segment.length >= 8 && HEX_WITH_DIGIT.test(segment));
+}
+
+string templatePath(string pathname) {
+  return pathname.split("/").map((string segment) => if (isIdLikeSegment(segment)) { ":id" } else { segment }).join("/");
+}
+
+JsValue DEFAULT_PORTS = object { "http:": 80, "https:": 443 };
+
+string[] KNOWN_HTTP_METHODS = ["CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "TRACE"];
+
+JsValue urlAttributes(JsValue url) {
+  return object {
+    "server.address": if (url.hostname.startsWith("[").truthy() && url.hostname.endsWith("]").truthy()) { url.hostname.slice(1, -1) } else { url.hostname },
+    "server.port": Number(url.port) || DEFAULT_PORTS[url.protocol],
+    "url.scheme": url.protocol.slice(0, -1),
+    "url.template": templatePath(url.pathname as string)
+  };
+}
+
+// OTel: a 4xx or 5xx response reports its status as the error type; a request that got no
+// response reports the exception name, or `_OTHER` when there is none.
+JsValue errorType(JsValue status, JsValue failure) {
+  if (status.truthy()) {
+    return if (status >= 400) { String(status) } else { undefined };
+  }
+  return (if (failure == null) { undefined } else { failure.name }) || "_OTHER";
+}
+
+JsValue methodAttributes(string method) {
+  string original = if (KNOWN_HTTP_METHODS.includes(method)) { method } else { "_OTHER" };
+  JsValue attributes = object { "http.request.method": original };
+  if (original == "_OTHER" && method != original) {
+    attributes["http.request.method_original"] = method;
+  }
+  return attributes;
+}
+
+JsValue networkConfig(JsValue instance) {
+  JsValue metrics = instance.config.metrics;
+  JsValue network = if (metrics == null) { undefined } else { metrics.network };
+  return if (network === true) { object {} } else { network || undefined };
+}
+
+shape Observed {
+  data string method;
+  data string url;
+}
+
+Observed observe(JsValue method, JsValue url) {
+  string observedUrl = String(url) as string;
+  string observedMethod = String(method).toUpperCase() as string;
+  JsValue converted = convertToURL(observedUrl);
+  JsValue href = if (converted == null) { undefined } else { converted.href };
+  return Observed{method: observedMethod, url: (href || observedUrl) as string};
+}
+
+// `enabled` answers the config while the wrapper should observe requests, `undefined` once it is
+// stopped or turned off.
+void recordRequest(JsValue instance, Observed observed, JsValue status, float start, func()->JsValue enabled, JsValue failure, bool fulfilled) {
+  try {
+    JsValue config = enabled();
+    if (!config.truthy()) {
+      return;
+    }
+    // A status of 0 means no response arrived (fetch's opaque no-cors responses report it too),
+    // which the callback contract calls `undefined`.
+    JsValue normalisedStatus = status || undefined;
+    float durationMs = now() - start;
+    JsValue url = convertToURL(observed.url);
+    if (url.truthy() && url.protocol !== "http:" && url.protocol !== "https:") {
+      return;
+    }
+    JsValue request = object {
+      url: (if (url == null) { undefined } else { url.href }) || observed.url,
+      method: observed.method
+    };
+    JsValue name = if (isFunction(config.name)) {
+      config.name(request)
+    } else {
+      if (isString(config.name)) { config.name } else { DEFAULT_METRIC_NAME }
+    };
+    if (!name.truthy()) {
+      return;
+    }
+    JsValue error = if (fulfilled && !normalisedStatus.truthy()) { undefined } else { errorType(normalisedStatus, failure) };
+    JsValue methodAttrs = methodAttributes(request.method as string);
+    JsValue urlAttrs = if (url.truthy()) { urlAttributes(url) } else { object {} };
+    JsValue statusAttrs = if (normalisedStatus.truthy()) { object { "http.response.status_code": normalisedStatus } } else { object {} };
+    JsValue errorAttrs = if (error.truthy()) { object { "error.type": error } } else { object {} };
+    JsValue customize = config.attributes;
+    JsValue custom = if (customize == null) { undefined } else { customize.call(config, request, object { status: normalisedStatus, durationMs: durationMs }) };
+    JsValue attributes = Object.assign(object {}, methodAttrs, urlAttrs, statusAttrs, errorAttrs, custom);
+    JsValue metrics = instance.metrics;
+    if (metrics != null) {
+      metrics.histogram(name, durationMs, object { unit: "ms", attributes: attributes });
+    }
+  } catch (JsValue e) {
+    logger.error("Failed to record network metric", e);
+  }
+}
+
+JsValue noop = () => {};
+
+JsValue patchFetch(JsValue instance, func()->JsValue enabled) {
+  if (!isFunction(if (window == null) { undefined } else { window.fetch })) {
+    return noop;
+  }
+  return patch(window, "fetch", (JsValue originalFetch) => JS.methodRest((JsValue receiver, JsValue args) => {
+    float start = now();
+    JsValue result = originalFetch.apply(receiver, args);
+    if (!enabled().truthy()) {
+      return result;
+    }
+    try {
+      JsValue input = args[0];
+      JsValue requestInit = args[1];
+      JsValue method = (if (requestInit == null) { undefined } else { requestInit.method }) ?? (if (input == null) { undefined } else { input.method }) ?? "GET";
+      Observed observed = observe(method, (if (input == null) { undefined } else { input.url }) ?? input);
+      return result.then((JsValue response) => {
+        recordRequest(instance, observed, if (response == null) { undefined } else { response.status }, start, enabled, undefined, true);
+        return response;
+      }, (JsValue error) => {
+        recordRequest(instance, observed, undefined, start, enabled, error, false);
+        throw error;
+      });
+    } catch (JsValue e) {
+      logger.error("Failed to observe fetch", e);
+      return result;
+    }
+  }));
+}
+
+JsValue patchXHR(JsValue instance, func()->JsValue enabled) {
+  JsValue xhr = if (window == null) { undefined } else { window.XMLHttpRequest };
+  JsValue prototype = if (xhr == null) { undefined } else { xhr.prototype };
+  if (!prototype.truthy()) {
+    return noop;
+  }
+  JsValue requests = new WeakMap();
+
+  JsValue restoreOpen = patch(prototype, "open", (JsValue originalOpen) => JS.methodRest((JsValue receiver, JsValue args) => {
+    try {
+      if (!isPostHogXHR(receiver).truthy()) {
+        requests.set(receiver, observe(args[0], args[1]) as JsValue);
+      }
+    } catch (JsValue e) {
+      logger.error("Failed to observe XHR open", e);
+    }
+    return originalOpen.apply(receiver, args);
+  }));
+  JsValue restoreSend = patch(prototype, "send", (JsValue originalSend) => JS.methodRest((JsValue receiver, JsValue args) => {
+    JsValue onLoadEnd = undefined;
+    try {
+      JsValue pending = requests.get(receiver);
+      if (pending.truthy() && enabled().truthy()) {
+        Observed observed = pending as Observed;
+        float start = now();
+        onLoadEnd = () => {
+          receiver.removeEventListener("loadend", onLoadEnd);
+          recordRequest(instance, observed, receiver.status, start, enabled, undefined, false);
+        };
+        addEventListener(receiver, "loadend", onLoadEnd);
+      }
+    } catch (JsValue e) {
+      logger.error("Failed to observe XHR send", e);
+    }
+    try {
+      return originalSend.apply(receiver, args);
+    } catch (JsValue e) {
+      if (onLoadEnd.truthy()) {
+        receiver.removeEventListener("loadend", onLoadEnd);
+      }
+      throw e;
+    }
+  }));
+
+  return () => {
+    restoreOpen();
+    restoreSend();
+  };
+}
+
+// While `metrics.network` is off the wrappers pass every request straight through. The returned
+// function removes them; a wrapper that cannot be spliced out stays in place as a pass-through.
+export JsValue startNetworkMetrics = (JsValue instance) => {
+  bool active = true;
+  func()->JsValue enabled = () => if (active) { networkConfig(instance) } else { undefined };
+  JsValue restoreFetch = patchFetch(instance, enabled);
+  JsValue restoreXHR = patchXHR(instance, enabled);
+  return () => {
+    active = false;
+    restoreFetch();
+    restoreXHR();
+  };
+};
