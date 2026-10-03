@@ -1,0 +1,45 @@
+// packages/browser/src/extensions/rageclick.ts
+// Naive rage click detection: the mouse has not moved further than thresholdPx over clickCount
+// clicks with at most timeoutMs between them. `autocapture.rageclicks` and `heatmaps.rageclicks`
+// are reachable from the page, so the class keeps upstream's public fields in their order.
+import { isObject } from "../../core/utils/type-utils.lil";
+
+shape Click {
+  data float x;
+  data float y;
+  data float timestamp;
+}
+
+export class RageClick {
+  bool disabled;
+  float thresholdPx;
+  float timeoutMs;
+  float clickCount;
+  Click[] clicks;
+
+  init(JsValue rageclickConfig) {
+    this.disabled = rageclickConfig === false;
+    JsValue conf = if (isObject(rageclickConfig)) { rageclickConfig } else { object {} };
+    this.thresholdPx = (conf.threshold_px || 30) as float;
+    this.timeoutMs = (conf.timeout_ms || 1000) as float;
+    this.clickCount = (conf.click_count || 3) as float;
+    this.clicks = [];
+  }
+
+  bool isRageClick(float x, float y, float timestamp) {
+    if (this.disabled) {
+      return false;
+    }
+    int count = this.clicks.length;
+    if (count > 0) {
+      Click lastClick = this.clicks[count - 1];
+      if ((x - lastClick.x).abs() + (y - lastClick.y).abs() < this.thresholdPx && timestamp - lastClick.timestamp < this.timeoutMs) {
+        this.clicks.push(Click{x: x, y: y, timestamp: timestamp});
+        return this.clicks.length == this.clickCount;
+      }
+    }
+    this.clicks = [Click{x: x, y: y, timestamp: timestamp}];
+    return false;
+  }
+}
+export constructor RageClick as default;

@@ -1,0 +1,795 @@
+// packages/browser/src/autocapture.ts
+// The SDK-neutral autocapture extension. `posthog.autocapture` is reachable from the page, so the
+// class keeps upstream's public fields (in upstream's key order), public methods and the
+// `isEnabled` getter; private members are module functions taking the instance. Calls upstream
+// makes through public names (`this.isEnabled`, `this.startIfEnabled()`, the client, the config
+// source, `rageclicks`) stay dynamic. DOM nodes, events and the config objects that the config
+// source writes are `JsValue`.
+import { hasOwnProperty, isBoolean, isFunction, isNull } from "../core/utils/type-utils.lil";
+import { includes } from "../core/utils/string-utils.lil";
+import { RageClick } from "./extensions/rageclick.lil";
+import extern { addEventListener, each, extend } from "@upstream/browser-common/utils/general-utils";
+import extern {
+  autocaptureCompatibleElements,
+  DEFAULT_AUTOCAPTURE_IGNORE_LIST,
+  elementMatchesCSSSelector,
+  getClassNames,
+  getDirectAndNestedSpanText,
+  getElementsChainString,
+  getEventTarget,
+  getSafeText,
+  isAngularStyleAttr,
+  isSensitiveElement,
+  makeSafeText,
+  MAX_DOM_ANCESTOR_DEPTH,
+  shouldCaptureDomEvent,
+  shouldCaptureElement,
+  shouldCaptureRageclick,
+  shouldCaptureValue,
+  splitClassString
+} from "@upstream/browser-common/utils/autocapture-utils";
+import extern { AUTOCAPTURE_DISABLED_SERVER_SIDE } from "@upstream/browser/constants";
+import extern { AutocaptureExtension } from "@upstream/browser/extension-tokens";
+import extern { stripUrlHash } from "@upstream/core/utils/index";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { document, window } from "@upstream/browser-common/utils/globals";
+import extern { convertToURL } from "@upstream/browser-common/utils/request-utils";
+import extern { isElementNode, isShadowRoot, isTag, isTextNode } from "@upstream/browser-common/utils/element-utils";
+extern JsValue addEventListener;
+extern JsValue each;
+extern JsValue extend;
+extern JsValue autocaptureCompatibleElements;
+extern JsValue DEFAULT_AUTOCAPTURE_IGNORE_LIST;
+extern bool elementMatchesCSSSelector(JsValue el, JsValue selector);
+extern JsValue getClassNames(JsValue el);
+extern string getDirectAndNestedSpanText(JsValue target);
+extern JsValue getElementsChainString(JsValue elements);
+extern JsValue getEventTarget(JsValue e);
+extern string getSafeText(JsValue el);
+extern bool isAngularStyleAttr(JsValue attributeName);
+extern bool isSensitiveElement(JsValue el);
+extern JsValue makeSafeText(JsValue s);
+extern float MAX_DOM_ANCESTOR_DEPTH;
+extern JsValue shouldCaptureDomEvent;
+extern bool shouldCaptureElement(JsValue el);
+extern JsValue shouldCaptureRageclick(JsValue el, JsValue config);
+extern bool shouldCaptureValue(JsValue value);
+extern JsValue splitClassString(JsValue s);
+extern string AUTOCAPTURE_DISABLED_SERVER_SIDE;
+extern string AutocaptureExtension;
+extern JsValue stripUrlHash(JsValue url);
+extern JsValue createLogger;
+extern JsValue document;
+extern JsValue window;
+extern JsValue convertToURL(JsValue url);
+extern bool isElementNode(JsValue el);
+extern bool isShadowRoot(JsValue el);
+extern bool isTag(JsValue el, string tag);
+extern bool isTextNode(JsValue el);
+extern JsValue Object;
+extern JsValue Math;
+extern JsValue Date;
+extern JsValue RegExp;
+extern JsValue MouseEvent;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+string COPY_AUTOCAPTURE_EVENT = "$copy_autocapture";
+string[] SENSITIVE_ELEMENT_SAFE_ATTRIBUTES = ["name", "id", "class", "aria-label"];
+
+JsValue logger = createLogger("[AutoCapture]");
+
+string limitText(int length, string text) {
+  if (text.length > length) {
+    return text.slice(0, length) + "...";
+  }
+  return text;
+}
+
+export JsValue getAugmentPropertiesFromElement(JsValue elem) {
+  if (!shouldCaptureElement(elem)) {
+    return object {};
+  }
+  JsValue props = object {};
+  each(elem.attributes, (JsValue attr) => {
+    if (attr.name.truthy() && attr.name.indexOf("data-ph-capture-attribute") === 0) {
+      JsValue propertyKey = attr.name.replace("data-ph-capture-attribute-", "");
+      JsValue propertyValue = attr.value;
+      if (propertyKey.truthy() && propertyValue.truthy() && shouldCaptureValue(propertyValue)) {
+        props[propertyKey] = propertyValue;
+      }
+    }
+  });
+  return props;
+}
+
+export JsValue previousElementSibling(JsValue el) {
+  if (el.previousElementSibling.truthy()) {
+    return el.previousElementSibling;
+  }
+  JsValue current = el;
+  while (true) {
+    current = current.previousSibling;
+    if (!current.truthy() || isElementNode(current)) {
+      break;
+    }
+  }
+  return current;
+}
+
+export JsValue getDefaultProperties(JsValue eventType) {
+  return object { $event_type: eventType, $ce_version: 1 };
+}
+
+export JsValue getPropertiesFromElement(JsValue elem, bool maskAllAttributes, bool maskText, JsValue elementAttributeIgnorelist, bool disableCaptureUrlHashes = false) {
+  string tag_name = elem.tagName.toLowerCase() as string;
+  JsValue props = object { tag_name: tag_name };
+  if (autocaptureCompatibleElements.indexOf(tag_name) > -1 && !maskText) {
+    if (tag_name == "a" || tag_name == "button") {
+      props.$el_text = limitText(1024, getDirectAndNestedSpanText(elem));
+    } else {
+      props.$el_text = limitText(1024, getSafeText(elem));
+    }
+  }
+
+  JsValue classes = getClassNames(elem);
+  if (!maskAllAttributes && !ignorelistIncludes(elementAttributeIgnorelist, "class") && classes["length"] > 0) {
+    props.classes = classes.filter((JsValue c) => c !== "");
+  }
+
+  each(elem.attributes, (JsValue attr) => {
+    // Only capture attributes we know are safe
+    if (isSensitiveElement(elem) && SENSITIVE_ELEMENT_SAFE_ATTRIBUTES.indexOf(attr.name as string) == -1) {
+      return;
+    }
+    if (ignorelistIncludes(elementAttributeIgnorelist, attr.name)) {
+      return;
+    }
+    if (!maskAllAttributes && shouldCaptureValue(attr.value) && !isAngularStyleAttr(attr.name)) {
+      JsValue value = attr.value;
+      if (attr.name === "class") {
+        // class strings are stripped of linebreaks
+        value = splitClassString(value).join(" ");
+      }
+      props["attr__" + attr.name] = limitText(1024, (if (attr.name === "href" && disableCaptureUrlHashes) { stripUrlHash(value) } else { value }) as string);
+    }
+  });
+
+  float nthChild = 1.0;
+  float nthOfType = 1.0;
+  JsValue currentElem = previousElementSibling(elem);
+  while (currentElem.truthy()) {
+    nthChild += 1.0;
+    if (currentElem.tagName === elem.tagName) {
+      nthOfType += 1.0;
+    }
+    currentElem = previousElementSibling(currentElem);
+  }
+  props.nth_child = nthChild;
+  props.nth_of_type = nthOfType;
+  return props;
+}
+
+// `list?.includes(name)` on a page-supplied ignore list
+bool ignorelistIncludes(JsValue list, JsValue name) {
+  return list != null && list.includes(name).truthy();
+}
+
+export JsValue autocapturePropertiesForElement(JsValue target, JsValue options) {
+  JsValue e = options.e;
+  JsValue maskAllElementAttributes = options.maskAllElementAttributes;
+  bool maskAllText = options.maskAllText.truthy();
+  JsValue elementAttributeIgnoreList = options.elementAttributeIgnoreList;
+  JsValue elementsChainAsString = options.elementsChainAsString;
+  JsValue disableCaptureUrlHashes = options.disableCaptureUrlHashes;
+  if (!isElementNode(target)) {
+    return object { props: object {} };
+  }
+
+  JsValue[] targetElementList = [target];
+  Set<JsValue> seen = new Set();
+  seen.add(target);
+  JsValue curEl = target;
+  // each read of `parentNode` is kept: a patched parentNode may answer differently per read
+  while (curEl.parentNode.truthy() && !isTag(curEl, "body")) {
+    // bail out of abnormally deep or cyclic ancestor chains
+    if (targetElementList.length >= MAX_DOM_ANCESTOR_DEPTH) {
+      break;
+    }
+    if (isShadowRoot(curEl.parentNode)) {
+      JsValue host = curEl.parentNode.host;
+      if (seen.has(host)) {
+        break;
+      }
+      seen.add(host);
+      targetElementList.push(host);
+      curEl = host;
+      continue;
+    }
+    if (!isElementNode(curEl.parentNode)) {
+      break;
+    }
+    if (seen.has(curEl.parentNode)) {
+      break;
+    }
+    seen.add(curEl.parentNode);
+    targetElementList.push(curEl.parentNode);
+    curEl = curEl.parentNode;
+  }
+
+  // Keep the original path for privacy and selector checks, but attribute icon clicks to their
+  // enclosing control rather than an SVG implementation detail.
+  int controlIndex = if (e.type === "click" && target.namespaceURI === "http://www.w3.org/2000/svg") {
+    targetElementList.findIndex((JsValue el) => isTag(el, "button") || isTag(el, "a"))
+  } else {
+    -1
+  };
+  if (controlIndex > 0) {
+    maskAllText = maskAllText || targetElementList.slice(0, controlIndex + 1).some((JsValue el) => !shouldCaptureElement(el) || isSensitiveElement(el));
+  }
+
+  JsValue[] elementsJson = [];
+  JsValue autocaptureAugmentProperties = object {};
+  JsValue href = false;
+  bool explicitNoCapture = false;
+
+  for (JsValue el of targetElementList) {
+    bool shouldCaptureEl = shouldCaptureElement(el);
+    // an anchor on the path contributes its href
+    if (isTag(el, "a") && !maskAllElementAttributes.truthy() && !ignorelistIncludes(elementAttributeIgnoreList, "href")) {
+      JsValue hrefAttr = el.getAttribute("href");
+      href = if (shouldCaptureEl && hrefAttr.truthy() && shouldCaptureValue(hrefAttr)) {
+        if (disableCaptureUrlHashes.truthy()) { stripUrlHash(hrefAttr) } else { hrefAttr }
+      } else {
+        false as JsValue
+      };
+    }
+    // the page can opt elements out with the class 'ph-no-capture'
+    if (includes(getClassNames(el), "ph-no-capture")) {
+      explicitNoCapture = true;
+    }
+    elementsJson.push(getPropertiesFromElement(el, maskAllElementAttributes as bool, maskAllText, elementAttributeIgnoreList, disableCaptureUrlHashes as bool));
+    // elements run from the target to its ancestors, so the closest value is kept
+    JsValue augmentProperties = getAugmentPropertiesFromElement(el);
+    for (string key in augmentProperties) {
+      if (hasOwnProperty.call(augmentProperties, key).truthy() && !hasOwnProperty.call(autocaptureAugmentProperties, key).truthy()) {
+        autocaptureAugmentProperties[key] = augmentProperties[key];
+      }
+    }
+  }
+
+  if (explicitNoCapture) {
+    return object { props: object {}, explicitNoCapture: explicitNoCapture };
+  }
+
+  if (controlIndex > 0) {
+    target = targetElementList[controlIndex];
+    elementsJson.splice(0, controlIndex);
+  }
+
+  if (!maskAllText) {
+    // a button or anchor takes the text of its nested spans too
+    if (isTag(target, "a") || isTag(target, "button")) {
+      elementsJson[0].$el_text = getDirectAndNestedSpanText(target);
+    } else {
+      elementsJson[0].$el_text = getSafeText(target);
+    }
+  }
+
+  JsValue externalHref = undefined;
+  if (href.truthy()) {
+    elementsJson[0].attr__href = href;
+    JsValue url = convertToURL(href);
+    JsValue hrefHost = if (url == null) { undefined } else { url.host };
+    JsValue location = if (window == null) { undefined } else { window.location };
+    JsValue locationHost = if (location == null) { undefined } else { location.host };
+    if (hrefHost.truthy() && locationHost.truthy() && hrefHost !== locationHost) {
+      externalHref = href;
+    }
+  }
+
+  JsValue first = elementsJson[0];
+  JsValue props = extend(
+    getDefaultProperties(e.type),
+    // Sending "$elements" is deprecated. Only one client on US cloud uses this.
+    if (!elementsChainAsString.truthy()) { object { $elements: elementsJson } } else { object {} },
+    // Always send $elements_chain, as it's needed downstream in site app filtering
+    object { $elements_chain: getElementsChainString(elementsJson) },
+    if (first != null && first.$el_text.truthy()) { object { $el_text: first.$el_text } } else { object {} },
+    if (externalHref.truthy() && e.type === "click") { object { $external_click_url: externalHref } } else { object {} },
+    autocaptureAugmentProperties
+  );
+  return object { props: props, target: target };
+}
+
+shape PointerDown {
+  data JsValue target;
+  data bool excluded;
+  data JsValue id;
+  data JsValue x;
+  data JsValue y;
+  data bool released;
+  data JsValue distinctId;
+}
+
+export class Autocapture {
+  JsValue _configSource;
+  string name = AutocaptureExtension;
+  bool _initialized = false;
+  JsValue _isDisabledServerSide = null;
+  bool _hasReceivedConfigResponse = false;
+  Map<JsValue, Set<string>> _elementSelectorsByOwner = new Map();
+  bool _elementsChainAsString = false;
+  JsValue _config = object {
+    enabled: false,
+    rageclick: false,
+    maskAllElementAttributes: false,
+    maskAllText: false,
+    disableCaptureUrlHashes: false,
+    remoteRequestsDisabled: false
+  };
+  bool _disposed = false;
+  JsValue rageclicks = undefined;
+  Set<string> | null _elementSelectors = null;
+  JsValue _client = undefined;
+  JsValue _remoteConfigSubscription = undefined;
+  JsValue _domEventHandler = undefined;
+  JsValue _copiedTextHandler = undefined;
+  JsValue _pointerDown = undefined;
+  JsValue _pointerExpiry = undefined;
+
+  init(JsValue _configSource) {
+    this._configSource = _configSource;
+    this._configSource.refresh(this._config);
+    this.rageclicks = new RageClick(this._config.rageclick) as JsValue;
+  }
+
+  void setup(JsValue client) {
+    compileUrlPatterns(this);
+    this._client = client;
+    JsValue subscription = client.onRemoteConfig((this as JsValue).onRemoteConfig.bind(this));
+    if (this._disposed) {
+      subscription.dispose();
+      return;
+    }
+    this._remoteConfigSubscription = subscription;
+    (this as JsValue).startIfEnabled();
+  }
+
+  void dispose() {
+    if (this._disposed) {
+      return;
+    }
+    this._disposed = true;
+    this._client = undefined;
+    JsValue subscription = this._remoteConfigSubscription;
+    if (subscription != null) {
+      subscription.dispose();
+    }
+    this._remoteConfigSubscription = undefined;
+    this._elementSelectorsByOwner.clear();
+    this._elementSelectors = null;
+    removeDomEventHandlers(this);
+  }
+
+  void startIfEnabled() {
+    JsValue self = this as JsValue;
+    if (!self.isEnabled.truthy()) {
+      clearPointer(this);
+    }
+    if (!this._disposed && this._client.truthy() && self.isEnabled.truthy() && !this._initialized) {
+      addDomEventHandlers(this);
+      this._initialized = true;
+    }
+  }
+
+  void onRemoteConfig(JsValue result) {
+    if (this._disposed) {
+      return;
+    }
+    this._hasReceivedConfigResponse = true;
+    if (!result.ok.truthy()) {
+      // Failed fetch = opt-out unknown: keep the last known persisted server value instead of
+      // defaulting to enabled. No persistence write.
+      (this as JsValue).startIfEnabled();
+      return;
+    }
+    JsValue response = result.config;
+    if (response.elementsChainAsString.truthy()) {
+      this._elementsChainAsString = response.elementsChainAsString as bool;
+    }
+    // A missing autocapture_opt_out carries no opt-out information.
+    JsValue optOut = response.autocapture_opt_out;
+    if (isBoolean(optOut)) {
+      JsValue client = this._client;
+      if (client != null) {
+        client.kv.set(AUTOCAPTURE_DISABLED_SERVER_SIDE, optOut);
+      }
+      // kept in memory in case persistence is disabled
+      this._isDisabledServerSide = optOut;
+    }
+    (this as JsValue).startIfEnabled();
+  }
+
+  void setElementSelectors(JsValue selectors, JsValue owner = undefined) {
+    if (this._disposed) {
+      return;
+    }
+    JsValue key = if (owner === undefined) { this as JsValue } else { owner };
+    if (selectors.size.truthy()) {
+      Set<string> copy = new Set();
+      selectors.forEach((JsValue selector) => {
+        copy.add(selector as string);
+      });
+      this._elementSelectorsByOwner.set(key, copy);
+    } else {
+      this._elementSelectorsByOwner.delete(key);
+    }
+    // Survey and product-tour actions can watch the same selector independently.
+    Set<string> combined = new Set();
+    for (JsValue contributor, Set<string> contribution of this._elementSelectorsByOwner) {
+      for (string selector of contribution) {
+        combined.add(selector);
+      }
+    }
+    this._elementSelectors = combined;
+  }
+
+  string[] getElementSelectors(JsValue element, JsValue additionalElement) {
+    string[] elementSelectors = [];
+    Set<string> | null selectors = this._elementSelectors;
+    if (selectors != null) {
+      for (string selector of selectors) {
+        JsValue matchedElements = if (document == null) { undefined } else { document.querySelectorAll(selector) };
+        if (matchedElements != null) {
+          matchedElements.forEach((JsValue matchedElement) => {
+            if ((element === matchedElement || additionalElement === matchedElement) && !elementSelectors.includes(selector)) {
+              elementSelectors.push(selector);
+            }
+          });
+        }
+      }
+    }
+    return elementSelectors;
+  }
+
+  bool isBrowserSupported() {
+    return isFunction(if (document == null) { undefined } else { document.querySelectorAll });
+  }
+}
+export constructor Autocapture;
+
+Object.defineProperty((Autocapture as JsValue).prototype, "isEnabled", object {
+  get: (this JsValue receiver) => isEnabled(receiver as Autocapture),
+  configurable: true
+});
+
+bool isEnabled(Autocapture self) {
+  if (self._disposed) {
+    return false;
+  }
+  JsValue client = self._client;
+  JsValue persistedServerDisabled = if (client == null) { undefined } else { client.kv.get(AUTOCAPTURE_DISABLED_SERVER_SIDE) };
+  JsValue memoryDisabled = self._isDisabledServerSide;
+
+  JsValue config = refreshConfig(self);
+  // Cached enablement may be stale: wait for the initial config outcome unless remote requests
+  // are disabled; failures still use the last known server value.
+  if (!config.remoteRequestsDisabled.truthy() && !self._hasReceivedConfigResponse) {
+    return false;
+  }
+  // The /flags-disabled bypass only applies while no config outcome has arrived.
+  bool clientConfigOnly = config.remoteRequestsDisabled.truthy() && !self._hasReceivedConfigResponse;
+  if (isNull(memoryDisabled) && !isBoolean(persistedServerDisabled) && !clientConfigOnly) {
+    // only enabled when the server is known not to have disabled it
+    return false;
+  }
+  JsValue memory = self._isDisabledServerSide;
+  bool disabledServer = if (memory == null) { persistedServerDisabled.truthy() } else { memory.truthy() };
+  bool disabledClient = !config.enabled.truthy();
+  return !disabledClient && !disabledServer;
+}
+
+void clearPointer(Autocapture self) {
+  self._pointerDown = undefined;
+  clearTimeout(self._pointerExpiry);
+  self._pointerExpiry = undefined;
+}
+
+JsValue refreshConfig(Autocapture self) {
+  self._configSource.refresh(self._config);
+  return self._config;
+}
+
+JsValue compileUrlPatterns(Autocapture self) {
+  refreshConfig(self);
+  JsValue config = self._config;
+  JsValue allowlist = config.url_allowlist;
+  config.url_allowlist = if (allowlist == null) { undefined } else { allowlist.map((JsValue url) => new RegExp(url)) };
+  JsValue ignorelist = config.url_ignorelist;
+  config.url_ignorelist = if (ignorelist == null) { undefined } else { ignorelist.map((JsValue url) => new RegExp(url)) };
+  return config;
+}
+
+JsValue ignorelistOf(Autocapture self) {
+  JsValue ignorelist = refreshConfig(self).css_selector_ignorelist;
+  return ignorelist ?? DEFAULT_AUTOCAPTURE_IGNORE_LIST;
+}
+
+bool matchesAnySelector(JsValue ignorelist, JsValue el) {
+  return ignorelist.some((JsValue selector) => elementMatchesCSSSelector(el, selector)).truthy();
+}
+
+bool isExcludedPointerTarget(Autocapture self, JsValue target) {
+  if (!shouldCaptureElement(target)) {
+    return true;
+  }
+  JsValue ignorelist = ignorelistOf(self);
+  Set<JsValue> seen = new Set();
+  JsValue el = target;
+  while (el.truthy()) {
+    if (seen.size >= MAX_DOM_ANCESTOR_DEPTH || seen.has(el)) {
+      return true;
+    }
+    seen.add(el);
+    JsValue current = el;
+    JsValue classes = getClassNames(current);
+    if (includes(classes, "ph-no-capture") || includes(classes, "ph-sensitive") || isSensitiveElement(current) || matchesAnySelector(ignorelist, current)) {
+      return true;
+    }
+    JsValue parent = el.parentNode;
+    el = if (isShadowRoot(parent)) { parent.host } else { if (parent.truthy() && isElementNode(parent)) { parent } else { null as JsValue } };
+  }
+  return false;
+}
+
+void trackPointer(Autocapture self, JsValue e) {
+  if (!(self as JsValue).isEnabled.truthy() || e.type === "pointercancel") {
+    clearPointer(self);
+    return;
+  }
+  if (e.type === "pointerdown") {
+    clearPointer(self);
+    JsValue target = getEventTarget(e);
+    if (e.isPrimary.truthy() && e.button === 0 && !e.ctrlKey.truthy() && target.truthy() && isElementNode(target)) {
+      bool excluded = isExcludedPointerTarget(self, target);
+      JsValue id = e.pointerId;
+      JsValue x = e.clientX;
+      JsValue y = e.clientY;
+      JsValue client = self._client;
+      self._pointerDown = PointerDown{
+        target: target,
+        excluded: excluded,
+        id: id,
+        x: x,
+        y: y,
+        released: false,
+        distinctId: if (client == null) { undefined } else { client.distinctId }
+      } as JsValue;
+    }
+    return;
+  }
+  if (!self._pointerDown.truthy()) {
+    return;
+  }
+  PointerDown down = self._pointerDown as PointerDown;
+  if (e.pointerId !== down.id || Math.abs(e.clientX - down.x) > 5 || Math.abs(e.clientY - down.y) > 5) {
+    clearPointer(self);
+  } else if (e.type === "pointerup") {
+    down.released = true;
+    // The matching click follows pointerup. Never retain an origin for a later gesture.
+    self._pointerExpiry = setTimeout(() => {
+      clearPointer(self);
+    }, 0);
+  }
+}
+
+JsValue recoverClickTarget(Autocapture self, JsValue e) {
+  JsValue pending = self._pointerDown;
+  clearPointer(self);
+  JsValue target = getEventTarget(e);
+  if (!pending.truthy()) {
+    return undefined;
+  }
+  PointerDown down = pending as PointerDown;
+  JsValue client = self._client;
+  if (
+    down.released &&
+    down.target.isConnected.truthy() &&
+    down.distinctId === (if (client == null) { undefined } else { client.distinctId }) &&
+    e.pointerId === down.id &&
+    (e.detail > 0 || e.pointerType === "touch" || e.pointerType === "pen") &&
+    e.button === 0 &&
+    Math.abs(e.clientX - down.x) <= 5 &&
+    Math.abs(e.clientY - down.y) <= 5 &&
+    target.truthy() &&
+    (isTag(target, "html") || isTag(target, "body"))
+  ) {
+    // DOM changes after pointerdown must not erase the origin's privacy exclusions.
+    if (down.excluded) {
+      return null;
+    }
+    // Recovery also respects opt-outs on the root the click actually hit, including html.
+    JsValue ignorelist = ignorelistOf(self);
+    JsValue[] roots = [
+      target,
+      if (document == null) { undefined } else { document.documentElement },
+      if (document == null) { undefined } else { document.body }
+    ];
+    bool excludedRoot = roots.some((JsValue root) => {
+      if (!root.truthy()) {
+        return false;
+      }
+      JsValue classes = getClassNames(root);
+      return includes(classes, "ph-no-capture") || includes(classes, "ph-sensitive") || !shouldCaptureElement(root) || isSensitiveElement(root) || matchesAnySelector(ignorelist, root);
+    });
+    if (excludedRoot) {
+      return null;
+    }
+    return down.target;
+  }
+  return undefined;
+}
+
+void addDomEventHandlers(Autocapture self) {
+  if (!(self as JsValue).isBrowserSupported().truthy()) {
+    logger.info("Disabling Automatic Event Collection because this browser is not supported");
+    return;
+  }
+  if (!window.truthy() || !document.truthy()) {
+    return;
+  }
+
+  JsValue handler = (JsValue event) => {
+    JsValue e = event || (if (window == null) { undefined } else { window.event });
+    try {
+      if (e.type === "blur") {
+        clearPointer(self);
+        return;
+      }
+      if (e.type.indexOf("pointer") === 0) {
+        trackPointer(self, e);
+        return;
+      }
+      JsValue target = if (e.type === "click") { recoverClickTarget(self, e) } else { undefined };
+      if (isNull(target)) {
+        return;
+      }
+      captureEvent(self, e, "$autocapture", target);
+    } catch (JsValue error) {
+      logger.error("Failed to capture event", error);
+    }
+  };
+  self._domEventHandler = handler;
+
+  addEventListener(window, "blur", handler);
+  addEventListener(document, "submit", handler, object { capture: true });
+  addEventListener(document, "change", handler, object { capture: true });
+  addEventListener(document, "click", handler, object { capture: true });
+  addEventListener(document, "pointerdown", handler, object { capture: true });
+  addEventListener(document, "pointermove", handler, object { capture: true });
+  addEventListener(document, "pointerup", handler, object { capture: true });
+  addEventListener(document, "pointercancel", handler, object { capture: true });
+
+  if (refreshConfig(self).capture_copied_text.truthy()) {
+    JsValue copiedTextHandler = (JsValue event) => {
+      JsValue e = event || (if (window == null) { undefined } else { window.event });
+      try {
+        captureEvent(self, e, COPY_AUTOCAPTURE_EVENT, undefined);
+      } catch (JsValue error) {
+        logger.error("Failed to capture clipboard event", error);
+      }
+    };
+    self._copiedTextHandler = copiedTextHandler;
+    addEventListener(document, "copy", copiedTextHandler, object { capture: true });
+    addEventListener(document, "cut", copiedTextHandler, object { capture: true });
+    addEventListener(document, "paste", copiedTextHandler, object { capture: true });
+  }
+}
+
+void removeDomEventHandlers(Autocapture self) {
+  clearPointer(self);
+  if (self._domEventHandler.truthy()) {
+    if (window != null) {
+      window.removeEventListener("blur", self._domEventHandler);
+    }
+    if (document != null) {
+      document.removeEventListener("pointerdown", self._domEventHandler, true);
+      document.removeEventListener("pointermove", self._domEventHandler, true);
+      document.removeEventListener("pointerup", self._domEventHandler, true);
+      document.removeEventListener("pointercancel", self._domEventHandler, true);
+      document.removeEventListener("submit", self._domEventHandler, true);
+      document.removeEventListener("change", self._domEventHandler, true);
+      document.removeEventListener("click", self._domEventHandler, true);
+    }
+    self._domEventHandler = undefined;
+  }
+  if (self._copiedTextHandler.truthy()) {
+    if (document != null) {
+      document.removeEventListener("copy", self._copiedTextHandler, true);
+      document.removeEventListener("cut", self._copiedTextHandler, true);
+      document.removeEventListener("paste", self._copiedTextHandler, true);
+    }
+    self._copiedTextHandler = undefined;
+  }
+  self._initialized = false;
+}
+
+void captureEvent(Autocapture self, JsValue e, string eventName, JsValue targetOverride) {
+  if (!(self as JsValue).isEnabled.truthy()) {
+    clearPointer(self);
+    return;
+  }
+
+  JsValue target = targetOverride || getEventTarget(e);
+  if (isTextNode(target)) {
+    // defeat Safari bug (see: http://www.quirksmode.org/js/events_properties.html)
+    target = target.parentNode || null;
+  }
+
+  JsValue config = compileUrlPatterns(self);
+  if (eventName == "$autocapture" && e.type === "click" && e instanceof MouseEvent) {
+    if (config.rageclick.truthy()) {
+      JsValue rageclicks = self.rageclicks;
+      if (rageclicks != null && rageclicks.isRageClick(e.clientX, e.clientY, e.timeStamp || new Date().getTime()).truthy() && shouldCaptureRageclick(target, config.rageclick).truthy()) {
+        captureEvent(self, e, "$rageclick", targetOverride);
+      }
+    }
+  }
+
+  bool isClipboardAutocapture = eventName == COPY_AUTOCAPTURE_EVENT;
+  JsValue eventConfig = if (isClipboardAutocapture) { Object.assign(object {}, config, object { dom_event_allowlist: undefined }) } else { config };
+  if (
+    target.truthy() &&
+    shouldCaptureDomEvent(
+      target,
+      e,
+      eventConfig,
+      // for clipboard events the target element's type does not matter
+      isClipboardAutocapture,
+      // and clipboard checks are not restricted to clicks
+      if (isClipboardAutocapture) { ["copy", "cut", "paste"] as JsValue } else { undefined },
+      object { config: object { get_current_url: config.getCurrentUrl } }
+    ).truthy()
+  ) {
+    JsValue result = autocapturePropertiesForElement(target, object {
+      e: e,
+      maskAllElementAttributes: config.maskAllElementAttributes,
+      maskAllText: config.maskAllText,
+      elementAttributeIgnoreList: config.element_attribute_ignorelist,
+      elementsChainAsString: self._elementsChainAsString,
+      disableCaptureUrlHashes: config.disableCaptureUrlHashes
+    });
+    JsValue props = result.props;
+    if (result.explicitNoCapture.truthy()) {
+      return;
+    }
+
+    JsValue elementSelectors = (self as JsValue).getElementSelectors(target, result.target);
+    if (elementSelectors.truthy() && elementSelectors["length"] > 0) {
+      props.$element_selectors = elementSelectors;
+    }
+
+    if (eventName == COPY_AUTOCAPTURE_EVENT) {
+      JsValue clipType = e.type || "clipboard";
+      // paste content is not captured: the page usually emits an input change with the value
+      if (clipType !== "paste") {
+        JsValue selection = if (window == null) { undefined } else { window.getSelection() };
+        JsValue selectedText = if (selection == null) { undefined } else { selection.toString() };
+        JsValue selectedContent = makeSafeText(selectedText);
+        if (!selectedContent.truthy()) {
+          return;
+        }
+        props.$selected_content = selectedContent;
+        JsValue length = if (selectedText == null) { undefined } else { selectedText["length"] };
+        props.$clipboard_text_length = length ?? 0;
+      }
+      props.$copy_type = clipType;
+    }
+
+    JsValue client = self._client;
+    if (client != null) {
+      client.capture(eventName, props);
+    }
+  }
+}

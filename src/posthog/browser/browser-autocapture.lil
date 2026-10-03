@@ -1,0 +1,42 @@
+// packages/browser/src/browser-autocapture.ts
+// Browser-v1 compatibility wrapper for the SDK-neutral autocapture extension. The config source
+// is private to the module (upstream's class is not exported); it is an object with upstream's
+// `_instance` (a reserved, unmangled name) and `refresh`, which the extension calls dynamically.
+import { isObject } from "../core/utils/type-utils.lil";
+import { Autocapture } from "./autocapture.lil";
+
+JsValue browserConfigSource(JsValue instance) {
+  return object {
+    _instance: instance,
+    refresh: (JsValue target) => {
+      JsValue config = instance.config;
+      JsValue autocapture = if (isObject(config.autocapture)) { config.autocapture } else { undefined };
+      target.enabled = config.autocapture.truthy();
+      target.rageclick = config.rageclick;
+      target.maskAllElementAttributes = config.mask_all_element_attributes;
+      target.maskAllText = config.mask_all_text;
+      target.disableCaptureUrlHashes = config.disable_capture_url_hashes;
+      target.getCurrentUrl = config.get_current_url;
+      target.remoteRequestsDisabled = instance._shouldDisableFlags();
+      bool present = autocapture != null;
+      target.url_allowlist = if (present) { autocapture.url_allowlist } else { undefined };
+      target.url_ignorelist = if (present) { autocapture.url_ignorelist } else { undefined };
+      target.dom_event_allowlist = if (present) { autocapture.dom_event_allowlist } else { undefined };
+      target.element_allowlist = if (present) { autocapture.element_allowlist } else { undefined };
+      target.css_selector_allowlist = if (present) { autocapture.css_selector_allowlist } else { undefined };
+      target.css_selector_ignorelist = if (present) { autocapture.css_selector_ignorelist } else { undefined };
+      target.element_attribute_ignorelist = if (present) { autocapture.element_attribute_ignorelist } else { undefined };
+      target.capture_copied_text = if (present) { autocapture.capture_copied_text } else { undefined };
+    }
+  };
+}
+
+export class BrowserAutocapture extends Autocapture {
+  JsValue instance;
+
+  init(JsValue instance) {
+    super(browserConfigSource(instance));
+    this.instance = instance;
+  }
+}
+export constructor BrowserAutocapture;
