@@ -35,3 +35,24 @@ Level 13, Brotli, mangling on, prints
 
 F2 (before the declaration-default workaround):
 `constructor(a){this.serverLimits=null;this.lastEventRateLimited=!1;…;this.serverLimits={};…}`.
+
+## F4 value and implementation sketch
+
+Value on upstream's own code (standard entry, Terser with upstream's rollup settings):
+no property mangling 354,178 / 104,786 / 87,983; with `/^_(?!_)/` minus the reserved list
+308,256 / 99,579 / 84,192 (raw / gzip-9 / Brotli-11): **−13% raw, −5.0% gzip, −4.3% Brotli**.
+npm's `module.js` is 322,470 / 101,141 / 85,211.
+
+The compiler already renames fields of proved-private classes (`src/program/private_fields.rs`,
+applied in `class_field_key`, `src/program/javascript.rs`), but blocks every class that is
+published, reflected, external or prototype-observable. The port's SDK objects are all
+published, and other modules read their `_` fields through `JsValue`, so per-class slots are
+the wrong shape. What upstream relies on is a **name contract**: every static occurrence of a
+property name that matches the pattern (member accesses on any type, object-literal keys, class
+fields and methods) is renamed through one program-wide map; dynamic computed keys are not.
+
+Sketch: `[mangle] private_properties = "^_(?!_)"` (reserved names from `preserve_properties`).
+After formation, collect the matching names with their static occurrence counts, give the most
+frequent the shortest spellings that collide with no other property name of the program or the
+host catalogs, and rewrite `js::Expr::Member` property literals, object-literal keys and class
+member keys through the map before scoring, so the codec judgment sees the renamed text.

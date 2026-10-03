@@ -1,0 +1,21 @@
+# Release build of one published entry for the gzip objective (whole program, one file).
+[policy]
+version = 3
+[language]
+absence = "unified"
+field_initialization = "explicit"
+char_code_at = "number"
+[javascript]
+priority = "size-first"
+# upstream's npm output is ES2015-level syntax (no ?. or ??) for its browserslist
+ecmascript = "es2019"
+assume_pristine_builtins = false
+strip_debug = false
+[effort]
+level = 13
+[objective]
+codecs = "gzip"
+[mangle]
+identifiers = true
+properties = true
+pool_strings = true
