@@ -1,0 +1,126 @@
+import extern { convertToURL } from "../../vendor/posthog-js/packages/browser-common/src/utils/request-utils.ts";
+extern JsValue convertToURL;
+extern JsValue RegExp;
+extern JsValue URL;
+extern JsValue Set;
+extern JsValue Object;
+
+export JsValue RequestRouterRegion = object { US: "us", EU: "eu", CUSTOM: "custom" };
+JsValue staticAssetPath = JS.construct(RegExp, "^/static/");
+JsValue ingestionPaths = JS.array("/s/", "/e/", "/i/");
+
+JsValue apiHost(JsValue self) {
+  JsValue host = self.instance.config.api_host.trim().replace(JS.construct(RegExp, "/$"), "");
+  if (host === "https://app.posthog.com") return "https://us.i.posthog.com";
+  return host;
+}
+
+JsValue flagsApiHost(JsValue self) {
+  JsValue customHost = self.instance.config.flags_api_host;
+  if (customHost.truthy()) return customHost.trim().replace(JS.construct(RegExp, "/$"), "");
+  return self.apiHost;
+}
+
+JsValue uiHost(JsValue self) {
+  JsValue host = self.instance.config.ui_host;
+  if (!JS.isNullish(host)) host = host.replace(JS.construct(RegExp, "/$"), "");
+  else host = JS.undefined();
+  if (!host.truthy()) host = self.apiHost.replace(".i.posthog.com", ".posthog.com");
+  if (host === "https://app.posthog.com") return "https://us.posthog.com";
+  return host;
+}
+
+JsValue region(JsValue self) {
+  if (!self._regionCache[self.apiHost].truthy()) {
+    if (JS.construct(RegExp, "https://(app|us|us-assets)(\\.i)?\\.posthog\\.com", "i").test(self.apiHost).truthy()) {
+      self._regionCache[self.apiHost] = RequestRouterRegion.US;
+    } else if (JS.construct(RegExp, "https://(eu|eu-assets)(\\.i)?\\.posthog\\.com", "i").test(self.apiHost).truthy()) {
+      self._regionCache[self.apiHost] = RequestRouterRegion.EU;
+    } else {
+      self._regionCache[self.apiHost] = RequestRouterRegion.CUSTOM;
+    }
+  }
+  return self._regionCache[self.apiHost];
+}
+
+export class RequestRouter {
+  JsValue __lil_get_apiHost() { return apiHost(this as JsValue); }
+  JsValue __lil_get_flagsApiHost() { return flagsApiHost(this as JsValue); }
+  JsValue __lil_get_uiHost() { return uiHost(this as JsValue); }
+  JsValue __lil_get_region() { return region(this as JsValue); }
+
+  init(JsValue instance) {
+    JsValue self = this as JsValue;
+    self.instance = JS.undefined();
+    self._regionCache = JS.object();
+    self._ingestionEndpoints = JS.undefined();
+    self.instance = instance;
+  }
+
+  JsValue _staticAssetHostOverride(JsValue path) {
+    JsValue self = this as JsValue;
+    if (!staticAssetPath.test(path).truthy()) return JS.undefined();
+    JsValue override = self.instance.config.asset_host;
+    if (JS.typeOf(override) != "string") return JS.undefined();
+    JsValue normalized = override.trim().replace(JS.construct(RegExp, "/$"), "");
+    return normalized || JS.undefined();
+  }
+
+  JsValue _urlKey(JsValue url) {
+    JsValue parsed = convertToURL(url);
+    if (parsed.truthy()) return parsed.protocol + "//" + parsed.host + parsed.pathname;
+    return JS.undefined();
+  }
+
+  JsValue _prepareEndpoint(JsValue target, JsValue path, JsValue url) {
+    JsValue self = this as JsValue;
+    if (target === "ui") return url;
+    JsValue rewrittenUrl = url;
+    JsValue rewriteRequestPath = self.instance.config.rewriteRequestPath;
+    if (rewriteRequestPath.truthy()) {
+      JsValue parsed = convertToURL(url);
+      JsValue href = if (JS.isNullish(parsed)) { JS.undefined() } else { parsed.href };
+      JsValue resolved = href || url;
+      rewrittenUrl = rewriteRequestPath(JS.construct(URL, resolved)).toString();
+    }
+    if (rewriteRequestPath.truthy() && target === "api" && ingestionPaths.some((JsValue ingestionPath) => path.indexOf(ingestionPath) === 0.0).truthy()) {
+      JsValue key = self._urlKey(rewrittenUrl);
+      if (key.truthy()) {
+        JsValue host = self.apiHost;
+        JsValue endpoints = self._ingestionEndpoints;
+        JsValue endpointHost = if (JS.isNullish(endpoints)) { JS.undefined() } else { endpoints.apiHost };
+        if (endpointHost !== host || endpoints.rewriteRequestPath !== rewriteRequestPath) {
+          endpoints = object { apiHost: host, rewriteRequestPath: rewriteRequestPath, urls: JS.construct(Set) };
+          self._ingestionEndpoints = endpoints;
+        }
+        endpoints.urls.add(key);
+      }
+    }
+    return rewrittenUrl;
+  }
+
+  JsValue isIngestionEndpoint(JsValue url) {
+    JsValue self = this as JsValue;
+    JsValue endpoints = self._ingestionEndpoints;
+    JsValue key = self._urlKey(url);
+    JsValue endpointHost = if (JS.isNullish(endpoints)) { JS.undefined() } else { endpoints.apiHost };
+    return endpointHost === self.apiHost && endpoints.rewriteRequestPath === self.instance.config.rewriteRequestPath && key.truthy() && endpoints.urls.has(key).truthy();
+  }
+
+  JsValue endpointFor(JsValue target, JsValue path = "") {
+    JsValue self = this as JsValue;
+    if (path.truthy()) path = if (path[0] === "/") { path } else { `/${path}` };
+    if (target === "ui") return self._prepareEndpoint(target, path, self.uiHost + path);
+    if (target === "flags") return self._prepareEndpoint(target, path, self.flagsApiHost + path);
+    if (target === "assets") {
+      JsValue hostOverride = self._staticAssetHostOverride(path);
+      if (hostOverride.truthy()) return self._prepareEndpoint(target, path, `${hostOverride}${path}`);
+    }
+    if (self.region === RequestRouterRegion.CUSTOM) return self._prepareEndpoint(target, path, self.apiHost + path);
+    JsValue suffix = "i.posthog.com" + path;
+    if (target === "assets") return self._prepareEndpoint(target, path, `https://${self.region}-assets.${suffix}`);
+    if (target === "api") return self._prepareEndpoint(target, path, `https://${self.region}.${suffix}`);
+    return JS.undefined();
+  }
+}
+export constructor RequestRouter;

@@ -1,0 +1,15 @@
+{
+  "source": "packages/core/src/utils/logger.ts",
+  "implementation": "src/sdk/core-logger.lil",
+  "exports": [
+    "_createLogger",
+    "createLogger"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [],
+  "primitiveTypes": [],
+  "asyncClosures": [],
+  "qualified": false
+}

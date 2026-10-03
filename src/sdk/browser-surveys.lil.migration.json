@@ -1,0 +1,37 @@
+{
+  "source": "packages/browser/src/browser-surveys.ts",
+  "implementation": "src/sdk/browser-surveys.lil",
+  "exports": [
+    "BrowserSurveys"
+  ],
+  "classMembers": [],
+  "classBases": [
+    {
+      "class": "BrowserSurveys",
+      "base": "PostHogSurveys",
+      "imported": "PostHogSurveys"
+    }
+  ],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_0",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "localFunctions": [
+    {
+      "name": "createInitialSurveysClientState",
+      "arity": 1,
+      "calls": 1
+    }
+  ],
+  "asyncClosures": [],
+  "qualified": false
+}

@@ -1,0 +1,49 @@
+// Whole-module migration from packages/core/src/utils/logger.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+extern JsValue console;
+
+
+JsValue _createLogger = (JsValue prefix, JsValue maybeCall, JsValue consoleLike) => __port_0(prefix, maybeCall, consoleLike);
+
+JsValue passThrough = (JsValue fn) => __port_1(fn);
+
+
+
+JsValue createConsole(JsValue consoleLike = console) {
+JsValue lockedMethods = object { "log": ((consoleLike as JsValue)["log"] as JsValue)["bind"](consoleLike), "warn": ((consoleLike as JsValue)["warn"] as JsValue)["bind"](consoleLike), "error": ((consoleLike as JsValue)["error"] as JsValue)["bind"](consoleLike), "debug": ((consoleLike as JsValue)["debug"] as JsValue)["bind"](consoleLike) };
+return (lockedMethods as JsValue);
+return JS.undefined();}
+
+JsValue __port_0(JsValue prefix, JsValue maybeCall, JsValue consoleLike) {
+JsValue _log = (this JsValue __port_2, JsValue level, JsValue... args) => { 
+((maybeCall as JsValue)(() => { 
+JsValue consoleMethod = (consoleLike as JsValue)[level];
+((consoleMethod as JsValue)(prefix, ...args));
+return JS.undefined(); }));
+return JS.undefined(); };
+JsValue logger = object { "debug": (JsValue... args) => { 
+((_log as JsValue)("debug", ...args));
+return JS.undefined(); }, "info": (JsValue... args) => { 
+((_log as JsValue)("log", ...args));
+return JS.undefined(); }, "warn": (JsValue... args) => { 
+((_log as JsValue)("warn", ...args));
+return JS.undefined(); }, "error": (JsValue... args) => { 
+((_log as JsValue)("error", ...args));
+return JS.undefined(); }, "critical": (JsValue... args) => { 
+((consoleLike as JsValue)["error"](prefix, ...args));
+return JS.undefined(); }, "createLogger": (JsValue additionalPrefix) => { 
+return ((_createLogger as JsValue)(`${prefix} ${additionalPrefix}`, maybeCall, consoleLike) as JsValue);
+return JS.undefined(); } };
+return (logger as JsValue);
+return JS.undefined();}
+
+JsValue __port_1(JsValue fn) {
+return ((fn as JsValue)() as JsValue);
+return JS.undefined();}
+
+JsValue createLogger(JsValue prefix, JsValue maybeCall = passThrough) {
+return ((_createLogger as JsValue)(prefix, maybeCall, (createConsole as JsValue)()) as JsValue);
+return JS.undefined();}
+export { _createLogger as _createLogger };
+export { createLogger as createLogger };

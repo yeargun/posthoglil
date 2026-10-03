@@ -4,7 +4,8 @@ import {readFileSync,writeFileSync,mkdirSync} from 'node:fs'
 import {join,resolve} from 'node:path'
 import {chromium} from '@playwright/test'
 import {root} from '../scripts/sdk-source.mjs'
-mkdirSync(join(root,'reports/full-sdk'),{recursive:true})
+const reportDirectory=resolve(root,process.env.POSTHOGLIL_SDK_REPORT_DIR??'reports/full-sdk')
+mkdirSync(reportDirectory,{recursive:true})
 const attempts=[]
 let failNext=true
 const server=createServer(async(req,res)=>{
@@ -24,7 +25,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const origin=`http://127.0.0.1:${server.address().port}`
 const browser=await chromium.launch({args:['--no-sandbox']})
 const report=[]
-const sdk=JSON.parse(readFileSync(join(root,'artifacts/sdk/results.json'),'utf8'))
+const sdk=JSON.parse(readFileSync(resolve(root,process.env.POSTHOGLIL_SDK_RESULTS??'artifacts/sdk/results.json'),'utf8'))
 try{
   for(const surface of sdk.surfaces){
     const row=surface.objectives.find(x=>x.objective==='brotli')
@@ -59,5 +60,5 @@ try{
   }
 }finally{
   await browser.close();await new Promise(resolve=>server.close(resolve))
-  writeFileSync(join(root,'reports/full-sdk/transport.json'),JSON.stringify(report,null,2)+'\n')
+  writeFileSync(join(reportDirectory,'transport.json'),JSON.stringify(report,null,2)+'\n')
 }

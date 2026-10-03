@@ -1,0 +1,20 @@
+import extern { AbortController, CompressionStream, document, fetch, isBrowserOnline, location, navigator, userAgent, window, XMLHttpRequest } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+extern JsValue AbortController;
+extern JsValue CompressionStream;
+extern JsValue document;
+extern JsValue fetch;
+extern JsValue isBrowserOnline;
+extern JsValue location;
+extern JsValue navigator;
+extern JsValue userAgent;
+extern JsValue window;
+extern JsValue XMLHttpRequest;
+extern JsValue globalThis;
+extern JsValue self;
+extern JsValue File;
+
+JsValue globalObject = if (JS.typeOf(globalThis) !== "undefined") { globalThis } else { window };
+if (globalObject.truthy() && JS.typeOf(self) === "undefined") globalObject.self = globalObject;
+if (globalObject.truthy() && JS.typeOf(File) === "undefined") globalObject.File = (this JsValue receiver) => JS.undefined();
+export JsValue assignableWindow = if (JS.isNullish(window)) { JS.object() } else { window };
+export { AbortController, CompressionStream, document, fetch, isBrowserOnline, location, navigator, userAgent, window, XMLHttpRequest };

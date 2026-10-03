@@ -8,9 +8,9 @@ import {chromium} from '@playwright/test'
 import {root} from '../scripts/sdk-source.mjs'
 mkdirSync(join(root,'reports/full-sdk'),{recursive:true})
 
-const results=JSON.parse(readFileSync(join(root,'artifacts/sdk/results.json'),'utf8'))
+const results=JSON.parse(readFileSync(join(root,process.env.POSTHOGLIL_SDK_RESULTS??'artifacts/sdk/results.json'),'utf8'))
 const consumers=process.env.POSTHOGLIL_CONSUMER_RESULTS?JSON.parse(readFileSync(join(root,process.env.POSTHOGLIL_CONSUMER_RESULTS),'utf8')):null
-const jobs=consumers?consumers.rows.filter(row=>['standard','full'].includes(row.fixture)).map(row=>({surface:row.fixture,objective:row.bundler,baseline:row.original.files.find(file=>file.entry),artifact:row.candidate.files.find(file=>file.entry)})):results.surfaces.flatMap(surface=>surface.objectives.map(row=>({surface:surface.id,...row})))
+const jobs=(consumers?consumers.rows.filter(row=>['standard','full'].includes(row.fixture)).map(row=>({surface:row.fixture,objective:row.bundler,baseline:row.original.files.find(file=>file.entry),artifact:row.candidate.files.find(file=>file.entry)})):results.surfaces.flatMap(surface=>surface.objectives.map(row=>({surface:surface.id,...row})))).filter(row=>!process.env.POSTHOGLIL_BENCH_OBJECTIVE||row.objective===process.env.POSTHOGLIL_BENCH_OBJECTIVE)
 const outputFile=join(root,process.env.POSTHOGLIL_PERFORMANCE_OUTPUT??(consumers?'artifacts/sdk-consumers/performance.json':'artifacts/sdk/performance.json'))
 for(const job of jobs)for(const artifact of [job.baseline,job.artifact])assert.equal(createHash('sha256').update(readFileSync(join(root,artifact.file))).digest('hex'),artifact.sha256,'Runtime input must match its size receipt')
 const samples=Number(process.env.POSTHOGLIL_BENCH_SAMPLES??15)

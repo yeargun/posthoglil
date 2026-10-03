@@ -1,0 +1,1111 @@
+// Whole-module migration from packages/browser/src/posthog-featureflags.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { addEventListener as addEventListener, eachArray as eachArray, entries as entries, extend as extend } from "@posthog/browser-common/utils/general-utils";
+import extern { MutableFeatureFlagsConfigSource as MutableFeatureFlagsConfigSource } from "../../vendor/posthog-js/packages/browser/src/feature-flags-config.ts";
+import extern { FeatureFlagsExtension as FeatureFlagsExtension } from "../../vendor/posthog-js/packages/browser/src/extension-tokens.ts";
+import extern { PERSISTENCE_EARLY_ACCESS_FEATURES as PERSISTENCE_EARLY_ACCESS_FEATURES, PERSISTENCE_ACTIVE_FEATURE_FLAGS as PERSISTENCE_ACTIVE_FEATURE_FLAGS, PERSISTENCE_FEATURE_FLAG_DETAILS as PERSISTENCE_FEATURE_FLAG_DETAILS, PERSISTENCE_FEATURE_FLAG_ERRORS as PERSISTENCE_FEATURE_FLAG_ERRORS, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT as PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, PERSISTENCE_FEATURE_FLAG_REQUEST_ID as PERSISTENCE_FEATURE_FLAG_REQUEST_ID, PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS as PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS, ENABLED_FEATURE_FLAGS as ENABLED_FEATURE_FLAGS, STORED_GROUP_PROPERTIES_KEY as STORED_GROUP_PROPERTIES_KEY, STORED_PERSON_PROPERTIES_KEY as STORED_PERSON_PROPERTIES_KEY, FLAG_CALL_REPORTED as FLAG_CALL_REPORTED, FLAG_CALL_REPORTED_SESSION_ID as FLAG_CALL_REPORTED_SESSION_ID, PERSISTENCE_FEATURE_FLAG_PAYLOADS as PERSISTENCE_FEATURE_FLAG_PAYLOADS, PERSISTENCE_OVERRIDE_FEATURE_FLAGS as PERSISTENCE_OVERRIDE_FEATURE_FLAGS, PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS as PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS, DOM_EVENT_VISIBILITYCHANGE as DOM_EVENT_VISIBILITYCHANGE } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { isUndefined as isUndefined, isArray as isArray, getEnabledFromValue as getEnabledFromValue, getVariantFromValue as getVariantFromValue, parsePayload as parsePayload } from "@posthog/core";
+import extern { createLogger as createLogger } from "@posthog/browser-common/utils/logger";
+import extern { getTimezone as getTimezone } from "@posthog/browser-common/utils/event-utils";
+import extern { document as document, window as window } from "@posthog/browser-common/utils/globals";
+import extern { continueWith as continueWith } from "@posthog/browser-common/utils/promise-utils";
+import extern { isStatusZeroFailureCircuitBreakerTripped as isStatusZeroFailureCircuitBreakerTripped, updateStatusZeroFailureCount as updateStatusZeroFailureCount } from "@posthog/browser-common/utils/request-utils";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue clearInterval;
+extern JsValue setInterval;
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue Set;
+extern JsValue __lil_object_22;
+extern JsValue __lil_object_23;
+extern JsValue __lil_object_28;
+extern JsValue __lil_object_29;
+extern JsValue __lil_object_39;
+extern JsValue __lil_object_40;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+extern JsValue __lil_object_41;
+extern JsValue Error;
+extern JsValue __lil_object_42;
+extern JsValue __lil_object_43;
+extern JsValue String;
+extern JsValue __lil_object_45;
+extern JsValue __lil_object_44;
+extern JsValue __lil_object_48;
+extern JsValue __lil_object_49;
+extern JsValue __lil_object_50;
+extern JsValue Boolean;
+extern JsValue __lil_object_51;
+extern JsValue __lil_object_53;
+extern JsValue __lil_object_54;
+extern JsValue __lil_object_55;
+extern JsValue __lil_object_57;
+extern JsValue __lil_object_56;
+extern JsValue __lil_object_58;
+extern JsValue __lil_object_61;
+extern JsValue __lil_object_60;
+extern JsValue __lil_object_62;
+extern JsValue __lil_object_63;
+extern JsValue __lil_object_64;
+extern JsValue __lil_object_65;
+extern JsValue __lil_object_66;
+extern JsValue __lil_object_68;
+extern JsValue __lil_object_67;
+extern JsValue __lil_object_75;
+extern JsValue __lil_object_76;
+extern JsValue __lil_object_77;
+extern JsValue __lil_object_78;
+extern JsValue __lil_object_79;
+extern JsValue __lil_object_88;
+extern JsValue __lil_object_89;
+extern JsValue __lil_object_94;
+extern JsValue __lil_object_95;
+extern JsValue __lil_object_96;
+extern JsValue __lil_object_98;
+extern JsValue __lil_object_99;
+extern JsValue __lil_object_97;
+extern JsValue __lil_object_100;
+extern JsValue addEventListener;
+extern JsValue eachArray;
+extern JsValue entries;
+extern JsValue extend;
+
+extern JsValue MutableFeatureFlagsConfigSource;
+
+extern JsValue FeatureFlagsExtension;
+
+extern JsValue PERSISTENCE_EARLY_ACCESS_FEATURES;
+extern JsValue PERSISTENCE_ACTIVE_FEATURE_FLAGS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_DETAILS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_ERRORS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_EVALUATED_AT;
+extern JsValue PERSISTENCE_FEATURE_FLAG_REQUEST_ID;
+extern JsValue PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS;
+extern JsValue ENABLED_FEATURE_FLAGS;
+extern JsValue STORED_GROUP_PROPERTIES_KEY;
+extern JsValue STORED_PERSON_PROPERTIES_KEY;
+extern JsValue FLAG_CALL_REPORTED;
+extern JsValue FLAG_CALL_REPORTED_SESSION_ID;
+extern JsValue PERSISTENCE_FEATURE_FLAG_PAYLOADS;
+extern JsValue PERSISTENCE_OVERRIDE_FEATURE_FLAGS;
+extern JsValue PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS;
+extern JsValue DOM_EVENT_VISIBILITYCHANGE;
+
+extern JsValue isUndefined;
+extern JsValue isArray;
+extern JsValue getEnabledFromValue;
+extern JsValue getVariantFromValue;
+extern JsValue parsePayload;
+
+extern JsValue createLogger;
+
+extern JsValue getTimezone;
+
+extern JsValue document;
+extern JsValue window;
+
+extern JsValue continueWith;
+
+extern JsValue isStatusZeroFailureCircuitBreakerTripped;
+extern JsValue updateStatusZeroFailureCount;
+
+JsValue logger = (createLogger as JsValue)("[FeatureFlags]");
+
+JsValue forceDebugLogger = (createLogger as JsValue)("[FeatureFlags]", object { "debugEnabled": true });
+
+JsValue FLAG_TIMEOUT_MSG = "\" failed. Feature flags didn't load in time.";
+
+JsValue MAX_CONSECUTIVE_FLAGS_STATUS_ZERO_FAILURES = 3.0;
+
+JsValue RETRYABLE_FLAGS_HTTP_STATUSES = JS.array(502.0, 504.0);
+
+JsValue FLAGS_RETRY_DELAY_MS = 500.0;
+
+func(JsValue)->JsValue isFlagsTimeout = (JsValue response) => __port_0(response);
+
+func(JsValue)->JsValue isRetryableFlagsResponse = (JsValue response) => __port_1(response);
+
+JsValue MAX_IDLE_REFRESH_INTERVAL_MS = ((((60.0 as JsValue) * (60.0 as JsValue)) as JsValue) * (1000.0 as JsValue));
+
+JsValue USER_INTERACTION_EVENTS = JS.array("click", "keydown", "wheel", "touchstart", "pointerdown");
+
+JsValue FeatureFlagError = object { "ERRORS_WHILE_COMPUTING": "errors_while_computing_flags", "FLAG_MISSING": "flag_missing", "QUOTA_LIMITED": "quota_limited", "TIMEOUT": "timeout", "CONNECTION_ERROR": "connection_error", "UNKNOWN_ERROR": "unknown_error", "apiError": (JsValue status) => { 
+return (`api_error_${status}` as JsValue);
+return JS.undefined(); } };
+
+func(JsValue)->JsValue arrayToFlagsRecord = (JsValue flags) => __port_2(flags);
+
+JsValue filterActiveFeatureFlags = (JsValue featureFlags) => __port_3(featureFlags);
+
+JsValue parseFlagsResponse = (JsValue response, JsValue currentFlags = object {  }, JsValue currentFlagPayloads = object {  }, JsValue currentFlagDetails = object {  }, JsValue options = JS.undefined(), JsValue responseLogger = logger) => __port_4(response, currentFlags, currentFlagPayloads, currentFlagDetails, options, responseLogger);
+
+func(JsValue, JsValue)->JsValue normalizeFlagsResponse = (JsValue response, JsValue responseLogger) => __port_5(response, responseLogger);
+
+JsValue QuotaLimitedResource = object { "FeatureFlags": "feature_flags", "Recordings": "recordings" };
+
+export class PostHogFeatureFlags {
+init(JsValue instanceOrConfigSource) { 
+((((this as JsValue) as JsValue)["name"] = FeatureFlagsExtension));
+((((this as JsValue) as JsValue)["_override_warning"] = false));
+((((this as JsValue) as JsValue)["featureFlagEventHandlers"] = JS.array()));
+((((this as JsValue) as JsValue)["_logger"] = logger));
+((((this as JsValue) as JsValue)["_baseEventProperties"] = object {  }));
+((((this as JsValue) as JsValue)["_eventPropertiesWithFlagValues"] = object {  }));
+((((this as JsValue) as JsValue)["_reloadingHandlers"] = JS.array()));
+((((this as JsValue) as JsValue)["_hasLoadedFlags"] = false));
+((((this as JsValue) as JsValue)["_requestInFlight"] = false));
+((((this as JsValue) as JsValue)["_requestGeneration"] = 0.0));
+((((this as JsValue) as JsValue)["_reloadingDisabled"] = false));
+((((this as JsValue) as JsValue)["_additionalReloadRequested"] = false));
+((((this as JsValue) as JsValue)["_flagsLoadedFromRemote"] = false));
+((((this as JsValue) as JsValue)["_staleCacheRefreshTriggered"] = false));
+((((this as JsValue) as JsValue)["_consecutiveStatusZeroFailures"] = 0.0));
+((((this as JsValue) as JsValue)["_hadUserInteraction"] = false));
+((((this as JsValue) as JsValue)["_onOnline"] = () => { 
+JsValue wasTripped = ((this as JsValue) as JsValue)["_hasStatusZeroCircuitBreakerTripped"]();
+((((this as JsValue) as JsValue)["_consecutiveStatusZeroFailures"] = 0.0));
+if ((wasTripped as JsValue).truthy()) {(((this as JsValue) as JsValue)["reloadFeatureFlags"]());}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_refreshIfDue"] = () => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue refreshIntervalMs = ((this as JsValue) as JsValue)["_refreshIntervalMs"];
+JsValue dueIntervalMs = if ((((((((_a = ((this as JsValue) as JsValue)["_dueRefreshIntervalMs"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (refreshIntervalMs as JsValue) };
+if (((((((((((((isUndefined as JsValue)(refreshIntervalMs) as JsValue) || ((isUndefined as JsValue)(dueIntervalMs) as JsValue)) as JsValue) || ((((this as JsValue) as JsValue)["_config"] as JsValue)["remoteRequestsDisabled"] as JsValue)) as JsValue) || (!(document as JsValue).truthy() as JsValue)) as JsValue) || ((((document as JsValue)["visibilityState"] as JsValue) === ("hidden" as JsValue)) as JsValue)) as JsValue) || ((((((Date as JsValue)["now"]() as JsValue) - ((if ((((((((_b = ((this as JsValue) as JsValue)["_lastRefreshAt"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (0.0 as JsValue) }) as JsValue)) as JsValue) < (dueIntervalMs as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_dueRefreshIntervalMs"] = if ((((((this as JsValue) as JsValue)["_hadUserInteraction"] as JsValue) || (!((((this as JsValue) as JsValue)["_config"] as JsValue)["idleRefreshBackoff"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) { (refreshIntervalMs as JsValue) } else { ((Math as JsValue)["min"](((dueIntervalMs as JsValue) * (2.0 as JsValue)), MAX_IDLE_REFRESH_INTERVAL_MS) as JsValue) }));
+((((this as JsValue) as JsValue)["_hadUserInteraction"] = false));
+(((this as JsValue) as JsValue)["reloadFeatureFlags"]());
+(((this as JsValue) as JsValue)["_scheduleNextRefresh"]());
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_onUserInteraction"] = () => { 
+if ((((((this as JsValue) as JsValue)["_hadUserInteraction"] as JsValue) && (((((this as JsValue) as JsValue)["_dueRefreshIntervalMs"] as JsValue) === (((this as JsValue) as JsValue)["_refreshIntervalMs"] as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_resumeConfiguredInterval"]());
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_onVisibilityChange"] = () => { 
+if (((((if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["visibilityState"] as JsValue) }) as JsValue) === ("visible" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_resumeConfiguredInterval"]());}
+return JS.undefined(); }));
+if ((JS.in("get", instanceOrConfigSource) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_configSource"] = instanceOrConfigSource));} else {((((this as JsValue) as JsValue)["_instance"] = instanceOrConfigSource));
+((((this as JsValue) as JsValue)["_mutableConfigSource"] = JS.construct(MutableFeatureFlagsConfigSource, (instanceOrConfigSource as JsValue)["config"], (instanceOrConfigSource as JsValue)["_shouldDisableFlags"]())));
+((((this as JsValue) as JsValue)["_configSource"] = ((this as JsValue) as JsValue)["_mutableConfigSource"]));}
+ }
+
+JsValue updateConfig(JsValue config, JsValue remoteRequestsDisabled) { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_mutableConfigSource"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["update"](config, remoteRequestsDisabled) as JsValue) });
+if ((((this as JsValue) as JsValue)["_client"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_syncAutomaticRefresh"]());}
+return JS.undefined(); }
+
+JsValue setup(JsValue client) { 
+((((this as JsValue) as JsValue)["_initializingClient"] = client));
+((((this as JsValue) as JsValue)["_logger"] = ((client as JsValue)["logger"] as JsValue)["createLogger"]("[FeatureFlags]")));
+return (continueWith as JsValue)(((client as JsValue)["kv"] as JsValue)["initialize"](), () => { 
+if ((((((this as JsValue) as JsValue)["_initializingClient"] as JsValue) !== (client as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_initializingClient"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_client"] = client));
+(((this as JsValue) as JsValue)["_finishSetup"](client));
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue _finishSetup(JsValue client) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((((this as JsValue) as JsValue)["_client"] as JsValue) !== (client as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((window as JsValue).truthy()) {((addEventListener as JsValue)(window, "online", ((this as JsValue) as JsValue)["_onOnline"]));}
+(((this as JsValue) as JsValue)["_syncAutomaticRefresh"]());
+((((this as JsValue) as JsValue)["_dynamicProperties"] = (client as JsValue)["registerDynamicEventProperties"](() => { 
+return (if ((((this as JsValue) as JsValue)["_isCacheStale"]() as JsValue).truthy()) { (((this as JsValue) as JsValue)["_baseEventProperties"] as JsValue) } else { (((this as JsValue) as JsValue)["_eventPropertiesWithFlagValues"] as JsValue) } as JsValue);
+return JS.undefined(); })));
+((((this as JsValue) as JsValue)["_crossTabPersistenceUnsubscribe"] = if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_instance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["persistence"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["onCrossTabFeatureFlagChange"](() => { 
+(((this as JsValue) as JsValue)["_clearBootstrapState"]());
+(((this as JsValue) as JsValue)["_rebuildEventProperties"]());
+(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"]());
+return JS.undefined(); }) as JsValue) }));
+(((this as JsValue) as JsValue)["_rebuildEventProperties"]());
+return ((this as JsValue) as JsValue)["initialize"]();
+return JS.undefined(); }
+
+JsValue _resumeConfiguredInterval() { 
+((((this as JsValue) as JsValue)["_hadUserInteraction"] = true));
+((((this as JsValue) as JsValue)["_dueRefreshIntervalMs"] = ((this as JsValue) as JsValue)["_refreshIntervalMs"]));
+(((this as JsValue) as JsValue)["_refreshIfDue"]());
+return JS.undefined(); }
+
+JsValue _syncAutomaticRefresh() { 
+JsValue configuredIntervalMs = (((this as JsValue) as JsValue)["_config"] as JsValue)["refreshIntervalMs"];
+JsValue refreshIntervalMs = if ((((((((!((((this as JsValue) as JsValue)["_config"] as JsValue)["remoteRequestsDisabled"] as JsValue).truthy() as JsValue) && (document as JsValue)) as JsValue) && (!((isUndefined as JsValue)(configuredIntervalMs) as JsValue).truthy() as JsValue)) as JsValue) && (((configuredIntervalMs as JsValue) > (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) { (configuredIntervalMs as JsValue) } else { (JS.undefined() as JsValue) };
+if ((!((((this as JsValue) as JsValue)["_config"] as JsValue)["idleRefreshBackoff"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_dueRefreshIntervalMs"] = refreshIntervalMs));}
+if ((((refreshIntervalMs as JsValue) === (((this as JsValue) as JsValue)["_refreshIntervalMs"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_stopAutomaticRefresh"]());
+if (((isUndefined as JsValue)(refreshIntervalMs) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_refreshIntervalMs"] = refreshIntervalMs));
+((((this as JsValue) as JsValue)["_dueRefreshIntervalMs"] = refreshIntervalMs));
+(((this as JsValue) as JsValue)["_scheduleNextRefresh"]());
+if ((if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["addEventListener"] as JsValue) } as JsValue).truthy()) {((addEventListener as JsValue)(document, DOM_EVENT_VISIBILITYCHANGE, ((this as JsValue) as JsValue)["_onVisibilityChange"]));
+((eachArray as JsValue)(USER_INTERACTION_EVENTS, (JsValue eventName) => { 
+((addEventListener as JsValue)(document, eventName, ((this as JsValue) as JsValue)["_onUserInteraction"], object { "capture": true }));
+return JS.undefined(); }));}
+return JS.undefined(); }
+
+JsValue _scheduleNextRefresh() { 
+if (((isUndefined as JsValue)(((this as JsValue) as JsValue)["_refreshIntervalMs"]) as JsValue).truthy()) {return JS.undefined();}
+if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_refreshInterval"]) as JsValue).truthy() as JsValue).truthy()) {((clearInterval as JsValue)(((this as JsValue) as JsValue)["_refreshInterval"]));}
+((((this as JsValue) as JsValue)["_lastRefreshAt"] = (Date as JsValue)["now"]()));
+((((this as JsValue) as JsValue)["_refreshInterval"] = (setInterval as JsValue)(((this as JsValue) as JsValue)["_refreshIfDue"], ((this as JsValue) as JsValue)["_refreshIntervalMs"])));
+return JS.undefined(); }
+
+JsValue _stopAutomaticRefresh() { 
+JsValue _a = JS.undefined();
+if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_refreshInterval"]) as JsValue).truthy() as JsValue).truthy()) {((clearInterval as JsValue)(((this as JsValue) as JsValue)["_refreshInterval"]));
+((((this as JsValue) as JsValue)["_refreshInterval"] = JS.undefined()));
+(if ((((((((_a = if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"](document, DOM_EVENT_VISIBILITYCHANGE, ((this as JsValue) as JsValue)["_onVisibilityChange"]) as JsValue) });
+((eachArray as JsValue)(USER_INTERACTION_EVENTS, (JsValue eventName) => { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"](document, eventName, ((this as JsValue) as JsValue)["_onUserInteraction"], object { "capture": true }) as JsValue) });
+return JS.undefined(); }));}
+((((this as JsValue) as JsValue)["_refreshIntervalMs"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_dueRefreshIntervalMs"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_hadUserInteraction"] = false));
+((((this as JsValue) as JsValue)["_lastRefreshAt"] = JS.undefined()));
+return JS.undefined(); }
+
+JsValue destroy() { 
+(((this as JsValue) as JsValue)["_dispose"]());
+return JS.undefined(); }
+
+JsValue dispose() { 
+(((this as JsValue) as JsValue)["_dispose"]());
+return JS.undefined(); }
+
+JsValue _dispose() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(((this as JsValue) as JsValue)["_stopAutomaticRefresh"]());
+((() => { JsValue __port_7 = (this as JsValue); number __port_6 = JS.number(__port_7["_requestGeneration"]); __port_7["_requestGeneration"] = __port_6 + 1.0; return __port_6; })());
+((((this as JsValue) as JsValue)["_additionalReloadRequested"] = false));
+((((this as JsValue) as JsValue)["_initializingClient"] = JS.undefined()));
+if ((!(((this as JsValue) as JsValue)["_client"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_clearDebouncer"]());
+(if ((((((((_a = ((this as JsValue) as JsValue)["_dynamicProperties"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["dispose"]() as JsValue) });
+((((this as JsValue) as JsValue)["_dynamicProperties"] = JS.undefined()));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_crossTabPersistenceUnsubscribe"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_crossTabPersistenceUnsubscribe"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_reloadingHandlers"] = JS.array()));
+(if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["removeEventListener"]("online", ((this as JsValue) as JsValue)["_onOnline"]) as JsValue) });
+((((this as JsValue) as JsValue)["_client"] = JS.undefined()));
+return JS.undefined(); }
+
+JsValue __lil_get__config() { 
+return (((this as JsValue) as JsValue)["_configSource"] as JsValue)["get"]();
+return JS.undefined(); }
+
+JsValue _prop(JsValue key) { 
+JsValue _a = JS.undefined();
+if ((((((this as JsValue) as JsValue)["_bootstrapState"] as JsValue) && (JS.in(key, ((this as JsValue) as JsValue)["_bootstrapState"]) as JsValue)) as JsValue).truthy()) {return (((this as JsValue) as JsValue)["_bootstrapState"] as JsValue)[key];}
+return if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["kv"] as JsValue)["get"](key) as JsValue) };
+return JS.undefined(); }
+
+JsValue _clearBootstrapState() { 
+if ((!(((this as JsValue) as JsValue)["_bootstrapState"] as JsValue).truthy() as JsValue).truthy()) {return false;}
+((((this as JsValue) as JsValue)["_bootstrapState"] = JS.undefined()));
+return true;
+return JS.undefined(); }
+
+JsValue _fallBackToPersistedFlags() { 
+JsValue _a = JS.undefined();
+if (((isUndefined as JsValue)(if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["kv"] as JsValue)["get"](ENABLED_FEATURE_FLAGS) as JsValue) }) as JsValue).truthy()) {return false;}
+return ((this as JsValue) as JsValue)["_clearBootstrapState"]();
+return JS.undefined(); }
+
+JsValue _set(JsValue properties) { 
+(((this as JsValue) as JsValue)["_persist"](() => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["kv"] as JsValue)["set"](properties) as JsValue) };
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue _markCrossTabFeatureFlagSnapshot(JsValue statePatch, JsValue response, JsValue partialResponse) { 
+JsValue _a = JS.undefined();
+if ((((!((if ((((((((_a = ((this as JsValue) as JsValue)["_instance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["persistence"] as JsValue) }) as JsValue).truthy() as JsValue) || (!((statePatch as JsValue)[ENABLED_FEATURE_FLAGS] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue previousFlags = ((((this as JsValue) as JsValue)["_prop"](ENABLED_FEATURE_FLAGS) as JsValue) || (object {  } as JsValue));
+JsValue nextFlags = (((statePatch as JsValue)[ENABLED_FEATURE_FLAGS] as JsValue) || (object {  } as JsValue));
+JsValue responseFlags = (((response as JsValue)["flags"] as JsValue) || ((response as JsValue)["featureFlags"] as JsValue));
+JsValue successfulResponseFlagKeys = if (((response as JsValue)["flags"] as JsValue).truthy()) { ((((Object as JsValue)["entries"]((response as JsValue)["flags"]) as JsValue)["filter"]((JsValue __port_8) => { JsValue __port_9 = __port_8;
+JsValue detail = JS.undefined();
+int __port_10 = 0;
+for (JsValue __port_11 of __port_9) {
+if (__port_10 === 1) { detail = __port_11; }
+__port_10 += 1; if (__port_10 === 2) break;
+}
+return (!((if ((((((detail as JsValue) === (null as JsValue)) as JsValue) || (((detail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((detail as JsValue)["failed"] as JsValue) }) as JsValue).truthy() as JsValue);
+return JS.undefined(); }) as JsValue)["map"]((JsValue __port_12) => { JsValue __port_13 = __port_12;
+JsValue key = JS.undefined();
+int __port_14 = 0;
+for (JsValue __port_15 of __port_13) {
+if (__port_14 === 0) { key = __port_15; }
+__port_14 += 1; if (__port_14 === 1) break;
+}
+return (key as JsValue);
+return JS.undefined(); }) as JsValue) } else { (JS.array() as JsValue) };
+JsValue isIncompleteResponse = ((!(!((response as JsValue)["errorsWhileComputingFlags"] as JsValue).truthy() as JsValue).truthy() as JsValue) && (!(!((response as JsValue)["flags"] as JsValue).truthy() as JsValue).truthy() as JsValue));
+JsValue ownedFlagKeys = if ((isIncompleteResponse as JsValue).truthy()) { (successfulResponseFlagKeys as JsValue) } else { (if ((((partialResponse as JsValue) && (!((isArray as JsValue)(responseFlags) as JsValue).truthy() as JsValue)) as JsValue).truthy()) { ((Object as JsValue)["keys"](((responseFlags as JsValue) || (object {  } as JsValue))) as JsValue) } else { ((Array as JsValue)["from"](JS.construct(Set, (() => { JsValue __port_16 = JS.array();
+for (JsValue __port_17 of (Object as JsValue)["keys"](previousFlags)) { __port_16.push(__port_17); }
+for (JsValue __port_18 of (Object as JsValue)["keys"](nextFlags)) { __port_16.push(__port_18); }return __port_16; })())) as JsValue) } as JsValue) };
+JsValue previousPayloads = ((((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_PAYLOADS) as JsValue) || (object {  } as JsValue));
+JsValue nextPayloads = (((statePatch as JsValue)[PERSISTENCE_FEATURE_FLAG_PAYLOADS] as JsValue) || (object {  } as JsValue));
+JsValue ownedPayloadKeys = if ((((isIncompleteResponse as JsValue) || (partialResponse as JsValue)) as JsValue).truthy()) { (ownedFlagKeys as JsValue) } else { ((Array as JsValue)["from"](JS.construct(Set, (() => { JsValue __port_19 = JS.array();
+for (JsValue __port_20 of (Object as JsValue)["keys"](previousPayloads)) { __port_19.push(__port_20); }
+for (JsValue __port_21 of (Object as JsValue)["keys"](nextPayloads)) { __port_19.push(__port_21); }return __port_19; })())) as JsValue) };
+JsValue ownsCompleteSnapshot = ((!(isIncompleteResponse as JsValue).truthy() as JsValue) && (!(partialResponse as JsValue).truthy() as JsValue));
+JsValue flagOwnership = if ((ownsCompleteSnapshot as JsValue).truthy()) { (true as JsValue) } else { (ownedFlagKeys as JsValue) };
+JsValue payloadOwnership = if ((ownsCompleteSnapshot as JsValue).truthy()) { (true as JsValue) } else { (ownedPayloadKeys as JsValue) };
+JsValue changes = __lil_object_22(() => (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue), () => (flagOwnership as JsValue), () => (ENABLED_FEATURE_FLAGS as JsValue), () => (flagOwnership as JsValue), () => (PERSISTENCE_FEATURE_FLAG_PAYLOADS as JsValue), () => (payloadOwnership as JsValue));
+if (((statePatch as JsValue)[PERSISTENCE_FEATURE_FLAG_DETAILS] as JsValue).truthy()) {(((changes as JsValue)[PERSISTENCE_FEATURE_FLAG_DETAILS] = flagOwnership));}
+for (JsValue key of JS.array(PERSISTENCE_FEATURE_FLAG_REQUEST_ID, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS)) {
+if ((!((isUndefined as JsValue)((statePatch as JsValue)[key]) as JsValue).truthy() as JsValue).truthy()) {(((changes as JsValue)[key] = true));}}
+(((((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"] as JsValue)["markCrossTabFeatureFlagChanges"](changes));
+return JS.undefined(); }
+
+JsValue _remove(JsValue keys) { 
+(((this as JsValue) as JsValue)["_persist"](() => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["kv"] as JsValue)["remove"](keys) as JsValue) };
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue _persist(JsValue operation) { 
+try {((operation as JsValue)());} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Failed to update feature flag persistence", error));}
+return JS.undefined(); }
+
+JsValue _rebuildEventProperties() { 
+JsValue common = object {  };
+for (JsValue key of JS.array(PERSISTENCE_ACTIVE_FEATURE_FLAGS, PERSISTENCE_FEATURE_FLAG_PAYLOADS, PERSISTENCE_FEATURE_FLAG_REQUEST_ID, PERSISTENCE_OVERRIDE_FEATURE_FLAGS)) {
+JsValue value = ((this as JsValue) as JsValue)["_prop"](key);
+if ((!((isUndefined as JsValue)(value) as JsValue).truthy() as JsValue).truthy()) {(((common as JsValue)[key] = value));}}
+((((this as JsValue) as JsValue)["_baseEventProperties"] = common));
+JsValue withFlagValues = __lil_object_23(() => (common as JsValue));
+JsValue flags = ((this as JsValue) as JsValue)["_prop"](ENABLED_FEATURE_FLAGS);
+if ((flags as JsValue).truthy()) {for (JsValue __port_24 of (Object as JsValue)["entries"](flags)) {JsValue __port_25 = __port_24;
+JsValue key = JS.undefined();
+JsValue value = JS.undefined();
+int __port_26 = 0;
+for (JsValue __port_27 of __port_25) {
+if (__port_26 === 0) { key = __port_27; }
+if (__port_26 === 1) { value = __port_27; }
+__port_26 += 1; if (__port_26 === 2) break;
+}
+(((withFlagValues as JsValue)[`$feature/${key}`] = value));}}
+((((this as JsValue) as JsValue)["_eventPropertiesWithFlagValues"] = withFlagValues));
+return JS.undefined(); }
+
+JsValue _isCacheStale() { 
+JsValue ttl = (((this as JsValue) as JsValue)["_config"] as JsValue)["cacheTtlMs"];
+if ((((!(ttl as JsValue).truthy() as JsValue) || (((ttl as JsValue) <= (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {return false;}
+JsValue evaluatedAt = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_EVALUATED_AT);
+return ((((JS.typeOf(evaluatedAt) as JsValue) !== ("number" as JsValue)) as JsValue) || ((((((Date as JsValue)["now"]() as JsValue) - (evaluatedAt as JsValue)) as JsValue) > (ttl as JsValue)) as JsValue));
+return JS.undefined(); }
+
+JsValue _checkAndTriggerStaleRefresh() { 
+if ((!(((this as JsValue) as JsValue)["_isCacheStale"]() as JsValue).truthy() as JsValue).truthy()) {return false;}
+if ((((!(((this as JsValue) as JsValue)["_staleCacheRefreshTriggered"] as JsValue).truthy() as JsValue) && (!(((this as JsValue) as JsValue)["_requestInFlight"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_staleCacheRefreshTriggered"] = true));
+((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]("Feature flag cache is stale, triggering refresh..."));
+(((this as JsValue) as JsValue)["reloadFeatureFlags"]());}
+return true;
+return JS.undefined(); }
+
+JsValue _getValidEvaluationEnvironments() { 
+JsValue envs = (((this as JsValue) as JsValue)["_config"] as JsValue)["evaluationContexts"];
+if ((!((if ((((((envs as JsValue) === (null as JsValue)) as JsValue) || (((envs as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((envs as JsValue)["length"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {return JS.array();}
+return (envs as JsValue)["filter"]((JsValue env) => { 
+JsValue isValid = ((((env as JsValue) && (((JS.typeOf(env) as JsValue) === ("string" as JsValue)) as JsValue)) as JsValue) && (((((env as JsValue)["trim"]() as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue));
+if ((!(isValid as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Invalid evaluation context found:", env, "Expected non-empty string"));}
+return isValid;
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue _getValidFlagKeys() { 
+JsValue flagKeys = (((this as JsValue) as JsValue)["_config"] as JsValue)["flagKeys"];
+if (((isUndefined as JsValue)(flagKeys) as JsValue).truthy()) {return JS.undefined();}
+return (flagKeys as JsValue)["filter"]((JsValue flagKey) => { 
+JsValue isValid = ((((flagKey as JsValue) && (((JS.typeOf(flagKey) as JsValue) === ("string" as JsValue)) as JsValue)) as JsValue) && (((((flagKey as JsValue)["trim"]() as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue));
+if ((!(isValid as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Invalid flag key found:", flagKey, "Expected non-empty string"));}
+return isValid;
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue initialize() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue config = ((this as JsValue) as JsValue)["_config"];
+JsValue bootstrapFlags = if ((((((((_b = if ((((((((_a = (config as JsValue)["bootstrap"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["featureFlags"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (object {  } as JsValue) };
+JsValue hasBootstrappedFlags = ((Object as JsValue)["keys"](bootstrapFlags) as JsValue)["length"];
+if ((hasBootstrappedFlags as JsValue).truthy()) {JsValue bootstrapPayloads = if ((((((((_d = if ((((((((_c = (config as JsValue)["bootstrap"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["featureFlagPayloads"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_d as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_d as JsValue) } else { (object {  } as JsValue) };
+JsValue featureFlags = (((Object as JsValue)["keys"](bootstrapFlags) as JsValue)["filter"]((JsValue flag) => { 
+return (!((isUndefined as JsValue)((bootstrapFlags as JsValue)[flag]) as JsValue).truthy() as JsValue);
+return JS.undefined(); }) as JsValue)["reduce"]((JsValue res, JsValue key) => { 
+(((res as JsValue)[key] = (bootstrapFlags as JsValue)[key]));
+return res;
+return JS.undefined(); }, object {  });
+JsValue featureFlagPayloads = (((Object as JsValue)["keys"](bootstrapPayloads) as JsValue)["filter"]((JsValue key) => { 
+return ((featureFlags as JsValue)[key] as JsValue);
+return JS.undefined(); }) as JsValue)["reduce"]((JsValue res, JsValue key) => { 
+(((res as JsValue)[key] = (bootstrapPayloads as JsValue)[key]));
+return res;
+return JS.undefined(); }, object {  });
+return ((this as JsValue) as JsValue)["_receivedFeatureFlags"](object { "featureFlags": featureFlags, "featureFlagPayloads": featureFlagPayloads }, JS.undefined(), object { "persist": false });}
+return JS.undefined();
+return JS.undefined(); }
+
+JsValue updateFlags(JsValue flags, JsValue payloads, JsValue options) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue existingFlags = if (((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["merge"] as JsValue) }) as JsValue).truthy()) { ((if ((((((((_a = ((this as JsValue) as JsValue)["_prop"](ENABLED_FEATURE_FLAGS))) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (object {  } as JsValue) }) as JsValue) } else { (object {  } as JsValue) };
+JsValue existingPayloads = if (((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["merge"] as JsValue) }) as JsValue).truthy()) { ((if ((((((((_b = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_PAYLOADS))) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (object {  } as JsValue) }) as JsValue) } else { (object {  } as JsValue) };
+JsValue finalFlags = __lil_object_28(() => (existingFlags as JsValue), () => (flags as JsValue));
+JsValue finalPayloads = __lil_object_29(() => (existingPayloads as JsValue), () => (payloads as JsValue));
+JsValue flagDetails = object {  };
+for (JsValue __port_30 of (Object as JsValue)["entries"](finalFlags)) {JsValue __port_31 = __port_30;
+JsValue key = JS.undefined();
+JsValue value = JS.undefined();
+int __port_32 = 0;
+for (JsValue __port_33 of __port_31) {
+if (__port_32 === 0) { key = __port_33; }
+if (__port_32 === 1) { value = __port_33; }
+__port_32 += 1; if (__port_32 === 2) break;
+}
+(((flagDetails as JsValue)[key] = object { "key": key, "enabled": (getEnabledFromValue as JsValue)(value), "variant": (getVariantFromValue as JsValue)(value), "reason": JS.undefined(), "metadata": if ((!((isUndefined as JsValue)(if ((((((finalPayloads as JsValue) === (null as JsValue)) as JsValue) || (((finalPayloads as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((finalPayloads as JsValue)[key] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) { (object { "id": 0.0, "version": JS.undefined(), "description": JS.undefined(), "payload": (finalPayloads as JsValue)[key] } as JsValue) } else { (JS.undefined() as JsValue) } }));}
+((() => { ((this as JsValue) as JsValue)["_receivedFeatureFlags"](object { "flags": flagDetails }); return JS.undefined(); })());
+return JS.undefined(); }
+
+JsValue __lil_get_hasLoadedFlags() { 
+return ((this as JsValue) as JsValue)["_hasLoadedFlags"];
+return JS.undefined(); }
+
+JsValue getFlags() { 
+return (Object as JsValue)["keys"](((this as JsValue) as JsValue)["getFlagVariants"]());
+return JS.undefined(); }
+
+JsValue getFlagsWithDetails() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue flagDetails = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_DETAILS);
+JsValue overridenFlags = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_OVERRIDE_FEATURE_FLAGS);
+JsValue overriddenPayloads = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS);
+if ((((!(overriddenPayloads as JsValue).truthy() as JsValue) && (!(overridenFlags as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return ((flagDetails as JsValue) || (object {  } as JsValue));}
+JsValue finalDetails = (extend as JsValue)(object {  }, ((flagDetails as JsValue) || (object {  } as JsValue)));
+JsValue overriddenKeys = (() => { JsValue __port_34 = JS.array();
+for (JsValue __port_35 of JS.construct(Set, (() => { JsValue __port_36 = JS.array();
+for (JsValue __port_37 of (Object as JsValue)["keys"](((overriddenPayloads as JsValue) || (object {  } as JsValue)))) { __port_36.push(__port_37); }
+for (JsValue __port_38 of (Object as JsValue)["keys"](((overridenFlags as JsValue) || (object {  } as JsValue)))) { __port_36.push(__port_38); }return __port_36; })())) { __port_34.push(__port_35); }return __port_34; })();
+for (JsValue key of overriddenKeys) {
+JsValue originalDetail = (finalDetails as JsValue)[key];
+JsValue overrideFlagValue = if ((((((overridenFlags as JsValue) === (null as JsValue)) as JsValue) || (((overridenFlags as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((overridenFlags as JsValue)[key] as JsValue) };
+JsValue finalEnabled = if (((isUndefined as JsValue)(overrideFlagValue) as JsValue).truthy()) { ((if ((((((((_a = if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["enabled"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (false as JsValue) }) as JsValue) } else { (!(!(overrideFlagValue as JsValue).truthy() as JsValue).truthy() as JsValue) };
+JsValue overrideVariant = if (((isUndefined as JsValue)(overrideFlagValue) as JsValue).truthy()) { (if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["variant"] as JsValue) } as JsValue) } else { (if ((((JS.typeOf(overrideFlagValue) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (overrideFlagValue as JsValue) } else { (JS.undefined() as JsValue) } as JsValue) };
+JsValue overridePayload = if ((((((overriddenPayloads as JsValue) === (null as JsValue)) as JsValue) || (((overriddenPayloads as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((overriddenPayloads as JsValue)[key] as JsValue) };
+JsValue overridenDetail = __lil_object_39(() => (originalDetail as JsValue), () => (finalEnabled as JsValue), () => (if ((finalEnabled as JsValue).truthy()) { ((if ((((((overrideVariant as JsValue) !== (null as JsValue)) as JsValue) && (((overrideVariant as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (overrideVariant as JsValue) } else { (if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["variant"] as JsValue) } as JsValue) }) as JsValue) } else { (JS.undefined() as JsValue) } as JsValue));
+if ((((finalEnabled as JsValue) !== ((if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["enabled"] as JsValue) }) as JsValue)) as JsValue).truthy()) {(((overridenDetail as JsValue)["original_enabled"] = if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["enabled"] as JsValue) }));}
+if ((((overrideVariant as JsValue) !== ((if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["variant"] as JsValue) }) as JsValue)) as JsValue).truthy()) {(((overridenDetail as JsValue)["original_variant"] = if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["variant"] as JsValue) }));}
+if ((overridePayload as JsValue).truthy()) {(((overridenDetail as JsValue)["metadata"] = __lil_object_40(() => (if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["metadata"] as JsValue) } as JsValue), () => (overridePayload as JsValue), () => (if ((((((((_b = if ((((((originalDetail as JsValue) === (null as JsValue)) as JsValue) || (((originalDetail as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((originalDetail as JsValue)["metadata"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["payload"] as JsValue) } as JsValue))));}
+(((finalDetails as JsValue)[key] = overridenDetail));}
+if ((!(((this as JsValue) as JsValue)["_override_warning"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"](" Overriding feature flag details!", object { "flagDetails": flagDetails, "overriddenPayloads": overriddenPayloads, "finalDetails": finalDetails }));
+((((this as JsValue) as JsValue)["_override_warning"] = true));}
+return finalDetails;
+return JS.undefined(); }
+
+JsValue getAllFeatureFlags() { 
+JsValue flagVariants = ((this as JsValue) as JsValue)["getFlagVariants"]();
+JsValue payloads = ((this as JsValue) as JsValue)["getFlagPayloads"]();
+return ((Object as JsValue)["keys"](flagVariants) as JsValue)["map"]((JsValue key) => { 
+JsValue flagValue = (flagVariants as JsValue)[key];
+return object { "key": key, "enabled": (getEnabledFromValue as JsValue)(flagValue), "variant": (getVariantFromValue as JsValue)(flagValue), "payload": (parsePayload as JsValue)((payloads as JsValue)[key]) };
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue getFlagVariants() { 
+JsValue enabledFlags = ((this as JsValue) as JsValue)["_prop"](ENABLED_FEATURE_FLAGS);
+JsValue overriddenFlags = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_OVERRIDE_FEATURE_FLAGS);
+if ((!(overriddenFlags as JsValue).truthy() as JsValue).truthy()) {return ((enabledFlags as JsValue) || (object {  } as JsValue));}
+JsValue finalFlags = (extend as JsValue)(object {  }, ((enabledFlags as JsValue) || (object {  } as JsValue)));
+JsValue overriddenKeys = (Object as JsValue)["keys"](overriddenFlags);
+for (JsValue i = 0.0; (((i as JsValue) < ((overriddenKeys as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {(((finalFlags as JsValue)[(overriddenKeys as JsValue)[i]] = (overriddenFlags as JsValue)[(overriddenKeys as JsValue)[i]]));}
+if ((!(((this as JsValue) as JsValue)["_override_warning"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"](" Overriding feature flags!", object { "enabledFlags": enabledFlags, "overriddenFlags": overriddenFlags, "finalFlags": finalFlags }));
+((((this as JsValue) as JsValue)["_override_warning"] = true));}
+return finalFlags;
+return JS.undefined(); }
+
+JsValue getFlagPayloads() { 
+JsValue flagPayloads = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_PAYLOADS);
+JsValue overriddenPayloads = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS);
+if ((!(overriddenPayloads as JsValue).truthy() as JsValue).truthy()) {return ((flagPayloads as JsValue) || (object {  } as JsValue));}
+JsValue finalPayloads = (extend as JsValue)(object {  }, ((flagPayloads as JsValue) || (object {  } as JsValue)));
+JsValue overriddenKeys = (Object as JsValue)["keys"](overriddenPayloads);
+for (JsValue i = 0.0; (((i as JsValue) < ((overriddenKeys as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {(((finalPayloads as JsValue)[(overriddenKeys as JsValue)[i]] = (overriddenPayloads as JsValue)[(overriddenKeys as JsValue)[i]]));}
+if ((!(((this as JsValue) as JsValue)["_override_warning"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"](" Overriding feature flag payloads!", object { "flagPayloads": flagPayloads, "overriddenPayloads": overriddenPayloads, "finalPayloads": finalPayloads }));
+((((this as JsValue) as JsValue)["_override_warning"] = true));}
+return finalPayloads;
+return JS.undefined(); }
+
+JsValue reloadFeatureFlags() { 
+if ((((((this as JsValue) as JsValue)["_reloadingDisabled"] as JsValue) || ((((this as JsValue) as JsValue)["_config"] as JsValue)["featureFlagsDisabled"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_hasStatusZeroCircuitBreakerTripped"]() as JsValue).truthy()) {return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_requestInFlight"] as JsValue).truthy()) {((((this as JsValue) as JsValue)["_additionalReloadRequested"] = true));}
+if ((((this as JsValue) as JsValue)["_reloadDebouncer"] as JsValue).truthy()) {return JS.undefined();}
+(((((this as JsValue) as JsValue)["_reloadingHandlers"] as JsValue)["slice"]() as JsValue)["forEach"]((JsValue handler) => { 
+try {((handler as JsValue)());} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Error while running feature flags reloading callback", error));}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_reloadDebouncer"] = (setTimeout as JsValue)(() => { 
+(((this as JsValue) as JsValue)["_callFlagsEndpoint"]());
+return JS.undefined(); }, 5.0)));
+return JS.undefined(); }
+
+JsValue _clearDebouncer() { 
+((clearTimeout as JsValue)(((this as JsValue) as JsValue)["_reloadDebouncer"]));
+((((this as JsValue) as JsValue)["_reloadDebouncer"] = JS.undefined()));
+return JS.undefined(); }
+
+JsValue onReloading(JsValue handler) { 
+((((this as JsValue) as JsValue)["_reloadingHandlers"] as JsValue)["push"](handler));
+return () => { 
+((((this as JsValue) as JsValue)["_reloadingHandlers"] = (((this as JsValue) as JsValue)["_reloadingHandlers"] as JsValue)["filter"]((JsValue entry) => { 
+return (((entry as JsValue) !== (handler as JsValue)) as JsValue);
+return JS.undefined(); })));
+return JS.undefined(); };
+return JS.undefined(); }
+
+JsValue ensureFlagsLoaded() { 
+if ((((((((this as JsValue) as JsValue)["_hasLoadedFlags"] as JsValue) || (((this as JsValue) as JsValue)["_requestInFlight"] as JsValue)) as JsValue) || (((this as JsValue) as JsValue)["_reloadDebouncer"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["reloadFeatureFlags"]());
+return JS.undefined(); }
+
+JsValue setAnonymousDistinctId(JsValue anon_distinct_id) { 
+((((this as JsValue) as JsValue)["$anon_distinct_id"] = anon_distinct_id));
+return JS.undefined(); }
+
+JsValue setReloadingPaused(JsValue isPaused) { 
+((((this as JsValue) as JsValue)["_reloadingDisabled"] = isPaused));
+return JS.undefined(); }
+
+JsValue resetFlagCallReported() { 
+(((this as JsValue) as JsValue)["_remove"](FLAG_CALL_REPORTED));
+return JS.undefined(); }
+
+JsValue _callFlagsEndpoint(JsValue options) { 
+(((this as JsValue) as JsValue)["_clearDebouncer"]());
+JsValue client = ((this as JsValue) as JsValue)["_client"];
+if ((((((!(client as JsValue).truthy() as JsValue) || ((((this as JsValue) as JsValue)["_config"] as JsValue)["remoteRequestsDisabled"] as JsValue)) as JsValue) || (((this as JsValue) as JsValue)["_hasStatusZeroCircuitBreakerTripped"]() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_requestInFlight"] as JsValue).truthy()) {((((this as JsValue) as JsValue)["_additionalReloadRequested"] = true));
+return JS.undefined();}
+JsValue data = object { "token": (client as JsValue)["projectToken"], "distinct_id": (client as JsValue)["distinctId"], "groups": (client as JsValue)["groups"], "$anon_distinct_id": ((this as JsValue) as JsValue)["$anon_distinct_id"], "person_properties": __lil_object_41(() => ((client as JsValue)["initialPersonProperties"] as JsValue), () => ((((((this as JsValue) as JsValue)["_prop"](STORED_PERSON_PROPERTIES_KEY) as JsValue) || (object {  } as JsValue))) as JsValue), () => (((client as JsValue)["library"] as JsValue)["name"] as JsValue), () => (((client as JsValue)["library"] as JsValue)["version"] as JsValue)), "group_properties": ((this as JsValue) as JsValue)["_prop"](STORED_GROUP_PROPERTIES_KEY), "timezone": (getTimezone as JsValue)() };
+if ((!((isUndefined as JsValue)((client as JsValue)["deviceId"]) as JsValue).truthy() as JsValue).truthy()) {(((data as JsValue)["$device_id"] = (client as JsValue)["deviceId"]));}
+if (((((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["disableFlags"] as JsValue) }) as JsValue) || ((((this as JsValue) as JsValue)["_config"] as JsValue)["featureFlagsDisabled"] as JsValue)) as JsValue).truthy()) {(((data as JsValue)["disable_flags"] = true));}
+JsValue evaluationContexts = ((this as JsValue) as JsValue)["_getValidEvaluationEnvironments"]();
+if (((evaluationContexts as JsValue)["length"] as JsValue).truthy()) {(((data as JsValue)["evaluation_contexts"] = evaluationContexts));}
+JsValue flagKeys = ((this as JsValue) as JsValue)["_getValidFlagKeys"]();
+if ((!((isUndefined as JsValue)(flagKeys) as JsValue).truthy() as JsValue).truthy()) {(((data as JsValue)["flag_keys"] = flagKeys));}
+JsValue isPartialFlagsResponse = (((this as JsValue) as JsValue)["_config"] as JsValue)["onlyEvaluateSurveyFeatureFlags"];
+JsValue path = `/flags/?v=2${if ((isPartialFlagsResponse as JsValue).truthy()) { ("&only_evaluate_survey_feature_flags=true" as JsValue) } else { ("" as JsValue) }}`;
+JsValue requestGeneration = ((this as JsValue) as JsValue)["_requestGeneration"];
+((((this as JsValue) as JsValue)["_requestInFlight"] = true));
+JsValue requestAdditionalReload = () => { 
+if ((((this as JsValue) as JsValue)["_additionalReloadRequested"] as JsValue).truthy()) {((((this as JsValue) as JsValue)["_additionalReloadRequested"] = false));
+(((this as JsValue) as JsValue)["_callFlagsEndpoint"]());}
+return JS.undefined(); };
+JsValue handleResponse = (JsValue response) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue json = (if ((((((((_a = (response as JsValue)["json"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (object {  } as JsValue) });
+JsValue errorsLoading = (((response as JsValue)["statusCode"] as JsValue) !== (200.0 as JsValue));
+((((this as JsValue) as JsValue)["_requestInFlight"] = false));
+if ((((requestGeneration as JsValue) !== (((this as JsValue) as JsValue)["_requestGeneration"] as JsValue)) as JsValue).truthy()) {((requestAdditionalReload as JsValue)());
+return JS.undefined();}
+(((this as JsValue) as JsValue)["_trackStatusZeroReachability"]((response as JsValue)["statusCode"]));
+if ((((!(errorsLoading as JsValue).truthy() as JsValue) && (!(((this as JsValue) as JsValue)["_additionalReloadRequested"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["$anon_distinct_id"] = JS.undefined()));}
+if (((((data as JsValue)["disable_flags"] as JsValue) && (!(((this as JsValue) as JsValue)["_additionalReloadRequested"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_flagsLoadedFromRemote"] = !(errorsLoading as JsValue).truthy()));
+JsValue flagErrors = JS.array();
+if (((response as JsValue)["error"] as JsValue).truthy()) {((flagErrors as JsValue)["push"](if ((((((response as JsValue)["error"] instanceof Error) as JsValue) && (((((response as JsValue)["error"] as JsValue)["name"] as JsValue) === ("AbortError" as JsValue)) as JsValue)) as JsValue).truthy()) { ((FeatureFlagError as JsValue)["TIMEOUT"] as JsValue) } else { (if ((((response as JsValue)["error"] instanceof Error) as JsValue).truthy()) { ((FeatureFlagError as JsValue)["CONNECTION_ERROR"] as JsValue) } else { ((FeatureFlagError as JsValue)["UNKNOWN_ERROR"] as JsValue) } as JsValue) }));} else {if (((((response as JsValue)["statusCode"] as JsValue) !== (200.0 as JsValue)) as JsValue).truthy()) {((flagErrors as JsValue)["push"]((FeatureFlagError as JsValue)["apiError"]((response as JsValue)["statusCode"])));}}
+if (((json as JsValue)["errorsWhileComputingFlags"] as JsValue).truthy()) {((flagErrors as JsValue)["push"]((FeatureFlagError as JsValue)["ERRORS_WHILE_COMPUTING"]));}
+JsValue isQuotaLimited = !(!((if ((((((((_b = (json as JsValue)["quotaLimited"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["includes"]((QuotaLimitedResource as JsValue)["FeatureFlags"]) as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+if ((isQuotaLimited as JsValue).truthy()) {((flagErrors as JsValue)["push"]((FeatureFlagError as JsValue)["QUOTA_LIMITED"]));}
+(((this as JsValue) as JsValue)["_set"](__lil_object_42(() => (PERSISTENCE_FEATURE_FLAG_ERRORS as JsValue), () => (flagErrors as JsValue))));
+if ((isQuotaLimited as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]("You have hit your feature flags quota limit, and will not be able to load feature flags until the quota is reset.  Please visit https://posthog.com/docs/billing/limits-alerts to learn more."));} else {if ((!((data as JsValue)["disable_flags"] as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_receivedFeatureFlags"](json, errorsLoading, object { "partialResponse": isPartialFlagsResponse }));}}
+((requestAdditionalReload as JsValue)());
+return JS.undefined(); };
+JsValue handleError = (JsValue error) => { 
+((((this as JsValue) as JsValue)["_requestInFlight"] = false));
+if ((((requestGeneration as JsValue) !== (((this as JsValue) as JsValue)["_requestGeneration"] as JsValue)) as JsValue).truthy()) {((requestAdditionalReload as JsValue)());
+return JS.undefined();}
+(((this as JsValue) as JsValue)["_set"](__lil_object_43(() => (PERSISTENCE_FEATURE_FLAG_ERRORS as JsValue), () => (JS.array((FeatureFlagError as JsValue)["CONNECTION_ERROR"]) as JsValue))));
+((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Feature flag request failed", error));
+if ((((this as JsValue) as JsValue)["_fallBackToPersistedFlags"]() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"](true));}
+((requestAdditionalReload as JsValue)());
+return JS.undefined(); };
+JsValue attemptsLeft = (((this as JsValue) as JsValue)["_config"] as JsValue)["requestMaxRetries"];
+JsValue shouldRetry = () => { 
+return (((((attemptsLeft as JsValue) > (0.0 as JsValue)) as JsValue) && (((requestGeneration as JsValue) === (((this as JsValue) as JsValue)["_requestGeneration"] as JsValue)) as JsValue)) as JsValue);
+return JS.undefined(); };
+JsValue attempt = () => { 
+if ((((((((requestGeneration as JsValue) !== (((this as JsValue) as JsValue)["_requestGeneration"] as JsValue)) as JsValue) || (!(((this as JsValue) as JsValue)["_client"] as JsValue).truthy() as JsValue)) as JsValue) || ((((this as JsValue) as JsValue)["_config"] as JsValue)["remoteRequestsDisabled"] as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_requestInFlight"] = false));
+((requestAdditionalReload as JsValue)());
+return JS.undefined();}
+JsValue retryLater = () => { 
+attemptsLeft = JS.number(attemptsLeft) - 1.0;
+((setTimeout as JsValue)(attempt, FLAGS_RETRY_DELAY_MS));
+return JS.undefined(); };
+try {((() => { (((client as JsValue)["sendRequest"](path, object { "target": "flags", "method": "POST", "body": data, "compression": (((this as JsValue) as JsValue)["_config"] as JsValue)["compression"], "sentAt": "body", "timeoutMs": (((this as JsValue) as JsValue)["_config"] as JsValue)["requestTimeoutMs"] }) as JsValue)["then"]((JsValue response) => { 
+if ((((isRetryableFlagsResponse(response) as JsValue) && ((shouldRetry as JsValue)() as JsValue)) as JsValue).truthy()) {((retryLater as JsValue)());
+return JS.undefined();}
+((handleResponse as JsValue)(response));
+return JS.undefined(); }) as JsValue)["catch"](handleError); return JS.undefined(); })());} catch (JsValue error) {((handleError as JsValue)(error));}
+return JS.undefined(); };
+((attempt as JsValue)());
+return JS.undefined(); }
+
+JsValue _hasStatusZeroCircuitBreakerTripped() { 
+return (isStatusZeroFailureCircuitBreakerTripped as JsValue)(((this as JsValue) as JsValue)["_consecutiveStatusZeroFailures"], MAX_CONSECUTIVE_FLAGS_STATUS_ZERO_FAILURES);
+return JS.undefined(); }
+
+JsValue _trackStatusZeroReachability(JsValue statusCode) { 
+((((this as JsValue) as JsValue)["_consecutiveStatusZeroFailures"] = (updateStatusZeroFailureCount as JsValue)(statusCode, ((this as JsValue) as JsValue)["_consecutiveStatusZeroFailures"], MAX_CONSECUTIVE_FLAGS_STATUS_ZERO_FAILURES, () => { 
+return ((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]("Feature flag requests are failing before receiving an HTTP response; this can happen due to network issues, CORS, browser blocking, or ad blockers. Stopped refreshing feature flags; will try again when connectivity changes.") as JsValue);
+return JS.undefined(); })));
+return JS.undefined(); }
+
+JsValue getFeatureFlag(JsValue key, JsValue options = object {  }) { 
+JsValue _a = JS.undefined();
+if (((((options as JsValue)["fresh"] as JsValue) && (!(((this as JsValue) as JsValue)["_flagsLoadedFromRemote"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((((!(((this as JsValue) as JsValue)["_hasLoadedFlags"] as JsValue).truthy() as JsValue) && (!((((((this as JsValue) as JsValue)["getFlags"]() as JsValue) && ((((((this as JsValue) as JsValue)["getFlags"]() as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue))) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]((((("getFeatureFlag for key \"" as JsValue) + (key as JsValue)) as JsValue) + (FLAG_TIMEOUT_MSG as JsValue))));
+return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_checkAndTriggerStaleRefresh"]() as JsValue).truthy()) {return JS.undefined();}
+JsValue result = ((this as JsValue) as JsValue)["getFeatureFlagResult"](key, options);
+return if ((((((((_a = if ((((((result as JsValue) === (null as JsValue)) as JsValue) || (((result as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((result as JsValue)["variant"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (if ((((((result as JsValue) === (null as JsValue)) as JsValue) || (((result as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((result as JsValue)["enabled"] as JsValue) } as JsValue) };
+return JS.undefined(); }
+
+JsValue getFeatureFlagDetails(JsValue key) { 
+JsValue details = ((this as JsValue) as JsValue)["getFlagsWithDetails"]();
+return (details as JsValue)[key];
+return JS.undefined(); }
+
+JsValue getFeatureFlagPayload(JsValue key) { 
+JsValue result = ((this as JsValue) as JsValue)["getFeatureFlagResult"](key, object { "send_event": false });
+return if ((((((result as JsValue) === (null as JsValue)) as JsValue) || (((result as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((result as JsValue)["payload"] as JsValue) };
+return JS.undefined(); }
+
+JsValue getFeatureFlagResult(JsValue key, JsValue options = object {  }) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue _h = JS.undefined();
+JsValue _j = JS.undefined();
+JsValue _k = JS.undefined();
+JsValue _l = JS.undefined();
+JsValue _m = JS.undefined();
+JsValue _o = JS.undefined();
+JsValue _p = JS.undefined();
+JsValue _q = JS.undefined();
+JsValue _r = JS.undefined();
+if (((((options as JsValue)["fresh"] as JsValue) && (!(((this as JsValue) as JsValue)["_flagsLoadedFromRemote"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((((!(((this as JsValue) as JsValue)["_hasLoadedFlags"] as JsValue).truthy() as JsValue) && (!((((((this as JsValue) as JsValue)["getFlags"]() as JsValue) && ((((((this as JsValue) as JsValue)["getFlags"]() as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue))) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]((((("getFeatureFlagResult for key \"" as JsValue) + (key as JsValue)) as JsValue) + (FLAG_TIMEOUT_MSG as JsValue))));
+return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_checkAndTriggerStaleRefresh"]() as JsValue).truthy()) {return JS.undefined();}
+JsValue flagVariants = ((this as JsValue) as JsValue)["getFlagVariants"]();
+JsValue flagExists = JS.in(key, flagVariants);
+JsValue flagValue = (flagVariants as JsValue)[key];
+JsValue payloads = ((this as JsValue) as JsValue)["getFlagPayloads"]();
+JsValue payload = (payloads as JsValue)[key];
+JsValue flagReportValue = (String as JsValue)(flagValue);
+JsValue requestId = ((((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_REQUEST_ID) as JsValue) || (JS.undefined() as JsValue));
+JsValue evaluatedAt = ((((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_EVALUATED_AT) as JsValue) || (JS.undefined() as JsValue));
+JsValue flagCallReported = ((((this as JsValue) as JsValue)["_prop"](FLAG_CALL_REPORTED) as JsValue) || (object {  } as JsValue));
+JsValue sessionIdToPersist = JS.undefined();
+if (((((this as JsValue) as JsValue)["_config"] as JsValue)["deduplicateCallsPerSession"] as JsValue).truthy()) {JsValue currentSessionId = if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["session"] as JsValue)["sessionId"] as JsValue) };
+JsValue storedSessionId = ((this as JsValue) as JsValue)["_prop"](FLAG_CALL_REPORTED_SESSION_ID);
+if ((((currentSessionId as JsValue) && (((currentSessionId as JsValue) !== (storedSessionId as JsValue)) as JsValue)) as JsValue).truthy()) {((flagCallReported = object {  }));
+((sessionIdToPersist = currentSessionId));}}
+if (((((options as JsValue)["send_event"] as JsValue) || (!((JS.in("send_event", options)) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if ((((!((JS.in(key, flagCallReported)) as JsValue).truthy() as JsValue) || (!(((flagCallReported as JsValue)[key] as JsValue)["includes"](flagReportValue) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if (((isArray as JsValue)((flagCallReported as JsValue)[key]) as JsValue).truthy()) {(((flagCallReported as JsValue)[key] as JsValue)["push"](flagReportValue));} else {(((flagCallReported as JsValue)[key] = JS.array(flagReportValue)));}
+(((this as JsValue) as JsValue)["_set"](__lil_object_44(() => (FLAG_CALL_REPORTED as JsValue), () => (flagCallReported as JsValue), () => ((if ((sessionIdToPersist as JsValue).truthy()) { (__lil_object_45(() => (FLAG_CALL_REPORTED_SESSION_ID as JsValue), () => (sessionIdToPersist as JsValue)) as JsValue) } else { (object {  } as JsValue) }) as JsValue))));
+JsValue flagDetails = ((this as JsValue) as JsValue)["getFeatureFlagDetails"](key);
+JsValue errors = (() => { JsValue __port_46 = JS.array();
+for (JsValue __port_47 of (if ((((((((_b = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_FEATURE_FLAG_ERRORS))) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (JS.array() as JsValue) })) { __port_46.push(__port_47); }return __port_46; })();
+if (((isUndefined as JsValue)(flagValue) as JsValue).truthy()) {((errors as JsValue)["push"]((FeatureFlagError as JsValue)["FLAG_MISSING"]));}
+JsValue properties = object { "$feature_flag": key, "$feature_flag_response": flagValue, "$feature_flag_payload": if ((((((payload as JsValue) !== (null as JsValue)) as JsValue) && (((payload as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (payload as JsValue) } else { (null as JsValue) }, "$feature_flag_request_id": requestId, "$feature_flag_evaluated_at": evaluatedAt, "$feature_flag_bootstrapped_response": if ((((((((_e = if ((((((((_d = if ((((((((_c = (((this as JsValue) as JsValue)["_config"] as JsValue)["bootstrap"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["featureFlags"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)[key] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_e as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_e as JsValue) } else { (null as JsValue) }, "$feature_flag_bootstrapped_payload": if ((((((((_h = if ((((((((_g = if ((((((((_f = (((this as JsValue) as JsValue)["_config"] as JsValue)["bootstrap"])) as JsValue) === (null as JsValue)) as JsValue) || (((_f as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_f as JsValue)["featureFlagPayloads"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_g as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_g as JsValue)[key] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_h as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_h as JsValue) } else { (null as JsValue) }, "$used_bootstrap_value": !(((this as JsValue) as JsValue)["_flagsLoadedFromRemote"] as JsValue).truthy() };
+if ((!((isUndefined as JsValue)(if ((((((((_j = if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["metadata"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_j as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_j as JsValue)["has_experiment"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {(((properties as JsValue)["$feature_flag_has_experiment"] = ((flagDetails as JsValue)["metadata"] as JsValue)["has_experiment"]));}
+if ((!((isUndefined as JsValue)(if ((((((((_k = if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["metadata"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_k as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_k as JsValue)["version"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {(((properties as JsValue)["$feature_flag_version"] = ((flagDetails as JsValue)["metadata"] as JsValue)["version"]));}
+JsValue reason = if ((((((((_m = if ((((((((_l = if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["reason"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_l as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_l as JsValue)["description"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_m as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_m as JsValue) } else { (if ((((((((_o = if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["reason"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_o as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_o as JsValue)["code"] as JsValue) } as JsValue) };
+if ((reason as JsValue).truthy()) {(((properties as JsValue)["$feature_flag_reason"] = reason));}
+if ((if ((((((((_p = if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["metadata"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_p as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_p as JsValue)["id"] as JsValue) } as JsValue).truthy()) {(((properties as JsValue)["$feature_flag_id"] = ((flagDetails as JsValue)["metadata"] as JsValue)["id"]));}
+if ((((!((isUndefined as JsValue)(if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["original_variant"] as JsValue) }) as JsValue).truthy() as JsValue) || (!((isUndefined as JsValue)(if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["original_enabled"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((properties as JsValue)["$feature_flag_original_response"] = if ((!((isUndefined as JsValue)((flagDetails as JsValue)["original_variant"]) as JsValue).truthy() as JsValue).truthy()) { ((flagDetails as JsValue)["original_variant"] as JsValue) } else { ((flagDetails as JsValue)["original_enabled"] as JsValue) }));}
+if ((if ((((((((_q = if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["metadata"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_q as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_q as JsValue)["original_payload"] as JsValue) } as JsValue).truthy()) {(((properties as JsValue)["$feature_flag_original_payload"] = if ((((((((_r = if ((((((flagDetails as JsValue) === (null as JsValue)) as JsValue) || (((flagDetails as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((flagDetails as JsValue)["metadata"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_r as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_r as JsValue)["original_payload"] as JsValue) }));}
+if (((errors as JsValue)["length"] as JsValue).truthy()) {(((properties as JsValue)["$feature_flag_error"] = (errors as JsValue)["join"](",")));}
+(((this as JsValue) as JsValue)["_captureFeatureFlagCalled"](properties));} else {if ((sessionIdToPersist as JsValue).truthy()) {(((this as JsValue) as JsValue)["_set"](__lil_object_48(() => (FLAG_CALL_REPORTED as JsValue), () => (flagCallReported as JsValue), () => (FLAG_CALL_REPORTED_SESSION_ID as JsValue), () => (sessionIdToPersist as JsValue))));}}} else {if ((sessionIdToPersist as JsValue).truthy()) {(((this as JsValue) as JsValue)["_set"](__lil_object_49(() => (FLAG_CALL_REPORTED as JsValue), () => (flagCallReported as JsValue), () => (FLAG_CALL_REPORTED_SESSION_ID as JsValue), () => (sessionIdToPersist as JsValue))));}}
+if ((!(flagExists as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+return object { "key": key, "enabled": !(!(flagValue as JsValue).truthy() as JsValue).truthy(), "variant": if ((((JS.typeOf(flagValue) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (flagValue as JsValue) } else { (JS.undefined() as JsValue) }, "payload": (parsePayload as JsValue)(payload) };
+return JS.undefined(); }
+
+JsValue _captureFeatureFlagCalled(JsValue properties) { 
+JsValue _a = JS.undefined();
+try {(if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["capture"]("$feature_flag_called", properties) as JsValue) });} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Failed to capture feature flag call", error));}
+return JS.undefined(); }
+
+JsValue getRemoteConfigPayload(JsValue key, JsValue callback) { 
+((() => { ((this as JsValue) as JsValue)["_getRemoteConfigPayload"](key, callback); return JS.undefined(); })());
+return JS.undefined(); }
+
+async JsValue _getRemoteConfigPayload(JsValue key, JsValue callback) { 
+JsValue _a = JS.undefined();
+JsValue client = ((this as JsValue) as JsValue)["_client"];
+if ((!(client as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue data = object { "distinct_id": (client as JsValue)["distinctId"], "token": (client as JsValue)["projectToken"], "person_properties": object { "$lib": ((client as JsValue)["library"] as JsValue)["name"], "$lib_version": ((client as JsValue)["library"] as JsValue)["version"] } };
+JsValue evaluationContexts = ((this as JsValue) as JsValue)["_getValidEvaluationEnvironments"]();
+if (((evaluationContexts as JsValue)["length"] as JsValue).truthy()) {(((data as JsValue)["evaluation_contexts"] = evaluationContexts));}
+JsValue flagKeys = ((this as JsValue) as JsValue)["_getValidFlagKeys"]();
+if ((!((isUndefined as JsValue)(flagKeys) as JsValue).truthy() as JsValue).truthy()) {(((data as JsValue)["flag_keys"] = flagKeys));}
+JsValue payload = JS.undefined();
+try {JsValue response = (await (JS.assume((client as JsValue)["sendRequest"]("/flags/?v=2", object { "target": "flags", "method": "POST", "body": data, "compression": (((this as JsValue) as JsValue)["_config"] as JsValue)["compression"], "sentAt": "body", "timeoutMs": (((this as JsValue) as JsValue)["_config"] as JsValue)["requestTimeoutMs"] })) as Task<JsValue>));
+JsValue payloads = if ((((((((_a = (response as JsValue)["json"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["featureFlagPayloads"] as JsValue) };
+((payload = (((if ((((((payloads as JsValue) === (null as JsValue)) as JsValue) || (((payloads as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((payloads as JsValue)[key] as JsValue) }) as JsValue) || (JS.undefined() as JsValue))));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Remote config feature flag request failed", error));
+return JS.undefined();}
+try {((callback as JsValue)(payload));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Remote config feature flag callback failed", error));}
+return JS.undefined(); }
+
+JsValue isFeatureEnabled(JsValue key, JsValue options = object {  }) { 
+if (((((options as JsValue)["fresh"] as JsValue) && (!(((this as JsValue) as JsValue)["_flagsLoadedFromRemote"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return (options as JsValue)["defaultValue"];}
+if ((((!(((this as JsValue) as JsValue)["_hasLoadedFlags"] as JsValue).truthy() as JsValue) && (!((((((this as JsValue) as JsValue)["getFlags"]() as JsValue) && ((((((this as JsValue) as JsValue)["getFlags"]() as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue))) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]((((("isFeatureEnabled for key \"" as JsValue) + (key as JsValue)) as JsValue) + (FLAG_TIMEOUT_MSG as JsValue))));
+return (options as JsValue)["defaultValue"];}
+JsValue flagValue = ((this as JsValue) as JsValue)["getFeatureFlag"](key, options);
+return if (((isUndefined as JsValue)(flagValue) as JsValue).truthy()) { ((options as JsValue)["defaultValue"] as JsValue) } else { (!(!(flagValue as JsValue).truthy() as JsValue).truthy() as JsValue) };
+return JS.undefined(); }
+
+JsValue addFeatureFlagsHandler(JsValue handler) { 
+((((this as JsValue) as JsValue)["featureFlagEventHandlers"] as JsValue)["push"](handler));
+return JS.undefined(); }
+
+JsValue removeFeatureFlagsHandler(JsValue handler) { 
+((((this as JsValue) as JsValue)["featureFlagEventHandlers"] = (((this as JsValue) as JsValue)["featureFlagEventHandlers"] as JsValue)["filter"]((JsValue h) => { 
+return (((h as JsValue) !== (handler as JsValue)) as JsValue);
+return JS.undefined(); })));
+return JS.undefined(); }
+
+JsValue receivedFeatureFlags(JsValue response, JsValue errorsLoading, JsValue options) { 
+((() => { ((this as JsValue) as JsValue)["_receivedFeatureFlags"](response, errorsLoading, options); return JS.undefined(); })());
+return JS.undefined(); }
+
+JsValue _receivedFeatureFlags(JsValue response, JsValue errorsLoading, JsValue options) { 
+if ((!(((this as JsValue) as JsValue)["_client"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_hasLoadedFlags"] = true));
+JsValue currentFlags = ((this as JsValue) as JsValue)["getFlagVariants"]();
+JsValue currentFlagPayloads = ((this as JsValue) as JsValue)["getFlagPayloads"]();
+JsValue currentFlagDetails = ((this as JsValue) as JsValue)["getFlagsWithDetails"]();
+JsValue statePatch = (parseFlagsResponse as JsValue)(response, currentFlags, currentFlagPayloads, currentFlagDetails, options, ((this as JsValue) as JsValue)["_logger"]);
+if ((statePatch as JsValue).truthy()) {if (((((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["persist"] as JsValue) }) as JsValue) === (false as JsValue)) as JsValue).truthy()) {JsValue hasPersistedFlags = !((isUndefined as JsValue)(((((this as JsValue) as JsValue)["_client"] as JsValue)["kv"] as JsValue)["get"](ENABLED_FEATURE_FLAGS)) as JsValue).truthy();
+((((this as JsValue) as JsValue)["_bootstrapState"] = statePatch));
+if ((!(hasPersistedFlags as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_set"](statePatch));}} else {(((this as JsValue) as JsValue)["_clearBootstrapState"]());
+(((this as JsValue) as JsValue)["_markCrossTabFeatureFlagSnapshot"](statePatch, response, !(!((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["partialResponse"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()));
+(((this as JsValue) as JsValue)["_set"](statePatch));}} else {if ((errorsLoading as JsValue).truthy()) {(((this as JsValue) as JsValue)["_fallBackToPersistedFlags"]());}}
+if ((!(errorsLoading as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_staleCacheRefreshTriggered"] = false));}
+(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"](errorsLoading));
+return JS.undefined(); }
+
+JsValue override(JsValue flags, JsValue suppressWarning = false) { 
+((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]("override is deprecated. Please use overrideFeatureFlags instead."));
+(((this as JsValue) as JsValue)["overrideFeatureFlags"](object { "flags": flags, "suppressWarning": suppressWarning }));
+return JS.undefined(); }
+
+JsValue overrideFeatureFlags(JsValue overrideOptions) { 
+(((this as JsValue) as JsValue)["_overrideFeatureFlags"](overrideOptions));
+return JS.undefined(); }
+
+JsValue _overrideFeatureFlags(JsValue overrideOptions) { 
+JsValue _a = JS.undefined();
+if ((!(((this as JsValue) as JsValue)["_client"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]("posthog.featureFlags.overrideFeatureFlags called before feature flags were ready"));
+return JS.undefined();}
+if ((((overrideOptions as JsValue) === (false as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_remove"](JS.array(PERSISTENCE_OVERRIDE_FEATURE_FLAGS, PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS)));
+(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"]());
+((forceDebugLogger as JsValue)["info"]("All overrides cleared"));
+return JS.undefined();}
+if (((isArray as JsValue)(overrideOptions) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_set"](__lil_object_50(() => (PERSISTENCE_OVERRIDE_FEATURE_FLAGS as JsValue), () => (arrayToFlagsRecord(overrideOptions) as JsValue))));
+(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"]());
+((forceDebugLogger as JsValue)["info"]("Flag overrides set", object { "flags": overrideOptions }));
+return JS.undefined();}
+if ((((((overrideOptions as JsValue) && (((JS.typeOf(overrideOptions) as JsValue) === ("object" as JsValue)) as JsValue)) as JsValue) && ((((JS.in("flags", overrideOptions) as JsValue) || (JS.in("payloads", overrideOptions) as JsValue))) as JsValue)) as JsValue).truthy()) {JsValue options = overrideOptions;
+((((this as JsValue) as JsValue)["_override_warning"] = (Boolean as JsValue)(if ((((((((_a = (options as JsValue)["suppressWarning"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (false as JsValue) })));
+JsValue statePatch = object {  };
+JsValue flags = (options as JsValue)["flags"];
+JsValue payloads = (options as JsValue)["payloads"];
+if ((flags as JsValue).truthy()) {(((statePatch as JsValue)[PERSISTENCE_OVERRIDE_FEATURE_FLAGS] = if (((isArray as JsValue)(flags) as JsValue).truthy()) { (arrayToFlagsRecord(flags) as JsValue) } else { (flags as JsValue) }));}
+if ((payloads as JsValue).truthy()) {(((statePatch as JsValue)[PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS] = payloads));}
+if ((((Object as JsValue)["keys"](statePatch) as JsValue)["length"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_set"](statePatch));}
+if ((((((flags as JsValue) === (false as JsValue)) as JsValue) && (((payloads as JsValue) === (false as JsValue)) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_remove"](JS.array(PERSISTENCE_OVERRIDE_FEATURE_FLAGS, PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS)));} else {if ((((flags as JsValue) === (false as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_remove"](PERSISTENCE_OVERRIDE_FEATURE_FLAGS));} else {if ((((payloads as JsValue) === (false as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_remove"](PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS));}}}
+(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"]());
+if ((((flags as JsValue) === (false as JsValue)) as JsValue).truthy()) {((forceDebugLogger as JsValue)["info"]("Flag overrides cleared"));} else {if ((flags as JsValue).truthy()) {((forceDebugLogger as JsValue)["info"]("Flag overrides set", object { "flags": flags }));}}
+if ((((payloads as JsValue) === (false as JsValue)) as JsValue).truthy()) {((forceDebugLogger as JsValue)["info"]("Payload overrides cleared"));} else {if ((payloads as JsValue).truthy()) {((forceDebugLogger as JsValue)["info"]("Payload overrides set", object { "payloads": payloads }));}}
+return JS.undefined();}
+if ((((overrideOptions as JsValue) && (((JS.typeOf(overrideOptions) as JsValue) === ("object" as JsValue)) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_set"](__lil_object_51(() => (PERSISTENCE_OVERRIDE_FEATURE_FLAGS as JsValue), () => (overrideOptions as JsValue))));
+(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"]());
+((forceDebugLogger as JsValue)["info"]("Flag overrides set", object { "flags": overrideOptions }));
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_logger"] as JsValue)["warn"]("Invalid overrideOptions provided to overrideFeatureFlags", object { "overrideOptions": overrideOptions }));
+return JS.undefined(); }
+
+JsValue onFeatureFlags(JsValue callback) { 
+(((this as JsValue) as JsValue)["addFeatureFlagsHandler"](callback));
+if ((((this as JsValue) as JsValue)["_hasLoadedFlags"] as JsValue).truthy()) {JsValue __port_52 = ((this as JsValue) as JsValue)["_prepareFeatureFlagsForCallbacks"]();
+JsValue flags = __port_52["flags"];
+JsValue flagVariants = __port_52["flagVariants"];
+try {((callback as JsValue)(flags, flagVariants));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Error while running feature flags callback", error));}}
+return () => { 
+return (((this as JsValue) as JsValue)["removeFeatureFlagsHandler"](callback) as JsValue);
+return JS.undefined(); };
+return JS.undefined(); }
+
+JsValue updateEarlyAccessFeatureEnrollment(JsValue key, JsValue isEnrolled, JsValue stage) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue existing_early_access_features = ((((this as JsValue) as JsValue)["_prop"](PERSISTENCE_EARLY_ACCESS_FEATURES) as JsValue) || (JS.array() as JsValue));
+JsValue feature = (existing_early_access_features as JsValue)["find"]((JsValue f) => { 
+return ((((f as JsValue)["flagKey"] as JsValue) === (key as JsValue)) as JsValue);
+return JS.undefined(); });
+JsValue enrollmentPersonProp = __lil_object_53(() => (`$feature_enrollment/${key}` as JsValue), () => (isEnrolled as JsValue));
+JsValue properties = object { "$feature_flag": key, "$feature_enrollment": isEnrolled, "$set": enrollmentPersonProp };
+if ((feature as JsValue).truthy()) {(((properties as JsValue)["$early_access_feature_name"] = (feature as JsValue)["name"]));}
+if ((stage as JsValue).truthy()) {(((properties as JsValue)["$feature_enrollment_stage"] = stage));}
+JsValue newFlags = __lil_object_54(() => (((this as JsValue) as JsValue)["getFlagVariants"]() as JsValue), () => (key as JsValue), () => (isEnrolled as JsValue));
+(if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_instance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["persistence"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["markCrossTabFeatureFlagChanges"](__lil_object_55(() => (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue), () => (JS.array(key) as JsValue), () => (ENABLED_FEATURE_FLAGS as JsValue), () => (JS.array(key) as JsValue), () => (STORED_PERSON_PROPERTIES_KEY as JsValue), () => ((Object as JsValue)["keys"](enrollmentPersonProp) as JsValue))) as JsValue) });
+(((this as JsValue) as JsValue)["_set"](__lil_object_56(() => (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue), () => ((Object as JsValue)["keys"]((filterActiveFeatureFlags as JsValue)(newFlags)) as JsValue), () => (ENABLED_FEATURE_FLAGS as JsValue), () => (newFlags as JsValue), () => (STORED_PERSON_PROPERTIES_KEY as JsValue), () => (__lil_object_57(() => ((((((this as JsValue) as JsValue)["_prop"](STORED_PERSON_PROPERTIES_KEY) as JsValue) || (object {  } as JsValue))) as JsValue), () => (enrollmentPersonProp as JsValue)) as JsValue))));
+(((this as JsValue) as JsValue)["_fireFeatureFlagsCallbacks"]());
+try {(if ((((((((_c = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["capture"]("$feature_enrollment_update", properties) as JsValue) });} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Failed to capture early access feature enrollment", error));}
+return JS.undefined(); }
+
+JsValue getEarlyAccessFeatures(JsValue callback, JsValue force_reload = false, JsValue stages = JS.undefined()) { 
+JsValue existing_early_access_features = ((this as JsValue) as JsValue)["_prop"](PERSISTENCE_EARLY_ACCESS_FEATURES);
+if ((((existing_early_access_features as JsValue) && (!(force_reload as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((callback as JsValue)(existing_early_access_features));
+return JS.undefined();}
+((() => { ((this as JsValue) as JsValue)["_getEarlyAccessFeatures"](callback, stages); return JS.undefined(); })());
+return JS.undefined(); }
+
+async JsValue _getEarlyAccessFeatures(JsValue callback, JsValue stages) { 
+JsValue client = ((this as JsValue) as JsValue)["_client"];
+if ((!(client as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue stageParams = if ((stages as JsValue).truthy()) { (`&${((stages as JsValue)["map"]((JsValue s) => { 
+return (`stage=${s}` as JsValue);
+return JS.undefined(); }) as JsValue)["join"]("&")}` as JsValue) } else { ("" as JsValue) };
+JsValue earlyAccessFeatures = JS.undefined();
+try {JsValue response = (await (JS.assume((client as JsValue)["sendRequest"](`/api/early_access_features/?token=${(client as JsValue)["projectToken"]}${stageParams}`, object { "target": "api", "method": "GET", "sentAt": "query" })) as Task<JsValue>));
+if ((!((response as JsValue)["json"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((earlyAccessFeatures = ((response as JsValue)["json"] as JsValue)["earlyAccessFeatures"]));
+(((this as JsValue) as JsValue)["_set"](__lil_object_58(() => (PERSISTENCE_EARLY_ACCESS_FEATURES as JsValue), () => (earlyAccessFeatures as JsValue))));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Early access feature request failed", error));
+return JS.undefined();}
+try {((callback as JsValue)(earlyAccessFeatures));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Early access feature callback failed", error));}
+return JS.undefined(); }
+
+JsValue _prepareFeatureFlagsForCallbacks() { 
+JsValue flags = ((this as JsValue) as JsValue)["getFlags"]();
+JsValue flagVariants = ((this as JsValue) as JsValue)["getFlagVariants"]();
+JsValue truthyFlags = (flags as JsValue)["filter"]((JsValue flag) => { 
+return ((flagVariants as JsValue)[flag] as JsValue);
+return JS.undefined(); });
+JsValue truthyFlagVariants = (((Object as JsValue)["keys"](flagVariants) as JsValue)["filter"]((JsValue variantKey) => { 
+return ((flagVariants as JsValue)[variantKey] as JsValue);
+return JS.undefined(); }) as JsValue)["reduce"]((JsValue res, JsValue key) => { 
+(((res as JsValue)[key] = (flagVariants as JsValue)[key]));
+return res;
+return JS.undefined(); }, object {  });
+return object { "flags": truthyFlags, "flagVariants": truthyFlagVariants };
+return JS.undefined(); }
+
+JsValue _fireFeatureFlagsCallbacks(JsValue errorsLoading) { 
+(((this as JsValue) as JsValue)["_rebuildEventProperties"]());
+JsValue __port_59 = ((this as JsValue) as JsValue)["_prepareFeatureFlagsForCallbacks"]();
+JsValue flags = __port_59["flags"];
+JsValue flagVariants = __port_59["flagVariants"];
+((((this as JsValue) as JsValue)["featureFlagEventHandlers"] as JsValue)["forEach"]((JsValue handler) => { 
+try {((handler as JsValue)(flags, flagVariants, object { "errorsLoading": errorsLoading }));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Error while running feature flags callback", error));}
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue setPersonPropertiesForFlags(JsValue properties, JsValue reloadFeatureFlags = true) { 
+(((this as JsValue) as JsValue)["_setPersonPropertiesForFlags"](properties, reloadFeatureFlags));
+return JS.undefined(); }
+
+JsValue _setPersonPropertiesForFlags(JsValue properties, JsValue reloadFeatureFlags = true) { 
+JsValue existingProperties = ((((this as JsValue) as JsValue)["_prop"](STORED_PERSON_PROPERTIES_KEY) as JsValue) || (object {  } as JsValue));
+JsValue propsToSet = (((if ((((((properties as JsValue) === (null as JsValue)) as JsValue) || (((properties as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((properties as JsValue)["$set"] as JsValue) }) as JsValue) || ((if ((!((if ((((((properties as JsValue) === (null as JsValue)) as JsValue) || (((properties as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((properties as JsValue)["$set_once"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) { (properties as JsValue) } else { (object {  } as JsValue) }) as JsValue));
+JsValue propsToSetOnce = if ((((((properties as JsValue) === (null as JsValue)) as JsValue) || (((properties as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((properties as JsValue)["$set_once"] as JsValue) };
+JsValue setOnceProps = object {  };
+if ((propsToSetOnce as JsValue).truthy()) {for (string key in propsToSetOnce) {
+if (((((Object as JsValue)["prototype"] as JsValue)["hasOwnProperty"] as JsValue)["call"](propsToSetOnce, key) as JsValue).truthy()) {if ((!((JS.in(key, existingProperties)) as JsValue).truthy() as JsValue).truthy()) {(((setOnceProps as JsValue)[key] = (propsToSetOnce as JsValue)[key]));}}}}
+(((this as JsValue) as JsValue)["_set"](__lil_object_60(() => (STORED_PERSON_PROPERTIES_KEY as JsValue), () => (__lil_object_61(() => (existingProperties as JsValue), () => (setOnceProps as JsValue), () => (propsToSet as JsValue)) as JsValue))));
+if ((reloadFeatureFlags as JsValue).truthy()) {(((this as JsValue) as JsValue)["reloadFeatureFlags"]());}
+return JS.undefined(); }
+
+JsValue unsetPersonPropertiesForFlags(JsValue propertyNames, JsValue reloadFeatureFlags = true) { 
+JsValue existingProperties = ((((this as JsValue) as JsValue)["_prop"](STORED_PERSON_PROPERTIES_KEY) as JsValue) || (object {  } as JsValue));
+JsValue nextProperties = __lil_object_62(() => (existingProperties as JsValue));
+((propertyNames as JsValue)["forEach"]((JsValue name) => { 
+((() => { JS.delete(nextProperties, name); return true; })());
+return JS.undefined(); }));
+(((this as JsValue) as JsValue)["_set"](__lil_object_63(() => (STORED_PERSON_PROPERTIES_KEY as JsValue), () => (nextProperties as JsValue))));
+if ((reloadFeatureFlags as JsValue).truthy()) {(((this as JsValue) as JsValue)["reloadFeatureFlags"]());}
+return JS.undefined(); }
+
+JsValue resetPersonPropertiesForFlags(JsValue reloadFeatureFlags = true) { 
+(((this as JsValue) as JsValue)["_remove"](STORED_PERSON_PROPERTIES_KEY));
+if ((reloadFeatureFlags as JsValue).truthy()) {(((this as JsValue) as JsValue)["reloadFeatureFlags"]());}
+return JS.undefined(); }
+
+JsValue setGroupPropertiesForFlags(JsValue properties, JsValue reloadFeatureFlags = true) { 
+JsValue existingProperties = (((((this as JsValue) as JsValue)["_prop"](STORED_GROUP_PROPERTIES_KEY) as JsValue) || (object {  } as JsValue)));
+JsValue nextProperties = __lil_object_64(() => (existingProperties as JsValue));
+for (JsValue groupType of (Object as JsValue)["keys"](properties)) {
+(((nextProperties as JsValue)[groupType] = __lil_object_65(() => ((existingProperties as JsValue)[groupType] as JsValue), () => ((properties as JsValue)[groupType] as JsValue))));}
+(((this as JsValue) as JsValue)["_set"](__lil_object_66(() => (STORED_GROUP_PROPERTIES_KEY as JsValue), () => (nextProperties as JsValue))));
+if ((reloadFeatureFlags as JsValue).truthy()) {(((this as JsValue) as JsValue)["reloadFeatureFlags"]());}
+return JS.undefined(); }
+
+JsValue resetGroupPropertiesForFlags(JsValue group_type) { 
+if ((group_type as JsValue).truthy()) {JsValue existingProperties = ((((this as JsValue) as JsValue)["_prop"](STORED_GROUP_PROPERTIES_KEY) as JsValue) || (object {  } as JsValue));
+(((this as JsValue) as JsValue)["_set"](__lil_object_67(() => (STORED_GROUP_PROPERTIES_KEY as JsValue), () => (__lil_object_68(() => (existingProperties as JsValue), () => (group_type as JsValue), () => (object {  } as JsValue)) as JsValue))));} else {(((this as JsValue) as JsValue)["_remove"](STORED_GROUP_PROPERTIES_KEY));}
+return JS.undefined(); }
+
+JsValue reset() { 
+((() => { JsValue __port_70 = (this as JsValue); number __port_69 = JS.number(__port_70["_requestGeneration"]); __port_70["_requestGeneration"] = __port_69 + 1.0; return __port_69; })());
+((((this as JsValue) as JsValue)["_additionalReloadRequested"] = false));
+((((this as JsValue) as JsValue)["_baseEventProperties"] = object {  }));
+((((this as JsValue) as JsValue)["_eventPropertiesWithFlagValues"] = object {  }));
+((((this as JsValue) as JsValue)["_bootstrapState"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_hasLoadedFlags"] = false));
+((((this as JsValue) as JsValue)["_reloadingDisabled"] = false));
+((((this as JsValue) as JsValue)["_flagsLoadedFromRemote"] = false));
+((((this as JsValue) as JsValue)["$anon_distinct_id"] = JS.undefined()));
+(((this as JsValue) as JsValue)["_clearDebouncer"]());
+((((this as JsValue) as JsValue)["_override_warning"] = false));
+((((this as JsValue) as JsValue)["_consecutiveStatusZeroFailures"] = 0.0));
+return JS.undefined(); }
+}
+export constructor PostHogFeatureFlags;
+
+JsValue __port_0(JsValue response) {
+return ((((((((response as JsValue)["statusCode"] as JsValue) === (0.0 as JsValue)) as JsValue) && (((response as JsValue)["error"] instanceof Error) as JsValue)) as JsValue) && (((((response as JsValue)["error"] as JsValue)["name"] as JsValue) === ("AbortError" as JsValue)) as JsValue)) as JsValue);
+return JS.undefined();}
+
+JsValue __port_1(JsValue response) {
+return ((((RETRYABLE_FLAGS_HTTP_STATUSES as JsValue)["includes"]((response as JsValue)["statusCode"]) as JsValue) || (isFlagsTimeout(response) as JsValue)) as JsValue);
+return JS.undefined();}
+
+JsValue __port_2(JsValue flags) {
+JsValue flagsObj = object {  };
+for (JsValue i = 0.0; (((i as JsValue) < ((flags as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {(((flagsObj as JsValue)[(flags as JsValue)[i]] = true));}
+return flagsObj;
+return JS.undefined();}
+
+JsValue __port_3(JsValue featureFlags) {
+JsValue activeFeatureFlags = object {  };
+for (JsValue __port_71 of (entries as JsValue)(((featureFlags as JsValue) || (object {  } as JsValue)))) {JsValue __port_72 = __port_71;
+JsValue key = JS.undefined();
+JsValue value = JS.undefined();
+int __port_73 = 0;
+for (JsValue __port_74 of __port_72) {
+if (__port_73 === 0) { key = __port_74; }
+if (__port_73 === 1) { value = __port_74; }
+__port_73 += 1; if (__port_73 === 2) break;
+}
+if ((value as JsValue).truthy()) {(((activeFeatureFlags as JsValue)[key] = value));}}
+return activeFeatureFlags;
+return JS.undefined();}
+
+JsValue __port_4(JsValue response, JsValue currentFlags, JsValue currentFlagPayloads, JsValue currentFlagDetails, JsValue options, JsValue responseLogger) {
+JsValue normalizedResponse = normalizeFlagsResponse(response, responseLogger);
+JsValue flagDetails = (normalizedResponse as JsValue)["flags"];
+JsValue featureFlags = (normalizedResponse as JsValue)["featureFlags"];
+JsValue flagPayloads = (normalizedResponse as JsValue)["featureFlagPayloads"];
+if ((!(featureFlags as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue requestId = (response as JsValue)["requestId"];
+JsValue evaluatedAt = (response as JsValue)["evaluatedAt"];
+if (((isArray as JsValue)(featureFlags) as JsValue).truthy()) {((responseLogger as JsValue)["warn"]("v1 of the feature flags endpoint is deprecated. Please use the latest version."));
+JsValue $enabled_feature_flags = object {  };
+if ((featureFlags as JsValue).truthy()) {for (JsValue i = 0.0; (((i as JsValue) < ((featureFlags as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {((($enabled_feature_flags as JsValue)[(featureFlags as JsValue)[i]] = true));}}
+return __lil_object_75(() => (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue), () => (featureFlags as JsValue), () => (ENABLED_FEATURE_FLAGS as JsValue), () => ($enabled_feature_flags as JsValue), () => (PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS as JsValue), () => (false as JsValue));}
+JsValue newFeatureFlags = featureFlags;
+JsValue newFeatureFlagPayloads = flagPayloads;
+JsValue newFeatureFlagDetails = flagDetails;
+if ((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["partialResponse"] as JsValue) } as JsValue).truthy()) {JsValue evaluatedFlagKeys = (Object as JsValue)["keys"](newFeatureFlags);
+JsValue evaluatedPayloads = ((newFeatureFlagPayloads as JsValue) || (object {  } as JsValue));
+((newFeatureFlags = __lil_object_76(() => (currentFlags as JsValue), () => (newFeatureFlags as JsValue))));
+((newFeatureFlagPayloads = __lil_object_77(() => (currentFlagPayloads as JsValue), () => (evaluatedPayloads as JsValue))));
+((evaluatedFlagKeys as JsValue)["forEach"]((JsValue key) => { 
+if ((!((JS.in(key, evaluatedPayloads)) as JsValue).truthy() as JsValue).truthy()) {(if ((((((newFeatureFlagPayloads as JsValue) === (null as JsValue)) as JsValue) || (((newFeatureFlagPayloads as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (true as JsValue) } else { ((() => { JS.delete(newFeatureFlagPayloads, key); return true; })() as JsValue) });}
+return JS.undefined(); }));
+((newFeatureFlagDetails = __lil_object_78(() => (currentFlagDetails as JsValue), () => (newFeatureFlagDetails as JsValue))));} else {if (((response as JsValue)["errorsWhileComputingFlags"] as JsValue).truthy()) {if ((flagDetails as JsValue).truthy()) {JsValue successfulKeys = JS.construct(Set, ((Object as JsValue)["keys"](flagDetails) as JsValue)["filter"]((JsValue key) => { 
+JsValue _a = JS.undefined();
+return !((if ((((((((_a = (flagDetails as JsValue)[key])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["failed"] as JsValue) }) as JsValue).truthy();
+return JS.undefined(); }));
+((newFeatureFlags = __lil_object_79(() => (currentFlags as JsValue), () => ((Object as JsValue)["fromEntries"](((Object as JsValue)["entries"](newFeatureFlags) as JsValue)["filter"]((JsValue __port_80) => { JsValue __port_81 = __port_80;
+JsValue key = JS.undefined();
+int __port_82 = 0;
+for (JsValue __port_83 of __port_81) {
+if (__port_82 === 0) { key = __port_83; }
+__port_82 += 1; if (__port_82 === 1) break;
+}
+return ((successfulKeys as JsValue)["has"](key) as JsValue);
+return JS.undefined(); })) as JsValue))));
+JsValue successfulPayloads = (Object as JsValue)["fromEntries"](((Object as JsValue)["entries"](((newFeatureFlagPayloads as JsValue) || (object {  } as JsValue))) as JsValue)["filter"]((JsValue __port_84) => { JsValue __port_85 = __port_84;
+JsValue key = JS.undefined();
+int __port_86 = 0;
+for (JsValue __port_87 of __port_85) {
+if (__port_86 === 0) { key = __port_87; }
+__port_86 += 1; if (__port_86 === 1) break;
+}
+return ((successfulKeys as JsValue)["has"](key) as JsValue);
+return JS.undefined(); }));
+((newFeatureFlagPayloads = __lil_object_88(() => (currentFlagPayloads as JsValue), () => (successfulPayloads as JsValue))));
+((successfulKeys as JsValue)["forEach"]((JsValue key) => { 
+if ((!((JS.in(key, successfulPayloads)) as JsValue).truthy() as JsValue).truthy()) {(if ((((((newFeatureFlagPayloads as JsValue) === (null as JsValue)) as JsValue) || (((newFeatureFlagPayloads as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (true as JsValue) } else { ((() => { JS.delete(newFeatureFlagPayloads, key); return true; })() as JsValue) });}
+return JS.undefined(); }));
+((newFeatureFlagDetails = __lil_object_89(() => (currentFlagDetails as JsValue), () => ((Object as JsValue)["fromEntries"](((Object as JsValue)["entries"](((newFeatureFlagDetails as JsValue) || (object {  } as JsValue))) as JsValue)["filter"]((JsValue __port_90) => { JsValue __port_91 = __port_90;
+JsValue key = JS.undefined();
+int __port_92 = 0;
+for (JsValue __port_93 of __port_91) {
+if (__port_92 === 0) { key = __port_93; }
+__port_92 += 1; if (__port_92 === 1) break;
+}
+return ((successfulKeys as JsValue)["has"](key) as JsValue);
+return JS.undefined(); })) as JsValue))));} else {((newFeatureFlags = __lil_object_94(() => (currentFlags as JsValue), () => (newFeatureFlags as JsValue))));
+((newFeatureFlagPayloads = __lil_object_95(() => (currentFlagPayloads as JsValue), () => (newFeatureFlagPayloads as JsValue))));
+((newFeatureFlagDetails = __lil_object_96(() => (currentFlagDetails as JsValue), () => (newFeatureFlagDetails as JsValue))));}}}
+return __lil_object_97(() => (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue), () => ((Object as JsValue)["keys"]((filterActiveFeatureFlags as JsValue)(newFeatureFlags)) as JsValue), () => (ENABLED_FEATURE_FLAGS as JsValue), () => (((newFeatureFlags as JsValue) || (object {  } as JsValue)) as JsValue), () => (PERSISTENCE_FEATURE_FLAG_PAYLOADS as JsValue), () => (((newFeatureFlagPayloads as JsValue) || (object {  } as JsValue)) as JsValue), () => (PERSISTENCE_FEATURE_FLAG_DETAILS as JsValue), () => (((newFeatureFlagDetails as JsValue) || (object {  } as JsValue)) as JsValue), () => (PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS as JsValue), () => ((((response as JsValue)["minimalFlagCalledEvents"] as JsValue) === (true as JsValue)) as JsValue), () => ((if ((requestId as JsValue).truthy()) { (__lil_object_98(() => (PERSISTENCE_FEATURE_FLAG_REQUEST_ID as JsValue), () => (requestId as JsValue)) as JsValue) } else { (object {  } as JsValue) }) as JsValue), () => ((if ((evaluatedAt as JsValue).truthy()) { (__lil_object_99(() => (PERSISTENCE_FEATURE_FLAG_EVALUATED_AT as JsValue), () => (evaluatedAt as JsValue)) as JsValue) } else { (object {  } as JsValue) }) as JsValue));
+return JS.undefined();}
+
+JsValue __port_5(JsValue response, JsValue responseLogger) {
+JsValue flagDetails = (response as JsValue)["flags"];
+if ((flagDetails as JsValue).truthy()) {JsValue featureFlags = (Object as JsValue)["fromEntries"](((Object as JsValue)["keys"](flagDetails) as JsValue)["map"]((JsValue flag) => { 
+JsValue _a = JS.undefined();
+return JS.array(flag, if ((((((((_a = ((flagDetails as JsValue)[flag] as JsValue)["variant"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (((flagDetails as JsValue)[flag] as JsValue)["enabled"] as JsValue) });
+return JS.undefined(); }));
+JsValue featureFlagPayloads = (Object as JsValue)["fromEntries"](((((Object as JsValue)["keys"](flagDetails) as JsValue)["filter"]((JsValue flag) => { 
+return (((flagDetails as JsValue)[flag] as JsValue)["enabled"] as JsValue);
+return JS.undefined(); }) as JsValue)["filter"]((JsValue flag) => { 
+JsValue _a = JS.undefined();
+return !((isUndefined as JsValue)(if ((((((((_a = ((flagDetails as JsValue)[flag] as JsValue)["metadata"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["payload"] as JsValue) }) as JsValue).truthy();
+return JS.undefined(); }) as JsValue)["map"]((JsValue flag) => { 
+JsValue _a = JS.undefined();
+return JS.array(flag, if ((((((((_a = ((flagDetails as JsValue)[flag] as JsValue)["metadata"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["payload"] as JsValue) });
+return JS.undefined(); }));
+return __lil_object_100(() => (response as JsValue), () => (featureFlags as JsValue), () => (featureFlagPayloads as JsValue));} else {if (((response as JsValue)["featureFlags"] as JsValue).truthy()) {((responseLogger as JsValue)["warn"]("Using an older version of the feature flags endpoint. Please upgrade your PostHog server to the latest version"));}}
+return response;
+return JS.undefined();}
+export { FeatureFlagError as FeatureFlagError };
+export { filterActiveFeatureFlags as filterActiveFeatureFlags };
+export { parseFlagsResponse as parseFlagsResponse };
+export { QuotaLimitedResource as QuotaLimitedResource };

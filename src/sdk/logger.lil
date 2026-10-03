@@ -1,0 +1,49 @@
+import extern { default as Config } from "../../vendor/posthog-js/packages/browser-common/src/config.ts";
+import extern { window as browserWindow } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+extern JsValue Config;
+extern JsValue browserWindow;
+extern JsValue console;
+
+JsValue makeLogger(JsValue prefix, JsValue options = object {}) {
+  JsValue debugEnabled = options.debugEnabled;
+  JsValue result = JS.object();
+  result._log = (JsValue level, JsValue... args) => {
+    if (browserWindow.truthy() && (Config.DEBUG.truthy() || browserWindow.POSTHOG_DEBUG.truthy() || debugEnabled.truthy()) && !JS.isUndefined(browserWindow.console) && browserWindow.console.truthy()) {
+      JsValue log = if (JS.in("__rrweb_original__", browserWindow.console[level])) {
+        browserWindow.console[level]["__rrweb_original__"]
+      } else { browserWindow.console[level] };
+      log(prefix, ...args);
+    }
+    return JS.undefined();
+  };
+  result.debug = (JsValue... args) => {
+    result._log("debug", ...args);
+    return JS.undefined();
+  };
+  result.info = (JsValue... args) => {
+    result._log("log", ...args);
+    return JS.undefined();
+  };
+  result.warn = (JsValue... args) => {
+    result._log("warn", ...args);
+    return JS.undefined();
+  };
+  result.error = (JsValue... args) => {
+    result._log("error", ...args);
+    return JS.undefined();
+  };
+  result.critical = (JsValue... args) => {
+    console.error(prefix, ...args);
+    return JS.undefined();
+  };
+  result.uninitializedWarning = (JsValue methodName) => {
+    result.error(`You must initialize PostHog before calling ${methodName}`);
+    return JS.undefined();
+  };
+  result.createLogger = (JsValue additionalPrefix, JsValue newOptions) => {
+    return (makeLogger as JsValue)(`${prefix} ${additionalPrefix}`, newOptions);
+  };
+  return result;
+}
+export JsValue logger = (makeLogger as JsValue)("[PostHog.js]");
+export JsValue createLogger = logger.createLogger;

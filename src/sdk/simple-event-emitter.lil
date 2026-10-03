@@ -1,0 +1,20 @@
+export class SimpleEventEmitter {
+  init() { (this as JsValue)._events = JS.object(); }
+
+  JsValue on(JsValue event, JsValue listener) {
+    JsValue self = this as JsValue;
+    if (!self._events[event].truthy()) self._events[event] = JS.array();
+    self._events[event].push(listener);
+    return () => {
+      self._events[event] = self._events[event].filter((JsValue value) => value !== listener);
+      return JS.undefined();
+    };
+  }
+
+  void emit(JsValue event, JsValue payload) {
+    JsValue self = this as JsValue;
+    for (JsValue listener of (self._events[event] || JS.array())) listener(payload);
+    for (JsValue listener of (self._events["*"] || JS.array())) listener(event, payload);
+  }
+}
+export constructor SimpleEventEmitter;

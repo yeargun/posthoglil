@@ -1,0 +1,66 @@
+import extern { getPersonInfo, getPersonPropsFromInfo } from "../../vendor/posthog-js/packages/browser-common/src/utils/event-utils.ts";
+import extern { CLIENT_SESSION_PROPS } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { each, stripEmptyProperties } from "../../vendor/posthog-js/packages/browser-common/src/utils/general-utils.ts";
+import extern { stripLeadingDollar } from "../../vendor/posthog-js/packages/core/src/utils/string-utils.ts";
+import extern {setOwn} from "./property-copy.bridge.mjs";
+extern JsValue setOwn;
+extern JsValue getPersonInfo;
+extern JsValue getPersonPropsFromInfo;
+extern JsValue CLIENT_SESSION_PROPS;
+extern JsValue each;
+extern JsValue stripEmptyProperties;
+extern JsValue stripLeadingDollar;
+
+JsValue generateSessionSourceParams(JsValue posthog) {
+  JsValue mask = if (JS.isNullish(posthog)) { JS.undefined() } else { posthog.config.mask_personal_data_properties };
+  JsValue custom = if (JS.isNullish(posthog)) { JS.undefined() } else { posthog.config.custom_personal_data_properties };
+  JsValue hashes = if (JS.isNullish(posthog)) { JS.undefined() } else { posthog.config.disable_capture_url_hashes };
+  return getPersonInfo(mask, custom, hashes);
+}
+
+export class SessionPropsManager {
+  init(JsValue instance, JsValue sessionManager, JsValue persistence, JsValue sourceGenerator) {
+    JsValue self = this as JsValue;
+    self._instance = JS.undefined();
+    self._sessionIdManager = JS.undefined();
+    self._persistence = JS.undefined();
+    self._sessionSourceParamGenerator = JS.undefined();
+    self._onSessionIdCallback = (JsValue sessionId) => {
+      JsValue stored = self._getStored();
+      if (stored.truthy() && stored.sessionId === sessionId) return JS.undefined();
+      JsValue next = object { sessionId: sessionId, props: self._sessionSourceParamGenerator(self._instance) };
+      self._persistence.register(setOwn(JS.object(), JS.assume(CLIENT_SESSION_PROPS), next));
+      return JS.undefined();
+    };
+    self._instance = instance;
+    self._sessionIdManager = sessionManager;
+    self._persistence = persistence;
+    self._sessionSourceParamGenerator = sourceGenerator || (generateSessionSourceParams as JsValue);
+    self._sessionIdManager.onSessionId(self._onSessionIdCallback);
+  }
+
+  JsValue _getStored() { return (this as JsValue)._persistence.props[CLIENT_SESSION_PROPS]; }
+
+  JsValue getSetOnceProps() {
+    JsValue self = this as JsValue;
+    JsValue stored = self._getStored();
+    JsValue props = if (JS.isNullish(stored)) { JS.undefined() } else { stored.props };
+    if (!props.truthy()) return JS.object();
+    if (JS.in("r", props)) return getPersonPropsFromInfo(props, self._instance.config.disable_capture_url_hashes);
+    return object { $referring_domain: props.referringDomain, $pathname: props.initialPathName,
+      utm_source: props.utm_source, utm_campaign: props.utm_campaign, utm_medium: props.utm_medium,
+      utm_content: props.utm_content, utm_term: props.utm_term };
+  }
+
+  JsValue getSessionProps() {
+    JsValue self = this as JsValue;
+    JsValue props = JS.object();
+    each(stripEmptyProperties(self.getSetOnceProps()), (JsValue value, JsValue key) => {
+      if (key === "$current_url") key = "url";
+      props[`$session_entry_${stripLeadingDollar(key)}`] = value;
+      return JS.undefined();
+    });
+    return props;
+  }
+}
+export constructor SessionPropsManager;

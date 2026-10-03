@@ -1,0 +1,21 @@
+// packages/core/src/utils/backoff.ts, PostHog 1.435.8.
+extern JsValue Math;
+extern number __posthog_backoff_pow(number base, number exponent);
+export number MAX_FLUSH_BACKOFF_EXPONENT = 6.0;
+export number MAX_FLUSH_BACKOFF_MS = 30000.0;
+number JITTER = 0.25;
+export number NO_JITTER = 1.0;
+
+export number drawJitter() {
+    // Math.random's specified result is a primitive binary64 number.
+    number random = JS.assume(Math["random"]());
+    return 1.0 - JITTER + random * JITTER * 2.0;
+}
+
+export JsValue backoffDelayMs(number baseMs, number failures, number jitter, JsValue maxMs = JS.undefined()) {
+    number exponent = JS.assume(Math["min"](Math["max"](0.0, failures - 1.0), MAX_FLUSH_BACKOFF_EXPONENT));
+    number multiplier = __posthog_backoff_pow(2.0, exponent);
+    number delay = baseMs * multiplier;
+    JsValue capped = if (JS.isUndefined(maxMs)) { delay as JsValue } else { Math["min"](delay, Math["max"](maxMs, baseMs)) };
+    return Math["round"](capped * jitter);
+}

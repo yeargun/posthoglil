@@ -1,0 +1,126 @@
+{
+  "source": "packages/browser/src/posthog-persistence.ts",
+  "implementation": "src/sdk/posthog-persistence.lil",
+  "exports": [
+    "PostHogPersistence"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_9",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_18",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_42",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_45",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "cookie_persisted_properties",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_46",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "r",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "u",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "localFunctions": [
+    {
+      "name": "getCookieIdentityChangePendingName",
+      "arity": 1,
+      "calls": 4
+    },
+    {
+      "name": "truncateForCookie",
+      "arity": 1,
+      "calls": 4
+    },
+    {
+      "name": "parseName",
+      "arity": 1,
+      "calls": 1
+    },
+    {
+      "name": "isCrossTabFeatureFlagKey",
+      "arity": 1,
+      "calls": 3
+    },
+    {
+      "name": "isMetaIdentifierKey",
+      "arity": 1,
+      "calls": 2
+    },
+    {
+      "name": "isStorageValueEqual",
+      "arity": 2,
+      "calls": 8
+    },
+    {
+      "name": "parseStorageValue",
+      "arity": 1,
+      "calls": 6
+    },
+    {
+      "name": "isArrayContentsEqual",
+      "arity": 2,
+      "calls": 1
+    },
+    {
+      "name": "clearStaleEventProperties",
+      "arity": 2,
+      "calls": 2
+    }
+  ],
+  "asyncClosures": [],
+  "qualified": false
+}

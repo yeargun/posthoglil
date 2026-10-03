@@ -1,0 +1,468 @@
+// Whole-module migration from packages/browser/src/autocapture.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { addEventListener as addEventListener, each as each, extend as extend } from "@posthog/browser-common/utils/general-utils";
+import extern { autocaptureCompatibleElements as autocaptureCompatibleElements, DEFAULT_AUTOCAPTURE_IGNORE_LIST as DEFAULT_AUTOCAPTURE_IGNORE_LIST, elementMatchesCSSSelector as elementMatchesCSSSelector, getClassNames as getClassNames, getDirectAndNestedSpanText as getDirectAndNestedSpanText, getElementsChainString as getElementsChainString, getEventTarget as getEventTarget, getSafeText as getSafeText, isAngularStyleAttr as isAngularStyleAttr, isSensitiveElement as isSensitiveElement, makeSafeText as makeSafeText, MAX_DOM_ANCESTOR_DEPTH as MAX_DOM_ANCESTOR_DEPTH, shouldCaptureDomEvent as shouldCaptureDomEvent, shouldCaptureElement as shouldCaptureElement, shouldCaptureRageclick as shouldCaptureRageclick, shouldCaptureValue as shouldCaptureValue, splitClassString as splitClassString } from "@posthog/browser-common/utils/autocapture-utils";
+import extern { default as RageClick } from "../../vendor/posthog-js/packages/browser/src/extensions/rageclick.ts";
+import extern { AUTOCAPTURE_DISABLED_SERVER_SIDE as AUTOCAPTURE_DISABLED_SERVER_SIDE } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { AutocaptureExtension as AutocaptureExtension } from "../../vendor/posthog-js/packages/browser/src/extension-tokens.ts";
+import extern { isBoolean as isBoolean, isFunction as isFunction, isNull as isNull, stripUrlHash as stripUrlHash } from "@posthog/core";
+import extern { createLogger as createLogger } from "@posthog/browser-common/utils/logger";
+import extern { document as document, window as window } from "@posthog/browser-common/utils/globals";
+import extern { convertToURL as convertToURL } from "@posthog/browser-common/utils/request-utils";
+import extern { isElementNode as isElementNode, isShadowRoot as isShadowRoot, isTag as isTag, isTextNode as isTextNode } from "@posthog/browser-common/utils/element-utils";
+import extern { includes as includes } from "@posthog/core";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue clearTimeout;
+extern JsValue Set;
+extern JsValue Math;
+extern JsValue setTimeout;
+extern JsValue Map;
+extern JsValue RegExp;
+extern JsValue MouseEvent;
+extern JsValue Date;
+extern JsValue __lil_object_0;
+extern JsValue Object;
+extern JsValue addEventListener;
+extern JsValue each;
+extern JsValue extend;
+
+extern JsValue autocaptureCompatibleElements;
+extern JsValue DEFAULT_AUTOCAPTURE_IGNORE_LIST;
+extern JsValue elementMatchesCSSSelector;
+extern JsValue getClassNames;
+extern JsValue getDirectAndNestedSpanText;
+extern JsValue getElementsChainString;
+extern JsValue getEventTarget;
+extern JsValue getSafeText;
+extern JsValue isAngularStyleAttr;
+extern JsValue isSensitiveElement;
+extern JsValue makeSafeText;
+extern JsValue MAX_DOM_ANCESTOR_DEPTH;
+extern JsValue shouldCaptureDomEvent;
+extern JsValue shouldCaptureElement;
+extern JsValue shouldCaptureRageclick;
+extern JsValue shouldCaptureValue;
+extern JsValue splitClassString;
+
+extern JsValue RageClick;
+
+extern JsValue AUTOCAPTURE_DISABLED_SERVER_SIDE;
+
+extern JsValue AutocaptureExtension;
+
+extern JsValue isBoolean;
+extern JsValue isFunction;
+extern JsValue isNull;
+extern JsValue stripUrlHash;
+
+extern JsValue createLogger;
+
+extern JsValue document;
+extern JsValue window;
+
+extern JsValue convertToURL;
+
+extern JsValue isElementNode;
+extern JsValue isShadowRoot;
+extern JsValue isTag;
+extern JsValue isTextNode;
+
+extern JsValue includes;
+
+JsValue COPY_AUTOCAPTURE_EVENT = "$copy_autocapture";
+
+JsValue logger = (createLogger as JsValue)("[AutoCapture]");
+
+
+
+
+
+
+
+
+
+
+
+
+
+export class Autocapture {
+JsValue _clearPointer() { 
+((((this as JsValue) as JsValue)["_pointerDown"] = JS.undefined()));
+((clearTimeout as JsValue)(((this as JsValue) as JsValue)["_pointerExpiry"]));
+((((this as JsValue) as JsValue)["_pointerExpiry"] = JS.undefined()));
+return JS.undefined(); }
+
+JsValue _isExcludedPointerTarget(JsValue target) { 
+JsValue _a = JS.undefined();
+if ((!((shouldCaptureElement as JsValue)(target) as JsValue).truthy() as JsValue).truthy()) {return true;}
+JsValue ignorelist = if ((((((((_a = (((this as JsValue) as JsValue)["_refreshConfig"]() as JsValue)["css_selector_ignorelist"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (DEFAULT_AUTOCAPTURE_IGNORE_LIST as JsValue) };
+JsValue seen = JS.construct(Set);
+JsValue el = target;
+while ((el as JsValue).truthy()) {if (((((((seen as JsValue)["size"] as JsValue) >= (MAX_DOM_ANCESTOR_DEPTH as JsValue)) as JsValue) || ((seen as JsValue)["has"](el) as JsValue)) as JsValue).truthy()) {return true;}
+((seen as JsValue)["add"](el));
+JsValue current = el;
+JsValue classes = (getClassNames as JsValue)(current);
+if (((((((((includes as JsValue)(classes, "ph-no-capture") as JsValue) || ((includes as JsValue)(classes, "ph-sensitive") as JsValue)) as JsValue) || ((isSensitiveElement as JsValue)(current) as JsValue)) as JsValue) || ((ignorelist as JsValue)["some"]((JsValue selector) => { 
+return ((elementMatchesCSSSelector as JsValue)(current, selector) as JsValue);
+return JS.undefined(); }) as JsValue)) as JsValue).truthy()) {return true;}
+JsValue parent = (el as JsValue)["parentNode"];
+((el = if (((isShadowRoot as JsValue)(parent) as JsValue).truthy()) { ((parent as JsValue)["host"] as JsValue) } else { (if ((((parent as JsValue) && ((isElementNode as JsValue)(parent) as JsValue)) as JsValue).truthy()) { (parent as JsValue) } else { (null as JsValue) } as JsValue) }));}
+return false;
+return JS.undefined(); }
+
+JsValue _trackPointer(JsValue e) { 
+JsValue _a = JS.undefined();
+if ((((!(((this as JsValue) as JsValue)["isEnabled"] as JsValue).truthy() as JsValue) || ((((e as JsValue)["type"] as JsValue) === ("pointercancel" as JsValue)) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearPointer"]());
+return JS.undefined();}
+if (((((e as JsValue)["type"] as JsValue) === ("pointerdown" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearPointer"]());
+JsValue target = (getEventTarget as JsValue)(e);
+if (((((((((((e as JsValue)["isPrimary"] as JsValue) && ((((e as JsValue)["button"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue) && (!((e as JsValue)["ctrlKey"] as JsValue).truthy() as JsValue)) as JsValue) && (target as JsValue)) as JsValue) && ((isElementNode as JsValue)(target) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_pointerDown"] = object { "target": target, "excluded": ((this as JsValue) as JsValue)["_isExcludedPointerTarget"](target), "id": (e as JsValue)["pointerId"], "x": (e as JsValue)["clientX"], "y": (e as JsValue)["clientY"], "released": false, "distinctId": if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["distinctId"] as JsValue) } }));}
+return JS.undefined();}
+JsValue down = ((this as JsValue) as JsValue)["_pointerDown"];
+if ((!(down as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if (((((((((e as JsValue)["pointerId"] as JsValue) !== ((down as JsValue)["id"] as JsValue)) as JsValue) || ((((Math as JsValue)["abs"]((((e as JsValue)["clientX"] as JsValue) - ((down as JsValue)["x"] as JsValue))) as JsValue) > (5.0 as JsValue)) as JsValue)) as JsValue) || ((((Math as JsValue)["abs"]((((e as JsValue)["clientY"] as JsValue) - ((down as JsValue)["y"] as JsValue))) as JsValue) > (5.0 as JsValue)) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearPointer"]());} else {if (((((e as JsValue)["type"] as JsValue) === ("pointerup" as JsValue)) as JsValue).truthy()) {(((down as JsValue)["released"] = true));
+((((this as JsValue) as JsValue)["_pointerExpiry"] = (setTimeout as JsValue)(() => { 
+return (((this as JsValue) as JsValue)["_clearPointer"]() as JsValue);
+return JS.undefined(); }, 0.0)));}}
+return JS.undefined(); }
+
+JsValue _recoverClickTarget(JsValue e) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue down = ((this as JsValue) as JsValue)["_pointerDown"];
+(((this as JsValue) as JsValue)["_clearPointer"]());
+JsValue target = (getEventTarget as JsValue)(e);
+if (((((((((((((((((((((if ((((((down as JsValue) === (null as JsValue)) as JsValue) || (((down as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((down as JsValue)["released"] as JsValue) }) as JsValue) && (((down as JsValue)["target"] as JsValue)["isConnected"] as JsValue)) as JsValue) && ((((down as JsValue)["distinctId"] as JsValue) === ((if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["distinctId"] as JsValue) }) as JsValue)) as JsValue)) as JsValue) && ((((e as JsValue)["pointerId"] as JsValue) === ((down as JsValue)["id"] as JsValue)) as JsValue)) as JsValue) && (((((((((e as JsValue)["detail"] as JsValue) > (0.0 as JsValue)) as JsValue) || ((((e as JsValue)["pointerType"] as JsValue) === ("touch" as JsValue)) as JsValue)) as JsValue) || ((((e as JsValue)["pointerType"] as JsValue) === ("pen" as JsValue)) as JsValue))) as JsValue)) as JsValue) && ((((e as JsValue)["button"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue) && ((((Math as JsValue)["abs"]((((e as JsValue)["clientX"] as JsValue) - ((down as JsValue)["x"] as JsValue))) as JsValue) <= (5.0 as JsValue)) as JsValue)) as JsValue) && ((((Math as JsValue)["abs"]((((e as JsValue)["clientY"] as JsValue) - ((down as JsValue)["y"] as JsValue))) as JsValue) <= (5.0 as JsValue)) as JsValue)) as JsValue) && (target as JsValue)) as JsValue) && (((((isTag as JsValue)(target, "html") as JsValue) || ((isTag as JsValue)(target, "body") as JsValue))) as JsValue)) as JsValue).truthy()) {if (((down as JsValue)["excluded"] as JsValue).truthy()) {return null;}
+JsValue ignorelist = if ((((((((_b = (((this as JsValue) as JsValue)["_refreshConfig"]() as JsValue)["css_selector_ignorelist"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (DEFAULT_AUTOCAPTURE_IGNORE_LIST as JsValue) };
+JsValue excludedRoot = (JS.array(target, if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["documentElement"] as JsValue) }, if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["body"] as JsValue) }) as JsValue)["some"]((JsValue root) => { 
+if ((!(root as JsValue).truthy() as JsValue).truthy()) {return false;}
+JsValue classes = (getClassNames as JsValue)(root);
+return ((((((((((includes as JsValue)(classes, "ph-no-capture") as JsValue) || ((includes as JsValue)(classes, "ph-sensitive") as JsValue)) as JsValue) || (!((shouldCaptureElement as JsValue)(root) as JsValue).truthy() as JsValue)) as JsValue) || ((isSensitiveElement as JsValue)(root) as JsValue)) as JsValue) || ((ignorelist as JsValue)["some"]((JsValue selector) => { 
+return ((elementMatchesCSSSelector as JsValue)(root, selector) as JsValue);
+return JS.undefined(); }) as JsValue)));
+return JS.undefined(); });
+if ((excludedRoot as JsValue).truthy()) {return null;}
+return (down as JsValue)["target"];}
+return JS.undefined();
+return JS.undefined(); }
+
+init(JsValue _configSource) { 
+((((this as JsValue) as JsValue)["_configSource"] = _configSource));
+((((this as JsValue) as JsValue)["name"] = AutocaptureExtension));
+((((this as JsValue) as JsValue)["_initialized"] = false));
+((((this as JsValue) as JsValue)["_isDisabledServerSide"] = null));
+((((this as JsValue) as JsValue)["_hasReceivedConfigResponse"] = false));
+((((this as JsValue) as JsValue)["_elementSelectorsByOwner"] = JS.construct(Map)));
+((((this as JsValue) as JsValue)["_elementsChainAsString"] = false));
+((((this as JsValue) as JsValue)["_config"] = object { "enabled": false, "rageclick": false, "maskAllElementAttributes": false, "maskAllText": false, "disableCaptureUrlHashes": false, "remoteRequestsDisabled": false }));
+((((this as JsValue) as JsValue)["_disposed"] = false));
+((((this as JsValue) as JsValue)["_configSource"] as JsValue)["refresh"](((this as JsValue) as JsValue)["_config"]));
+((((this as JsValue) as JsValue)["rageclicks"] = JS.construct(RageClick, (((this as JsValue) as JsValue)["_config"] as JsValue)["rageclick"])));
+((((this as JsValue) as JsValue)["_elementSelectors"] = null));
+ }
+
+JsValue setup(JsValue client) { 
+(((this as JsValue) as JsValue)["_compileUrlPatterns"]());
+((((this as JsValue) as JsValue)["_client"] = client));
+JsValue subscription = (client as JsValue)["onRemoteConfig"]((((this as JsValue) as JsValue)["onRemoteConfig"] as JsValue)["bind"]((this as JsValue)));
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {((subscription as JsValue)["dispose"]());
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_remoteConfigSubscription"] = subscription));
+(((this as JsValue) as JsValue)["startIfEnabled"]());
+return JS.undefined(); }
+
+JsValue dispose() { 
+JsValue _a = JS.undefined();
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_disposed"] = true));
+((((this as JsValue) as JsValue)["_client"] = JS.undefined()));
+(if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfigSubscription"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["dispose"]() as JsValue) });
+((((this as JsValue) as JsValue)["_remoteConfigSubscription"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_elementSelectorsByOwner"] as JsValue)["clear"]());
+((((this as JsValue) as JsValue)["_elementSelectors"] = null));
+(((this as JsValue) as JsValue)["_removeDomEventHandlers"]());
+return JS.undefined(); }
+
+JsValue _refreshConfig() { 
+((((this as JsValue) as JsValue)["_configSource"] as JsValue)["refresh"](((this as JsValue) as JsValue)["_config"]));
+return ((this as JsValue) as JsValue)["_config"];
+return JS.undefined(); }
+
+JsValue _compileUrlPatterns() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(((this as JsValue) as JsValue)["_refreshConfig"]());
+(((((this as JsValue) as JsValue)["_config"] as JsValue)["url_allowlist"] = if ((((((((_a = (((this as JsValue) as JsValue)["_config"] as JsValue)["url_allowlist"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["map"]((JsValue url) => { 
+return (JS.construct(RegExp, url) as JsValue);
+return JS.undefined(); }) as JsValue) }));
+(((((this as JsValue) as JsValue)["_config"] as JsValue)["url_ignorelist"] = if ((((((((_b = (((this as JsValue) as JsValue)["_config"] as JsValue)["url_ignorelist"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["map"]((JsValue url) => { 
+return (JS.construct(RegExp, url) as JsValue);
+return JS.undefined(); }) as JsValue) }));
+return ((this as JsValue) as JsValue)["_config"];
+return JS.undefined(); }
+
+JsValue _addDomEventHandlers() { 
+if ((!(((this as JsValue) as JsValue)["isBrowserSupported"]() as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["info"]("Disabling Automatic Event Collection because this browser is not supported"));
+return JS.undefined();}
+if ((((!(window as JsValue).truthy() as JsValue) || (!(document as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue handler = ((((this as JsValue) as JsValue)["_domEventHandler"] = (JsValue e) => { 
+((e = ((e as JsValue) || ((if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["event"] as JsValue) }) as JsValue))));
+try {if (((((e as JsValue)["type"] as JsValue) === ("blur" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearPointer"]());
+return JS.undefined();}
+if ((((((e as JsValue)["type"] as JsValue)["indexOf"]("pointer") as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_trackPointer"](e));
+return JS.undefined();}
+JsValue target = if (((((e as JsValue)["type"] as JsValue) === ("click" as JsValue)) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_recoverClickTarget"](e) as JsValue) } else { (JS.undefined() as JsValue) };
+if (((isNull as JsValue)(target) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_captureEvent"](e, "$autocapture", target));} catch (JsValue error) {((logger as JsValue)["error"]("Failed to capture event", error));}
+return JS.undefined(); }));
+((addEventListener as JsValue)(window, "blur", handler));
+((addEventListener as JsValue)(document, "submit", handler, object { "capture": true }));
+((addEventListener as JsValue)(document, "change", handler, object { "capture": true }));
+((addEventListener as JsValue)(document, "click", handler, object { "capture": true }));
+((each as JsValue)(JS.array("pointerdown", "pointermove", "pointerup", "pointercancel"), (JsValue type) => { 
+((addEventListener as JsValue)(document, type, handler, object { "capture": true }));
+return JS.undefined(); }));
+if (((((this as JsValue) as JsValue)["_refreshConfig"]() as JsValue)["capture_copied_text"] as JsValue).truthy()) {JsValue copiedTextHandler = ((((this as JsValue) as JsValue)["_copiedTextHandler"] = (JsValue e) => { 
+((e = ((e as JsValue) || ((if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["event"] as JsValue) }) as JsValue))));
+try {(((this as JsValue) as JsValue)["_captureEvent"](e, COPY_AUTOCAPTURE_EVENT));} catch (JsValue error) {((logger as JsValue)["error"]("Failed to capture clipboard event", error));}
+return JS.undefined(); }));
+((addEventListener as JsValue)(document, "copy", copiedTextHandler, object { "capture": true }));
+((addEventListener as JsValue)(document, "cut", copiedTextHandler, object { "capture": true }));
+((addEventListener as JsValue)(document, "paste", copiedTextHandler, object { "capture": true }));}
+return JS.undefined(); }
+
+JsValue _removeDomEventHandlers() { 
+(((this as JsValue) as JsValue)["_clearPointer"]());
+if ((((this as JsValue) as JsValue)["_domEventHandler"] as JsValue).truthy()) {(if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["removeEventListener"]("blur", ((this as JsValue) as JsValue)["_domEventHandler"]) as JsValue) });
+((each as JsValue)(JS.array("pointerdown", "pointermove", "pointerup", "pointercancel"), (JsValue type) => { 
+(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"](type, ((this as JsValue) as JsValue)["_domEventHandler"], true) as JsValue) });
+return JS.undefined(); }));
+(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"]("submit", ((this as JsValue) as JsValue)["_domEventHandler"], true) as JsValue) });
+(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"]("change", ((this as JsValue) as JsValue)["_domEventHandler"], true) as JsValue) });
+(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"]("click", ((this as JsValue) as JsValue)["_domEventHandler"], true) as JsValue) });
+((((this as JsValue) as JsValue)["_domEventHandler"] = JS.undefined()));}
+if ((((this as JsValue) as JsValue)["_copiedTextHandler"] as JsValue).truthy()) {(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"]("copy", ((this as JsValue) as JsValue)["_copiedTextHandler"], true) as JsValue) });
+(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"]("cut", ((this as JsValue) as JsValue)["_copiedTextHandler"], true) as JsValue) });
+(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"]("paste", ((this as JsValue) as JsValue)["_copiedTextHandler"], true) as JsValue) });
+((((this as JsValue) as JsValue)["_copiedTextHandler"] = JS.undefined()));}
+((((this as JsValue) as JsValue)["_initialized"] = false));
+return JS.undefined(); }
+
+JsValue startIfEnabled() { 
+if ((!(((this as JsValue) as JsValue)["isEnabled"] as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearPointer"]());}
+if ((((((((!(((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy() as JsValue) && (((this as JsValue) as JsValue)["_client"] as JsValue)) as JsValue) && (((this as JsValue) as JsValue)["isEnabled"] as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_initialized"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_addDomEventHandlers"]());
+((((this as JsValue) as JsValue)["_initialized"] = true));}
+return JS.undefined(); }
+
+JsValue onRemoteConfig(JsValue result) { 
+JsValue _a = JS.undefined();
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_hasReceivedConfigResponse"] = true));
+if ((!((result as JsValue)["ok"] as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["startIfEnabled"]());
+return JS.undefined();}
+JsValue response = (result as JsValue)["config"];
+if (((response as JsValue)["elementsChainAsString"] as JsValue).truthy()) {((((this as JsValue) as JsValue)["_elementsChainAsString"] = (response as JsValue)["elementsChainAsString"]));}
+JsValue optOut = (response as JsValue)["autocapture_opt_out"];
+if (((isBoolean as JsValue)(optOut) as JsValue).truthy()) {(if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["kv"] as JsValue)["set"](AUTOCAPTURE_DISABLED_SERVER_SIDE, optOut) as JsValue) });
+((((this as JsValue) as JsValue)["_isDisabledServerSide"] = optOut));}
+(((this as JsValue) as JsValue)["startIfEnabled"]());
+return JS.undefined(); }
+
+JsValue setElementSelectors(JsValue selectors, JsValue owner = (this as JsValue)) { 
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+if (((selectors as JsValue)["size"] as JsValue).truthy()) {((((this as JsValue) as JsValue)["_elementSelectorsByOwner"] as JsValue)["set"](owner, JS.construct(Set, selectors)));} else {((((this as JsValue) as JsValue)["_elementSelectorsByOwner"] as JsValue)["delete"](owner));}
+JsValue combined = JS.construct(Set);
+((((this as JsValue) as JsValue)["_elementSelectorsByOwner"] as JsValue)["forEach"]((JsValue contribution) => { 
+((contribution as JsValue)["forEach"]((JsValue selector) => { 
+return ((combined as JsValue)["add"](selector) as JsValue);
+return JS.undefined(); }));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_elementSelectors"] = combined));
+return JS.undefined(); }
+
+JsValue getElementSelectors(JsValue element, JsValue additionalElement) { 
+JsValue _a = JS.undefined();
+JsValue elementSelectors = JS.array();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_elementSelectors"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["forEach"]((JsValue selector) => { 
+JsValue matchedElements = if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["querySelectorAll"](selector) as JsValue) };
+(if ((((((matchedElements as JsValue) === (null as JsValue)) as JsValue) || (((matchedElements as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((matchedElements as JsValue)["forEach"]((JsValue matchedElement) => { 
+if (((((((((element as JsValue) === (matchedElement as JsValue)) as JsValue) || (((additionalElement as JsValue) === (matchedElement as JsValue)) as JsValue))) as JsValue) && (!((includes as JsValue)(elementSelectors, selector) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((elementSelectors as JsValue)["push"](selector));}
+return JS.undefined(); }) as JsValue) });
+return JS.undefined(); }) as JsValue) });
+return elementSelectors;
+return JS.undefined(); }
+
+JsValue __lil_get_isEnabled() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return false;}
+JsValue persistedServerDisabled = if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["kv"] as JsValue)["get"](AUTOCAPTURE_DISABLED_SERVER_SIDE) as JsValue) };
+JsValue memoryDisabled = ((this as JsValue) as JsValue)["_isDisabledServerSide"];
+JsValue config = ((this as JsValue) as JsValue)["_refreshConfig"]();
+if ((((!((config as JsValue)["remoteRequestsDisabled"] as JsValue).truthy() as JsValue) && (!(((this as JsValue) as JsValue)["_hasReceivedConfigResponse"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return false;}
+JsValue clientConfigOnly = (((config as JsValue)["remoteRequestsDisabled"] as JsValue) && (!(((this as JsValue) as JsValue)["_hasReceivedConfigResponse"] as JsValue).truthy() as JsValue));
+if (((((((isNull as JsValue)(memoryDisabled) as JsValue) && (!((isBoolean as JsValue)(persistedServerDisabled) as JsValue).truthy() as JsValue)) as JsValue) && (!(clientConfigOnly as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return false;}
+JsValue disabledServer = if ((((((((_b = ((this as JsValue) as JsValue)["_isDisabledServerSide"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (!(!(persistedServerDisabled as JsValue).truthy() as JsValue).truthy() as JsValue) };
+JsValue disabledClient = !((config as JsValue)["enabled"] as JsValue).truthy();
+return ((!(disabledClient as JsValue).truthy() as JsValue) && (!(disabledServer as JsValue).truthy() as JsValue));
+return JS.undefined(); }
+
+JsValue _captureEvent(JsValue e, JsValue eventName = "$autocapture", JsValue targetOverride = JS.undefined()) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+if ((!(((this as JsValue) as JsValue)["isEnabled"] as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearPointer"]());
+return JS.undefined();}
+JsValue target = ((targetOverride as JsValue) || ((getEventTarget as JsValue)(e) as JsValue));
+if (((isTextNode as JsValue)(target) as JsValue).truthy()) {((target = ((((target as JsValue)["parentNode"] as JsValue) || (null as JsValue)))));}
+JsValue config = ((this as JsValue) as JsValue)["_compileUrlPatterns"]();
+if ((((((((eventName as JsValue) === ("$autocapture" as JsValue)) as JsValue) && ((((e as JsValue)["type"] as JsValue) === ("click" as JsValue)) as JsValue)) as JsValue) && ((e instanceof MouseEvent) as JsValue)) as JsValue).truthy()) {if ((((!(!((config as JsValue)["rageclick"] as JsValue).truthy() as JsValue).truthy() as JsValue) && ((if ((((((((_a = ((this as JsValue) as JsValue)["rageclicks"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["isRageClick"]((e as JsValue)["clientX"], (e as JsValue)["clientY"], (((e as JsValue)["timeStamp"] as JsValue) || ((JS.construct(Date) as JsValue)["getTime"]() as JsValue))) as JsValue) }) as JsValue)) as JsValue).truthy()) {if (((shouldCaptureRageclick as JsValue)(target, (config as JsValue)["rageclick"]) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_captureEvent"](e, "$rageclick", targetOverride));}}}
+JsValue isClipboardAutocapture = ((eventName as JsValue) === (COPY_AUTOCAPTURE_EVENT as JsValue));
+JsValue eventConfig = if ((isClipboardAutocapture as JsValue).truthy()) { (__lil_object_0(() => (config as JsValue), () => (JS.undefined() as JsValue)) as JsValue) } else { (config as JsValue) };
+if ((((target as JsValue) && ((shouldCaptureDomEvent as JsValue)(target, e, eventConfig, isClipboardAutocapture, if ((isClipboardAutocapture as JsValue).truthy()) { (JS.array("copy", "cut", "paste") as JsValue) } else { (JS.undefined() as JsValue) }, object { "config": object { "get_current_url": (config as JsValue)["getCurrentUrl"] } }) as JsValue)) as JsValue).truthy()) {JsValue __port_1 = (autocapturePropertiesForElement as JsValue)(target, object { "e": e, "maskAllElementAttributes": (config as JsValue)["maskAllElementAttributes"], "maskAllText": (config as JsValue)["maskAllText"], "elementAttributeIgnoreList": (config as JsValue)["element_attribute_ignorelist"], "elementsChainAsString": ((this as JsValue) as JsValue)["_elementsChainAsString"], "disableCaptureUrlHashes": (config as JsValue)["disableCaptureUrlHashes"] });
+JsValue props = __port_1["props"];
+JsValue explicitNoCapture = __port_1["explicitNoCapture"];
+JsValue attributedTarget = __port_1["target"];
+if ((explicitNoCapture as JsValue).truthy()) {return false;}
+JsValue elementSelectors = ((this as JsValue) as JsValue)["getElementSelectors"](target, attributedTarget);
+if ((((elementSelectors as JsValue) && ((((elementSelectors as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {(((props as JsValue)["$element_selectors"] = elementSelectors));}
+if ((((eventName as JsValue) === (COPY_AUTOCAPTURE_EVENT as JsValue)) as JsValue).truthy()) {JsValue clipType = (((e as JsValue)["type"] as JsValue) || ("clipboard" as JsValue));
+if ((((clipType as JsValue) !== ("paste" as JsValue)) as JsValue).truthy()) {JsValue selectedText = if ((((((((_b = if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["getSelection"]() as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["toString"]() as JsValue) };
+JsValue selectedContent = (makeSafeText as JsValue)(selectedText);
+if ((!(selectedContent as JsValue).truthy() as JsValue).truthy()) {return false;}
+(((props as JsValue)["$selected_content"] = selectedContent));
+(((props as JsValue)["$clipboard_text_length"] = if ((((((((_c = if ((((((selectedText as JsValue) === (null as JsValue)) as JsValue) || (((selectedText as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((selectedText as JsValue)["length"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { (0.0 as JsValue) }));}
+(((props as JsValue)["$copy_type"] = clipType));}
+(if ((((((((_d = ((this as JsValue) as JsValue)["_client"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["capture"](eventName, props) as JsValue) });
+return true;}
+return JS.undefined(); }
+
+JsValue isBrowserSupported() { 
+return (isFunction as JsValue)(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["querySelectorAll"] as JsValue) });
+return JS.undefined(); }
+}
+export constructor Autocapture;
+
+JsValue limitText(JsValue length, JsValue text) {
+if (((((text as JsValue)["length"] as JsValue) > (length as JsValue)) as JsValue).truthy()) {return (((text as JsValue)["slice"](0.0, length) as JsValue) + ("..." as JsValue));}
+return text;
+return JS.undefined();}
+
+JsValue getAugmentPropertiesFromElement(JsValue elem) {
+JsValue shouldCaptureEl = (shouldCaptureElement as JsValue)(elem);
+if ((!(shouldCaptureEl as JsValue).truthy() as JsValue).truthy()) {return object {  };}
+JsValue props = object {  };
+((each as JsValue)((elem as JsValue)["attributes"], (this JsValue __port_2, JsValue attr) => { 
+if (((((attr as JsValue)["name"] as JsValue) && (((((attr as JsValue)["name"] as JsValue)["indexOf"]("data-ph-capture-attribute") as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue propertyKey = ((attr as JsValue)["name"] as JsValue)["replace"]("data-ph-capture-attribute-", "");
+JsValue propertyValue = (attr as JsValue)["value"];
+if ((((((propertyKey as JsValue) && (propertyValue as JsValue)) as JsValue) && ((shouldCaptureValue as JsValue)(propertyValue) as JsValue)) as JsValue).truthy()) {(((props as JsValue)[propertyKey] = propertyValue));}}
+return JS.undefined(); }));
+return props;
+return JS.undefined();}
+
+JsValue previousElementSibling(JsValue el) {
+if (((el as JsValue)["previousElementSibling"] as JsValue).truthy()) {return (el as JsValue)["previousElementSibling"];}
+JsValue _el = el;
+{bool __port_3 = true; while (__port_3 || (((_el as JsValue) && (!((isElementNode as JsValue)(_el) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {__port_3 = false; ((_el = (_el as JsValue)["previousSibling"]));}}
+return _el;
+return JS.undefined();}
+
+JsValue getDefaultProperties(JsValue eventType) {
+return object { "$event_type": eventType, "$ce_version": 1.0 };
+return JS.undefined();}
+
+JsValue getPropertiesFromElement(JsValue elem, JsValue maskAllAttributes, JsValue maskText, JsValue elementAttributeIgnorelist, JsValue disableCaptureUrlHashes = false) {
+JsValue tag_name = ((elem as JsValue)["tagName"] as JsValue)["toLowerCase"]();
+JsValue props = object { "tag_name": tag_name };
+if (((((((autocaptureCompatibleElements as JsValue)["indexOf"](tag_name) as JsValue) > ((-(1.0 as JsValue)) as JsValue)) as JsValue) && (!(maskText as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if (((((((tag_name as JsValue)["toLowerCase"]() as JsValue) === ("a" as JsValue)) as JsValue) || ((((tag_name as JsValue)["toLowerCase"]() as JsValue) === ("button" as JsValue)) as JsValue)) as JsValue).truthy()) {(((props as JsValue)["$el_text"] = limitText(1024.0, (getDirectAndNestedSpanText as JsValue)(elem))));} else {(((props as JsValue)["$el_text"] = limitText(1024.0, (getSafeText as JsValue)(elem))));}}
+JsValue classes = (getClassNames as JsValue)(elem);
+if ((((((!(maskAllAttributes as JsValue).truthy() as JsValue) && (!((if ((((((elementAttributeIgnorelist as JsValue) === (null as JsValue)) as JsValue) || (((elementAttributeIgnorelist as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((elementAttributeIgnorelist as JsValue)["includes"]("class") as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue) && ((((classes as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {(((props as JsValue)["classes"] = (classes as JsValue)["filter"]((this JsValue __port_4, JsValue c) => { 
+return ((c as JsValue) !== ("" as JsValue));
+return JS.undefined(); })));}
+((each as JsValue)((elem as JsValue)["attributes"], (this JsValue __port_5, JsValue attr) => { 
+if (((((isSensitiveElement as JsValue)(elem) as JsValue) && ((((JS.array("name", "id", "class", "aria-label") as JsValue)["indexOf"]((attr as JsValue)["name"]) as JsValue) === ((-(1.0 as JsValue)) as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((if ((((((elementAttributeIgnorelist as JsValue) === (null as JsValue)) as JsValue) || (((elementAttributeIgnorelist as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((elementAttributeIgnorelist as JsValue)["includes"]((attr as JsValue)["name"]) as JsValue) } as JsValue).truthy()) {return JS.undefined();}
+if ((((((!(maskAllAttributes as JsValue).truthy() as JsValue) && ((shouldCaptureValue as JsValue)((attr as JsValue)["value"]) as JsValue)) as JsValue) && (!((isAngularStyleAttr as JsValue)((attr as JsValue)["name"]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue value = (attr as JsValue)["value"];
+if (((((attr as JsValue)["name"] as JsValue) === ("class" as JsValue)) as JsValue).truthy()) {((value = ((splitClassString as JsValue)(value) as JsValue)["join"](" ")));}
+(((props as JsValue)[(("attr__" as JsValue) + ((attr as JsValue)["name"] as JsValue))] = limitText(1024.0, if (((((((attr as JsValue)["name"] as JsValue) === ("href" as JsValue)) as JsValue) && (disableCaptureUrlHashes as JsValue)) as JsValue).truthy()) { ((stripUrlHash as JsValue)(value) as JsValue) } else { (value as JsValue) })));}
+return JS.undefined(); }));
+JsValue nthChild = 1.0;
+JsValue nthOfType = 1.0;
+JsValue currentElem = elem;
+while ((((currentElem = (previousElementSibling as JsValue)(currentElem))) as JsValue).truthy()) {nthChild = JS.number(nthChild) + 1.0;
+if (((((currentElem as JsValue)["tagName"] as JsValue) === ((elem as JsValue)["tagName"] as JsValue)) as JsValue).truthy()) {nthOfType = JS.number(nthOfType) + 1.0;}}
+(((props as JsValue)["nth_child"] = nthChild));
+(((props as JsValue)["nth_of_type"] = nthOfType));
+return props;
+return JS.undefined();}
+
+JsValue autocapturePropertiesForElement(JsValue target, JsValue __port_6) {JsValue __port_7 = __port_6;
+JsValue e = __port_7["e"];
+JsValue maskAllElementAttributes = __port_7["maskAllElementAttributes"];
+JsValue maskAllText = __port_7["maskAllText"];
+JsValue elementAttributeIgnoreList = __port_7["elementAttributeIgnoreList"];
+JsValue elementsChainAsString = __port_7["elementsChainAsString"];
+JsValue disableCaptureUrlHashes = __port_7["disableCaptureUrlHashes"];
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+if ((!((isElementNode as JsValue)(target) as JsValue).truthy() as JsValue).truthy()) {return object { "props": object {  } };}
+JsValue targetElementList = JS.array(target);
+JsValue seen = JS.construct(Set, JS.array(target));
+JsValue curEl = target;
+while (((((curEl as JsValue)["parentNode"] as JsValue) && (!((isTag as JsValue)(curEl, "body") as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if (((((targetElementList as JsValue)["length"] as JsValue) >= (MAX_DOM_ANCESTOR_DEPTH as JsValue)) as JsValue).truthy()) {break;}
+if (((isShadowRoot as JsValue)((curEl as JsValue)["parentNode"]) as JsValue).truthy()) {JsValue host = ((curEl as JsValue)["parentNode"] as JsValue)["host"];
+if (((seen as JsValue)["has"](host) as JsValue).truthy()) {break;}
+((seen as JsValue)["add"](host));
+((targetElementList as JsValue)["push"](host));
+((curEl = host));
+continue;}
+if ((!((isElementNode as JsValue)((curEl as JsValue)["parentNode"]) as JsValue).truthy() as JsValue).truthy()) {break;}
+if (((seen as JsValue)["has"]((curEl as JsValue)["parentNode"]) as JsValue).truthy()) {break;}
+((seen as JsValue)["add"]((curEl as JsValue)["parentNode"]));
+((targetElementList as JsValue)["push"]((curEl as JsValue)["parentNode"]));
+((curEl = (curEl as JsValue)["parentNode"]));}
+JsValue controlIndex = if (((((((e as JsValue)["type"] as JsValue) === ("click" as JsValue)) as JsValue) && ((((target as JsValue)["namespaceURI"] as JsValue) === ("http://www.w3.org/2000/svg" as JsValue)) as JsValue)) as JsValue).truthy()) { ((targetElementList as JsValue)["findIndex"]((JsValue el) => { 
+return ((((isTag as JsValue)(el, "button") as JsValue) || ((isTag as JsValue)(el, "a") as JsValue)) as JsValue);
+return JS.undefined(); }) as JsValue) } else { ((-(1.0 as JsValue)) as JsValue) };
+if ((((controlIndex as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) {((maskAllText = ((maskAllText as JsValue) || (((targetElementList as JsValue)["slice"](0.0, ((controlIndex as JsValue) + (1.0 as JsValue))) as JsValue)["some"]((JsValue el) => { 
+return (((!((shouldCaptureElement as JsValue)(el) as JsValue).truthy() as JsValue) || ((isSensitiveElement as JsValue)(el) as JsValue)) as JsValue);
+return JS.undefined(); }) as JsValue))));}
+JsValue elementsJson = JS.array();
+JsValue autocaptureAugmentProperties = object {  };
+JsValue href = false;
+JsValue explicitNoCapture = false;
+((each as JsValue)(targetElementList, (JsValue el) => { 
+JsValue shouldCaptureEl = (shouldCaptureElement as JsValue)(el);
+if (((((((isTag as JsValue)(el, "a") as JsValue) && (!(maskAllElementAttributes as JsValue).truthy() as JsValue)) as JsValue) && (!((if ((((((elementAttributeIgnoreList as JsValue) === (null as JsValue)) as JsValue) || (((elementAttributeIgnoreList as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((elementAttributeIgnoreList as JsValue)["includes"]("href") as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue hrefAttr = (el as JsValue)["getAttribute"]("href");
+((href = if ((((((shouldCaptureEl as JsValue) && (!(!(hrefAttr as JsValue).truthy() as JsValue).truthy() as JsValue)) as JsValue) && ((shouldCaptureValue as JsValue)(hrefAttr) as JsValue)) as JsValue).truthy()) { (if ((disableCaptureUrlHashes as JsValue).truthy()) { ((stripUrlHash as JsValue)(hrefAttr) as JsValue) } else { (hrefAttr as JsValue) } as JsValue) } else { (false as JsValue) }));}
+JsValue classes = (getClassNames as JsValue)(el);
+if (((includes as JsValue)(classes, "ph-no-capture") as JsValue).truthy()) {((explicitNoCapture = true));}
+((elementsJson as JsValue)["push"]((getPropertiesFromElement as JsValue)(el, maskAllElementAttributes, maskAllText, elementAttributeIgnoreList, disableCaptureUrlHashes)));
+JsValue augmentProperties = (getAugmentPropertiesFromElement as JsValue)(el);
+((each as JsValue)(augmentProperties, (JsValue value, JsValue key) => { 
+if ((!((((Object as JsValue)["prototype"] as JsValue)["hasOwnProperty"] as JsValue)["call"](autocaptureAugmentProperties, key) as JsValue).truthy() as JsValue).truthy()) {(((autocaptureAugmentProperties as JsValue)[key] = value));}
+return JS.undefined(); }));
+return JS.undefined(); }));
+if ((explicitNoCapture as JsValue).truthy()) {return object { "props": object {  }, "explicitNoCapture": explicitNoCapture };}
+if ((((controlIndex as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) {((target = (targetElementList as JsValue)[controlIndex]));
+((elementsJson as JsValue)["splice"](0.0, controlIndex));}
+if ((!(maskAllText as JsValue).truthy() as JsValue).truthy()) {if (((((isTag as JsValue)(target, "a") as JsValue) || ((isTag as JsValue)(target, "button") as JsValue)) as JsValue).truthy()) {((((elementsJson as JsValue)[0.0] as JsValue)["$el_text"] = (getDirectAndNestedSpanText as JsValue)(target)));} else {((((elementsJson as JsValue)[0.0] as JsValue)["$el_text"] = (getSafeText as JsValue)(target)));}}
+JsValue externalHref = JS.undefined();
+if ((href as JsValue).truthy()) {((((elementsJson as JsValue)[0.0] as JsValue)["attr__href"] = href));
+JsValue hrefHost = if ((((((((_a = (convertToURL as JsValue)(href))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["host"] as JsValue) };
+JsValue locationHost = if ((((((((_b = if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["location"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["host"] as JsValue) };
+if ((((((hrefHost as JsValue) && (locationHost as JsValue)) as JsValue) && (((hrefHost as JsValue) !== (locationHost as JsValue)) as JsValue)) as JsValue).truthy()) {((externalHref = href));}}
+JsValue props = (extend as JsValue)((getDefaultProperties as JsValue)((e as JsValue)["type"]), if ((!(elementsChainAsString as JsValue).truthy() as JsValue).truthy()) { (object { "$elements": elementsJson } as JsValue) } else { (object {  } as JsValue) }, object { "$elements_chain": (getElementsChainString as JsValue)(elementsJson) }, if (((if ((((((((_c = (elementsJson as JsValue)[0.0])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["$el_text"] as JsValue) }) as JsValue).truthy()) { (object { "$el_text": if ((((((((_d = (elementsJson as JsValue)[0.0])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["$el_text"] as JsValue) } } as JsValue) } else { (object {  } as JsValue) }, if ((((externalHref as JsValue) && ((((e as JsValue)["type"] as JsValue) === ("click" as JsValue)) as JsValue)) as JsValue).truthy()) { (object { "$external_click_url": externalHref } as JsValue) } else { (object {  } as JsValue) }, autocaptureAugmentProperties);
+return object { "props": props, "target": target };
+return JS.undefined();}
+export { getAugmentPropertiesFromElement as getAugmentPropertiesFromElement };
+export { previousElementSibling as previousElementSibling };
+export { getDefaultProperties as getDefaultProperties };
+export { getPropertiesFromElement as getPropertiesFromElement };
+export { autocapturePropertiesForElement as autocapturePropertiesForElement };

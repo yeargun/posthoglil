@@ -1,0 +1,19 @@
+{
+  "source": "packages/browser/src/feature-flags-config.ts",
+  "implementation": "src/sdk/feature-flags-config.lil",
+  "exports": [
+    "MutableFeatureFlagsConfigSource"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [
+    {
+      "name": "snapshot",
+      "arity": 2,
+      "calls": 1
+    }
+  ],
+  "asyncClosures": [],
+  "qualified": false
+}

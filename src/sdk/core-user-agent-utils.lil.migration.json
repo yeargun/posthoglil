@@ -1,0 +1,181 @@
+{
+  "source": "packages/core/src/utils/user-agent-utils.ts",
+  "implementation": "src/sdk/core-user-agent-utils.lil",
+  "exports": [
+    "detectBrowser",
+    "detectBrowserVersion",
+    "detectOS",
+    "detectDevice",
+    "detectDeviceType"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_4e636fd9f2b3_2",
+      "arguments": 54,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        },
+        {
+          "kind": "computed",
+          "key": 4,
+          "value": 5
+        },
+        {
+          "kind": "computed",
+          "key": 6,
+          "value": 7
+        },
+        {
+          "kind": "data",
+          "key": "UC Browser",
+          "value": 8
+        },
+        {
+          "kind": "computed",
+          "key": 9,
+          "value": 10
+        },
+        {
+          "kind": "computed",
+          "key": 11,
+          "value": 12
+        },
+        {
+          "kind": "computed",
+          "key": 13,
+          "value": 14
+        },
+        {
+          "kind": "computed",
+          "key": 15,
+          "value": 16
+        },
+        {
+          "kind": "computed",
+          "key": 17,
+          "value": 18
+        },
+        {
+          "kind": "computed",
+          "key": 19,
+          "value": 20
+        },
+        {
+          "kind": "computed",
+          "key": 21,
+          "value": 22
+        },
+        {
+          "kind": "computed",
+          "key": 23,
+          "value": 24
+        },
+        {
+          "kind": "computed",
+          "key": 25,
+          "value": 26
+        },
+        {
+          "kind": "computed",
+          "key": 27,
+          "value": 28
+        },
+        {
+          "kind": "computed",
+          "key": 29,
+          "value": 30
+        },
+        {
+          "kind": "computed",
+          "key": 31,
+          "value": 32
+        },
+        {
+          "kind": "computed",
+          "key": 33,
+          "value": 34
+        },
+        {
+          "kind": "computed",
+          "key": 35,
+          "value": 36
+        },
+        {
+          "kind": "computed",
+          "key": 37,
+          "value": 38
+        },
+        {
+          "kind": "computed",
+          "key": 39,
+          "value": 40
+        },
+        {
+          "kind": "computed",
+          "key": 41,
+          "value": 42
+        },
+        {
+          "kind": "computed",
+          "key": 43,
+          "value": 44
+        },
+        {
+          "kind": "computed",
+          "key": 45,
+          "value": 46
+        },
+        {
+          "kind": "computed",
+          "key": 47,
+          "value": 48
+        },
+        {
+          "kind": "computed",
+          "key": 49,
+          "value": 50
+        },
+        {
+          "kind": "computed",
+          "key": 51,
+          "value": 52
+        },
+        {
+          "kind": "data",
+          "key": "Mozilla",
+          "value": 53
+        }
+      ]
+    }
+  ],
+  "localFunctions": [
+    {
+      "name": "browserFromHints",
+      "arity": 1,
+      "calls": 1
+    },
+    {
+      "name": "isSafari",
+      "arity": 1,
+      "calls": 1
+    },
+    {
+      "name": "safariCheck",
+      "arity": 2,
+      "calls": 1
+    }
+  ],
+  "primitiveTypes": [],
+  "asyncClosures": [],
+  "qualified": false
+}

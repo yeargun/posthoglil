@@ -1,0 +1,54 @@
+// packages/core/src/utils/number-utils.ts, PostHog 1.435.8.
+import { isNumber } from "./core-type-utils.lil";
+extern JsValue Number;
+
+export JsValue clampToRange(JsValue value, JsValue min, JsValue max, JsValue logger, JsValue fallbackValue = JS.undefined()) {
+    if (min > max) {
+        logger.warn("min cannot be greater than max.");
+        min = max;
+    }
+    if (!isNumber(value)) {
+        logger.warn((" must be a number. using max or fallback. max: " as JsValue) + max + ", fallback: " + fallbackValue);
+        return clampToRange(if (JS.isNullish(fallbackValue)) { max } else { fallbackValue }, min, max, logger);
+    }
+    if (value > max) {
+        logger.warn((" cannot be  greater than max: " as JsValue) + max + ". Using max value instead.");
+        return max;
+    }
+    if (value < min) {
+        logger.warn((" cannot be less than min: " as JsValue) + min + ". Using min value instead.");
+        return min;
+    }
+    // Upstream deliberately returns an in-range boxed Number unchanged.
+    return value;
+}
+
+export JsValue getRemoteConfigBool(JsValue field, JsValue key, JsValue defaultValue = true) {
+    if (JS.isNullish(field)) return defaultValue;
+    if (field is bool) return field;
+    if (JS.typeOf(field) == "object") {
+        JsValue value = field[key];
+        if (value is bool) return value;
+    }
+    return defaultValue;
+}
+
+export JsValue getRemoteConfigNumber(JsValue field, JsValue key) {
+    if (JS.isNullish(field) || JS.typeOf(field) != "object") return JS.undefined();
+    JsValue value = field[key];
+    if (value is float) {
+        if (Number["isFinite"](value).truthy()) return value;
+    }
+    if (value is string) {
+        string trimmed = value.trim();
+        if (trimmed == "") return JS.undefined();
+        JsValue parsed = Number(trimmed);
+        return if (Number["isFinite"](parsed).truthy()) { parsed } else { JS.undefined() };
+    }
+    return JS.undefined();
+}
+
+export bool isValidSampleRate(JsValue value) {
+    if (value is float) return Number["isFinite"](value).truthy() && value >= 0.0 && value <= 1.0;
+    return false;
+}

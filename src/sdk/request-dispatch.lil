@@ -1,0 +1,75 @@
+import extern { userAgent } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { request, SUPPORTS_REQUEST } from "../../vendor/posthog-js/packages/browser/src/request.ts";
+import extern {copyProperties} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue userAgent;
+extern JsValue request;
+extern JsValue SUPPORTS_REQUEST;
+extern JsValue Object;
+
+bool enqueueRequests = !SUPPORTS_REQUEST.truthy()
+  && !JS.isNullish(userAgent) && userAgent.indexOf("MSIE") === -1.0
+  && !JS.isNullish(userAgent) && userAgent.indexOf("Mozilla") === -1.0;
+
+export void enableRequestSending() { enqueueRequests = false; }
+
+export void sendRequest(JsValue instance, JsValue options, JsValue onResponse) {
+  if (onResponse.truthy()) {
+    options = copyProperties(JS.object(), options);
+    Object.defineProperty(options, "callback", object {
+      value: (JsValue response) => onResponse(response),
+      enumerable: true, configurable: true, writable: true
+    });
+  }
+  if (!instance.__loaded.truthy()) {
+    if (options.fireCallbackOnDrop.truthy()) {
+      JsValue callback = options.callback;
+      if (!JS.isNullish(callback)) callback.call(options, object { statusCode: 0.0 });
+    }
+    return;
+  }
+  if (enqueueRequests) {
+    instance.__request_queue.push(options);
+    return;
+  }
+  if (instance.rateLimiter.isServerRateLimited(options.batchKey).truthy()) {
+    if (options.fireCallbackOnDrop.truthy()) {
+      JsValue callback = options.callback;
+      if (!JS.isNullish(callback)) callback.call(options, object { statusCode: 429.0 });
+    }
+    return;
+  }
+  options.transport = options.transport || instance.config.api_transport;
+  // The two operands are evaluated in order, before the final headers write.
+  JsValue headers = copyProperties(JS.object(), instance.config.request_headers);
+  copyProperties(headers, options.headers);
+  options.headers = headers;
+  JsValue compression = options.compression;
+  if (compression === "best-available") {
+    compression = instance.compression;
+    if (JS.isNullish(compression)) compression = options.compressionFallback;
+  } else {
+    compression = options.compression;
+  }
+  options.compression = compression;
+  JsValue disableBeacon = if (JS.isUndefined(instance.config.disable_beacon)) {
+    instance.config.__preview_disable_beacon
+  } else { instance.config.disable_beacon };
+  if (disableBeacon.truthy()) options.disableTransport = JS.array("sendBeacon");
+  options.fetchOptions = options.fetchOptions || instance.config.fetch_options;
+  request(options, (JsValue response, JsValue retryAfterMs) => {
+    instance.rateLimiter.checkForLimiting(response);
+    if (response.statusCode >= 400.0) {
+      JsValue config = instance.config;
+      JsValue errorCallback = config.on_request_error;
+      if (!JS.isNullish(errorCallback)) errorCallback.call(config, response);
+    }
+    if (onResponse.truthy()) {
+      onResponse(response, retryAfterMs);
+    } else {
+      JsValue callback = options.callback;
+      if (!JS.isNullish(callback)) callback.call(options, response);
+    }
+    return JS.undefined();
+  });
+}

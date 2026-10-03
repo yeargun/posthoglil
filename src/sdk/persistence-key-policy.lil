@@ -1,0 +1,120 @@
+// Whole-module migration from packages/browser/src/persistence-key-policy.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { ALIAS_ID_KEY as ALIAS_ID_KEY, AUTOCAPTURE_DISABLED_SERVER_SIDE as AUTOCAPTURE_DISABLED_SERVER_SIDE, CAMPAIGN_IDS_KEY as CAMPAIGN_IDS_KEY, CAPTURE_RATE_LIMIT as CAPTURE_RATE_LIMIT, CLIENT_SESSION_PROPS as CLIENT_SESSION_PROPS, CONVERSATIONS_LEGACY_TICKET_ID as CONVERSATIONS_LEGACY_TICKET_ID, CONVERSATIONS_LEGACY_USER_TRAITS as CONVERSATIONS_LEGACY_USER_TRAITS, CONVERSATIONS_LEGACY_WIDGET_SESSION_ID as CONVERSATIONS_LEGACY_WIDGET_SESSION_ID, CONVERSATIONS_LEGACY_WIDGET_STATE as CONVERSATIONS_LEGACY_WIDGET_STATE, DEAD_CLICKS_ENABLED_SERVER_SIDE as DEAD_CLICKS_ENABLED_SERVER_SIDE, ENABLE_PERSON_PROCESSING as ENABLE_PERSON_PROCESSING, ENABLED_FEATURE_FLAGS as ENABLED_FEATURE_FLAGS, ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS as ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS, ERROR_TRACKING_SUPPRESSION_RULES as ERROR_TRACKING_SUPPRESSION_RULES, EVENT_TIMERS_KEY as EVENT_TIMERS_KEY, EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE as EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE, FLAG_CALL_REPORTED as FLAG_CALL_REPORTED, FLAG_CALL_REPORTED_SESSION_ID as FLAG_CALL_REPORTED_SESSION_ID, GROUPS as GROUPS, HEATMAPS_ENABLED_SERVER_SIDE as HEATMAPS_ENABLED_SERVER_SIDE, INITIAL_CAMPAIGN_PARAMS as INITIAL_CAMPAIGN_PARAMS, INITIAL_PERSON_INFO as INITIAL_PERSON_INFO, INITIAL_REFERRER_INFO as INITIAL_REFERRER_INFO, LOGS_CAPTURE_ENABLED_SERVER_SIDE as LOGS_CAPTURE_ENABLED_SERVER_SIDE, PEOPLE_DISTINCT_ID_KEY as PEOPLE_DISTINCT_ID_KEY, PERSISTENCE_ACTIVE_FEATURE_FLAGS as PERSISTENCE_ACTIVE_FEATURE_FLAGS, PERSISTENCE_EARLY_ACCESS_FEATURES as PERSISTENCE_EARLY_ACCESS_FEATURES, PERSISTENCE_FEATURE_FLAG_DETAILS as PERSISTENCE_FEATURE_FLAG_DETAILS, PERSISTENCE_FEATURE_FLAG_ERRORS as PERSISTENCE_FEATURE_FLAG_ERRORS, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT as PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, PERSISTENCE_FEATURE_FLAG_PAYLOADS as PERSISTENCE_FEATURE_FLAG_PAYLOADS, PERSISTENCE_FEATURE_FLAG_REQUEST_ID as PERSISTENCE_FEATURE_FLAG_REQUEST_ID, PERSISTENCE_FACEBOOK_BROWSER_ID as PERSISTENCE_FACEBOOK_BROWSER_ID, PERSISTENCE_FACEBOOK_CLICK_ID as PERSISTENCE_FACEBOOK_CLICK_ID, PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS as PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS, PERSISTENCE_OVERRIDE_FEATURE_FLAGS as PERSISTENCE_OVERRIDE_FEATURE_FLAGS, PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS as PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS, PRODUCT_TOURS as PRODUCT_TOURS, PRODUCT_TOURS_ACTIVATED as PRODUCT_TOURS_ACTIVATED, PRODUCT_TOURS_ACTIVATED_SESSION as PRODUCT_TOURS_ACTIVATED_SESSION, PRODUCT_TOURS_ENABLED_SERVER_SIDE as PRODUCT_TOURS_ENABLED_SERVER_SIDE, SDK_DEBUG_EXTENSIONS_INIT_METHOD as SDK_DEBUG_EXTENSIONS_INIT_METHOD, SDK_DEBUG_EXTENSIONS_INIT_TIME_MS as SDK_DEBUG_EXTENSIONS_INIT_TIME_MS, SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED as SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED, SDK_DEBUG_REPLAY_STALE_CONFIG as SDK_DEBUG_REPLAY_STALE_CONFIG, SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS as SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS, SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS as SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS, SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS as SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS, SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS as SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS, SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG as SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG, SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT as SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT, SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS as SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS, SESSION_ID as SESSION_ID, SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION as SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION, SESSION_RECORDING_START_REASON as SESSION_RECORDING_START_REASON, SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP as SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP, SESSION_RECORDING_FLUSHED_SIZE as SESSION_RECORDING_FLUSHED_SIZE, SESSION_RECORDING_IS_SAMPLED as SESSION_RECORDING_IS_SAMPLED, SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER as SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER, SESSION_RECORDING_OVERRIDE_LINKED_FLAG as SESSION_RECORDING_OVERRIDE_LINKED_FLAG, SESSION_RECORDING_OVERRIDE_SAMPLING as SESSION_RECORDING_OVERRIDE_SAMPLING, SESSION_RECORDING_OVERRIDE_URL_TRIGGER as SESSION_RECORDING_OVERRIDE_URL_TRIGGER, SESSION_RECORDING_PAST_MINIMUM_DURATION as SESSION_RECORDING_PAST_MINIMUM_DURATION, SESSION_RECORDING_SAMPLE_RATE as SESSION_RECORDING_SAMPLE_RATE, SESSION_RECORDING_REMOTE_CONFIG as SESSION_RECORDING_REMOTE_CONFIG, SESSION_RECORDING_TRIGGER_V2_GROUP_EVENT_PREFIX as SESSION_RECORDING_TRIGGER_V2_GROUP_EVENT_PREFIX, SESSION_RECORDING_TRIGGER_V2_GROUP_SAMPLING_PREFIX as SESSION_RECORDING_TRIGGER_V2_GROUP_SAMPLING_PREFIX, SESSION_RECORDING_TRIGGER_V2_GROUP_URL_PREFIX as SESSION_RECORDING_TRIGGER_V2_GROUP_URL_PREFIX, SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION as SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION, SESSION_RECORDING_ENABLED_SERVER_SIDE as SESSION_RECORDING_ENABLED_SERVER_SIDE, STORED_GROUP_PROPERTIES_KEY as STORED_GROUP_PROPERTIES_KEY, STORED_PERSON_PROPERTIES_KEY as STORED_PERSON_PROPERTIES_KEY, SURVEYS as SURVEYS, SURVEYS_ACTIVATED as SURVEYS_ACTIVATED, SURVEYS_ACTIVATED_SESSION as SURVEYS_ACTIVATED_SESSION, SURVEYS_ACTIVATED_TIMESTAMPS as SURVEYS_ACTIVATED_TIMESTAMPS, SURVEYS_LOADED_AT as SURVEYS_LOADED_AT, USER_STATE as USER_STATE, WEB_VITALS_ALLOWED_METRICS as WEB_VITALS_ALLOWED_METRICS, WEB_VITALS_ENABLED_SERVER_SIDE as WEB_VITALS_ENABLED_SERVER_SIDE } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { isNull as isNull } from "@posthog/core";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue __lil_object_0;
+extern JsValue ALIAS_ID_KEY;
+extern JsValue AUTOCAPTURE_DISABLED_SERVER_SIDE;
+extern JsValue CAMPAIGN_IDS_KEY;
+extern JsValue CAPTURE_RATE_LIMIT;
+extern JsValue CLIENT_SESSION_PROPS;
+extern JsValue CONVERSATIONS_LEGACY_TICKET_ID;
+extern JsValue CONVERSATIONS_LEGACY_USER_TRAITS;
+extern JsValue CONVERSATIONS_LEGACY_WIDGET_SESSION_ID;
+extern JsValue CONVERSATIONS_LEGACY_WIDGET_STATE;
+extern JsValue DEAD_CLICKS_ENABLED_SERVER_SIDE;
+extern JsValue ENABLE_PERSON_PROCESSING;
+extern JsValue ENABLED_FEATURE_FLAGS;
+extern JsValue ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS;
+extern JsValue ERROR_TRACKING_SUPPRESSION_RULES;
+extern JsValue EVENT_TIMERS_KEY;
+extern JsValue EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE;
+extern JsValue FLAG_CALL_REPORTED;
+extern JsValue FLAG_CALL_REPORTED_SESSION_ID;
+extern JsValue GROUPS;
+extern JsValue HEATMAPS_ENABLED_SERVER_SIDE;
+extern JsValue INITIAL_CAMPAIGN_PARAMS;
+extern JsValue INITIAL_PERSON_INFO;
+extern JsValue INITIAL_REFERRER_INFO;
+extern JsValue LOGS_CAPTURE_ENABLED_SERVER_SIDE;
+extern JsValue PEOPLE_DISTINCT_ID_KEY;
+extern JsValue PERSISTENCE_ACTIVE_FEATURE_FLAGS;
+extern JsValue PERSISTENCE_EARLY_ACCESS_FEATURES;
+extern JsValue PERSISTENCE_FEATURE_FLAG_DETAILS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_ERRORS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_EVALUATED_AT;
+extern JsValue PERSISTENCE_FEATURE_FLAG_PAYLOADS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_REQUEST_ID;
+extern JsValue PERSISTENCE_FACEBOOK_BROWSER_ID;
+extern JsValue PERSISTENCE_FACEBOOK_CLICK_ID;
+extern JsValue PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS;
+extern JsValue PERSISTENCE_OVERRIDE_FEATURE_FLAGS;
+extern JsValue PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS;
+extern JsValue PRODUCT_TOURS;
+extern JsValue PRODUCT_TOURS_ACTIVATED;
+extern JsValue PRODUCT_TOURS_ACTIVATED_SESSION;
+extern JsValue PRODUCT_TOURS_ENABLED_SERVER_SIDE;
+extern JsValue SDK_DEBUG_EXTENSIONS_INIT_METHOD;
+extern JsValue SDK_DEBUG_EXTENSIONS_INIT_TIME_MS;
+extern JsValue SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED;
+extern JsValue SDK_DEBUG_REPLAY_STALE_CONFIG;
+extern JsValue SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS;
+extern JsValue SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS;
+extern JsValue SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS;
+extern JsValue SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS;
+extern JsValue SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG;
+extern JsValue SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT;
+extern JsValue SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS;
+extern JsValue SESSION_ID;
+extern JsValue SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION;
+extern JsValue SESSION_RECORDING_START_REASON;
+extern JsValue SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP;
+extern JsValue SESSION_RECORDING_FLUSHED_SIZE;
+extern JsValue SESSION_RECORDING_IS_SAMPLED;
+extern JsValue SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER;
+extern JsValue SESSION_RECORDING_OVERRIDE_LINKED_FLAG;
+extern JsValue SESSION_RECORDING_OVERRIDE_SAMPLING;
+extern JsValue SESSION_RECORDING_OVERRIDE_URL_TRIGGER;
+extern JsValue SESSION_RECORDING_PAST_MINIMUM_DURATION;
+extern JsValue SESSION_RECORDING_SAMPLE_RATE;
+extern JsValue SESSION_RECORDING_REMOTE_CONFIG;
+extern JsValue SESSION_RECORDING_TRIGGER_V2_GROUP_EVENT_PREFIX;
+extern JsValue SESSION_RECORDING_TRIGGER_V2_GROUP_SAMPLING_PREFIX;
+extern JsValue SESSION_RECORDING_TRIGGER_V2_GROUP_URL_PREFIX;
+extern JsValue SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION;
+extern JsValue SESSION_RECORDING_ENABLED_SERVER_SIDE;
+extern JsValue STORED_GROUP_PROPERTIES_KEY;
+extern JsValue STORED_PERSON_PROPERTIES_KEY;
+extern JsValue SURVEYS;
+extern JsValue SURVEYS_ACTIVATED;
+extern JsValue SURVEYS_ACTIVATED_SESSION;
+extern JsValue SURVEYS_ACTIVATED_TIMESTAMPS;
+extern JsValue SURVEYS_LOADED_AT;
+extern JsValue USER_STATE;
+extern JsValue WEB_VITALS_ALLOWED_METRICS;
+extern JsValue WEB_VITALS_ENABLED_SERVER_SIDE;
+
+extern JsValue isNull;
+
+JsValue PERSISTENCE_STORAGE_GROUPS = JS.array("flags", "surveys");
+
+JsValue PERSISTENCE_KEY_POLICY = __lil_object_0(() => (PEOPLE_DISTINCT_ID_KEY as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (ALIAS_ID_KEY as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (CAMPAIGN_IDS_KEY as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (EVENT_TIMERS_KEY as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PERSISTENCE_FACEBOOK_CLICK_ID as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PERSISTENCE_FACEBOOK_BROWSER_ID as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (AUTOCAPTURE_DISABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "event" } as JsValue), () => (HEATMAPS_ENABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (LOGS_CAPTURE_ENABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "event" } as JsValue), () => (ERROR_TRACKING_SUPPRESSION_RULES as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS as JsValue), () => (object { "exposure": "event" } as JsValue), () => (WEB_VITALS_ENABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "event" } as JsValue), () => (DEAD_CLICKS_ENABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "event" } as JsValue), () => (PRODUCT_TOURS_ENABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (WEB_VITALS_ALLOWED_METRICS as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_REMOTE_CONFIG as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SESSION_RECORDING_ENABLED_SERVER_SIDE as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SESSION_ID as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SESSION_RECORDING_IS_SAMPLED as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_SAMPLE_RATE as JsValue), () => (object { "exposure": "event", "shouldSkipFromEventProperties": (JsValue value) => { 
+return ((isNull as JsValue)(value) as JsValue);
+return JS.undefined(); } } as JsValue), () => (SESSION_RECORDING_PAST_MINIMUM_DURATION as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_FLUSHED_SIZE as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (ENABLED_FEATURE_FLAGS as JsValue), () => (object { "exposure": "hidden", "storageGroup": "flags" } as JsValue), () => (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue), () => (object { "exposure": "hidden", "storageGroup": "flags" } as JsValue), () => (PERSISTENCE_EARLY_ACCESS_FEATURES as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PERSISTENCE_FEATURE_FLAG_DETAILS as JsValue), () => (object { "exposure": "hidden", "storageGroup": "flags" } as JsValue), () => (PERSISTENCE_FEATURE_FLAG_PAYLOADS as JsValue), () => (object { "exposure": "hidden", "storageGroup": "flags" } as JsValue), () => (PERSISTENCE_FEATURE_FLAG_REQUEST_ID as JsValue), () => (object { "exposure": "hidden", "storageGroup": "flags", "volatile": true } as JsValue), () => (PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS as JsValue), () => (object { "exposure": "hidden", "storageGroup": "flags" } as JsValue), () => (PERSISTENCE_OVERRIDE_FEATURE_FLAGS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PERSISTENCE_OVERRIDE_FEATURE_FLAG_PAYLOADS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (STORED_PERSON_PROPERTIES_KEY as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (STORED_GROUP_PROPERTIES_KEY as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SURVEYS as JsValue), () => (object { "exposure": "hidden", "storageGroup": "surveys" } as JsValue), () => (SURVEYS_LOADED_AT as JsValue), () => (object { "exposure": "hidden", "storageGroup": "surveys", "volatile": true } as JsValue), () => (SURVEYS_ACTIVATED as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SURVEYS_ACTIVATED_SESSION as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SURVEYS_ACTIVATED_TIMESTAMPS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PRODUCT_TOURS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PRODUCT_TOURS_ACTIVATED as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PRODUCT_TOURS_ACTIVATED_SESSION as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (CONVERSATIONS_LEGACY_WIDGET_SESSION_ID as JsValue), () => (object { "exposure": "event" } as JsValue), () => (CONVERSATIONS_LEGACY_TICKET_ID as JsValue), () => (object { "exposure": "event" } as JsValue), () => (CONVERSATIONS_LEGACY_WIDGET_STATE as JsValue), () => (object { "exposure": "event" } as JsValue), () => (CONVERSATIONS_LEGACY_USER_TRAITS as JsValue), () => (object { "exposure": "event" } as JsValue), () => (FLAG_CALL_REPORTED as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (FLAG_CALL_REPORTED_SESSION_ID as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (GROUPS as JsValue), () => (object { "exposure": "event" } as JsValue), () => (PERSISTENCE_FEATURE_FLAG_ERRORS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (PERSISTENCE_FEATURE_FLAG_EVALUATED_AT as JsValue), () => (object { "exposure": "hidden", "storageGroup": "flags", "volatile": true } as JsValue), () => (USER_STATE as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (CLIENT_SESSION_PROPS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (CAPTURE_RATE_LIMIT as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (INITIAL_CAMPAIGN_PARAMS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (INITIAL_REFERRER_INFO as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (INITIAL_PERSON_INFO as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (ENABLE_PERSON_PROCESSING as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SESSION_RECORDING_OVERRIDE_SAMPLING as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_OVERRIDE_LINKED_FLAG as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_OVERRIDE_URL_TRIGGER as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SDK_DEBUG_EXTENSIONS_INIT_METHOD as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SDK_DEBUG_EXTENSIONS_INIT_TIME_MS as JsValue), () => (object { "exposure": "event" } as JsValue), () => (SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_STALE_CONFIG as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS as JsValue), () => (object { "exposure": "hidden" } as JsValue), () => (SESSION_RECORDING_START_REASON as JsValue), () => (object { "exposure": "event" } as JsValue));
+
+JsValue PERSISTENCE_KEY_PREFIX_POLICY = JS.array(JS.array(SESSION_RECORDING_TRIGGER_V2_GROUP_EVENT_PREFIX, object { "exposure": "hidden" }), JS.array(SESSION_RECORDING_TRIGGER_V2_GROUP_URL_PREFIX, object { "exposure": "hidden" }), JS.array(SESSION_RECORDING_TRIGGER_V2_GROUP_SAMPLING_PREFIX, object { "exposure": "hidden" }));
+
+JsValue getPersistenceKeyPolicy = (JsValue key) => __port_1(key);
+
+JsValue __port_1(JsValue key) {
+JsValue exactMatch = (PERSISTENCE_KEY_POLICY as JsValue)[key];
+if ((exactMatch as JsValue).truthy()) {return exactMatch;}
+for (JsValue __port_2 of PERSISTENCE_KEY_PREFIX_POLICY) {JsValue __port_3 = __port_2;
+JsValue prefix = JS.undefined();
+JsValue policy = JS.undefined();
+int __port_4 = 0;
+for (JsValue __port_5 of __port_3) {
+if (__port_4 === 0) { prefix = __port_5; }
+if (__port_4 === 1) { policy = __port_5; }
+__port_4 += 1; if (__port_4 === 2) break;
+}
+if (((((key as JsValue)["indexOf"](prefix) as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {return policy;}}
+return JS.undefined();
+return JS.undefined();}
+export { PERSISTENCE_STORAGE_GROUPS as PERSISTENCE_STORAGE_GROUPS };
+export { PERSISTENCE_KEY_POLICY as PERSISTENCE_KEY_POLICY };
+export { getPersistenceKeyPolicy as getPersistenceKeyPolicy };

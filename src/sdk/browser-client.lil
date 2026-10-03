@@ -1,0 +1,185 @@
+// Whole-module migration from packages/browser/src/extensions/browser-client.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { createDisposable as createDisposable } from "@posthog/browser-common";
+import extern { ExtensionRuntime as ExtensionRuntime } from "@posthog/browser-common/extension-runtime";
+import extern { logger as logger } from "@posthog/browser-common/utils/logger";
+import extern { Compression as Compression, isUndefined as isUndefined } from "@posthog/core";
+import extern { default as Config } from "../../vendor/posthog-js/packages/browser/src/config.ts";
+import extern { DEVICE_ID as DEVICE_ID } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { extendURLParams as extendURLParams } from "../../vendor/posthog-js/packages/browser/src/request.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue __lil_object_0;
+extern JsValue Promise;
+extern JsValue createDisposable;
+
+extern JsValue ExtensionRuntime;
+
+extern JsValue logger;
+
+extern JsValue Compression;
+extern JsValue isUndefined;
+
+extern JsValue Config;
+
+extern JsValue DEVICE_ID;
+
+extern JsValue extendURLParams;
+
+export class BrowserClientKeyValueStore {
+init(JsValue _instance) { 
+((((this as JsValue) as JsValue)["_instance"] = _instance));
+ }
+
+JsValue initialize() { 
+
+return JS.undefined(); }
+
+JsValue get(JsValue keyOrKeys) { 
+JsValue persistence = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"];
+if ((((JS.typeOf(keyOrKeys) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) {return if ((((((persistence as JsValue) === (null as JsValue)) as JsValue) || (((persistence as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((persistence as JsValue)["get_property"](keyOrKeys) as JsValue) };}
+JsValue values = object {  };
+for (JsValue key of keyOrKeys) {
+JsValue value = if ((((((persistence as JsValue) === (null as JsValue)) as JsValue) || (((persistence as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((persistence as JsValue)["get_property"](key) as JsValue) };
+if ((!((isUndefined as JsValue)(value) as JsValue).truthy() as JsValue).truthy()) {(((values as JsValue)[key] = value));}}
+return values;
+return JS.undefined(); }
+
+JsValue set(JsValue properties, JsValue value) { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["register"]((if ((((JS.typeOf(properties) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (__lil_object_0(() => (properties as JsValue), () => (value as JsValue)) as JsValue) } else { (properties as JsValue) })) as JsValue) });
+return JS.undefined(); }
+
+JsValue remove(JsValue keyOrKeys) { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["unregister"](keyOrKeys) as JsValue) });
+return JS.undefined(); }
+}
+export constructor BrowserClientKeyValueStore;
+
+JsValue REMOTE_CONFIG_EVENT = "extensionsRemoteConfig";
+
+export class BrowserClientAdapter {
+init(JsValue instance) { 
+((((this as JsValue) as JsValue)["instance"] = instance));
+((((this as JsValue) as JsValue)["_disposed"] = false));
+((((this as JsValue) as JsValue)["_logger"] = logger));
+((((this as JsValue) as JsValue)["_latestRemoteConfigResult"] = (instance as JsValue)["_lastRemoteConfig"]));
+((((this as JsValue) as JsValue)["kv"] = JS.construct((BrowserClientKeyValueStore as JsValue), instance)));
+((((this as JsValue) as JsValue)["onEvent"] = (JsValue handler) => { 
+JsValue unsubscribe = (((this as JsValue) as JsValue)["instance"] as JsValue)["on"]("eventCaptured", (JsValue event) => { 
+try {((handler as JsValue)(object { "event": (event as JsValue)["event"], "properties": (event as JsValue)["properties"] }));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Browser extension event listener failed", error));}
+return JS.undefined(); });
+return (createDisposable as JsValue)(unsubscribe);
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["onRemoteConfig"] = (JsValue handler) => { 
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return (createDisposable as JsValue)(() => { 
+
+return JS.undefined(); });}
+JsValue invoke = (JsValue result) => { 
+try {((handler as JsValue)(result));} catch (JsValue error) {((((this as JsValue) as JsValue)["_logger"] as JsValue)["error"]("Browser extension remote config listener failed", error));}
+return JS.undefined(); };
+JsValue unsubscribe = ((((this as JsValue) as JsValue)["instance"] as JsValue)["_internalEventEmitter"] as JsValue)["on"](REMOTE_CONFIG_EVENT, invoke);
+if ((((this as JsValue) as JsValue)["_latestRemoteConfigResult"] as JsValue).truthy()) {((invoke as JsValue)(((this as JsValue) as JsValue)["_latestRemoteConfigResult"]));}
+return (createDisposable as JsValue)(unsubscribe);
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_runtime"] = JS.construct(ExtensionRuntime, (logger as JsValue)["createLogger"]("[BrowserExtensions]"), (this as JsValue))));
+ }
+
+JsValue __lil_get_logger() { 
+return ((this as JsValue) as JsValue)["_logger"];
+return JS.undefined(); }
+
+JsValue __lil_get_distinctId() { 
+return (((this as JsValue) as JsValue)["instance"] as JsValue)["get_distinct_id"]();
+return JS.undefined(); }
+
+JsValue __lil_get_anonymousId() { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = (((this as JsValue) as JsValue)["instance"] as JsValue)["get_property"](DEVICE_ID))) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (((this as JsValue) as JsValue)["distinctId"] as JsValue) };
+return JS.undefined(); }
+
+JsValue __lil_get_deviceId() { 
+JsValue value = (((this as JsValue) as JsValue)["instance"] as JsValue)["get_property"](DEVICE_ID);
+return if ((((JS.typeOf(value) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (value as JsValue) } else { (JS.undefined() as JsValue) };
+return JS.undefined(); }
+
+JsValue __lil_get_library() { 
+return object { "name": (Config as JsValue)["LIB_NAME"], "version": (Config as JsValue)["LIB_VERSION"] };
+return JS.undefined(); }
+
+JsValue __lil_get_initialPersonProperties() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+return (if ((((((((_b = if ((((((((_a = (((this as JsValue) as JsValue)["instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["get_initial_props"]() as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (object {  } as JsValue) });
+return JS.undefined(); }
+
+JsValue __lil_get_groups() { 
+return (((this as JsValue) as JsValue)["instance"] as JsValue)["getGroups"]();
+return JS.undefined(); }
+
+JsValue __lil_get_session() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+try {JsValue current = if ((((((((_a = (((this as JsValue) as JsValue)["instance"] as JsValue)["sessionManager"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["checkAndGetSessionAndWindowId"](true) as JsValue) };
+return object { "sessionId": if ((((((((_b = if ((((((current as JsValue) === (null as JsValue)) as JsValue) || (((current as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((current as JsValue)["sessionId"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { ("" as JsValue) }, "windowId": if ((((((((_c = if ((((((current as JsValue) === (null as JsValue)) as JsValue) || (((current as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((current as JsValue)["windowId"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { ("" as JsValue) }, "sessionStartTimestamp": if ((((((((_d = if ((((((current as JsValue) === (null as JsValue)) as JsValue) || (((current as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((current as JsValue)["sessionStartTimestamp"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_d as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_d as JsValue) } else { (0.0 as JsValue) } };} catch (JsValue __port_1) {return object { "sessionId": "", "windowId": "", "sessionStartTimestamp": 0.0 };}
+return JS.undefined(); }
+
+JsValue __lil_get_canCapture() { 
+return (((this as JsValue) as JsValue)["instance"] as JsValue)["is_capturing"]();
+return JS.undefined(); }
+
+JsValue __lil_get_projectToken() { 
+return ((((this as JsValue) as JsValue)["instance"] as JsValue)["config"] as JsValue)["token"];
+return JS.undefined(); }
+
+JsValue add(JsValue extension) { 
+return (((this as JsValue) as JsValue)["_runtime"] as JsValue)["add"](extension);
+return JS.undefined(); }
+
+JsValue getExtension(JsValue name) { 
+return (((this as JsValue) as JsValue)["_runtime"] as JsValue)["getExtension"](name);
+return JS.undefined(); }
+
+JsValue capture(JsValue event, JsValue properties, JsValue options) { 
+if ((!(options as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["instance"] as JsValue)["capture"](event, properties));
+return JS.undefined();}
+JsValue captureOptions = object { "timestamp": (options as JsValue)["timestamp"], "uuid": (options as JsValue)["uuid"], "$set": (options as JsValue)["set"], "$set_once": (options as JsValue)["setOnce"] };
+((((this as JsValue) as JsValue)["instance"] as JsValue)["capture"](event, properties, captureOptions));
+return JS.undefined(); }
+
+JsValue registerDynamicEventProperties(JsValue producer) { 
+return (createDisposable as JsValue)((((this as JsValue) as JsValue)["instance"] as JsValue)["_registerExtensionEventProperties"](producer));
+return JS.undefined(); }
+
+JsValue handleRemoteConfig(JsValue result) { 
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_latestRemoteConfigResult"] = result));
+(((((this as JsValue) as JsValue)["instance"] as JsValue)["_internalEventEmitter"] as JsValue)["emit"](REMOTE_CONFIG_EVENT, result));
+return JS.undefined(); }
+
+async JsValue sendRequest(JsValue path, JsValue ph_init = object {  }) { 
+JsValue _a = JS.undefined();
+JsValue endpoint = ((((this as JsValue) as JsValue)["instance"] as JsValue)["requestRouter"] as JsValue)["endpointFor"](if ((((((((_a = (ph_init as JsValue)["target"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { ("api" as JsValue) }, path);
+JsValue requestOptions = object { "method": (ph_init as JsValue)["method"], "url": if (((ph_init as JsValue)["query"] as JsValue).truthy()) { ((extendURLParams as JsValue)(endpoint, (ph_init as JsValue)["query"]) as JsValue) } else { (endpoint as JsValue) }, "data": (ph_init as JsValue)["body"], "headers": (ph_init as JsValue)["headers"], "timeout": (ph_init as JsValue)["timeoutMs"], "fireCallbackOnDrop": true, "transport": (ph_init as JsValue)["transport"], "compression": (ph_init as JsValue)["compression"], "compressionFallback": if (((((((ph_init as JsValue)["target"] as JsValue) === ("flags" as JsValue)) as JsValue) && ((((ph_init as JsValue)["compression"] as JsValue) === ("best-available" as JsValue)) as JsValue)) as JsValue).truthy()) { ((Compression as JsValue)["Base64"] as JsValue) } else { (JS.undefined() as JsValue) }, "timestampMode": (ph_init as JsValue)["sentAt"] };
+if (((((ph_init as JsValue)["transport"] as JsValue) === ("sendBeacon" as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["instance"] as JsValue)["_send_request"](requestOptions));
+return object { "statusCode": 202.0 };}
+return JS.construct(Promise, (JsValue resolve) => { 
+(((requestOptions as JsValue)["callback"] = resolve));
+((((this as JsValue) as JsValue)["instance"] as JsValue)["_send_request"](requestOptions));
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue dispose() { 
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_disposed"] = true));
+((((this as JsValue) as JsValue)["_runtime"] as JsValue)["dispose"]());
+return JS.undefined(); }
+}
+export constructor BrowserClientAdapter;
+
+

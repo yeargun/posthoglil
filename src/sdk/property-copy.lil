@@ -1,0 +1,47 @@
+extern JsValue Object;
+extern JsValue Reflect;
+
+export JsValue setOwn(JsValue target, JsValue key, JsValue value) {
+  Object.defineProperty(target, key, object {
+    value: value, enumerable: true, configurable: true, writable: true
+  });
+  return target;
+}
+
+// ECMAScript CopyDataProperties. Keys are captured once; descriptor and value
+// reads remain interleaved, including Symbols, proxies and accessors. Defining
+// own data properties preserves __proto__ and bypasses inherited setters.
+export JsValue copyProperties(JsValue target, JsValue source) {
+  if (JS.isNullish(source)) return target;
+  JsValue objectSource = Object(source);
+  JsValue keys = Reflect.ownKeys(objectSource);
+  for (JsValue key of keys) {
+    JsValue descriptor = Object.getOwnPropertyDescriptor(objectSource, key);
+    if (!JS.isUndefined(descriptor) && descriptor.enumerable.truthy()) {
+      Object.defineProperty(target, key, object {
+        value: objectSource[key], enumerable: true, configurable: true, writable: true
+      });
+    }
+  }
+  return target;
+}
+
+export JsValue restPropertiesExcept(JsValue source, string excluded) {
+  // Destructuring a nullish request must throw before copying any property.
+  if (JS.isNullish(source)) {
+    return source[excluded];
+  }
+  JsValue objectSource = Object(source);
+  JsValue target = JS.object();
+  JsValue keys = Reflect.ownKeys(objectSource);
+  for (JsValue key of keys) {
+    if (key === excluded) continue;
+    JsValue descriptor = Object.getOwnPropertyDescriptor(objectSource, key);
+    if (!JS.isUndefined(descriptor) && descriptor.enumerable.truthy()) {
+      Object.defineProperty(target, key, object {
+        value: objectSource[key], enumerable: true, configurable: true, writable: true
+      });
+    }
+  }
+  return target;
+}

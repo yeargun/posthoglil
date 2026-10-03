@@ -1,0 +1,127 @@
+// packages/core/src/utils/json-utils.ts, PostHog 1.435.8.
+// The traversal state is a private nominal type, never a host-visible object.
+// Input/output objects keep JS prototypes, getters, symbols and exception rules.
+extern JsValue Date;
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue Number;
+extern JsValue Math;
+extern JsValue WeakSet;
+
+export number MAX_JSON_SAFE_VALUE_DEPTH = 20.0;
+export number MAX_JSON_SAFE_VALUE_ITEMS = 1000.0;
+export number MAX_JSON_SAFE_VALUE_NODES = 10000.0;
+export string CIRCULAR_VALUE = "[Circular]";
+export string TRUNCATED_VALUE = "[Truncated]";
+export string UNSERIALIZABLE_VALUE = "[Unserializable]";
+export string FUNCTION_VALUE = "[Function]";
+
+JsValue dateGetTime = Date["prototype"]["getTime"];
+JsValue dateToISOString = Date["prototype"]["toISOString"];
+JsValue propertyIsEnumerable = Object["prototype"]["propertyIsEnumerable"];
+
+class JsonSafeValueConversionState {
+    JsValue ancestors;
+    number remainingNodes;
+    init() {
+        this.ancestors = JS.construct(WeakSet);
+        this.remainingNodes = MAX_JSON_SAFE_VALUE_NODES;
+    }
+}
+
+export string sanitizeString(string value) {
+    string output = "";
+    for (int index = 0; index < value.length; index += 1) {
+        number codeUnit = value.charCodeAt(index);
+        if (codeUnit >= 55296.0 && codeUnit <= 56319.0) {
+            number nextCodeUnit = value.charCodeAt(index + 1);
+            if (nextCodeUnit >= 56320.0 && nextCodeUnit <= 57343.0) {
+                output += value[index] + value[index + 1];
+                index += 1;
+            } else {
+                output += "�";
+            }
+        } else {
+            output += if (codeUnit >= 56320.0 && codeUnit <= 57343.0) { "�" } else { value[index] };
+        }
+    }
+    return output;
+}
+
+JsValue convert(JsValue current, number depth, JsonSafeValueConversionState state) {
+    if (state.remainingNodes <= 0.0) return TRUNCATED_VALUE;
+    state.remainingNodes -= 1.0;
+    try {
+        if (current === null || JS.isUndefined(current) || JS.typeOf(current) == "boolean") return current;
+        if (current is string) return sanitizeString(current);
+        if (current is float) return if (Number["isFinite"](current).truthy()) { current as JsValue } else { null as JsValue };
+        if (JS.typeOf(current) == "bigint") return current.toString();
+        if (JS.typeOf(current) == "function") return FUNCTION_VALUE;
+        if (JS.typeOf(current) == "symbol") return if (current.description.truthy()) { `Symbol(${current.description})` as JsValue } else { "Symbol()" as JsValue };
+        if (depth >= MAX_JSON_SAFE_VALUE_DEPTH) return TRUNCATED_VALUE;
+        if (state.ancestors.has(current).truthy()) return CIRCULAR_VALUE;
+        state.ancestors.add(current);
+        try {
+            if (current instanceof Date) return if (Number["isFinite"](dateGetTime.call(current)).truthy()) { dateToISOString.call(current) } else { null as JsValue };
+            bool hasToJSONResult = false;
+            JsValue toJSONResult = JS.undefined();
+            try {
+                JsValue toJSON = current.toJSON;
+                if (JS.typeOf(toJSON) == "function") {
+                    toJSONResult = toJSON.call(current);
+                    hasToJSONResult = true;
+                }
+            } catch {
+                hasToJSONResult = false;
+            }
+            if (hasToJSONResult) return convert(toJSONResult, depth + 1.0, state);
+            if (Array["isArray"](current).truthy()) {
+                JsValue itemCount = Math["min"](current.length, MAX_JSON_SAFE_VALUE_ITEMS);
+                JsValue output = JS.array();
+                number index = 0.0;
+                while (index < itemCount && state.remainingNodes > 0.0) {
+                    output.push(convert(current[index], depth + 1.0, state));
+                    index += 1.0;
+                }
+                if (current.length > index) output.push(TRUNCATED_VALUE);
+                return output;
+            }
+            JsValue output = object {};
+            number itemCount = 0.0;
+            bool truncated = false;
+            for (string key in current) {
+                if (!propertyIsEnumerable.call(current, key).truthy()) break;
+                if (itemCount >= MAX_JSON_SAFE_VALUE_ITEMS || state.remainingNodes <= 0.0) {
+                    truncated = true;
+                    break;
+                }
+                JsValue converted = convert(current[key], depth + 1.0, state);
+                Object["defineProperty"](output, key, object {value: converted, enumerable: true, configurable: true, writable: true});
+                itemCount += 1.0;
+            }
+            if (truncated) output[TRUNCATED_VALUE] = "Additional properties omitted";
+            return output;
+        } finally {
+            state.ancestors["delete"](current);
+        }
+    } catch {
+        return UNSERIALIZABLE_VALUE;
+    }
+}
+
+export JsValue toJsonSafeValue(JsValue value) {
+    JsonSafeValueConversionState state = new JsonSafeValueConversionState();
+    return convert(value, 0.0, state);
+}
+
+export JsValue assignUserAttributes(JsValue target, JsValue source) {
+    if (!source.truthy()) return target;
+    JsValue keys = JS.array();
+    try { keys = Object["keys"](source); } catch { keys = JS.array(); }
+    for (JsValue key of keys) {
+        JsValue value = JS.undefined();
+        try { value = source[key]; } catch { value = UNSERIALIZABLE_VALUE; }
+        Object["defineProperty"](target, key, object {value: value, enumerable: true, writable: true, configurable: true});
+    }
+    return target;
+}

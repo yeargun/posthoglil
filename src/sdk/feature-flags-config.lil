@@ -1,0 +1,50 @@
+// Whole-module migration from packages/browser/src/feature-flags-config.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { createLogger as createLogger } from "@posthog/browser-common/utils/logger";
+import extern { isArray as isArray, isUndefined as isUndefined } from "@posthog/core";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue Math;
+extern JsValue createLogger;
+
+extern JsValue isArray;
+extern JsValue isUndefined;
+
+JsValue logger = (createLogger as JsValue)("[FeatureFlags]");
+
+JsValue DEFAULT_REFRESH_INTERVAL_MS = ((((5.0 as JsValue) * (60.0 as JsValue)) as JsValue) * (1000.0 as JsValue));
+
+func(JsValue, JsValue)->JsValue snapshot = (JsValue config, JsValue remoteRequestsDisabled) => __port_0(config, remoteRequestsDisabled);
+
+export class MutableFeatureFlagsConfigSource {
+init(JsValue config, JsValue remoteRequestsDisabled = false) { 
+((((this as JsValue) as JsValue)["_loggedEvaluationEnvironmentsDeprecation"] = false));
+(((this as JsValue) as JsValue)["update"](config, remoteRequestsDisabled));
+ }
+
+JsValue update(JsValue config, JsValue remoteRequestsDisabled) { 
+((((this as JsValue) as JsValue)["_snapshot"] = snapshot(config, remoteRequestsDisabled)));
+if (((((((config as JsValue)["evaluation_environments"] as JsValue) && (!((config as JsValue)["evaluation_contexts"] as JsValue).truthy() as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_loggedEvaluationEnvironmentsDeprecation"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((logger as JsValue)["warn"]("evaluation_environments is deprecated. Use evaluation_contexts instead. evaluation_environments will be removed in a future version."));
+((((this as JsValue) as JsValue)["_loggedEvaluationEnvironmentsDeprecation"] = true));}
+if ((((!((isUndefined as JsValue)((config as JsValue)["flag_keys"]) as JsValue).truthy() as JsValue) && (!((isArray as JsValue)((config as JsValue)["flag_keys"]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((logger as JsValue)["error"]("Invalid flag_keys found:", (config as JsValue)["flag_keys"], "Expected array of non-empty strings"));}
+return JS.undefined(); }
+
+JsValue get() { 
+return ((this as JsValue) as JsValue)["_snapshot"];
+return JS.undefined(); }
+}
+export constructor MutableFeatureFlagsConfigSource;
+
+JsValue __port_0(JsValue config, JsValue remoteRequestsDisabled) {
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue _h = JS.undefined();
+return (object { "bootstrap": object { "featureFlags": if ((((((((_b = if ((((((((_a = (config as JsValue)["bootstrap"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["featureFlags"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (JS.undefined() as JsValue) }, "featureFlagPayloads": if ((((((((_d = if ((((((((_c = (config as JsValue)["bootstrap"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["featureFlagPayloads"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_d as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_d as JsValue) } else { (JS.undefined() as JsValue) } }, "remoteRequestsDisabled": remoteRequestsDisabled, "featureFlagsDisabled": !(!((config as JsValue)["advanced_disable_feature_flags"] as JsValue).truthy() as JsValue).truthy(), "onlyEvaluateSurveyFeatureFlags": !(!((config as JsValue)["advanced_only_evaluate_survey_feature_flags"] as JsValue).truthy() as JsValue).truthy(), "deduplicateCallsPerSession": !(!((config as JsValue)["advanced_feature_flags_dedup_per_session"] as JsValue).truthy() as JsValue).truthy(), "cacheTtlMs": (config as JsValue)["feature_flag_cache_ttl_ms"], "refreshIntervalMs": if ((((((((_e = (config as JsValue)["remote_config_refresh_interval_ms"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_e as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_e as JsValue) } else { (DEFAULT_REFRESH_INTERVAL_MS as JsValue) }, "idleRefreshBackoff": (isUndefined as JsValue)((config as JsValue)["remote_config_refresh_interval_ms"]), "requestTimeoutMs": (config as JsValue)["feature_flag_request_timeout_ms"], "requestMaxRetries": (Math as JsValue)["max"](0.0, if ((((((((_f = (config as JsValue)["feature_flag_request_max_retries"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_f as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_f as JsValue) } else { (1.0 as JsValue) }), "compression": if (((config as JsValue)["disable_compression"] as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ("best-available" as JsValue) }, "evaluationContexts": if ((((((((_h = if ((((((((_g = (config as JsValue)["evaluation_contexts"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_g as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_g as JsValue) } else { ((config as JsValue)["evaluation_environments"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_h as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_h as JsValue) } else { (JS.array() as JsValue) }, "flagKeys": if (((isArray as JsValue)((config as JsValue)["flag_keys"]) as JsValue).truthy()) { ((config as JsValue)["flag_keys"] as JsValue) } else { (JS.undefined() as JsValue) } });
+return JS.undefined();}

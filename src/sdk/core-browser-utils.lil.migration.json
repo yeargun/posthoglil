@@ -1,0 +1,14 @@
+{
+  "source": "packages/core/src/utils/browser-utils.ts",
+  "implementation": "src/sdk/core-browser-utils.lil",
+  "exports": [
+    "isWebKit"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [],
+  "primitiveTypes": [],
+  "asyncClosures": [],
+  "qualified": false
+}

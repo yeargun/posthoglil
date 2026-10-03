@@ -1,0 +1,17 @@
+import extern { document } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+extern JsValue document;
+extern JsValue decodeURIComponent;
+
+export JsValue getCookieValue(JsValue name) {
+  if (!document.truthy()) return JS.undefined();
+  try {
+    JsValue prefix = name + "=";
+    JsValue cookies = document.cookie.split(";").filter((JsValue value) => value.length);
+    for (number i = 0.0; i < cookies.length; i += 1.0) {
+      JsValue cookie = cookies[i];
+      while (cookie.charAt(0.0) == " ") cookie = cookie.substring(1.0, cookie.length);
+      if (cookie.indexOf(prefix) === 0.0) return decodeURIComponent(cookie.substring(prefix.length, cookie.length));
+    }
+  } catch {}
+  return null;
+}

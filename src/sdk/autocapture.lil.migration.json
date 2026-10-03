@@ -1,0 +1,47 @@
+{
+  "source": "packages/browser/src/autocapture.ts",
+  "implementation": "src/sdk/autocapture.lil",
+  "exports": [
+    "getAugmentPropertiesFromElement",
+    "previousElementSibling",
+    "getDefaultProperties",
+    "getPropertiesFromElement",
+    "autocapturePropertiesForElement",
+    "Autocapture"
+  ],
+  "classMembers": [
+    {
+      "class": "Autocapture",
+      "implementation": "__lil_get_isEnabled",
+      "kind": "get",
+      "name": "isEnabled"
+    }
+  ],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_0",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "dom_event_allowlist",
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "localFunctions": [
+    {
+      "name": "limitText",
+      "arity": 2,
+      "calls": 3
+    }
+  ],
+  "asyncClosures": [],
+  "qualified": false
+}

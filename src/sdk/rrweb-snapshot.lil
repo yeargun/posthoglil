@@ -1,0 +1,753 @@
+// Whole-module migration from packages/rrweb/rrweb-snapshot/src/snapshot.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { NodeType as NodeType } from "@posthog/rrweb-types";
+import extern { Mirror as Mirror, is2DCanvasBlank as is2DCanvasBlank, isElement as isElement, isShadowRoot as isShadowRoot, maskInputValue as maskInputValue, maskAttributeValue as maskAttributeValue, isNativeShadowDom as isNativeShadowDom, stringifyStylesheet as stringifyStylesheet, hasEmptyShorthandLonghand as hasEmptyShorthandLonghand, getInputType as getInputType, toLowerCase as toLowerCase, extractFileExtension as extractFileExtension, checkDataURLSize as checkDataURLSize, recompressBase64Image as recompressBase64Image, absolutifyURLs as absolutifyURLs, SCRIPT_PLACEHOLDER as SCRIPT_PLACEHOLDER } from "../../vendor/posthog-js/packages/rrweb/rrweb-snapshot/src/utils.ts";
+import extern { default as dom } from "@posthog/rrweb-utils";
+import extern { beginSnapshotCostTracking as beginSnapshotCostTracking, countSerializedNode as countSerializedNode, deferStylesheetLink as deferStylesheetLink, endSnapshotCostTracking as endSnapshotCostTracking, runNonDeferrableStylesheetWork as runNonDeferrableStylesheetWork, shouldDeferStylesheetInlining as shouldDeferStylesheetInlining } from "../../vendor/posthog-js/packages/rrweb/rrweb-snapshot/src/snapshot-cost.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue RegExp;
+extern JsValue WeakMap;
+extern JsValue Map;
+extern JsValue HTMLFormElement;
+extern JsValue console;
+extern JsValue Boolean;
+extern JsValue clearTimeout;
+extern JsValue setTimeout;
+extern JsValue AbortController;
+extern JsValue Array;
+extern JsValue Set;
+extern JsValue window;
+extern JsValue Math;
+extern JsValue Object;
+extern JsValue customElements;
+extern JsValue NodeType;
+
+extern JsValue Mirror;
+extern JsValue is2DCanvasBlank;
+extern JsValue isElement;
+extern JsValue isShadowRoot;
+extern JsValue maskInputValue;
+extern JsValue maskAttributeValue;
+extern JsValue isNativeShadowDom;
+extern JsValue stringifyStylesheet;
+extern JsValue hasEmptyShorthandLonghand;
+extern JsValue getInputType;
+extern JsValue toLowerCase;
+extern JsValue extractFileExtension;
+extern JsValue checkDataURLSize;
+extern JsValue recompressBase64Image;
+extern JsValue absolutifyURLs;
+extern JsValue SCRIPT_PLACEHOLDER;
+
+extern JsValue dom;
+
+extern JsValue beginSnapshotCostTracking;
+extern JsValue countSerializedNode;
+extern JsValue deferStylesheetLink;
+extern JsValue endSnapshotCostTracking;
+extern JsValue runNonDeferrableStylesheetWork;
+extern JsValue shouldDeferStylesheetInlining;
+
+JsValue _id = 1.0;
+
+JsValue tagNameRegex = JS.construct(RegExp, "[^a-z0-9-_:]");
+
+JsValue IGNORED_NODE = (-(2.0 as JsValue));
+
+
+
+
+
+JsValue canvasService = JS.undefined();
+
+JsValue canvasCtx = JS.undefined();
+
+JsValue taintedCanvasWarned = false;
+
+
+
+JsValue SRCSET_NOT_SPACES = JS.construct(RegExp, "^[^ \\t\\n\\r\\u000c]+", "");
+
+JsValue SRCSET_COMMAS_OR_SPACES = JS.construct(RegExp, "^[, \\t\\n\\r\\u000c]+", "");
+
+
+
+JsValue cachedDocument = JS.construct(WeakMap);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+JsValue stylesheetLoadTracked = JS.construct(Map);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+JsValue DEFAULT_MAX_DEPTH = 50.0;
+
+JsValue _maxDepthWarned = false;
+
+JsValue _maxDepthReached = false;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+JsValue __port_0 = snapshot;
+
+JsValue genId() {
+return (() => { number __port_1 = JS.number(_id); _id = __port_1 + 1.0; return __port_1; })();
+return JS.undefined();}
+
+JsValue getValidTagName(JsValue element) {
+if (((element instanceof HTMLFormElement) as JsValue).truthy()) {return "form";}
+JsValue processedTagName = (toLowerCase as JsValue)((element as JsValue)["tagName"]);
+if (((tagNameRegex as JsValue)["test"](processedTagName) as JsValue).truthy()) {return "div";}
+return processedTagName;
+return JS.undefined();}
+
+JsValue warnCanvasUnreadable(JsValue error) {
+if (((((if ((((((error as JsValue) === (null as JsValue)) as JsValue) || (((error as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((error as JsValue)["name"] as JsValue) }) as JsValue) !== ("SecurityError" as JsValue)) as JsValue).truthy()) {((console as JsValue)["warn"]("Cannot read canvas pixels, so this canvas is left out of the recording.", error));
+return JS.undefined();}
+if ((taintedCanvasWarned as JsValue).truthy()) {return JS.undefined();}
+((taintedCanvasWarned = true));
+((console as JsValue)["warn"]("Cannot read canvas pixels, so this canvas is left out of the recording. A cross-origin image or video drawn into it taints it.", error));
+return JS.undefined();}
+
+JsValue getAbsoluteSrcsetString(JsValue doc, JsValue attributeValue) {
+if (((((attributeValue as JsValue)["trim"]() as JsValue) === ("" as JsValue)) as JsValue).truthy()) {return attributeValue;}
+JsValue pos = 0.0;
+JsValue collectCharacters = (this JsValue __port_2, JsValue regEx) => { 
+JsValue chars = JS.undefined();
+JsValue ph_match = (regEx as JsValue)["exec"]((attributeValue as JsValue)["substring"](pos));
+if ((ph_match as JsValue).truthy()) {((chars = (ph_match as JsValue)[0.0]));
+((pos = ((pos as JsValue) + ((chars as JsValue)["length"] as JsValue))));
+return chars;}
+return "";
+return JS.undefined(); };
+JsValue output = JS.array();
+while ((true as JsValue).truthy()) {((collectCharacters as JsValue)(SRCSET_COMMAS_OR_SPACES));
+if ((((pos as JsValue) >= ((attributeValue as JsValue)["length"] as JsValue)) as JsValue).truthy()) {break;}
+JsValue url = (collectCharacters as JsValue)(SRCSET_NOT_SPACES);
+if (((((url as JsValue)["slice"]((-(1.0 as JsValue))) as JsValue) === ("," as JsValue)) as JsValue).truthy()) {((url = (absoluteToDoc as JsValue)(doc, (url as JsValue)["substring"](0.0, (((url as JsValue)["length"] as JsValue) - (1.0 as JsValue))))));
+((output as JsValue)["push"](url));} else {JsValue descriptorsStr = "";
+((url = (absoluteToDoc as JsValue)(doc, url)));
+JsValue inParens = false;
+while ((true as JsValue).truthy()) {JsValue c = (attributeValue as JsValue)["charAt"](pos);
+if ((((c as JsValue) === ("" as JsValue)) as JsValue).truthy()) {((output as JsValue)["push"](((((url as JsValue) + (descriptorsStr as JsValue))) as JsValue)["trim"]()));
+break;} else {if ((!(inParens as JsValue).truthy() as JsValue).truthy()) {if ((((c as JsValue) === ("," as JsValue)) as JsValue).truthy()) {((pos = ((pos as JsValue) + (1.0 as JsValue))));
+((output as JsValue)["push"](((((url as JsValue) + (descriptorsStr as JsValue))) as JsValue)["trim"]()));
+break;} else {if ((((c as JsValue) === ("(" as JsValue)) as JsValue).truthy()) {((inParens = true));}}} else {if ((((c as JsValue) === (")" as JsValue)) as JsValue).truthy()) {((inParens = false));}}}
+((descriptorsStr = ((descriptorsStr as JsValue) + (c as JsValue))));
+((pos = ((pos as JsValue) + (1.0 as JsValue))));}}}
+return (output as JsValue)["join"](", ");
+return JS.undefined();}
+
+JsValue absoluteToDoc(JsValue doc, JsValue attributeValue) {
+if ((((!(attributeValue as JsValue).truthy() as JsValue) || ((((attributeValue as JsValue)["trim"]() as JsValue) === ("" as JsValue)) as JsValue)) as JsValue).truthy()) {return attributeValue;}
+return (getHref as JsValue)(doc, attributeValue);
+return JS.undefined();}
+
+JsValue isSVGElement(JsValue el) {
+return (Boolean as JsValue)((((((el as JsValue)["tagName"] as JsValue) === ("svg" as JsValue)) as JsValue) || ((el as JsValue)["ownerSVGElement"] as JsValue)));
+return JS.undefined();}
+
+JsValue getHref(JsValue doc, JsValue customHref) {
+JsValue a = (cachedDocument as JsValue)["get"](doc);
+if ((!(a as JsValue).truthy() as JsValue).truthy()) {((a = (doc as JsValue)["createElement"]("a")));
+((cachedDocument as JsValue)["set"](doc, a));}
+if ((!(customHref as JsValue).truthy() as JsValue).truthy()) {((customHref = ""));} else {if (((((customHref as JsValue)["startsWith"]("blob:") as JsValue) || ((customHref as JsValue)["startsWith"]("data:") as JsValue)) as JsValue).truthy()) {return customHref;}}
+((a as JsValue)["setAttribute"]("href", customHref));
+return (a as JsValue)["href"];
+return JS.undefined();}
+
+JsValue capDataURLSize(JsValue dataURL, JsValue dataURLOptions) {
+if ((if ((((((dataURLOptions as JsValue) === (null as JsValue)) as JsValue) || (((dataURLOptions as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((dataURLOptions as JsValue)["maxBase64ImageLength"] as JsValue) } as JsValue).truthy()) {return (checkDataURLSize as JsValue)(dataURL, (dataURLOptions as JsValue)["maxBase64ImageLength"]);}
+return dataURL;
+return JS.undefined();}
+
+JsValue transformAttribute(JsValue doc, JsValue tagName, JsValue name, JsValue value, JsValue element, JsValue dataURLOptions) {
+JsValue _a = JS.undefined();
+if ((!(value as JsValue).truthy() as JsValue).truthy()) {return value;}
+if ((((((name as JsValue) === ("src" as JsValue)) as JsValue) || ((((((name as JsValue) === ("href" as JsValue)) as JsValue) && (!((((((tagName as JsValue) === ("use" as JsValue)) as JsValue) && ((((value as JsValue)[0.0] as JsValue) === ("#" as JsValue)) as JsValue))) as JsValue).truthy() as JsValue))) as JsValue)) as JsValue).truthy()) {if ((((((tagName as JsValue) === ("link" as JsValue)) as JsValue) && (element as JsValue)) as JsValue).truthy()) {JsValue sheetHref = if ((((((((_a = (element as JsValue)["sheet"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["href"] as JsValue) };
+if ((sheetHref as JsValue).truthy()) {return sheetHref;}}
+JsValue transformedValue = (absoluteToDoc as JsValue)(doc, value);
+if (((transformedValue as JsValue)["startsWith"]("data:") as JsValue).truthy()) {if ((((((tagName as JsValue) === ("img" as JsValue)) as JsValue) && (element as JsValue)) as JsValue).truthy()) {JsValue processedDataURL = transformedValue;
+if (((((if ((((((dataURLOptions as JsValue) === (null as JsValue)) as JsValue) || (((dataURLOptions as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((dataURLOptions as JsValue)["type"] as JsValue) }) as JsValue) || ((((if ((((((dataURLOptions as JsValue) === (null as JsValue)) as JsValue) || (((dataURLOptions as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((dataURLOptions as JsValue)["quality"] as JsValue) }) as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) {((processedDataURL = (recompressBase64Image as JsValue)(element, transformedValue, (dataURLOptions as JsValue)["type"], (dataURLOptions as JsValue)["quality"])));}
+return (capDataURLSize as JsValue)(processedDataURL, dataURLOptions);}
+if ((((tagName as JsValue) === ("image" as JsValue)) as JsValue).truthy()) {return (capDataURLSize as JsValue)(transformedValue, dataURLOptions);}}
+return transformedValue;} else {if ((((((name as JsValue) === ("xlink:href" as JsValue)) as JsValue) && ((((value as JsValue)[0.0] as JsValue) !== ("#" as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue transformedValue = (absoluteToDoc as JsValue)(doc, value);
+if ((((((tagName as JsValue) === ("image" as JsValue)) as JsValue) && ((transformedValue as JsValue)["startsWith"]("data:") as JsValue)) as JsValue).truthy()) {return (capDataURLSize as JsValue)(transformedValue, dataURLOptions);}
+return transformedValue;} else {if ((((((name as JsValue) === ("background" as JsValue)) as JsValue) && ((((((((tagName as JsValue) === ("table" as JsValue)) as JsValue) || (((tagName as JsValue) === ("td" as JsValue)) as JsValue)) as JsValue) || (((tagName as JsValue) === ("th" as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {return (absoluteToDoc as JsValue)(doc, value);} else {if ((((name as JsValue) === ("srcset" as JsValue)) as JsValue).truthy()) {return (getAbsoluteSrcsetString as JsValue)(doc, value);} else {if ((((name as JsValue) === ("style" as JsValue)) as JsValue).truthy()) {return (absolutifyURLs as JsValue)(value, (getHref as JsValue)(doc));} else {if ((((((tagName as JsValue) === ("object" as JsValue)) as JsValue) && (((name as JsValue) === ("data" as JsValue)) as JsValue)) as JsValue).truthy()) {return (absoluteToDoc as JsValue)(doc, value);}}}}}}
+return value;
+return JS.undefined();}
+
+JsValue ignoreAttribute(JsValue tagName, JsValue name, JsValue _value) {
+return ((((((((tagName as JsValue) === ("video" as JsValue)) as JsValue) || (((tagName as JsValue) === ("audio" as JsValue)) as JsValue))) as JsValue) && ((((toLowerCase as JsValue)(name) as JsValue) === ("autoplay" as JsValue)) as JsValue)));
+return JS.undefined();}
+
+JsValue isStylesheetLink(JsValue rel) {
+if ((((JS.typeOf(rel) as JsValue) !== ("string" as JsValue)) as JsValue).truthy()) {return false;}
+return (((toLowerCase as JsValue)(rel) as JsValue)["split"](JS.construct(RegExp, "\\s+", "")) as JsValue)["includes"]("stylesheet");
+return JS.undefined();}
+
+JsValue _isBlockedElement(JsValue element, JsValue blockClass, JsValue blockSelector) {
+try {if ((((JS.typeOf(blockClass) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) {if ((((element as JsValue)["classList"] as JsValue)["contains"](blockClass) as JsValue).truthy()) {return true;}} else {for (JsValue eIndex = ((element as JsValue)["classList"] as JsValue)["length"]; ((() => { number __port_3 = JS.number(eIndex); eIndex = __port_3 - 1.0; return __port_3; })() as JsValue).truthy(); JS.undefined()) {JsValue className = ((element as JsValue)["classList"] as JsValue)[eIndex];
+if (((blockClass as JsValue)["test"](className) as JsValue).truthy()) {return true;}}}
+if ((blockSelector as JsValue).truthy()) {return (element as JsValue)["matches"](blockSelector);}} catch (JsValue e) {}
+return false;
+return JS.undefined();}
+
+JsValue classMatchesRegex(JsValue node, JsValue regex, JsValue checkAncestors) {
+if ((!(node as JsValue).truthy() as JsValue).truthy()) {return false;}
+if (((((node as JsValue)["nodeType"] as JsValue) !== ((node as JsValue)["ELEMENT_NODE"] as JsValue)) as JsValue).truthy()) {if ((!(checkAncestors as JsValue).truthy() as JsValue).truthy()) {return false;}
+return (classMatchesRegex as JsValue)((dom as JsValue)["parentNode"](node), regex, checkAncestors);}
+for (JsValue eIndex = ((node as JsValue)["classList"] as JsValue)["length"]; ((() => { number __port_4 = JS.number(eIndex); eIndex = __port_4 - 1.0; return __port_4; })() as JsValue).truthy(); JS.undefined()) {JsValue className = ((node as JsValue)["classList"] as JsValue)[eIndex];
+if (((regex as JsValue)["test"](className) as JsValue).truthy()) {return true;}}
+if ((!(checkAncestors as JsValue).truthy() as JsValue).truthy()) {return false;}
+return (classMatchesRegex as JsValue)((dom as JsValue)["parentNode"](node), regex, checkAncestors);
+return JS.undefined();}
+
+JsValue needMaskingText(JsValue node, JsValue maskTextClass, JsValue maskTextSelector, JsValue checkAncestors) {
+JsValue el = JS.undefined();
+if (((isElement as JsValue)(node) as JsValue).truthy()) {((el = node));
+if ((!(((dom as JsValue)["childNodes"](el) as JsValue)["length"] as JsValue).truthy() as JsValue).truthy()) {return false;}} else {if (((((dom as JsValue)["parentElement"](node) as JsValue) === (null as JsValue)) as JsValue).truthy()) {return false;} else {((el = (dom as JsValue)["parentElement"](node)));}}
+try {if ((((JS.typeOf(maskTextClass) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) {if ((checkAncestors as JsValue).truthy()) {if (((el as JsValue)["closest"](`.${maskTextClass}`) as JsValue).truthy()) {return true;}} else {if ((((el as JsValue)["classList"] as JsValue)["contains"](maskTextClass) as JsValue).truthy()) {return true;}}} else {if (((classMatchesRegex as JsValue)(el, maskTextClass, checkAncestors) as JsValue).truthy()) {return true;}}
+if ((maskTextSelector as JsValue).truthy()) {if ((checkAncestors as JsValue).truthy()) {if (((el as JsValue)["closest"](maskTextSelector) as JsValue).truthy()) {return true;}} else {if (((el as JsValue)["matches"](maskTextSelector) as JsValue).truthy()) {return true;}}}} catch (JsValue e) {}
+return false;
+return JS.undefined();}
+
+JsValue removeEventListenerSafely(JsValue target, JsValue type, JsValue listener) {
+JsValue removeEventListener = (target as JsValue)["removeEventListener"];
+if ((((JS.typeOf(removeEventListener) as JsValue) !== ("function" as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((removeEventListener as JsValue)["call"](target, type, listener));
+return JS.undefined();}
+
+JsValue onceIframeLoaded(JsValue iframeEl, JsValue listener, JsValue iframeLoadTimeout) {
+JsValue noop = () => { 
+
+return JS.undefined(); };
+JsValue win = (iframeEl as JsValue)["contentWindow"];
+if ((!(win as JsValue).truthy() as JsValue).truthy()) {return noop;}
+JsValue readyState = JS.undefined();
+try {((readyState = ((win as JsValue)["document"] as JsValue)["readyState"]));} catch (JsValue error) {return noop;}
+JsValue onSubsequentLoad = () => { 
+return ((listener as JsValue)() as JsValue);
+return JS.undefined(); };
+if ((((readyState as JsValue) !== ("complete" as JsValue)) as JsValue).truthy()) {JsValue fired = false;
+JsValue timer = null;
+JsValue fireOnce = () => { 
+if ((fired as JsValue).truthy()) {return JS.undefined();}
+((fired = true));
+if ((((timer as JsValue) !== (null as JsValue)) as JsValue).truthy()) {((clearTimeout as JsValue)(timer));
+((timer = null));}
+((removeEventListenerSafely as JsValue)(iframeEl, "load", onInitialLoad));
+((iframeEl as JsValue)["addEventListener"]("load", onSubsequentLoad));
+((listener as JsValue)());
+return JS.undefined(); };
+JsValue onInitialLoad = () => { 
+return ((fireOnce as JsValue)() as JsValue);
+return JS.undefined(); };
+((timer = (setTimeout as JsValue)(fireOnce, iframeLoadTimeout)));
+((iframeEl as JsValue)["addEventListener"]("load", onInitialLoad));
+return () => { 
+if ((((timer as JsValue) !== (null as JsValue)) as JsValue).truthy()) {((clearTimeout as JsValue)(timer));
+((timer = null));}
+if ((fired as JsValue).truthy()) {((removeEventListenerSafely as JsValue)(iframeEl, "load", onSubsequentLoad));} else {((fired = true));
+((removeEventListenerSafely as JsValue)(iframeEl, "load", onInitialLoad));}
+return JS.undefined(); };}
+JsValue blankUrl = "about:blank";
+JsValue winLocationHref = JS.undefined();
+try {((winLocationHref = ((win as JsValue)["location"] as JsValue)["href"]));} catch (JsValue __port_5) {return noop;}
+if ((((((((winLocationHref as JsValue) !== (blankUrl as JsValue)) as JsValue) || ((((iframeEl as JsValue)["src"] as JsValue) === (blankUrl as JsValue)) as JsValue)) as JsValue) || ((((iframeEl as JsValue)["src"] as JsValue) === ("" as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue initialTimer = (setTimeout as JsValue)(listener, 0.0);
+((iframeEl as JsValue)["addEventListener"]("load", onSubsequentLoad));
+return () => { 
+((clearTimeout as JsValue)(initialTimer));
+((removeEventListenerSafely as JsValue)(iframeEl, "load", onSubsequentLoad));
+return JS.undefined(); };}
+((iframeEl as JsValue)["addEventListener"]("load", onSubsequentLoad));
+return () => { 
+((removeEventListenerSafely as JsValue)(iframeEl, "load", onSubsequentLoad));
+return JS.undefined(); };
+return JS.undefined();}
+
+JsValue resetStylesheetLoadTracking() {
+((stylesheetLoadTracked as JsValue)["forEach"]((JsValue controller) => { 
+return ((controller as JsValue)["abort"]() as JsValue);
+return JS.undefined(); }));
+((stylesheetLoadTracked as JsValue)["clear"]());
+return JS.undefined();}
+
+JsValue onceStylesheetLoaded(JsValue link, JsValue listener, JsValue styleSheetLoadTimeout) {
+if (((stylesheetLoadTracked as JsValue)["has"](link) as JsValue).truthy()) {return JS.undefined();}
+JsValue styleSheetLoaded = JS.undefined();
+try {((styleSheetLoaded = (link as JsValue)["sheet"]));} catch (JsValue error) {return JS.undefined();}
+if ((styleSheetLoaded as JsValue).truthy()) {return JS.undefined();}
+JsValue controller = JS.construct(AbortController);
+JsValue fired = false;
+JsValue fire = () => { 
+if ((fired as JsValue).truthy()) {return JS.undefined();}
+((fired = true));
+try {((listener as JsValue)());} finally {((stylesheetLoadTracked as JsValue)["delete"](link));
+((controller as JsValue)["abort"]());}
+return JS.undefined(); };
+JsValue timer = (setTimeout as JsValue)(fire, styleSheetLoadTimeout);
+(((controller as JsValue)["signal"] as JsValue)["addEventListener"]("abort", () => { 
+return ((clearTimeout as JsValue)(timer) as JsValue);
+return JS.undefined(); }, object { "once": true }));
+((link as JsValue)["addEventListener"]("load", fire, object { "signal": (controller as JsValue)["signal"], "once": true }));
+((stylesheetLoadTracked as JsValue)["set"](link, controller));
+return JS.undefined();}
+
+JsValue serializeNode(JsValue n, JsValue options) {
+JsValue __port_6 = options;
+JsValue doc = __port_6["doc"];
+JsValue mirror = __port_6["mirror"];
+JsValue blockClass = __port_6["blockClass"];
+JsValue blockSelector = __port_6["blockSelector"];
+JsValue needsMask = __port_6["needsMask"];
+JsValue inlineStylesheet = __port_6["inlineStylesheet"];
+JsValue __port_7 = __port_6["maskInputOptions"];
+JsValue maskInputOptions = if (JS.isUndefined(__port_7)) { (object {  } as JsValue) } else { __port_7 };
+JsValue maskTextFn = __port_6["maskTextFn"];
+JsValue maskInputFn = __port_6["maskInputFn"];
+JsValue __port_8 = __port_6["maskAllElementAttributes"];
+JsValue maskAllElementAttributes = if (JS.isUndefined(__port_8)) { (false as JsValue) } else { __port_8 };
+JsValue maskAttributeFn = __port_6["maskAttributeFn"];
+JsValue __port_9 = __port_6["dataURLOptions"];
+JsValue dataURLOptions = if (JS.isUndefined(__port_9)) { (object {  } as JsValue) } else { __port_9 };
+JsValue inlineImages = __port_6["inlineImages"];
+JsValue recordCanvas = __port_6["recordCanvas"];
+JsValue canvasMaskingConfigured = __port_6["canvasMaskingConfigured"];
+JsValue keepIframeSrcFn = __port_6["keepIframeSrcFn"];
+JsValue __port_10 = __port_6["newlyAddedElement"];
+JsValue newlyAddedElement = if (JS.isUndefined(__port_10)) { (false as JsValue) } else { __port_10 };
+JsValue rootId = (getRootId as JsValue)(doc, mirror);
+{JsValue __port_11 = (n as JsValue)["nodeType"];
+int __port_12 = -1;
+if (__port_11 === ((n as JsValue)["DOCUMENT_NODE"] as JsValue)) { __port_12 = 0; }
+else if (__port_11 === ((n as JsValue)["DOCUMENT_TYPE_NODE"] as JsValue)) { __port_12 = 1; }
+else if (__port_11 === ((n as JsValue)["ELEMENT_NODE"] as JsValue)) { __port_12 = 2; }
+else if (__port_11 === ((n as JsValue)["TEXT_NODE"] as JsValue)) { __port_12 = 3; }
+else if (__port_11 === ((n as JsValue)["CDATA_SECTION_NODE"] as JsValue)) { __port_12 = 4; }
+else if (__port_11 === ((n as JsValue)["COMMENT_NODE"] as JsValue)) { __port_12 = 5; }
+else {__port_12 = 6;}
+while (true) {
+if (__port_12 >= 0 && __port_12 <= 0) {if (((((n as JsValue)["compatMode"] as JsValue) !== ("CSS1Compat" as JsValue)) as JsValue).truthy()) {return object { "type": (NodeType as JsValue)["Document"], "childNodes": JS.array(), "compatMode": (n as JsValue)["compatMode"] };} else {return object { "type": (NodeType as JsValue)["Document"], "childNodes": JS.array() };}}
+if (__port_12 >= 0 && __port_12 <= 1) {return object { "type": (NodeType as JsValue)["DocumentType"], "name": (n as JsValue)["name"], "publicId": (n as JsValue)["publicId"], "systemId": (n as JsValue)["systemId"], "rootId": rootId };}
+if (__port_12 >= 0 && __port_12 <= 2) {return (serializeElementNode as JsValue)(n, object { "doc": doc, "blockClass": blockClass, "blockSelector": blockSelector, "inlineStylesheet": inlineStylesheet, "maskInputOptions": maskInputOptions, "maskInputFn": maskInputFn, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn, "dataURLOptions": dataURLOptions, "inlineImages": inlineImages, "recordCanvas": recordCanvas, "canvasMaskingConfigured": canvasMaskingConfigured, "keepIframeSrcFn": keepIframeSrcFn, "newlyAddedElement": newlyAddedElement, "rootId": rootId });}
+if (__port_12 >= 0 && __port_12 <= 3) {return (serializeTextNode as JsValue)(n, object { "doc": doc, "needsMask": needsMask, "maskTextFn": maskTextFn, "rootId": rootId });}
+if (__port_12 >= 0 && __port_12 <= 4) {return object { "type": (NodeType as JsValue)["CDATA"], "textContent": "", "rootId": rootId };}
+if (__port_12 >= 0 && __port_12 <= 5) {return object { "type": (NodeType as JsValue)["Comment"], "textContent": (((dom as JsValue)["textContent"](n) as JsValue) || ("" as JsValue)), "rootId": rootId };}
+if (__port_12 >= 0 && __port_12 <= 6) {return false;}
+break;
+}}
+return JS.undefined();}
+
+JsValue getRootId(JsValue doc, JsValue mirror) {
+if ((!((mirror as JsValue)["hasNode"](doc) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue docId = (mirror as JsValue)["getId"](doc);
+return if ((((docId as JsValue) === (1.0 as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (docId as JsValue) };
+return JS.undefined();}
+
+JsValue serializeTextNode(JsValue n, JsValue options) {
+JsValue _a = JS.undefined();
+JsValue __port_13 = options;
+JsValue needsMask = __port_13["needsMask"];
+JsValue maskTextFn = __port_13["maskTextFn"];
+JsValue rootId = __port_13["rootId"];
+JsValue parent = (dom as JsValue)["parentNode"](n);
+JsValue parentTagName = ((parent as JsValue) && ((parent as JsValue)["tagName"] as JsValue));
+JsValue text = (dom as JsValue)["textContent"](n);
+JsValue isStyle = if ((((parentTagName as JsValue) === ("STYLE" as JsValue)) as JsValue).truthy()) { (true as JsValue) } else { (JS.undefined() as JsValue) };
+JsValue isScript = if ((((parentTagName as JsValue) === ("SCRIPT" as JsValue)) as JsValue).truthy()) { (true as JsValue) } else { (JS.undefined() as JsValue) };
+if ((((isStyle as JsValue) && (text as JsValue)) as JsValue).truthy()) {try {if (((((n as JsValue)["nextSibling"] as JsValue) || ((n as JsValue)["previousSibling"] as JsValue)) as JsValue).truthy()) {} else {if (((shouldDeferStylesheetInlining as JsValue)((parent as JsValue)["sheet"]) as JsValue).truthy()) {} else {if ((if ((((((((_a = (parent as JsValue)["sheet"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["cssRules"] as JsValue) } as JsValue).truthy()) {JsValue stringified = (stringifyStylesheet as JsValue)((parent as JsValue)["sheet"]);
+if ((((stringified as JsValue) && (!((hasEmptyShorthandLonghand as JsValue)(stringified) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((text = stringified));}}}}} catch (JsValue err) {((console as JsValue)["warn"](`Cannot get CSS styles from text's parentNode. Error: ${err}`, n));}
+((text = (absolutifyURLs as JsValue)(text, (getHref as JsValue)((options as JsValue)["doc"]))));}
+if ((isScript as JsValue).truthy()) {((text = SCRIPT_PLACEHOLDER));}
+if ((((((((!(isStyle as JsValue).truthy() as JsValue) && (!(isScript as JsValue).truthy() as JsValue)) as JsValue) && (text as JsValue)) as JsValue) && (needsMask as JsValue)) as JsValue).truthy()) {((text = if ((maskTextFn as JsValue).truthy()) { ((maskTextFn as JsValue)(text, (dom as JsValue)["parentElement"](n)) as JsValue) } else { ((text as JsValue)["replace"](JS.construct(RegExp, "[\\S]", "g"), "*") as JsValue) }));}
+return object { "type": (NodeType as JsValue)["Text"], "textContent": ((text as JsValue) || ("" as JsValue)), "isStyle": isStyle, "rootId": rootId };
+return JS.undefined();}
+
+JsValue findStylesheet(JsValue doc, JsValue href) {
+return ((Array as JsValue)["from"]((doc as JsValue)["styleSheets"]) as JsValue)["find"]((JsValue s) => { 
+return ((((s as JsValue)["href"] as JsValue) === (href as JsValue)) as JsValue);
+return JS.undefined(); });
+return JS.undefined();}
+
+JsValue hrefFrom(JsValue n) {
+return (n as JsValue)["href"];
+return JS.undefined();}
+
+JsValue serializeElementNode(JsValue n, JsValue options) {
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue __port_14 = options;
+JsValue doc = __port_14["doc"];
+JsValue blockClass = __port_14["blockClass"];
+JsValue blockSelector = __port_14["blockSelector"];
+JsValue inlineStylesheet = __port_14["inlineStylesheet"];
+JsValue __port_15 = __port_14["maskInputOptions"];
+JsValue maskInputOptions = if (JS.isUndefined(__port_15)) { (object {  } as JsValue) } else { __port_15 };
+JsValue maskInputFn = __port_14["maskInputFn"];
+JsValue __port_16 = __port_14["maskAllElementAttributes"];
+JsValue maskAllElementAttributes = if (JS.isUndefined(__port_16)) { (false as JsValue) } else { __port_16 };
+JsValue maskAttributeFn = __port_14["maskAttributeFn"];
+JsValue __port_17 = __port_14["dataURLOptions"];
+JsValue dataURLOptions = if (JS.isUndefined(__port_17)) { (object {  } as JsValue) } else { __port_17 };
+JsValue inlineImages = __port_14["inlineImages"];
+JsValue recordCanvas = __port_14["recordCanvas"];
+JsValue canvasMaskingConfigured = __port_14["canvasMaskingConfigured"];
+JsValue keepIframeSrcFn = __port_14["keepIframeSrcFn"];
+JsValue __port_18 = __port_14["newlyAddedElement"];
+JsValue newlyAddedElement = if (JS.isUndefined(__port_18)) { (false as JsValue) } else { __port_18 };
+JsValue rootId = __port_14["rootId"];
+JsValue needBlock = (_isBlockedElement as JsValue)(n, blockClass, blockSelector);
+JsValue tagName = (getValidTagName as JsValue)(n);
+JsValue generatedAttributeNames = JS.construct(Set);
+JsValue attributes = object {  };
+JsValue len = ((n as JsValue)["attributes"] as JsValue)["length"];
+for (JsValue i = 0.0; (((i as JsValue) < (len as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {JsValue attr = ((n as JsValue)["attributes"] as JsValue)[i];
+if ((!((ignoreAttribute as JsValue)(tagName, (attr as JsValue)["name"], (attr as JsValue)["value"]) as JsValue).truthy() as JsValue).truthy()) {(((attributes as JsValue)[(attr as JsValue)["name"]] = (transformAttribute as JsValue)(doc, tagName, (toLowerCase as JsValue)((attr as JsValue)["name"]), (attr as JsValue)["value"], n, dataURLOptions)));}}
+if ((((((((((tagName as JsValue) === ("link" as JsValue)) as JsValue) && (inlineStylesheet as JsValue)) as JsValue) && (!(needBlock as JsValue).truthy() as JsValue)) as JsValue) && ((isStylesheetLink as JsValue)((attributes as JsValue)["rel"]) as JsValue)) as JsValue).truthy()) {JsValue stylesheet = (n as JsValue)["sheet"];
+if ((!(stylesheet as JsValue).truthy() as JsValue).truthy()) {JsValue href = (hrefFrom as JsValue)(n);
+if ((href as JsValue).truthy()) {((stylesheet = (findStylesheet as JsValue)(doc, href)));
+if ((((!(stylesheet as JsValue).truthy() as JsValue) && ((href as JsValue)["includes"](".css") as JsValue)) as JsValue).truthy()) {JsValue rootDomain = ((window as JsValue)["location"] as JsValue)["origin"];
+JsValue stylesheetPath = (href as JsValue)["replace"](((window as JsValue)["location"] as JsValue)["href"], "");
+JsValue potentialStylesheetHref = ((((rootDomain as JsValue) + ("/" as JsValue)) as JsValue) + (stylesheetPath as JsValue));
+((stylesheet = (findStylesheet as JsValue)(doc, potentialStylesheetHref)));}}}
+JsValue cssText = null;
+if ((stylesheet as JsValue).truthy()) {if (((shouldDeferStylesheetInlining as JsValue)(stylesheet) as JsValue).truthy()) {((deferStylesheetLink as JsValue)(n));} else {((cssText = (stringifyStylesheet as JsValue)(stylesheet)));}}
+if ((cssText as JsValue).truthy()) {((() => { JS.delete(attributes, "rel"); return true; })());
+((() => { JS.delete(attributes, "href"); return true; })());
+(((attributes as JsValue)["_cssText"] = cssText));}}
+if ((((((((tagName as JsValue) === ("style" as JsValue)) as JsValue) && ((n as JsValue)["sheet"] as JsValue)) as JsValue) && (!(((((((((n as JsValue)["innerText"] as JsValue) || ((dom as JsValue)["textContent"](n) as JsValue)) as JsValue) || ("" as JsValue))) as JsValue)["trim"]() as JsValue)["length"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue cssText = (runNonDeferrableStylesheetWork as JsValue)(() => { 
+return ((stringifyStylesheet as JsValue)((n as JsValue)["sheet"]) as JsValue);
+return JS.undefined(); });
+if ((cssText as JsValue).truthy()) {(((attributes as JsValue)["_cssText"] = cssText));}}
+if ((((((((tagName as JsValue) === ("input" as JsValue)) as JsValue) || (((tagName as JsValue) === ("textarea" as JsValue)) as JsValue)) as JsValue) || (((tagName as JsValue) === ("select" as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue value = (n as JsValue)["value"];
+JsValue checked = (n as JsValue)["checked"];
+if (((((((((((((attributes as JsValue)["type"] as JsValue) !== ("radio" as JsValue)) as JsValue) && ((((attributes as JsValue)["type"] as JsValue) !== ("checkbox" as JsValue)) as JsValue)) as JsValue) && ((((attributes as JsValue)["type"] as JsValue) !== ("submit" as JsValue)) as JsValue)) as JsValue) && ((((attributes as JsValue)["type"] as JsValue) !== ("button" as JsValue)) as JsValue)) as JsValue) && (value as JsValue)) as JsValue).truthy()) {(((attributes as JsValue)["value"] = (maskInputValue as JsValue)(object { "element": n, "type": (getInputType as JsValue)(n), "tagName": tagName, "value": value, "maskInputOptions": maskInputOptions, "maskInputFn": maskInputFn })));} else {if ((checked as JsValue).truthy()) {(((attributes as JsValue)["checked"] = checked));}}}
+if ((((tagName as JsValue) === ("option" as JsValue)) as JsValue).truthy()) {if (((((n as JsValue)["selected"] as JsValue) && (!((maskInputOptions as JsValue)["select"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((attributes as JsValue)["selected"] = true));} else {((() => { JS.delete(attributes, "selected"); return true; })());}}
+if ((((((tagName as JsValue) === ("dialog" as JsValue)) as JsValue) && ((n as JsValue)["open"] as JsValue)) as JsValue).truthy()) {try {(((attributes as JsValue)["rr_open_mode"] = if (((n as JsValue)["matches"]("dialog:modal") as JsValue).truthy()) { ("modal" as JsValue) } else { ("non-modal" as JsValue) }));} catch (JsValue __port_19) {(((attributes as JsValue)["rr_open_mode"] = "modal"));
+(((attributes as JsValue)["ph_rr_could_not_detect_modal"] = true));}
+((generatedAttributeNames as JsValue)["add"]("rr_open_mode"));}
+if ((((((((tagName as JsValue) === ("canvas" as JsValue)) as JsValue) && (recordCanvas as JsValue)) as JsValue) && (!((if ((((((canvasMaskingConfigured as JsValue) === (null as JsValue)) as JsValue) || (((canvasMaskingConfigured as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((canvasMaskingConfigured as JsValue)() as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {try {if (((((n as JsValue)["__context"] as JsValue) === ("2d" as JsValue)) as JsValue).truthy()) {if ((!((is2DCanvasBlank as JsValue)(n) as JsValue).truthy() as JsValue).truthy()) {(((attributes as JsValue)["rr_dataURL"] = (n as JsValue)["toDataURL"]((dataURLOptions as JsValue)["type"], (dataURLOptions as JsValue)["quality"])));}} else {if ((!((JS.in("__context", n)) as JsValue).truthy() as JsValue).truthy()) {JsValue canvasDataURL = (n as JsValue)["toDataURL"]((dataURLOptions as JsValue)["type"], (dataURLOptions as JsValue)["quality"]);
+JsValue blankCanvas = (doc as JsValue)["createElement"]("canvas");
+(((blankCanvas as JsValue)["width"] = (n as JsValue)["width"]));
+(((blankCanvas as JsValue)["height"] = (n as JsValue)["height"]));
+JsValue blankCanvasDataURL = (blankCanvas as JsValue)["toDataURL"]((dataURLOptions as JsValue)["type"], (dataURLOptions as JsValue)["quality"]);
+if ((((canvasDataURL as JsValue) !== (blankCanvasDataURL as JsValue)) as JsValue).truthy()) {(((attributes as JsValue)["rr_dataURL"] = canvasDataURL));}}}} catch (JsValue err) {((warnCanvasUnreadable as JsValue)(err));}}
+JsValue serializationComplete = false;
+if ((((((tagName as JsValue) === ("img" as JsValue)) as JsValue) && (inlineImages as JsValue)) as JsValue).truthy()) {if ((!(canvasService as JsValue).truthy() as JsValue).truthy()) {((canvasService = (doc as JsValue)["createElement"]("canvas")));
+((canvasCtx = (canvasService as JsValue)["getContext"]("2d")));}
+JsValue image = n;
+JsValue imageSrc = (((((image as JsValue)["currentSrc"] as JsValue) || ((image as JsValue)["getAttribute"]("src") as JsValue)) as JsValue) || ("<unknown-src>" as JsValue));
+JsValue priorCrossOrigin = (image as JsValue)["crossOrigin"];
+JsValue maskLateAttribute = (JsValue name, JsValue value) => { 
+return (if ((serializationComplete as JsValue).truthy()) { ((maskAttributeValue as JsValue)(object { "element": n, "name": name, "value": value, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn }) as JsValue) } else { (value as JsValue) } as JsValue);
+return JS.undefined(); };
+JsValue recordInlineImage = () => { 
+((removeEventListenerSafely as JsValue)(image, "load", recordInlineImage));
+try {(((canvasService as JsValue)["width"] = (image as JsValue)["naturalWidth"]));
+(((canvasService as JsValue)["height"] = (image as JsValue)["naturalHeight"]));
+((canvasCtx as JsValue)["drawImage"](image, 0.0, 0.0));
+JsValue dataURL = (canvasService as JsValue)["toDataURL"]((dataURLOptions as JsValue)["type"], (dataURLOptions as JsValue)["quality"]);
+(((attributes as JsValue)["rr_dataURL"] = (maskLateAttribute as JsValue)("rr_dataURL", dataURL)));} catch (JsValue err) {if (((((image as JsValue)["crossOrigin"] as JsValue) !== ("anonymous" as JsValue)) as JsValue).truthy()) {(((image as JsValue)["crossOrigin"] = "anonymous"));
+if (((((image as JsValue)["complete"] as JsValue) && ((((image as JsValue)["naturalWidth"] as JsValue) !== (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {((recordInlineImage as JsValue)());} else {((image as JsValue)["addEventListener"]("load", recordInlineImage));}
+return JS.undefined();} else {((console as JsValue)["warn"](`Cannot inline img src=${imageSrc}! Error: ${err}`));}}
+if (((((image as JsValue)["crossOrigin"] as JsValue) === ("anonymous" as JsValue)) as JsValue).truthy()) {if ((priorCrossOrigin as JsValue).truthy()) {(((attributes as JsValue)["crossOrigin"] = (maskLateAttribute as JsValue)("crossOrigin", priorCrossOrigin)));} else {((image as JsValue)["removeAttribute"]("crossorigin"));}}
+return JS.undefined(); };
+if (((((image as JsValue)["complete"] as JsValue) && ((((image as JsValue)["naturalWidth"] as JsValue) !== (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {((recordInlineImage as JsValue)());} else {((image as JsValue)["addEventListener"]("load", recordInlineImage));}}
+if ((((((tagName as JsValue) === ("audio" as JsValue)) as JsValue) || (((tagName as JsValue) === ("video" as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue mediaAttributes = attributes;
+(((mediaAttributes as JsValue)["rr_mediaState"] = if (((n as JsValue)["paused"] as JsValue).truthy()) { ("paused" as JsValue) } else { ("played" as JsValue) }));
+((generatedAttributeNames as JsValue)["add"]("rr_mediaState"));
+(((mediaAttributes as JsValue)["rr_mediaCurrentTime"] = (n as JsValue)["currentTime"]));
+(((mediaAttributes as JsValue)["rr_mediaPlaybackRate"] = (n as JsValue)["playbackRate"]));
+(((mediaAttributes as JsValue)["rr_mediaMuted"] = (n as JsValue)["muted"]));
+(((mediaAttributes as JsValue)["rr_mediaLoop"] = (n as JsValue)["loop"]));
+(((mediaAttributes as JsValue)["rr_mediaVolume"] = (n as JsValue)["volume"]));}
+if ((!(newlyAddedElement as JsValue).truthy() as JsValue).truthy()) {if (((n as JsValue)["scrollLeft"] as JsValue).truthy()) {(((attributes as JsValue)["rr_scrollLeft"] = (n as JsValue)["scrollLeft"]));}
+if (((n as JsValue)["scrollTop"] as JsValue).truthy()) {(((attributes as JsValue)["rr_scrollTop"] = (n as JsValue)["scrollTop"]));}}
+if ((needBlock as JsValue).truthy()) {JsValue __port_20 = (n as JsValue)["getBoundingClientRect"]();
+JsValue width = __port_20["width"];
+JsValue height = __port_20["height"];
+JsValue left = __port_20["left"];
+JsValue top = __port_20["top"];
+JsValue computed = if ((((((((_a = (doc as JsValue)["defaultView"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["getComputedStyle"](n) as JsValue) };
+((attributes = object { "class": (attributes as JsValue)["class"], "rr_width": `${width}px`, "rr_height": `${height}px`, "rr_left": `${(Math as JsValue)["floor"](((left as JsValue) + (((((if ((((((((_b = (doc as JsValue)["defaultView"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["scrollX"] as JsValue) }) as JsValue) || (0.0 as JsValue))) as JsValue)))}px`, "rr_top": `${(Math as JsValue)["floor"](((top as JsValue) + (((((if ((((((((_c = (doc as JsValue)["defaultView"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["scrollY"] as JsValue) }) as JsValue) || (0.0 as JsValue))) as JsValue)))}px` }));
+((generatedAttributeNames as JsValue)["add"]("rr_width"));
+((generatedAttributeNames as JsValue)["add"]("rr_height"));
+((generatedAttributeNames as JsValue)["add"]("rr_left"));
+((generatedAttributeNames as JsValue)["add"]("rr_top"));
+if ((computed as JsValue).truthy()) {(((attributes as JsValue)["rr_position"] = (((computed as JsValue)["position"] as JsValue) || ("static" as JsValue))));
+((generatedAttributeNames as JsValue)["add"]("rr_position"));
+if (((((computed as JsValue)["transform"] as JsValue) && ((((computed as JsValue)["transform"] as JsValue) !== ("none" as JsValue)) as JsValue)) as JsValue).truthy()) {(((attributes as JsValue)["rr_transform"] = (computed as JsValue)["transform"]));
+((generatedAttributeNames as JsValue)["add"]("rr_transform"));}
+if (((((computed as JsValue)["display"] as JsValue) && (((computed as JsValue)["display"] as JsValue)["startsWith"]("inline") as JsValue)) as JsValue).truthy()) {(((attributes as JsValue)["rr_display"] = (computed as JsValue)["display"]));
+((generatedAttributeNames as JsValue)["add"]("rr_display"));}}}
+if ((((((tagName as JsValue) === ("iframe" as JsValue)) as JsValue) && (!((keepIframeSrcFn as JsValue)((attributes as JsValue)["src"]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if ((!((n as JsValue)["contentDocument"] as JsValue).truthy() as JsValue).truthy()) {(((attributes as JsValue)["rr_src"] = (attributes as JsValue)["src"]));}
+((() => { JS.delete(attributes, "src"); return true; })());}
+if ((((maskAllElementAttributes as JsValue) || (maskAttributeFn as JsValue)) as JsValue).truthy()) {for (JsValue __port_21 of (Object as JsValue)["entries"](attributes)) {JsValue __port_22 = __port_21;
+JsValue name = JS.undefined();
+JsValue value = JS.undefined();
+int __port_23 = 0;
+for (JsValue __port_24 of __port_22) {
+if (__port_23 === 0) { name = __port_24; }
+if (__port_23 === 1) { value = __port_24; }
+__port_23 += 1; if (__port_23 === 2) break;
+}
+if ((((((JS.typeOf(value) as JsValue) === ("string" as JsValue)) as JsValue) || (((value as JsValue) === (null as JsValue)) as JsValue)) as JsValue).truthy()) {(((attributes as JsValue)[name] = (maskAttributeValue as JsValue)(object { "element": n, "name": name, "value": value, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn, "isGenerated": (generatedAttributeNames as JsValue)["has"](name) })));}}}
+((serializationComplete = true));
+JsValue isCustomElement = JS.undefined();
+try {if (((customElements as JsValue)["get"](tagName) as JsValue).truthy()) {((isCustomElement = true));}} catch (JsValue e) {}
+return object { "type": (NodeType as JsValue)["Element"], "tagName": tagName, "attributes": attributes, "childNodes": JS.array(), "isSVG": (((isSVGElement as JsValue)(n) as JsValue) || (JS.undefined() as JsValue)), "needBlock": needBlock, "rootId": rootId, "isCustom": isCustomElement };
+return JS.undefined();}
+
+JsValue lowerIfExists(JsValue maybeAttr) {
+if ((((((maybeAttr as JsValue) === (JS.undefined() as JsValue)) as JsValue) || (((maybeAttr as JsValue) === (null as JsValue)) as JsValue)) as JsValue).truthy()) {return "";} else {return (maybeAttr as JsValue)["toLowerCase"]();}
+return JS.undefined();}
+
+JsValue slimDOMExcluded(JsValue sn, JsValue slimDOMOptions) {
+if (((((slimDOMOptions as JsValue)["comment"] as JsValue) && ((((sn as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Comment"] as JsValue)) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((sn as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue).truthy()) {if (((((slimDOMOptions as JsValue)["script"] as JsValue) && (((((((((sn as JsValue)["tagName"] as JsValue) === ("script" as JsValue)) as JsValue) || (((((((sn as JsValue)["tagName"] as JsValue) === ("link" as JsValue)) as JsValue) && (((((((((((sn as JsValue)["attributes"] as JsValue)["rel"] as JsValue) === ("preload" as JsValue)) as JsValue) && (((((sn as JsValue)["attributes"] as JsValue)["as"] as JsValue) === ("script" as JsValue)) as JsValue))) as JsValue) || (((((sn as JsValue)["attributes"] as JsValue)["rel"] as JsValue) === ("modulepreload" as JsValue)) as JsValue))) as JsValue))) as JsValue)) as JsValue) || (((((((((((sn as JsValue)["tagName"] as JsValue) === ("link" as JsValue)) as JsValue) && (((((sn as JsValue)["attributes"] as JsValue)["rel"] as JsValue) === ("prefetch" as JsValue)) as JsValue)) as JsValue) && (((JS.typeOf(((sn as JsValue)["attributes"] as JsValue)["href"]) as JsValue) === ("string" as JsValue)) as JsValue)) as JsValue) && ((((extractFileExtension as JsValue)(((sn as JsValue)["attributes"] as JsValue)["href"]) as JsValue) === ("js" as JsValue)) as JsValue))) as JsValue))) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((slimDOMOptions as JsValue)["headFavicon"] as JsValue) && ((((((((((sn as JsValue)["tagName"] as JsValue) === ("link" as JsValue)) as JsValue) && (((((sn as JsValue)["attributes"] as JsValue)["rel"] as JsValue) === ("shortcut icon" as JsValue)) as JsValue))) as JsValue) || (((((((sn as JsValue)["tagName"] as JsValue) === ("meta" as JsValue)) as JsValue) && ((((((((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"]) as JsValue)["match"](JS.construct(RegExp, "^msapplication-tile(image|color)$", "")) as JsValue) || ((((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"]) as JsValue) === ("application-name" as JsValue)) as JsValue)) as JsValue) || ((JS.array("icon", "apple-touch-icon", "shortcut icon") as JsValue)["includes"]((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["rel"])) as JsValue))) as JsValue))) as JsValue))) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((sn as JsValue)["tagName"] as JsValue) === ("meta" as JsValue)) as JsValue).truthy()) {if (((((slimDOMOptions as JsValue)["headMetaDescKeywords"] as JsValue) && (((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"]) as JsValue)["match"](JS.construct(RegExp, "^description|keywords$", "")) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((slimDOMOptions as JsValue)["headMetaSocial"] as JsValue) && ((((((((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["property"]) as JsValue)["match"](JS.construct(RegExp, "^(og|twitter|fb):", "")) as JsValue) || (((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"]) as JsValue)["match"](JS.construct(RegExp, "^(og|twitter):", "")) as JsValue)) as JsValue) || ((((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"]) as JsValue) === ("pinterest" as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((slimDOMOptions as JsValue)["headMetaRobots"] as JsValue) && ((JS.array("robots", "googlebot", "bingbot") as JsValue)["includes"]((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"])) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((slimDOMOptions as JsValue)["headMetaHttpEquiv"] as JsValue) && (((((sn as JsValue)["attributes"] as JsValue)["http-equiv"] as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((slimDOMOptions as JsValue)["headMetaAuthorship"] as JsValue) && (((((((JS.array("author", "generator", "framework", "publisher", "progid") as JsValue)["includes"]((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"])) as JsValue) || (((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["property"]) as JsValue)["match"](JS.construct(RegExp, "^article:", "")) as JsValue)) as JsValue) || (((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["property"]) as JsValue)["match"](JS.construct(RegExp, "^product:", "")) as JsValue))) as JsValue)) as JsValue).truthy()) {return true;} else {if (((((slimDOMOptions as JsValue)["headMetaVerification"] as JsValue) && ((JS.array("google-site-verification", "yandex-verification", "csrf-token", "p:domain_verify", "verify-v1", "verification", "shopify-checkout-api-token") as JsValue)["includes"]((lowerIfExists as JsValue)(((sn as JsValue)["attributes"] as JsValue)["name"])) as JsValue)) as JsValue).truthy()) {return true;}}}}}}}}}}}
+return false;
+return JS.undefined();}
+
+JsValue wasMaxDepthReached() {
+return _maxDepthReached;
+return JS.undefined();}
+
+JsValue resetMaxDepthState() {
+((_maxDepthReached = false));
+((_maxDepthWarned = false));
+return JS.undefined();}
+
+JsValue serializeNodeWithId(JsValue n, JsValue options) {
+JsValue __port_25 = options;
+JsValue doc = __port_25["doc"];
+JsValue mirror = __port_25["mirror"];
+JsValue blockClass = __port_25["blockClass"];
+JsValue blockSelector = __port_25["blockSelector"];
+JsValue maskTextClass = __port_25["maskTextClass"];
+JsValue maskTextSelector = __port_25["maskTextSelector"];
+JsValue __port_26 = __port_25["skipChild"];
+JsValue skipChild = if (JS.isUndefined(__port_26)) { (false as JsValue) } else { __port_26 };
+JsValue __port_27 = __port_25["inlineStylesheet"];
+JsValue inlineStylesheet = if (JS.isUndefined(__port_27)) { (true as JsValue) } else { __port_27 };
+JsValue __port_28 = __port_25["maskInputOptions"];
+JsValue maskInputOptions = if (JS.isUndefined(__port_28)) { (object {  } as JsValue) } else { __port_28 };
+JsValue maskTextFn = __port_25["maskTextFn"];
+JsValue maskInputFn = __port_25["maskInputFn"];
+JsValue __port_29 = __port_25["maskAllElementAttributes"];
+JsValue maskAllElementAttributes = if (JS.isUndefined(__port_29)) { (false as JsValue) } else { __port_29 };
+JsValue maskAttributeFn = __port_25["maskAttributeFn"];
+JsValue slimDOMOptions = __port_25["slimDOMOptions"];
+JsValue __port_30 = __port_25["dataURLOptions"];
+JsValue dataURLOptions = if (JS.isUndefined(__port_30)) { (object {  } as JsValue) } else { __port_30 };
+JsValue __port_31 = __port_25["inlineImages"];
+JsValue inlineImages = if (JS.isUndefined(__port_31)) { (false as JsValue) } else { __port_31 };
+JsValue __port_32 = __port_25["recordCanvas"];
+JsValue recordCanvas = if (JS.isUndefined(__port_32)) { (false as JsValue) } else { __port_32 };
+JsValue canvasMaskingConfigured = __port_25["canvasMaskingConfigured"];
+JsValue onSerialize = __port_25["onSerialize"];
+JsValue onIframeLoad = __port_25["onIframeLoad"];
+JsValue __port_33 = __port_25["iframeLoadTimeout"];
+JsValue iframeLoadTimeout = if (JS.isUndefined(__port_33)) { (5000.0 as JsValue) } else { __port_33 };
+JsValue onIframeListenerRegistered = __port_25["onIframeListenerRegistered"];
+JsValue onStylesheetLoad = __port_25["onStylesheetLoad"];
+JsValue __port_34 = __port_25["stylesheetLoadTimeout"];
+JsValue stylesheetLoadTimeout = if (JS.isUndefined(__port_34)) { (5000.0 as JsValue) } else { __port_34 };
+JsValue __port_35 = __port_25["keepIframeSrcFn"];
+JsValue keepIframeSrcFn = if (JS.isUndefined(__port_35)) { (() => { 
+return (false as JsValue);
+return JS.undefined(); } as JsValue) } else { __port_35 };
+JsValue __port_36 = __port_25["newlyAddedElement"];
+JsValue newlyAddedElement = if (JS.isUndefined(__port_36)) { (false as JsValue) } else { __port_36 };
+JsValue __port_37 = __port_25["depth"];
+JsValue depth = if (JS.isUndefined(__port_37)) { (0.0 as JsValue) } else { __port_37 };
+JsValue __port_38 = __port_25["maxDepth"];
+JsValue maxDepth = if (JS.isUndefined(__port_38)) { (DEFAULT_MAX_DEPTH as JsValue) } else { __port_38 };
+JsValue __port_39 = options;
+JsValue needsMask = __port_39["needsMask"];
+JsValue __port_40 = options;
+JsValue __port_41 = __port_40["preserveWhiteSpace"];
+JsValue preserveWhiteSpace = if (JS.isUndefined(__port_41)) { (true as JsValue) } else { __port_41 };
+if ((((depth as JsValue) >= (maxDepth as JsValue)) as JsValue).truthy()) {((_maxDepthReached = true));
+if ((!(_maxDepthWarned as JsValue).truthy() as JsValue).truthy()) {((_maxDepthWarned = true));
+((console as JsValue)["warn"](((((`[rrweb-snapshot] DOM tree depth exceeded max depth of ${maxDepth}. ` as JsValue) + ("Children beyond this depth will not be recorded. " as JsValue)) as JsValue) + ("This may indicate deeply nested DOM structures." as JsValue))));}
+return null;}
+if ((!(needsMask as JsValue).truthy() as JsValue).truthy()) {JsValue checkAncestors = ((needsMask as JsValue) === (JS.undefined() as JsValue));
+((needsMask = (needMaskingText as JsValue)(n, maskTextClass, maskTextSelector, checkAncestors)));}
+((countSerializedNode as JsValue)());
+JsValue _serializedNode = (serializeNode as JsValue)(n, object { "doc": doc, "mirror": mirror, "blockClass": blockClass, "blockSelector": blockSelector, "needsMask": needsMask, "inlineStylesheet": inlineStylesheet, "maskInputOptions": maskInputOptions, "maskTextFn": maskTextFn, "maskInputFn": maskInputFn, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn, "dataURLOptions": dataURLOptions, "inlineImages": inlineImages, "recordCanvas": recordCanvas, "canvasMaskingConfigured": canvasMaskingConfigured, "keepIframeSrcFn": keepIframeSrcFn, "newlyAddedElement": newlyAddedElement });
+if ((!(_serializedNode as JsValue).truthy() as JsValue).truthy()) {((console as JsValue)["warn"](n, "not serialized"));
+return null;}
+JsValue id = JS.undefined();
+if (((mirror as JsValue)["hasNode"](n) as JsValue).truthy()) {((id = (mirror as JsValue)["getId"](n)));} else {if (((((slimDOMExcluded as JsValue)(_serializedNode, slimDOMOptions) as JsValue) || ((((((((!(preserveWhiteSpace as JsValue).truthy() as JsValue) && ((((_serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Text"] as JsValue)) as JsValue)) as JsValue) && (!((_serializedNode as JsValue)["isStyle"] as JsValue).truthy() as JsValue)) as JsValue) && (!((((_serializedNode as JsValue)["textContent"] as JsValue)["replace"](JS.construct(RegExp, "^\\s+|\\s+$", "gm"), "") as JsValue)["length"] as JsValue).truthy() as JsValue))) as JsValue)) as JsValue).truthy()) {((id = IGNORED_NODE));} else {((id = (genId as JsValue)()));}}
+JsValue serializedNode = (Object as JsValue)["assign"](_serializedNode, object { "id": id });
+((mirror as JsValue)["add"](n, serializedNode));
+if ((((id as JsValue) === (IGNORED_NODE as JsValue)) as JsValue).truthy()) {return null;}
+if ((onSerialize as JsValue).truthy()) {((onSerialize as JsValue)(n));}
+JsValue recordChild = !(skipChild as JsValue).truthy();
+if (((((serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue).truthy()) {((recordChild = ((recordChild as JsValue) && (!((serializedNode as JsValue)["needBlock"] as JsValue).truthy() as JsValue))));
+((() => { JS.delete(serializedNode, "needBlock"); return true; })());
+JsValue shadowRootEl = (dom as JsValue)["shadowRoot"](n);
+if ((((shadowRootEl as JsValue) && ((isNativeShadowDom as JsValue)(shadowRootEl) as JsValue)) as JsValue).truthy()) {(((serializedNode as JsValue)["isShadowHost"] = true));}}
+if ((((((((((serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Document"] as JsValue)) as JsValue) || ((((serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue))) as JsValue) && (recordChild as JsValue)) as JsValue).truthy()) {if (((((((slimDOMOptions as JsValue)["headWhitespace"] as JsValue) && ((((serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue)) as JsValue) && ((((serializedNode as JsValue)["tagName"] as JsValue) === ("head" as JsValue)) as JsValue)) as JsValue).truthy()) {((preserveWhiteSpace = false));}
+JsValue bypassOptions = object { "doc": doc, "mirror": mirror, "blockClass": blockClass, "blockSelector": blockSelector, "needsMask": needsMask, "maskTextClass": maskTextClass, "maskTextSelector": maskTextSelector, "skipChild": skipChild, "inlineStylesheet": inlineStylesheet, "maskInputOptions": maskInputOptions, "maskTextFn": maskTextFn, "maskInputFn": maskInputFn, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn, "slimDOMOptions": slimDOMOptions, "dataURLOptions": dataURLOptions, "inlineImages": inlineImages, "recordCanvas": recordCanvas, "canvasMaskingConfigured": canvasMaskingConfigured, "preserveWhiteSpace": preserveWhiteSpace, "onSerialize": onSerialize, "onIframeLoad": onIframeLoad, "iframeLoadTimeout": iframeLoadTimeout, "onIframeListenerRegistered": onIframeListenerRegistered, "onStylesheetLoad": onStylesheetLoad, "stylesheetLoadTimeout": stylesheetLoadTimeout, "keepIframeSrcFn": keepIframeSrcFn, "depth": ((depth as JsValue) + (1.0 as JsValue)), "maxDepth": maxDepth };
+if (((((((((serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue) && ((((serializedNode as JsValue)["tagName"] as JsValue) === ("textarea" as JsValue)) as JsValue)) as JsValue) && (((((serializedNode as JsValue)["attributes"] as JsValue)["value"] as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) {} else {for (JsValue childN of (Array as JsValue)["from"]((dom as JsValue)["childNodes"](n))) {
+JsValue serializedChildNode = (serializeNodeWithId as JsValue)(childN, bypassOptions);
+if ((serializedChildNode as JsValue).truthy()) {(((serializedNode as JsValue)["childNodes"] as JsValue)["push"](serializedChildNode));}}}
+JsValue shadowRootEl = null;
+if (((((isElement as JsValue)(n) as JsValue) && (((shadowRootEl = (dom as JsValue)["shadowRoot"](n))) as JsValue)) as JsValue).truthy()) {for (JsValue childN of (Array as JsValue)["from"]((dom as JsValue)["childNodes"](shadowRootEl))) {
+JsValue serializedChildNode = (serializeNodeWithId as JsValue)(childN, bypassOptions);
+if ((serializedChildNode as JsValue).truthy()) {((((isNativeShadowDom as JsValue)(shadowRootEl) as JsValue) && ((((serializedChildNode as JsValue)["isShadow"] = true)) as JsValue)));
+(((serializedNode as JsValue)["childNodes"] as JsValue)["push"](serializedChildNode));}}}}
+JsValue parent = (dom as JsValue)["parentNode"](n);
+if ((((((parent as JsValue) && ((isShadowRoot as JsValue)(parent) as JsValue)) as JsValue) && ((isNativeShadowDom as JsValue)(parent) as JsValue)) as JsValue).truthy()) {(((serializedNode as JsValue)["isShadow"] = true));}
+if (((((((serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue) && ((((serializedNode as JsValue)["tagName"] as JsValue) === ("iframe" as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue iframeDisposer = (onceIframeLoaded as JsValue)(n, () => { 
+JsValue iframeDoc = (n as JsValue)["contentDocument"];
+if ((((iframeDoc as JsValue) && (onIframeLoad as JsValue)) as JsValue).truthy()) {JsValue serializedIframeNode = (serializeNodeWithId as JsValue)(iframeDoc, object { "doc": iframeDoc, "mirror": mirror, "blockClass": blockClass, "blockSelector": blockSelector, "needsMask": needsMask, "maskTextClass": maskTextClass, "maskTextSelector": maskTextSelector, "skipChild": false, "inlineStylesheet": inlineStylesheet, "maskInputOptions": maskInputOptions, "maskTextFn": maskTextFn, "maskInputFn": maskInputFn, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn, "slimDOMOptions": slimDOMOptions, "dataURLOptions": dataURLOptions, "inlineImages": inlineImages, "recordCanvas": recordCanvas, "canvasMaskingConfigured": canvasMaskingConfigured, "preserveWhiteSpace": preserveWhiteSpace, "onSerialize": onSerialize, "onIframeLoad": onIframeLoad, "iframeLoadTimeout": iframeLoadTimeout, "onIframeListenerRegistered": onIframeListenerRegistered, "onStylesheetLoad": onStylesheetLoad, "stylesheetLoadTimeout": stylesheetLoadTimeout, "keepIframeSrcFn": keepIframeSrcFn, "depth": ((depth as JsValue) + (1.0 as JsValue)), "maxDepth": maxDepth });
+if ((serializedIframeNode as JsValue).truthy()) {((onIframeLoad as JsValue)(n, serializedIframeNode));}}
+return JS.undefined(); }, iframeLoadTimeout);
+(if ((((((onIframeListenerRegistered as JsValue) === (null as JsValue)) as JsValue) || (((onIframeListenerRegistered as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((onIframeListenerRegistered as JsValue)(n, iframeDisposer) as JsValue) });}
+if (((((((((serializedNode as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue) && ((((serializedNode as JsValue)["tagName"] as JsValue) === ("link" as JsValue)) as JsValue)) as JsValue) && ((isStylesheetLink as JsValue)(((serializedNode as JsValue)["attributes"] as JsValue)["rel"]) as JsValue)) as JsValue).truthy()) {((onceStylesheetLoaded as JsValue)(n, () => { 
+if ((onStylesheetLoad as JsValue).truthy()) {JsValue serializedLinkNode = (serializeNodeWithId as JsValue)(n, object { "doc": doc, "mirror": mirror, "blockClass": blockClass, "blockSelector": blockSelector, "needsMask": needsMask, "maskTextClass": maskTextClass, "maskTextSelector": maskTextSelector, "skipChild": false, "inlineStylesheet": inlineStylesheet, "maskInputOptions": maskInputOptions, "maskTextFn": maskTextFn, "maskInputFn": maskInputFn, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn, "slimDOMOptions": slimDOMOptions, "dataURLOptions": dataURLOptions, "inlineImages": inlineImages, "recordCanvas": recordCanvas, "canvasMaskingConfigured": canvasMaskingConfigured, "preserveWhiteSpace": preserveWhiteSpace, "onSerialize": onSerialize, "onIframeLoad": onIframeLoad, "iframeLoadTimeout": iframeLoadTimeout, "onStylesheetLoad": onStylesheetLoad, "stylesheetLoadTimeout": stylesheetLoadTimeout, "keepIframeSrcFn": keepIframeSrcFn, "depth": depth, "maxDepth": maxDepth });
+if ((serializedLinkNode as JsValue).truthy()) {((onStylesheetLoad as JsValue)(n, serializedLinkNode));}}
+return JS.undefined(); }, stylesheetLoadTimeout));}
+return serializedNode;
+return JS.undefined();}
+
+JsValue slimDOMDefaults(JsValue slimDOM) {
+if ((((((slimDOM as JsValue) === (true as JsValue)) as JsValue) || (((slimDOM as JsValue) === ("all" as JsValue)) as JsValue)) as JsValue).truthy()) {return object { "script": true, "comment": true, "headFavicon": true, "headWhitespace": true, "headMetaSocial": true, "headMetaRobots": true, "headMetaHttpEquiv": true, "headMetaVerification": true, "headMetaAuthorship": ((slimDOM as JsValue) === ("all" as JsValue)), "headMetaDescKeywords": ((slimDOM as JsValue) === ("all" as JsValue)), "headTitleMutations": ((slimDOM as JsValue) === ("all" as JsValue)) };}
+if ((((slimDOM as JsValue) === (false as JsValue)) as JsValue).truthy()) {return object {  };}
+return slimDOM;
+return JS.undefined();}
+
+JsValue snapshot(JsValue n, JsValue options) {
+JsValue __port_42 = ((options as JsValue) || (object {  } as JsValue));
+JsValue __port_43 = __port_42["mirror"];
+JsValue mirror = if (JS.isUndefined(__port_43)) { (JS.construct(Mirror) as JsValue) } else { __port_43 };
+JsValue __port_44 = __port_42["blockClass"];
+JsValue blockClass = if (JS.isUndefined(__port_44)) { ("rr-block" as JsValue) } else { __port_44 };
+JsValue __port_45 = __port_42["blockSelector"];
+JsValue blockSelector = if (JS.isUndefined(__port_45)) { (null as JsValue) } else { __port_45 };
+JsValue __port_46 = __port_42["maskTextClass"];
+JsValue maskTextClass = if (JS.isUndefined(__port_46)) { ("rr-mask" as JsValue) } else { __port_46 };
+JsValue __port_47 = __port_42["maskTextSelector"];
+JsValue maskTextSelector = if (JS.isUndefined(__port_47)) { (null as JsValue) } else { __port_47 };
+JsValue __port_48 = __port_42["inlineStylesheet"];
+JsValue inlineStylesheet = if (JS.isUndefined(__port_48)) { (true as JsValue) } else { __port_48 };
+JsValue __port_49 = __port_42["inlineImages"];
+JsValue inlineImages = if (JS.isUndefined(__port_49)) { (false as JsValue) } else { __port_49 };
+JsValue __port_50 = __port_42["recordCanvas"];
+JsValue recordCanvas = if (JS.isUndefined(__port_50)) { (false as JsValue) } else { __port_50 };
+JsValue canvasMaskingConfigured = __port_42["canvasMaskingConfigured"];
+JsValue __port_51 = __port_42["maskAllInputs"];
+JsValue maskAllInputs = if (JS.isUndefined(__port_51)) { (false as JsValue) } else { __port_51 };
+JsValue maskTextFn = __port_42["maskTextFn"];
+JsValue maskInputFn = __port_42["maskInputFn"];
+JsValue __port_52 = __port_42["maskAllElementAttributes"];
+JsValue maskAllElementAttributes = if (JS.isUndefined(__port_52)) { (false as JsValue) } else { __port_52 };
+JsValue maskAttributeFn = __port_42["maskAttributeFn"];
+JsValue __port_53 = __port_42["slimDOM"];
+JsValue slimDOM = if (JS.isUndefined(__port_53)) { (false as JsValue) } else { __port_53 };
+JsValue dataURLOptions = __port_42["dataURLOptions"];
+JsValue preserveWhiteSpace = __port_42["preserveWhiteSpace"];
+JsValue onSerialize = __port_42["onSerialize"];
+JsValue onIframeLoad = __port_42["onIframeLoad"];
+JsValue iframeLoadTimeout = __port_42["iframeLoadTimeout"];
+JsValue onIframeListenerRegistered = __port_42["onIframeListenerRegistered"];
+JsValue onStylesheetLoad = __port_42["onStylesheetLoad"];
+JsValue stylesheetLoadTimeout = __port_42["stylesheetLoadTimeout"];
+JsValue __port_54 = __port_42["keepIframeSrcFn"];
+JsValue keepIframeSrcFn = if (JS.isUndefined(__port_54)) { (() => { 
+return (false as JsValue);
+return JS.undefined(); } as JsValue) } else { __port_54 };
+JsValue maxDepth = __port_42["maxDepth"];
+JsValue inlineStylesheetBudgetRules = __port_42["inlineStylesheetBudgetRules"];
+JsValue maskInputOptions = if ((((maskAllInputs as JsValue) === (true as JsValue)) as JsValue).truthy()) { (object { "color": true, "date": true, "datetime-local": true, "email": true, "month": true, "number": true, "range": true, "search": true, "tel": true, "text": true, "time": true, "url": true, "week": true, "textarea": true, "select": true, "password": true } as JsValue) } else { (if ((((maskAllInputs as JsValue) === (false as JsValue)) as JsValue).truthy()) { (object { "password": true } as JsValue) } else { (maskAllInputs as JsValue) } as JsValue) };
+JsValue slimDOMOptions = (slimDOMDefaults as JsValue)(slimDOM);
+((beginSnapshotCostTracking as JsValue)(inlineStylesheetBudgetRules));
+try {return (serializeNodeWithId as JsValue)(n, object { "doc": n, "mirror": mirror, "blockClass": blockClass, "blockSelector": blockSelector, "maskTextClass": maskTextClass, "maskTextSelector": maskTextSelector, "skipChild": false, "inlineStylesheet": inlineStylesheet, "maskInputOptions": maskInputOptions, "maskTextFn": maskTextFn, "maskInputFn": maskInputFn, "maskAllElementAttributes": maskAllElementAttributes, "maskAttributeFn": maskAttributeFn, "slimDOMOptions": slimDOMOptions, "dataURLOptions": dataURLOptions, "inlineImages": inlineImages, "recordCanvas": recordCanvas, "canvasMaskingConfigured": canvasMaskingConfigured, "preserveWhiteSpace": preserveWhiteSpace, "onSerialize": onSerialize, "onIframeLoad": onIframeLoad, "iframeLoadTimeout": iframeLoadTimeout, "onIframeListenerRegistered": onIframeListenerRegistered, "onStylesheetLoad": onStylesheetLoad, "stylesheetLoadTimeout": stylesheetLoadTimeout, "keepIframeSrcFn": keepIframeSrcFn, "newlyAddedElement": false, "maxDepth": maxDepth });} finally {((endSnapshotCostTracking as JsValue)());}
+return JS.undefined();}
+
+JsValue visitSnapshot(JsValue node, JsValue onVisit) {
+JsValue walk = (this JsValue __port_55, JsValue current) => { 
+((onVisit as JsValue)(current));
+if (((((((current as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Document"] as JsValue)) as JsValue) || ((((current as JsValue)["type"] as JsValue) === ((NodeType as JsValue)["Element"] as JsValue)) as JsValue)) as JsValue).truthy()) {(((current as JsValue)["childNodes"] as JsValue)["forEach"](walk));}
+return JS.undefined(); };
+((walk as JsValue)(node));
+return JS.undefined();}
+
+JsValue cleanupSnapshot() {
+((_id = 1.0));
+return JS.undefined();}
+export { IGNORED_NODE as IGNORED_NODE };
+export { genId as genId };
+export { absoluteToDoc as absoluteToDoc };
+export { transformAttribute as transformAttribute };
+export { ignoreAttribute as ignoreAttribute };
+export { _isBlockedElement as _isBlockedElement };
+export { classMatchesRegex as classMatchesRegex };
+export { needMaskingText as needMaskingText };
+export { resetStylesheetLoadTracking as resetStylesheetLoadTracking };
+export { DEFAULT_MAX_DEPTH as DEFAULT_MAX_DEPTH };
+export { wasMaxDepthReached as wasMaxDepthReached };
+export { resetMaxDepthState as resetMaxDepthState };
+export { serializeNodeWithId as serializeNodeWithId };
+export { slimDOMDefaults as slimDOMDefaults };
+export { visitSnapshot as visitSnapshot };
+export { cleanupSnapshot as cleanupSnapshot };
+export { __port_0 as default };

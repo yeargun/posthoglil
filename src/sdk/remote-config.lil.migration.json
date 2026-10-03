@@ -1,0 +1,20 @@
+{
+  "source": "packages/browser/src/remote-config.ts",
+  "implementation": "src/sdk/remote-config.lil",
+  "exports": [
+    "RemoteConfigLoader"
+  ],
+  "classMembers": [
+    {
+      "class": "RemoteConfigLoader",
+      "implementation": "__lil_get_remoteConfig",
+      "kind": "get",
+      "name": "remoteConfig"
+    }
+  ],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [],
+  "asyncClosures": [],
+  "qualified": false
+}

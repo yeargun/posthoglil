@@ -1,0 +1,483 @@
+// Whole-module migration from packages/browser/src/posthog-surveys.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { document as document } from "@posthog/browser-common/utils/globals";
+import extern { continueWith as continueWith } from "@posthog/browser-common/utils/promise-utils";
+import extern { isBoolean as isBoolean, isNullish as isNullish, isUndefined as isUndefined, isNumber as isNumber } from "@posthog/core";
+import extern { LOAD_EXT_NOT_FOUND as LOAD_EXT_NOT_FOUND, SURVEYS as SURVEYS, SURVEYS_CACHE_TTL_MS as SURVEYS_CACHE_TTL_MS, SURVEYS_LOADED_AT as SURVEYS_LOADED_AT, SURVEYS_REFRESH_BACKOFF_MS as SURVEYS_REFRESH_BACKOFF_MS } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { DisplaySurveyType as DisplaySurveyType } from "../../vendor/posthog-js/packages/browser/src/posthog-surveys-types.ts";
+import extern { SurveysExtension as SurveysExtension } from "../../vendor/posthog-js/packages/browser/src/extension-tokens.ts";
+import extern { doesSurveyActivateByAction as doesSurveyActivateByAction, doesSurveyActivateByEvent as doesSurveyActivateByEvent, IN_APP_SURVEY_TYPES as IN_APP_SURVEY_TYPES, isSurveyRunning as isSurveyRunning, setSurveySeenOnLocalStorage as setSurveySeenOnLocalStorage, SURVEY_LOGGER as logger, SURVEY_IN_PROGRESS_PREFIX as SURVEY_IN_PROGRESS_PREFIX, SURVEY_SEEN_PREFIX as SURVEY_SEEN_PREFIX, SURVEY_CAPTURING_DISABLED as SURVEY_CAPTURING_DISABLED } from "../../vendor/posthog-js/packages/browser/src/utils/survey-utils.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue Set;
+extern JsValue clearTimeout;
+extern JsValue localStorage;
+extern JsValue Promise;
+extern JsValue Error;
+extern JsValue Date;
+extern JsValue __lil_object_3;
+extern JsValue JSON;
+extern JsValue setTimeout;
+extern JsValue __lil_object_7;
+extern JsValue __lil_object_6;
+extern JsValue document;
+
+extern JsValue continueWith;
+
+extern JsValue isBoolean;
+extern JsValue isNullish;
+extern JsValue isUndefined;
+extern JsValue isNumber;
+
+extern JsValue LOAD_EXT_NOT_FOUND;
+extern JsValue SURVEYS;
+extern JsValue SURVEYS_CACHE_TTL_MS;
+extern JsValue SURVEYS_LOADED_AT;
+extern JsValue SURVEYS_REFRESH_BACKOFF_MS;
+
+extern JsValue DisplaySurveyType;
+
+extern JsValue SurveysExtension;
+
+extern JsValue doesSurveyActivateByAction;
+extern JsValue doesSurveyActivateByEvent;
+extern JsValue IN_APP_SURVEY_TYPES;
+extern JsValue isSurveyRunning;
+extern JsValue setSurveySeenOnLocalStorage;
+extern JsValue logger;
+extern JsValue SURVEY_IN_PROGRESS_PREFIX;
+extern JsValue SURVEY_SEEN_PREFIX;
+extern JsValue SURVEY_CAPTURING_DISABLED;
+
+JsValue SURVEY_NOT_LOADED = "SDK is not enabled or survey functionality is not yet loaded";
+
+JsValue SURVEY_DISABLED = "Disabled. Not loading surveys.";
+
+export class PostHogSurveys {
+init(JsValue _configSource, JsValue _initialClientState) { 
+((((this as JsValue) as JsValue)["_configSource"] = _configSource));
+((((this as JsValue) as JsValue)["_initialClientState"] = _initialClientState));
+((((this as JsValue) as JsValue)["name"] = SurveysExtension));
+((((this as JsValue) as JsValue)["_surveyEventReceiver"] = null));
+((((this as JsValue) as JsValue)["_surveyManager"] = null));
+((((this as JsValue) as JsValue)["_isInitializingSurveys"] = false));
+((((this as JsValue) as JsValue)["_surveyInitializationFailed"] = false));
+((((this as JsValue) as JsValue)["_surveyCallbacks"] = JS.array()));
+((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] = JS.array()));
+((((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] = null));
+((((this as JsValue) as JsValue)["_lastSurveyRefreshFailedAt"] = null));
+((((this as JsValue) as JsValue)["_disposed"] = false));
+((((this as JsValue) as JsValue)["_renderTimeouts"] = JS.construct(Set)));
+((((this as JsValue) as JsValue)["onRemoteConfig"] = (JsValue result) => { 
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+if (((((this as JsValue) as JsValue)["_config"] as JsValue)["disableSurveys"] as JsValue).truthy()) {return JS.undefined();}
+if ((!((result as JsValue)["ok"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_surveyInitializationFailed"] = true));
+(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"](object { "isLoaded": false, "error": "Remote config unavailable. Not loading surveys." }));
+return (logger as JsValue)["warn"]("Remote config unavailable. Not loading surveys.");}
+JsValue surveys = ((result as JsValue)["config"] as JsValue)["surveys"];
+if (((isNullish as JsValue)(surveys) as JsValue).truthy()) {return (logger as JsValue)["warn"]("Flags not loaded yet. Not loading surveys.");}
+((((this as JsValue) as JsValue)["_isSurveysEnabled"] = if (((isBoolean as JsValue)(surveys) as JsValue).truthy()) { (surveys as JsValue) } else { ((((surveys as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue) }));
+((logger as JsValue)["info"](`flags response received, isSurveysEnabled: ${((this as JsValue) as JsValue)["_isSurveysEnabled"]}`));
+(((this as JsValue) as JsValue)["loadIfEnabled"]());
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"] = (JsValue context) => { 
+(((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] as JsValue)["slice"]() as JsValue)["forEach"]((JsValue subscription) => { 
+return (((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallback"](subscription, context) as JsValue);
+return JS.undefined(); }));
+return JS.undefined(); }));
+ }
+
+JsValue setup(JsValue client) { 
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_initializingClient"] = client));
+return (continueWith as JsValue)(((client as JsValue)["kv"] as JsValue)["initialize"](), () => { 
+if ((((((((this as JsValue) as JsValue)["_initializingClient"] as JsValue) !== (client as JsValue)) as JsValue) || (((this as JsValue) as JsValue)["_disposed"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_initializingClient"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_client"] = client));
+JsValue subscription = (client as JsValue)["onRemoteConfig"](((this as JsValue) as JsValue)["onRemoteConfig"]);
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {((subscription as JsValue)["dispose"]());
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_remoteConfigSubscription"] = subscription));
+(((this as JsValue) as JsValue)["loadIfEnabled"]());
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue dispose() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_disposed"] = true));
+((((this as JsValue) as JsValue)["_initializingClient"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_client"] = JS.undefined()));
+(if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfigSubscription"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["dispose"]() as JsValue) });
+((((this as JsValue) as JsValue)["_remoteConfigSubscription"] = JS.undefined()));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_surveyEventReceiver"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["dispose"]() as JsValue) });
+((((this as JsValue) as JsValue)["_surveyEventReceiver"] = null));
+(if ((((((((_d = if ((((((((_c = ((this as JsValue) as JsValue)["_surveyManager"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["dispose"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["call"](_c) as JsValue) });
+((((this as JsValue) as JsValue)["_surveyManager"] = null));
+((((this as JsValue) as JsValue)["_surveyCallbacks"] = JS.array()));
+((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] as JsValue)["forEach"]((JsValue subscription) => { 
+(((subscription as JsValue)["active"] = false));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] = JS.array()));
+(if ((((((((_e = ((this as JsValue) as JsValue)["_activeMatchingSurveyConditionsUnsubscribe"])) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_activeMatchingSurveyConditionsUnsubscribe"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] = null));
+((((this as JsValue) as JsValue)["_renderTimeouts"] as JsValue)["forEach"]((JsValue timeout) => { 
+return ((clearTimeout as JsValue)(timeout) as JsValue);
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_renderTimeouts"] as JsValue)["clear"]());
+return JS.undefined(); }
+
+JsValue __lil_get__config() { 
+return (((this as JsValue) as JsValue)["_configSource"] as JsValue)["get"]();
+return JS.undefined(); }
+
+JsValue initialize() { 
+(((this as JsValue) as JsValue)["loadIfEnabled"]());
+return JS.undefined(); }
+
+JsValue reset() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+(if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_surveyManager"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["clearInMemoryInProgressSurveyState"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a) as JsValue) });
+try {(if ((((((((_c = ((this as JsValue) as JsValue)["_surveyEventReceiver"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["reset"]() as JsValue) });
+((localStorage as JsValue)["removeItem"]("lastSeenSurveyDate"));
+JsValue surveyKeys = JS.array();
+for (JsValue i = 0.0; (((i as JsValue) < ((localStorage as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {JsValue key = (localStorage as JsValue)["key"](i);
+if (((((if ((((((key as JsValue) === (null as JsValue)) as JsValue) || (((key as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((key as JsValue)["startsWith"](SURVEY_SEEN_PREFIX) as JsValue) }) as JsValue) || ((if ((((((key as JsValue) === (null as JsValue)) as JsValue) || (((key as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((key as JsValue)["startsWith"](SURVEY_IN_PROGRESS_PREFIX) as JsValue) }) as JsValue)) as JsValue).truthy()) {((surveyKeys as JsValue)["push"](key));}}
+((surveyKeys as JsValue)["forEach"]((JsValue key) => { 
+return ((localStorage as JsValue)["removeItem"](key) as JsValue);
+return JS.undefined(); }));} catch (JsValue __port_0) {}
+(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"]());
+return JS.undefined(); }
+
+JsValue loadIfEnabled() { 
+if ((((((this as JsValue) as JsValue)["_disposed"] as JsValue) || (!(((this as JsValue) as JsValue)["_client"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue config = ((this as JsValue) as JsValue)["_config"];
+if ((((this as JsValue) as JsValue)["_surveyManager"] as JsValue).truthy()) {return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_isInitializingSurveys"] as JsValue).truthy()) {((logger as JsValue)["info"]("Already initializing surveys, skipping..."));
+return JS.undefined();}
+if (((config as JsValue)["disableSurveys"] as JsValue).truthy()) {((logger as JsValue)["info"](SURVEY_DISABLED));
+return JS.undefined();}
+if (((((config as JsValue)["cookielessMode"] as JsValue) && ((((this as JsValue) as JsValue)["_configSource"] as JsValue)["isOptedOut"]() as JsValue)) as JsValue).truthy()) {((logger as JsValue)["info"]("Not loading surveys in cookieless mode without consent."));
+return JS.undefined();}
+JsValue phExtensions = (((this as JsValue) as JsValue)["_configSource"] as JsValue)["getExtensions"]();
+if ((!(phExtensions as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_handleSurveyLoadError"]("PostHog Extensions not found."));
+return JS.undefined();}
+if (((((isUndefined as JsValue)(((this as JsValue) as JsValue)["_isSurveysEnabled"]) as JsValue) && (!((config as JsValue)["advancedEnableSurveys"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue isSurveysEnabled = ((((this as JsValue) as JsValue)["_isSurveysEnabled"] as JsValue) || ((config as JsValue)["advancedEnableSurveys"] as JsValue));
+((((this as JsValue) as JsValue)["_isInitializingSurveys"] = true));
+((((this as JsValue) as JsValue)["_surveyInitializationFailed"] = false));
+try {JsValue generateSurveys = (phExtensions as JsValue)["generateSurveys"];
+if ((generateSurveys as JsValue).truthy()) {(((this as JsValue) as JsValue)["_completeSurveyInitialization"](generateSurveys, isSurveysEnabled));
+((((this as JsValue) as JsValue)["_isInitializingSurveys"] = false));
+return JS.undefined();}
+JsValue loadExternalDependency = (phExtensions as JsValue)["loadExternalDependency"];
+if ((!(loadExternalDependency as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_handleSurveyLoadError"](LOAD_EXT_NOT_FOUND));
+((((this as JsValue) as JsValue)["_isInitializingSurveys"] = false));
+return JS.undefined();}
+((loadExternalDependency as JsValue)((JsValue err) => { 
+try {if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+JsValue loadedExtensions = (((this as JsValue) as JsValue)["_configSource"] as JsValue)["getExtensions"]();
+if ((((err as JsValue) || (!((if ((((((loadedExtensions as JsValue) === (null as JsValue)) as JsValue) || (((loadedExtensions as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((loadedExtensions as JsValue)["generateSurveys"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_handleSurveyLoadError"]("Could not load surveys script", err));} else {(((this as JsValue) as JsValue)["_completeSurveyInitialization"]((loadedExtensions as JsValue)["generateSurveys"], isSurveysEnabled));}} finally {((((this as JsValue) as JsValue)["_isInitializingSurveys"] = false));}
+return JS.undefined(); }));} catch (JsValue e) {((((this as JsValue) as JsValue)["_isInitializingSurveys"] = false));
+(((this as JsValue) as JsValue)["_handleSurveyLoadError"]("Error initializing surveys", e));
+throw e;}
+return JS.undefined(); }
+
+JsValue _completeSurveyInitialization(JsValue generateSurveysFn, JsValue isSurveysEnabled) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_surveyManager"] = (generateSurveysFn as JsValue)(isSurveysEnabled)));
+((((this as JsValue) as JsValue)["_surveyEventReceiver"] = (((this as JsValue) as JsValue)["_configSource"] as JsValue)["createEventReceiver"](((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"])));
+JsValue cachedSurveys = if ((((((((_b = (if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (((this as JsValue) as JsValue)["_initialClientState"] as JsValue) }))) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_b as JsValue)["kv"] as JsValue)["get"](SURVEYS) as JsValue) };
+if ((cachedSurveys as JsValue).truthy()) {(((this as JsValue) as JsValue)["_registerEventOrActionBasedSurveys"](cachedSurveys));}
+((logger as JsValue)["info"]("Surveys loaded successfully"));
+(((this as JsValue) as JsValue)["_startActiveMatchingSurveyConditions"]());
+(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"]());
+(((this as JsValue) as JsValue)["_notifySurveyCallbacks"](object { "isLoaded": true }));
+return JS.undefined(); }
+
+JsValue _handleSurveyLoadError(JsValue message, JsValue error) { 
+((((this as JsValue) as JsValue)["_surveyInitializationFailed"] = true));
+((logger as JsValue)["error"](message, error));
+(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"](object { "isLoaded": false, "error": message }));
+(((this as JsValue) as JsValue)["_notifySurveyCallbacks"](object { "isLoaded": false, "error": message }));
+return JS.undefined(); }
+
+JsValue onSurveysLoaded(JsValue callback) { 
+((((this as JsValue) as JsValue)["_surveyCallbacks"] as JsValue)["push"](callback));
+if ((((this as JsValue) as JsValue)["_surveyManager"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_notifySurveyCallbacks"](object { "isLoaded": true }));}
+return () => { 
+((((this as JsValue) as JsValue)["_surveyCallbacks"] = (((this as JsValue) as JsValue)["_surveyCallbacks"] as JsValue)["filter"]((JsValue cb) => { 
+return (((cb as JsValue) !== (callback as JsValue)) as JsValue);
+return JS.undefined(); })));
+return JS.undefined(); };
+return JS.undefined(); }
+
+JsValue getSurveys(JsValue callback, JsValue forceReload = false) { 
+JsValue _a = JS.undefined();
+JsValue client = if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (((this as JsValue) as JsValue)["_initialClientState"] as JsValue) };
+if ((((!(client as JsValue).truthy() as JsValue) || (((this as JsValue) as JsValue)["_disposed"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if (((((this as JsValue) as JsValue)["_config"] as JsValue)["disableSurveys"] as JsValue).truthy()) {((logger as JsValue)["info"](SURVEY_DISABLED));
+return (callback as JsValue)(JS.array());}
+JsValue surveys = ((client as JsValue)["kv"] as JsValue)["get"](SURVEYS);
+if ((((surveys as JsValue) && (!(forceReload as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((callback as JsValue)(surveys, object { "isLoaded": true }));
+if ((((this as JsValue) as JsValue)["_shouldBackgroundRefreshSurveys"]() as JsValue).truthy()) {(((this as JsValue) as JsValue)["getSurveys"](() => { 
+
+return JS.undefined(); }, true));}
+return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] as JsValue).truthy()) {((() => { ((((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] as JsValue)["then"]((JsValue __port_1) => { JsValue __port_2 = __port_1;
+JsValue surveys = __port_2["surveys"];
+JsValue context = __port_2["context"];
+if ((!(((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy() as JsValue).truthy()) {((callback as JsValue)(surveys, context));}
+return JS.undefined(); }) as JsValue)["catch"]((JsValue error) => { 
+return ((logger as JsValue)["error"]("Error in survey callback", error) as JsValue);
+return JS.undefined(); }); return JS.undefined(); })());
+return JS.undefined();}
+JsValue request = (((this as JsValue) as JsValue)["_sendSurveysRequest"]("/api/surveys/", object { "method": "GET", "query": object { "token": (client as JsValue)["projectToken"] }, "sentAt": "query", "timeoutMs": (((this as JsValue) as JsValue)["_config"] as JsValue)["requestTimeoutMs"] }) as JsValue)["then"]((JsValue response) => { 
+try {return ((this as JsValue) as JsValue)["_handleSurveyResponse"](client, response);} catch (JsValue error) {((logger as JsValue)["error"]("Error processing surveys response", error));
+return ((this as JsValue) as JsValue)["_handleSurveyResponse"](client, object { "statusCode": 0.0, "error": error });}
+return JS.undefined(); }, (JsValue error) => { 
+return (((this as JsValue) as JsValue)["_handleSurveyResponse"](client, object { "statusCode": 0.0, "error": error }) as JsValue);
+return JS.undefined(); });
+((((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] = request));
+JsValue clearInFlight = () => { 
+if ((((((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] as JsValue) === (request as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] = null));}
+return JS.undefined(); };
+((() => { ((request as JsValue)["then"]((JsValue result) => { 
+((clearInFlight as JsValue)());
+if ((!(((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"]((result as JsValue)["context"]));
+((callback as JsValue)((result as JsValue)["surveys"], (result as JsValue)["context"]));}
+return JS.undefined(); }, clearInFlight) as JsValue)["catch"]((JsValue error) => { 
+return ((logger as JsValue)["error"]("Error in survey callback", error) as JsValue);
+return JS.undefined(); }); return JS.undefined(); })());
+return JS.undefined(); }
+
+JsValue _sendSurveysRequest(JsValue path, JsValue ph_init) { 
+JsValue client = ((this as JsValue) as JsValue)["_client"];
+if ((!(client as JsValue).truthy() as JsValue).truthy()) {return JS.construct(Promise, (JsValue resolve) => { 
+return ((resolve as JsValue)(object { "statusCode": 0.0, "error": JS.construct(Error, SURVEY_NOT_LOADED) }) as JsValue);
+return JS.undefined(); });}
+return (client as JsValue)["sendRequest"](path, ph_init);
+return JS.undefined(); }
+
+JsValue _handleSurveyResponse(JsValue client, JsValue response) { 
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return object { "surveys": JS.array(), "context": object { "isLoaded": false, "error": SURVEY_NOT_LOADED } };}
+JsValue statusCode = (response as JsValue)["statusCode"];
+if ((((((statusCode as JsValue) !== (200.0 as JsValue)) as JsValue) || (!((response as JsValue)["json"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue error = `Surveys API could not be loaded, status: ${statusCode}`;
+if ((((statusCode as JsValue) !== (0.0 as JsValue)) as JsValue).truthy()) {((logger as JsValue)["error"](error));} else {if ((!((response as JsValue)["error"] as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"](error));}}
+((((this as JsValue) as JsValue)["_lastSurveyRefreshFailedAt"] = (Date as JsValue)["now"]()));
+return object { "surveys": JS.array(), "context": object { "isLoaded": false, "error": error } };}
+((((this as JsValue) as JsValue)["_lastSurveyRefreshFailedAt"] = null));
+JsValue surveys = ((((response as JsValue)["json"] as JsValue)["surveys"] as JsValue) || (JS.array() as JsValue));
+(((client as JsValue)["kv"] as JsValue)["set"](__lil_object_3(() => (SURVEYS as JsValue), () => (surveys as JsValue), () => (SURVEYS_LOADED_AT as JsValue), () => ((Date as JsValue)["now"]() as JsValue))));
+(((this as JsValue) as JsValue)["_registerEventOrActionBasedSurveys"](surveys));
+return object { "surveys": surveys, "context": object { "isLoaded": true } };
+return JS.undefined(); }
+
+JsValue _registerEventOrActionBasedSurveys(JsValue surveys) { 
+JsValue _a = JS.undefined();
+JsValue eventOrActionBasedSurveys = (surveys as JsValue)["filter"]((JsValue survey) => { 
+return ((((isSurveyRunning as JsValue)(survey) as JsValue) && (((((doesSurveyActivateByEvent as JsValue)(survey) as JsValue) || ((doesSurveyActivateByAction as JsValue)(survey) as JsValue))) as JsValue)) as JsValue);
+return JS.undefined(); });
+(if ((((((((_a = ((this as JsValue) as JsValue)["_surveyEventReceiver"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["replace"](eventOrActionBasedSurveys) as JsValue) });
+return JS.undefined(); }
+
+JsValue _shouldBackgroundRefreshSurveys() { 
+return ((((((this as JsValue) as JsValue)["_isSurveyCacheStale"]() as JsValue) && (!(((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] as JsValue).truthy() as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_isSurveyRefreshBackingOff"]() as JsValue).truthy() as JsValue));
+return JS.undefined(); }
+
+JsValue _isSurveyCacheStale() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue surveysLoadedAt = if ((((((((_b = (if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (((this as JsValue) as JsValue)["_initialClientState"] as JsValue) }))) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_b as JsValue)["kv"] as JsValue)["get"](SURVEYS_LOADED_AT) as JsValue) };
+return (((isNumber as JsValue)(surveysLoadedAt) as JsValue) && ((((((Date as JsValue)["now"]() as JsValue) - (surveysLoadedAt as JsValue)) as JsValue) > (SURVEYS_CACHE_TTL_MS as JsValue)) as JsValue));
+return JS.undefined(); }
+
+JsValue _isSurveyRefreshBackingOff() { 
+return ((((isNumber as JsValue)(((this as JsValue) as JsValue)["_lastSurveyRefreshFailedAt"]) as JsValue) && ((((((Date as JsValue)["now"]() as JsValue) - (((this as JsValue) as JsValue)["_lastSurveyRefreshFailedAt"] as JsValue)) as JsValue) < (SURVEYS_REFRESH_BACKOFF_MS as JsValue)) as JsValue)));
+return JS.undefined(); }
+
+JsValue markSurveyAsSeen(JsValue surveyId, JsValue options) { 
+JsValue _a = JS.undefined();
+JsValue survey = object { "id": surveyId, "current_iteration": if ((((((((_a = if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["iteration"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (null as JsValue) } };
+((setSurveySeenOnLocalStorage as JsValue)(survey));
+try {((localStorage as JsValue)["setItem"]("lastSeenSurveyDate", (JS.construct(Date) as JsValue)["toISOString"]()));} catch (JsValue __port_4) {}
+(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"]());
+return JS.undefined(); }
+
+JsValue _notifySurveyCallbacks(JsValue context) { 
+for (JsValue callback of ((this as JsValue) as JsValue)["_surveyCallbacks"]) {
+try {if ((!((context as JsValue)["isLoaded"] as JsValue).truthy() as JsValue).truthy()) {return (callback as JsValue)(JS.array(), context);}
+(((this as JsValue) as JsValue)["getSurveys"](callback));} catch (JsValue error) {((logger as JsValue)["error"]("Error in survey callback", error));}}
+return JS.undefined(); }
+
+JsValue getActiveMatchingSurveys(JsValue callback, JsValue forceReload = false) { 
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {((logger as JsValue)["warn"]("init was not called"));
+return JS.undefined();}
+return (((this as JsValue) as JsValue)["_surveyManager"] as JsValue)["getActiveMatchingSurveys"](callback, forceReload);
+return JS.undefined(); }
+
+JsValue onActiveMatchingSurveysChanged(JsValue callback) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((this as JsValue) as JsValue)["_disposed"] as JsValue).truthy()) {return () => { 
+
+return JS.undefined(); };}
+JsValue subscription = object { "callback": callback, "active": true, "revision": 0.0 };
+((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] as JsValue)["push"](subscription));
+(((this as JsValue) as JsValue)["_startActiveMatchingSurveyConditions"]());
+JsValue cached = if ((((((((_b = (if ((((((((_a = ((this as JsValue) as JsValue)["_client"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (((this as JsValue) as JsValue)["_initialClientState"] as JsValue) }))) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_b as JsValue)["kv"] as JsValue)["get"](SURVEYS) as JsValue) };
+JsValue unavailable = (((((((this as JsValue) as JsValue)["_config"] as JsValue)["disableSurveys"] as JsValue) || ((((((!(((this as JsValue) as JsValue)["_surveyManager"] as JsValue).truthy() as JsValue) && (((this as JsValue) as JsValue)["_surveyInitializationFailed"] as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_isInitializingSurveys"] as JsValue).truthy() as JsValue))) as JsValue)) as JsValue) || ((((((!(cached as JsValue).truthy() as JsValue) && (!((isNullish as JsValue)(((this as JsValue) as JsValue)["_lastSurveyRefreshFailedAt"]) as JsValue).truthy() as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_getSurveysInFlightPromise"] as JsValue).truthy() as JsValue))) as JsValue));
+if ((unavailable as JsValue).truthy()) {(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallback"](subscription, object { "isLoaded": false }));} else {if ((((this as JsValue) as JsValue)["_surveyManager"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallback"](subscription));}}
+return () => { 
+JsValue _a = JS.undefined();
+(((subscription as JsValue)["active"] = false));
+((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] = (((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] as JsValue)["filter"]((JsValue current) => { 
+return (((current as JsValue) !== (subscription as JsValue)) as JsValue);
+return JS.undefined(); })));
+if (((((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {(if ((((((((_a = ((this as JsValue) as JsValue)["_activeMatchingSurveyConditionsUnsubscribe"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_activeMatchingSurveyConditionsUnsubscribe"] = JS.undefined()));}
+return JS.undefined(); };
+return JS.undefined(); }
+
+JsValue _startActiveMatchingSurveyConditions() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+if ((((((this as JsValue) as JsValue)["_surveyManager"] as JsValue) && ((((((this as JsValue) as JsValue)["_activeMatchingSurveyCallbacks"] as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {(if ((((((((_a = ((this as JsValue) as JsValue)["_activeMatchingSurveyConditionsUnsubscribe"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (((((this as JsValue) as JsValue)["_activeMatchingSurveyConditionsUnsubscribe"] = if ((((((((_c = (((_b = ((this as JsValue) as JsValue)["_configSource"])) as JsValue)["onMatchingConditionsChanged"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["call"](_b, ((this as JsValue) as JsValue)["_notifyActiveMatchingSurveyCallbacks"]) as JsValue) })) as JsValue) });}
+return JS.undefined(); }
+
+JsValue _notifyActiveMatchingSurveyCallback(JsValue subscription, JsValue context) { 
+if ((((((this as JsValue) as JsValue)["_disposed"] as JsValue) || (!((subscription as JsValue)["active"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue revision = (() => { JsValue __port_5 = subscription; return (__port_5["revision"] = JS.number(__port_5["revision"]) + 1.0); })();
+JsValue deliver = (JsValue surveys) => { 
+if ((((((((this as JsValue) as JsValue)["_disposed"] as JsValue) || (!((subscription as JsValue)["active"] as JsValue).truthy() as JsValue)) as JsValue) || (((revision as JsValue) !== ((subscription as JsValue)["revision"] as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+try {JsValue resultContext = if ((((((context as JsValue) !== (null as JsValue)) as JsValue) && (((context as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (context as JsValue) } else { (object { "isLoaded": true } as JsValue) };
+JsValue result = (JSON as JsValue)["stringify"](JS.array(surveys, resultContext));
+if ((((result as JsValue) === ((subscription as JsValue)["lastResult"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((subscription as JsValue)["lastResult"] = result));
+((subscription as JsValue)["callback"](surveys, resultContext));} catch (JsValue error) {((logger as JsValue)["error"]("Error in active matching surveys callback", error));}
+return JS.undefined(); };
+try {if ((((context as JsValue) && (!((context as JsValue)["isLoaded"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((deliver as JsValue)(JS.array()));} else {(((this as JsValue) as JsValue)["getActiveMatchingSurveys"](deliver));}} catch (JsValue error) {((logger as JsValue)["error"]("Error in active matching surveys callback", error));}
+return JS.undefined(); }
+
+JsValue _getSurveyById(JsValue surveyId) { 
+JsValue survey = null;
+(((this as JsValue) as JsValue)["getSurveys"]((JsValue surveys) => { 
+JsValue _a = JS.undefined();
+((survey = if ((((((((_a = (surveys as JsValue)["find"]((JsValue x) => { 
+return ((((x as JsValue)["id"] as JsValue) === (surveyId as JsValue)) as JsValue);
+return JS.undefined(); }))) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (null as JsValue) }));
+return JS.undefined(); }));
+return survey;
+return JS.undefined(); }
+
+JsValue _checkSurveyEligibility(JsValue surveyId) { 
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {return object { "eligible": false, "reason": SURVEY_NOT_LOADED };}
+JsValue survey = if ((((JS.typeOf(surveyId) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_getSurveyById"](surveyId) as JsValue) } else { (surveyId as JsValue) };
+if ((!(survey as JsValue).truthy() as JsValue).truthy()) {return object { "eligible": false, "reason": "Survey not found" };}
+return (((this as JsValue) as JsValue)["_surveyManager"] as JsValue)["checkSurveyEligibility"](survey);
+return JS.undefined(); }
+
+JsValue _checkSurveyRenderability(JsValue surveyId) { 
+if ((!((((this as JsValue) as JsValue)["_configSource"] as JsValue)["isCapturing"]() as JsValue).truthy() as JsValue).truthy()) {return object { "eligible": false, "reason": SURVEY_CAPTURING_DISABLED };}
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {return object { "eligible": false, "reason": SURVEY_NOT_LOADED };}
+JsValue survey = if ((((JS.typeOf(surveyId) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_getSurveyById"](surveyId) as JsValue) } else { (surveyId as JsValue) };
+if ((!(survey as JsValue).truthy() as JsValue).truthy()) {return object { "eligible": false, "reason": "Survey not found" };}
+return (((this as JsValue) as JsValue)["_surveyManager"] as JsValue)["checkSurveyRenderability"](survey);
+return JS.undefined(); }
+
+JsValue canRenderSurvey(JsValue surveyId) { 
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {((logger as JsValue)["warn"]("init was not called"));
+return object { "visible": false, "disabledReason": SURVEY_NOT_LOADED };}
+JsValue eligibility = ((this as JsValue) as JsValue)["_checkSurveyRenderability"](surveyId);
+return object { "visible": (eligibility as JsValue)["eligible"], "disabledReason": (eligibility as JsValue)["reason"] };
+return JS.undefined(); }
+
+JsValue canRenderSurveyAsync(JsValue surveyId, JsValue forceReload) { 
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {((logger as JsValue)["warn"]("init was not called"));
+return (Promise as JsValue)["resolve"](object { "visible": false, "disabledReason": SURVEY_NOT_LOADED });}
+return JS.construct(Promise, (JsValue resolve) => { 
+(((this as JsValue) as JsValue)["getSurveys"]((JsValue surveys) => { 
+JsValue _a = JS.undefined();
+JsValue survey = if ((((((((_a = (surveys as JsValue)["find"]((JsValue x) => { 
+return ((((x as JsValue)["id"] as JsValue) === (surveyId as JsValue)) as JsValue);
+return JS.undefined(); }))) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (null as JsValue) };
+if ((!(survey as JsValue).truthy() as JsValue).truthy()) {((resolve as JsValue)(object { "visible": false, "disabledReason": "Survey not found" }));} else {JsValue eligibility = ((this as JsValue) as JsValue)["_checkSurveyRenderability"](survey);
+((resolve as JsValue)(object { "visible": (eligibility as JsValue)["eligible"], "disabledReason": (eligibility as JsValue)["reason"] }));}
+return JS.undefined(); }, forceReload));
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue renderSurvey(JsValue surveyId, JsValue selector, JsValue properties) { 
+JsValue _a = JS.undefined();
+if ((!((((this as JsValue) as JsValue)["_configSource"] as JsValue)["isCapturing"]() as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {((logger as JsValue)["warn"]("init was not called"));
+return JS.undefined();}
+JsValue survey = if ((((JS.typeOf(surveyId) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_getSurveyById"](surveyId) as JsValue) } else { (surveyId as JsValue) };
+if ((!((if ((((((survey as JsValue) === (null as JsValue)) as JsValue) || (((survey as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((survey as JsValue)["id"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"]("Survey not found"));
+return JS.undefined();}
+if ((!((IN_APP_SURVEY_TYPES as JsValue)["includes"]((survey as JsValue)["type"]) as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"](`Surveys of type ${(survey as JsValue)["type"]} cannot be rendered in the app`));
+return JS.undefined();}
+JsValue elem = if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["querySelector"](selector) as JsValue) };
+if ((!(elem as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"]("Survey element not found"));
+return JS.undefined();}
+if ((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveyPopupDelaySeconds"] as JsValue) } as JsValue).truthy()) {((logger as JsValue)["info"](`Rendering survey ${(survey as JsValue)["id"]} with delay of ${((survey as JsValue)["appearance"] as JsValue)["surveyPopupDelaySeconds"]} seconds`));
+JsValue timeout = (setTimeout as JsValue)(() => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+((((this as JsValue) as JsValue)["_renderTimeouts"] as JsValue)["delete"](timeout));
+if ((((((this as JsValue) as JsValue)["_disposed"] as JsValue) || (!((((this as JsValue) as JsValue)["_configSource"] as JsValue)["isCapturing"]() as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((logger as JsValue)["info"](`Rendering survey ${(survey as JsValue)["id"]} with delay of ${if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveyPopupDelaySeconds"] as JsValue) }} seconds`));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_surveyManager"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["renderSurvey"](survey, elem, properties) as JsValue) });
+((logger as JsValue)["info"](`Survey ${(survey as JsValue)["id"]} rendered`));
+return JS.undefined(); }, ((((survey as JsValue)["appearance"] as JsValue)["surveyPopupDelaySeconds"] as JsValue) * (1000.0 as JsValue)));
+((((this as JsValue) as JsValue)["_renderTimeouts"] as JsValue)["add"](timeout));
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_surveyManager"] as JsValue)["renderSurvey"](survey, elem, properties));
+return JS.undefined(); }
+
+JsValue displaySurvey(JsValue surveyId, JsValue options) { 
+JsValue _a = JS.undefined();
+if ((!((((this as JsValue) as JsValue)["_configSource"] as JsValue)["isCapturing"]() as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {((logger as JsValue)["warn"]("init was not called"));
+return JS.undefined();}
+JsValue survey = ((this as JsValue) as JsValue)["_getSurveyById"](surveyId);
+if ((!(survey as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"]("Survey not found"));
+return JS.undefined();}
+JsValue surveyToDisplay = survey;
+if (((((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveyPopupDelaySeconds"] as JsValue) }) as JsValue) && ((options as JsValue)["ignoreDelay"] as JsValue)) as JsValue).truthy()) {((surveyToDisplay = __lil_object_6(() => (survey as JsValue), () => (__lil_object_7(() => ((survey as JsValue)["appearance"] as JsValue), () => (0.0 as JsValue)) as JsValue))));}
+if (((((((options as JsValue)["displayType"] as JsValue) !== ((DisplaySurveyType as JsValue)["Popover"] as JsValue)) as JsValue) && ((options as JsValue)["initialResponses"] as JsValue)) as JsValue).truthy()) {((logger as JsValue)["warn"]("initialResponses is only supported for popover surveys. prefill will not be applied."));}
+if (((((options as JsValue)["ignoreConditions"] as JsValue) === (false as JsValue)) as JsValue).truthy()) {JsValue eligibility = ((this as JsValue) as JsValue)["_checkSurveyEligibility"](survey);
+if ((!((eligibility as JsValue)["eligible"] as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"]("Survey is not eligible to be displayed: ", (eligibility as JsValue)["reason"]));
+return JS.undefined();}}
+if (((((options as JsValue)["displayType"] as JsValue) === ((DisplaySurveyType as JsValue)["Inline"] as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["renderSurvey"](surveyToDisplay, (options as JsValue)["selector"], (options as JsValue)["properties"]));
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_surveyManager"] as JsValue)["handlePopoverSurvey"](surveyToDisplay, options));
+return JS.undefined(); }
+
+JsValue cancelPendingSurvey(JsValue surveyId) { 
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_surveyManager"]) as JsValue).truthy()) {((logger as JsValue)["warn"]("init was not called"));
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_surveyManager"] as JsValue)["cancelSurvey"](surveyId));
+return JS.undefined(); }
+
+JsValue handlePageUnload() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_surveyManager"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["handlePageUnload"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a) as JsValue) });
+return JS.undefined(); }
+}
+export constructor PostHogSurveys;
+
+

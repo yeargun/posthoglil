@@ -1,0 +1,445 @@
+import extern { each, find } from "../../vendor/posthog-js/packages/browser-common/src/utils/general-utils.ts";
+import extern { default as Config } from "../../vendor/posthog-js/packages/browser/src/config.ts";
+import extern { Compression } from "../../vendor/posthog-js/packages/browser/src/types.ts";
+import extern { formDataToQuery, getQueryParam, jsonStringify } from "../../vendor/posthog-js/packages/browser-common/src/utils/request-utils.ts";
+import extern { logger } from "../../vendor/posthog-js/packages/browser-common/src/utils/logger.ts";
+import extern { AbortController, CompressionStream, fetch, navigator, XMLHttpRequest } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { gzipSync, strToU8 } from "fflate";
+import extern { _base64Encode } from "../../vendor/posthog-js/packages/browser-common/src/utils/encode-utils.ts";
+import extern { createNamedError, gzipCompress, isArray, isGzipData, isGzipRequest, isNativeAsyncGzipError, isNativeAsyncGzipReadError, parseRetryAfterMs } from "../../vendor/posthog-js/packages/core/src/index.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue each;
+extern JsValue find;
+extern JsValue Config;
+extern JsValue Compression;
+extern JsValue formDataToQuery;
+extern JsValue getQueryParam;
+extern JsValue jsonStringify;
+extern JsValue logger;
+extern JsValue AbortController;
+extern JsValue CompressionStream;
+extern JsValue fetch;
+extern JsValue navigator;
+extern JsValue XMLHttpRequest;
+extern JsValue gzipSync;
+extern JsValue strToU8;
+extern JsValue _base64Encode;
+extern JsValue createNamedError;
+extern JsValue gzipCompress;
+extern JsValue isArray;
+extern JsValue isGzipData;
+extern JsValue isGzipRequest;
+extern JsValue isNativeAsyncGzipError;
+extern JsValue isNativeAsyncGzipReadError;
+extern JsValue parseRetryAfterMs;
+extern JsValue WeakMap;
+extern JsValue Blob;
+extern JsValue Headers;
+extern JsValue Date;
+extern JsValue JSON;
+extern JsValue Math;
+extern JsValue Promise;
+extern JsValue RegExp;
+extern JsValue Error;
+extern JsValue encodeURIComponent;
+extern JsValue isNaN;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+export { jsonStringify };
+export bool SUPPORTS_REQUEST = XMLHttpRequest.truthy() || fetch.truthy();
+JsValue posthogXHRs = JS.construct(WeakMap);
+JsValue pendingKeepaliveBytes = 0.0;
+bool nativeAsyncGzipDisabled = false;
+JsValue networkErrorMessages = JS.construct(RegExp, "Failed to fetch|NetworkError|Load failed", "i");
+
+export bool isPostHogXHR(JsValue value) { return posthogXHRs.has(value).truthy(); }
+
+JsValue removeURLParam(JsValue url, JsValue param) {
+  JsValue split = url.split("#");
+  JsValue withoutHash = split[0];
+  JsValue hash = split[1];
+  JsValue query = withoutHash.split("?");
+  JsValue base = query[0];
+  JsValue search = query[1];
+  if (!search.truthy()) return url;
+  JsValue updated = search.split("&").filter((JsValue pair) => pair.split("=")[0] !== param).join("&");
+  JsValue queryPart = if (updated.truthy()) { `?${updated}` } else { "" };
+  JsValue hashPart = if (hash.truthy()) { `#${hash}` } else { "" };
+  return `${base}${queryPart}${hashPart}`;
+}
+
+export JsValue extendURLParams(JsValue url, JsValue params, JsValue replace = true) {
+  JsValue split = url.split("?");
+  JsValue base = split[0];
+  JsValue search = split[1];
+  JsValue newParams = copyProperties(JS.object(), params);
+  JsValue updated = JS.array();
+  if (!JS.isNullish(search)) {
+    updated = search.split("&").map((JsValue pair) => {
+      JsValue components = pair.split("=");
+      JsValue key = components[0];
+      JsValue originalValue = components[1];
+      JsValue value = originalValue;
+      if (replace.truthy()) {
+        value = newParams[key];
+        if (JS.isNullish(value)) value = originalValue;
+      }
+      JS.delete(newParams, key);
+      return `${key}=${value}`;
+    });
+    if (JS.isNullish(updated)) updated = JS.array();
+  }
+  JsValue remaining = formDataToQuery(newParams);
+  if (remaining.truthy()) updated.push(remaining);
+  if (updated.length > 0.0) return `${base}?${updated.join("&")}`;
+  return base;
+}
+
+JsValue encodePostData(JsValue options) {
+  if (options._encodedBody.truthy()) return options._encodedBody;
+  JsValue data = options.data;
+  JsValue compression = options.compression;
+  if (!data.truthy()) return JS.undefined();
+  if (compression === Compression.GZipJS) {
+    JsValue gzip = gzipSync(strToU8(jsonStringify(data)), object { mtime: 0.0 });
+    return object {
+      contentType: "text/plain",
+      body: gzip.buffer.slice(gzip.byteOffset, gzip.byteOffset + gzip.byteLength),
+      estimatedSize: gzip.byteLength
+    };
+  }
+  if (compression === Compression.Base64) {
+    JsValue b64 = _base64Encode(jsonStringify(data));
+    JsValue encoded = if (JS.typeOf(b64) == "string") { b64 } else { jsonStringify(b64) };
+    JsValue body = "data=" + encodeURIComponent(encoded);
+    return object {
+      contentType: "application/x-www-form-urlencoded", body: body,
+      estimatedSize: JS.construct(Blob, JS.array(body)).size
+    };
+  }
+  JsValue body = jsonStringify(data);
+  return object { contentType: "application/json", body: body, estimatedSize: JS.construct(Blob, JS.array(body)).size };
+}
+
+JsValue fallbackBody(JsValue options) {
+  if (options.transport === "sendBeacon") {
+    JsValue url = extendURLParams(options.url, object { compression: Compression.Base64 }, true);
+    JsValue copy = copyProperties(JS.object(), options);
+    setOwn(copy, "compression", Compression.Base64);
+    setOwn(copy, "_encodedBody", JS.undefined());
+    return object { url: url, encodedBody: encodePostData(copy) };
+  }
+  JsValue url = removeURLParam(options.url, "compression");
+  JsValue copy = copyProperties(JS.object(), options);
+  setOwn(copy, "compression", JS.undefined());
+  setOwn(copy, "_encodedBody", JS.undefined());
+  return object { url: url, encodedBody: encodePostData(copy) };
+}
+
+JsValue encodePostDataSafely(JsValue options) {
+  JsValue encoded = JS.undefined();
+  try {
+    encoded = encodePostData(options);
+  } catch (JsValue error) {
+    if (isGzipRequest(options.compression, getQueryParam(options.url, "compression")).truthy()) {
+      logger.error("Failed to gzip request body, sending uncompressed payload", error);
+      return fallbackBody(options);
+    }
+    throw error;
+  }
+  if (!encoded.truthy() || !isGzipRequest(options.compression, getQueryParam(options.url, "compression")).truthy() || isGzipData(encoded.body).truthy()) {
+    return object { url: options.url, encodedBody: encoded };
+  }
+  nativeAsyncGzipDisabled = true;
+  return fallbackBody(options);
+}
+
+JsValue encodeRequest(JsValue options) {
+  try {
+    return encodePostDataSafely(options);
+  } catch (JsValue error) {
+    logger.error(error);
+    JsValue callback = options.callback;
+    if (!JS.isNullish(callback)) callback.call(options, object { statusCode: 0.0, error: error });
+    return JS.undefined();
+  }
+}
+
+async JsValue preEncodeAsync(JsValue options) {
+  JsValue data = jsonStringify(options.data);
+  Task<JsValue> compressing = JS.assume(gzipCompress(data, Config.DEBUG, object { rethrow: true }));
+  JsValue compressed = await compressing;
+  if (!compressed.truthy()) return options;
+  Task<JsValue> reading = JS.assume(compressed.arrayBuffer());
+  JsValue body = await reading;
+  return setOwn(copyProperties(JS.object(), options), "_encodedBody", object {
+    contentType: "text/plain", body: body, estimatedSize: body.byteLength
+  });
+}
+
+JsValue timeoutAbortReason(JsValue timeout) {
+  JsValue suffix = if (timeout.truthy()) { ` after ${timeout}ms` } else { "" };
+  return createNamedError("AbortError", `PostHog request timed out${suffix}`);
+}
+
+bool isExpectedNetworkError(JsValue error) {
+  if (JS.isNullish(error) || error.name !== "TypeError") return false;
+  return networkErrorMessages.test(error["message"] || "").truthy();
+}
+
+JsValue readRetryAfter(JsValue getHeader) {
+  try {
+    JsValue delay = parseRetryAfterMs(getHeader());
+    if (JS.isUndefined(delay)) return JS.undefined();
+    return Math.min(delay, 30000.0);
+  } catch { return JS.undefined(); }
+}
+
+void xhr(JsValue options) {
+  JsValue encoded = encodeRequest(options);
+  if (!encoded.truthy()) return;
+  JsValue req = JS.construct(XMLHttpRequest);
+  posthogXHRs.set(req, true);
+  JsValue url = encoded.url;
+  JsValue encodedBody = encoded.encodedBody;
+  req.open(options.method || "GET", url, true);
+  if (JS.isNullish(encodedBody)) encodedBody = JS.object();
+  JsValue contentType = encodedBody.contentType;
+  JsValue body = encodedBody.body;
+  each(options.headers, (JsValue value, JsValue name) => {
+    req.setRequestHeader(name, value);
+    return JS.undefined();
+  });
+  if (contentType.truthy()) req.setRequestHeader("Content-Type", contentType);
+  if (options.timeout.truthy()) req.timeout = options.timeout;
+  req.onreadystatechange = () => {
+    if (req.readyState === 4.0) {
+      JsValue response = object { statusCode: req.status, text: req.responseText };
+      if (req.status === 200.0) {
+        try { response.json = JSON.parse(req.responseText); } catch {}
+      }
+      JsValue callback = options.callback;
+      if (!JS.isNullish(callback)) callback.call(options, response, readRetryAfter(() => req.getResponseHeader("Retry-After")));
+    }
+    return JS.undefined();
+  };
+  req.send(body);
+}
+
+void fetchRequest(JsValue options) {
+  JsValue encoded = encodeRequest(options);
+  if (!encoded.truthy()) return;
+  JsValue url = encoded.url;
+  JsValue encodedBody = encoded.encodedBody;
+  if (JS.isNullish(encodedBody)) encodedBody = JS.object();
+  JsValue contentType = encodedBody.contentType;
+  JsValue body = encodedBody.body;
+  JsValue estimatedSize = encodedBody.estimatedSize;
+  JsValue headers = JS.construct(Headers);
+  each(options.headers, (JsValue value, JsValue name) => {
+    headers.append(name, value);
+    return JS.undefined();
+  });
+  if (contentType.truthy()) headers.append("Content-Type", contentType);
+  JsValue aborter = null;
+  bool timedOut = false;
+  bool settled = false;
+  JsValue handleError = (JsValue error) => {
+    if (settled) return JS.undefined();
+    settled = true;
+    JsValue name = if (JS.isNullish(error)) { JS.undefined() } else { error.name };
+    if ((timedOut && name === "AbortError") || isExpectedNetworkError(error)) logger.warn(error);
+    else logger.error(error);
+    JsValue callback = options.callback;
+    if (!JS.isNullish(callback)) callback.call(options, object { statusCode: 0.0, error: error });
+    return JS.undefined();
+  };
+  if (AbortController.truthy()) {
+    JsValue controller = JS.construct(AbortController);
+    aborter = object {
+      signal: controller.signal,
+      timeout: setTimeout(() => {
+        timedOut = true;
+        try { controller.abort(timeoutAbortReason(options.timeout)); }
+        catch (JsValue error) { handleError(error); }
+        return JS.undefined();
+      }, options.timeout)
+    };
+  }
+  JsValue reservedBytes = 0.0;
+  JsValue cleanup = () => {
+    pendingKeepaliveBytes = pendingKeepaliveBytes - reservedBytes;
+    reservedBytes = 0.0;
+    if (aborter.truthy()) clearTimeout(aborter.timeout);
+    return JS.undefined();
+  };
+  try {
+    JsValue method = if (JS.isNullish(options)) { JS.undefined() } else { options.method };
+    JsValue signal = if (JS.isNullish(aborter)) { JS.undefined() } else { aborter.signal };
+    JsValue fetchOptions = copyProperties(object {
+      method: method || "GET", headers: headers, referrerPolicy: "strict-origin", body: body, signal: signal
+    }, options.fetchOptions);
+    JsValue size = estimatedSize;
+    if (JS.isNullish(size)) size = if (JS.isUndefined(body)) { 0.0 } else { JS.undefined() };
+    fetchOptions.keepalive = fetchOptions.method === "POST" && !options._keepaliveDisabled.truthy()
+      && fetchOptions.keepalive !== false && fetchOptions.body === body
+      && !JS.isUndefined(size) && size >= 0.0 && pendingKeepaliveBytes + size < 52428.8;
+    if (fetchOptions.keepalive.truthy()) {
+      reservedBytes = size;
+      pendingKeepaliveBytes += reservedBytes;
+    }
+    fetch(url, fetchOptions).then((JsValue response) => {
+      return response.text().then((JsValue text) => {
+        if (settled) return JS.undefined();
+        JsValue result = object { statusCode: response.status, text: text };
+        if (response.status === 200.0) {
+          try { result.json = JSON.parse(text); } catch (JsValue error) { logger.error(error); }
+        }
+        settled = true;
+        cleanup();
+        JsValue callback = options.callback;
+        if (!JS.isNullish(callback)) callback.call(options, result, readRetryAfter(() => response.headers.get("Retry-After")));
+        return JS.undefined();
+      });
+    }).catch((JsValue error) => {
+      cleanup();
+      handleError(error);
+      return JS.undefined();
+    }).finally(cleanup);
+  } catch (JsValue error) {
+    cleanup();
+    handleError(error);
+  }
+}
+
+JsValue addSentAtToBody(JsValue data) {
+  JsValue sentAt = JS.construct(Date).toISOString();
+  if (!isArray(data).truthy()) return setOwn(copyProperties(JS.object(), data), "sent_at", sentAt);
+  return data.map((JsValue item) => setOwn(copyProperties(JS.object(), item), "sent_at", sentAt));
+}
+
+void sendBeacon(JsValue options) {
+  try {
+    JsValue encoded = encodePostDataSafely(options);
+    JsValue url = encoded.url;
+    JsValue encodedBody = encoded.encodedBody;
+    if (JS.isNullish(encodedBody)) encodedBody = JS.object();
+    JsValue contentType = encodedBody.contentType;
+    JsValue body = encodedBody.body;
+    JsValue estimatedSize = encodedBody.estimatedSize;
+    if (!body.truthy()) return;
+    JsValue beaconBody = if (body instanceof Blob) { body } else { JS.construct(Blob, JS.array(body), object { type: contentType }) };
+    if (navigator.sendBeacon(url, beaconBody).truthy()) return;
+    JsValue batch = options.data;
+    if (!isArray(batch).truthy()) batch = if (JS.isNullish(batch)) { JS.undefined() } else { batch.batch };
+    JsValue size = if (JS.isNullish(estimatedSize)) { 0.0 } else { estimatedSize };
+    if (isArray(batch).truthy() && batch.length > 1.0 && size > 16384.0) {
+      JsValue mid = Math.ceil(batch.length / 2.0);
+      JsValue splitData = (JsValue events) => {
+        if (isArray(options.data).truthy()) return events;
+        return setOwn(copyProperties(JS.object(), options.data), "batch", events);
+      };
+      sendBeacon(setOwn(copyProperties(JS.object(), options), "data", splitData(batch.slice(0.0, mid))));
+      sendBeacon(setOwn(copyProperties(JS.object(), options), "data", splitData(batch.slice(mid))));
+      return;
+    }
+    string fallback = if (fetch.truthy()) { "fetch" } else { "XHR" };
+    logger.warn(`Beacon of ~${size} bytes was rejected by the browser, falling back to ${fallback}`);
+    if (fetch.truthy()) fetchRequest(setOwn(copyProperties(JS.object(), options), "_keepaliveDisabled", true));
+    else xhr(options);
+  } catch (JsValue error) { logger.warn("Beacon send failed", error); }
+}
+
+JsValue buildRequestURL(JsValue url, JsValue method, JsValue compression, JsValue timestampMode) {
+  JsValue timestamp = JS.undefined();
+  if (timestampMode === "query") timestamp = if (method === "POST") { "sent_at" } else { "_" };
+  JsValue base = if (compression === Compression.GZipJS) { removeURLParam(url, "compression") } else { url };
+  JsValue params = JS.object();
+  if (timestamp.truthy()) setOwn(params, JS.string(timestamp), Date.now().toString());
+  if (compression !== Compression.GZipJS) setOwn(params, "compression", compression);
+  return extendURLParams(base, params, true);
+}
+
+JsValue addSentAtToCaptureBody(JsValue data) {
+  JsValue events = if (isArray(data).truthy()) { data } else { JS.array(data) };
+  JsValue batch = events.map((JsValue event) => {
+    JsValue copy = copyProperties(JS.object(), event);
+    if (event.timestamp instanceof Date && !isNaN(event.timestamp.getTime()).truthy()) setOwn(copy, "timestamp", event.timestamp.toISOString());
+    return copy;
+  });
+  JsValue first = batch[0];
+  JsValue props = if (JS.isNullish(first)) { JS.undefined() } else { first.properties };
+  JsValue token = if (JS.isNullish(props)) { JS.undefined() } else { props.token };
+  if (JS.isNullish(token)) token = if (JS.isNullish(first)) { JS.undefined() } else { first.token };
+  return object { api_key: token, batch: batch, sent_at: JS.construct(Date).toISOString() };
+}
+
+JsValue makeTransports() {
+  JsValue transports = JS.array();
+  if (fetch.truthy()) transports.push(object { transport: "fetch", method: fetchRequest });
+  if (XMLHttpRequest.truthy()) transports.push(object { transport: "XHR", method: xhr });
+  JsValue beacon = if (JS.isNullish(navigator)) { JS.undefined() } else { navigator.sendBeacon };
+  if (beacon.truthy()) transports.push(object { transport: "sendBeacon", method: sendBeacon });
+  return transports;
+}
+JsValue availableTransports = makeTransports();
+
+export void request(JsValue original, JsValue onResponse) {
+  JsValue options = copyProperties(JS.object(), original);
+  JsValue responseCallback = onResponse;
+  if (JS.isNullish(responseCallback)) responseCallback = (JsValue response) => {
+    JsValue callback = original.callback;
+    if (!JS.isNullish(callback)) return callback.call(original, response);
+    return JS.undefined();
+  };
+  setOwn(options, "callback", responseCallback);
+  options.timeout = options.timeout || 60000.0;
+  JsValue transport = options.transport;
+  if (JS.isNullish(transport)) transport = "fetch";
+  if (transport === "sendBeacon" && JS.isUndefined(options.compression) && options.data.truthy()) options.compression = Compression.Base64;
+  if (options.method === "POST" && options.data.truthy()) {
+    if (options.timestampMode === "capture-body") options.data = addSentAtToCaptureBody(options.data);
+    else if (options.timestampMode === "body") options.data = addSentAtToBody(options.data);
+  }
+  options.url = buildRequestURL(options.url, options.method, options.compression, options.timestampMode);
+  JsValue available = availableTransports.filter((JsValue candidate) => {
+    return !options.disableTransport.truthy() || !candidate.transport.truthy() || !options.disableTransport.includes(candidate.transport).truthy();
+  });
+  JsValue found = find(available, (JsValue candidate) => candidate.transport === transport);
+  JsValue transportMethod = if (JS.isNullish(found)) { JS.undefined() } else { found.method };
+  if (JS.isNullish(transportMethod)) transportMethod = available[0].method;
+  if (!transportMethod.truthy()) throw JS.construct(Error, "No available transport method");
+  JsValue safeTransport = (JsValue opts) => {
+    try { transportMethod(opts); }
+    catch (JsValue error) {
+      if (isExpectedNetworkError(error)) logger.warn(error);
+      else logger.error(error);
+      JsValue callback = options.callback;
+      if (!JS.isNullish(callback)) callback.call(options, object { statusCode: 0.0, error: error });
+    }
+    return JS.undefined();
+  };
+  if (transport !== "sendBeacon" && !options.preferSyncCompression.truthy() && options.data.truthy()
+    && options.compression === Compression.GZipJS && CompressionStream.truthy()
+    && JS.typeOf(Promise) != "undefined" && !nativeAsyncGzipDisabled) {
+    (preEncodeAsync(options) as JsValue).then((JsValue encoded) => {
+      safeTransport(encoded);
+      return JS.undefined();
+    }).catch((JsValue error) => {
+      if (isNativeAsyncGzipReadError(error).truthy()) {
+        nativeAsyncGzipDisabled = true;
+        JsValue fallback = copyProperties(JS.object(), options);
+        setOwn(fallback, "compression", JS.undefined());
+        setOwn(fallback, "url", buildRequestURL(original.url, original.method, JS.undefined(), original.timestampMode));
+        safeTransport(fallback);
+        return JS.undefined();
+      }
+      if (isNativeAsyncGzipError(error).truthy()) nativeAsyncGzipDisabled = true;
+      safeTransport(options);
+      return JS.undefined();
+    });
+  } else { safeTransport(options); }
+}

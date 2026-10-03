@@ -1,0 +1,381 @@
+import extern { extend } from "../../vendor/posthog-js/packages/browser-common/src/utils/general-utils.ts";
+import extern { DEVICE_ID, DISTINCT_ID, ENABLED_FEATURE_FLAGS, ENABLE_PERSON_PROCESSING, FLAG_CALL_REPORTED, GROUPS, INITIAL_PERSON_INFO, PERSISTENCE_FACEBOOK_CLICK_ID, PERSISTENCE_ACTIVE_FEATURE_FLAGS, PERSISTENCE_FEATURE_FLAG_DETAILS, PERSISTENCE_FEATURE_FLAG_ERRORS, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, PERSISTENCE_FEATURE_FLAG_PAYLOADS, PERSISTENCE_FEATURE_FLAG_REQUEST_ID, SESSION_ID, SESSION_RECORDING_IS_SAMPLED, STORED_GROUP_PROPERTIES_KEY, STORED_PERSON_PROPERTIES_KEY, USER_STATE, USER_STATE_ANONYMOUS, USER_STATE_IDENTIFIED } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { isArray, isObject } from "../../vendor/posthog-js/packages/core/src/index.ts";
+import extern { logger } from "../../vendor/posthog-js/packages/browser-common/src/utils/logger.ts";
+import extern { window, document } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { getCookieValue } from "../../vendor/posthog-js/packages/browser-common/src/utils/cookie-utils.ts";
+import extern { uuidv7 } from "../../vendor/posthog-js/packages/browser-common/src/utils/uuidv7.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue extend;
+extern JsValue DEVICE_ID;
+extern JsValue DISTINCT_ID;
+extern JsValue ENABLED_FEATURE_FLAGS;
+extern JsValue ENABLE_PERSON_PROCESSING;
+extern JsValue FLAG_CALL_REPORTED;
+extern JsValue GROUPS;
+extern JsValue INITIAL_PERSON_INFO;
+extern JsValue PERSISTENCE_FACEBOOK_CLICK_ID;
+extern JsValue PERSISTENCE_ACTIVE_FEATURE_FLAGS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_DETAILS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_ERRORS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_EVALUATED_AT;
+extern JsValue PERSISTENCE_FEATURE_FLAG_PAYLOADS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_REQUEST_ID;
+extern JsValue SESSION_ID;
+extern JsValue SESSION_RECORDING_IS_SAMPLED;
+extern JsValue STORED_GROUP_PROPERTIES_KEY;
+extern JsValue STORED_PERSON_PROPERTIES_KEY;
+extern JsValue USER_STATE;
+extern JsValue USER_STATE_ANONYMOUS;
+extern JsValue USER_STATE_IDENTIFIED;
+extern JsValue isArray;
+extern JsValue isObject;
+extern JsValue logger;
+extern JsValue window;
+extern JsValue document;
+extern JsValue getCookieValue;
+extern JsValue uuidv7;
+extern JsValue Object;
+extern JsValue RegExp;
+extern JsValue Math;
+extern JsValue Date;
+extern JsValue JSON;
+extern JsValue encodeURIComponent;
+
+JsValue firstNonPublicSubDomain = "";
+export void resetSubDomainCache() { firstNonPublicSubDomain = ""; }
+
+export JsValue seekFirstNonPublicSubDomain(JsValue hostname, JsValue cookieJar = document) {
+  if (firstNonPublicSubDomain.truthy()) return firstNonPublicSubDomain;
+  if (!cookieJar.truthy()) return "";
+  if (JS.array("localhost", "127.0.0.1").includes(hostname).truthy()) return "";
+  JsValue list = hostname.split(".");
+  number length = JS.assume(Math.min(list.length, 8.0));
+  JsValue key = "dmn_chk_" + uuidv7();
+  while (!firstNonPublicSubDomain.truthy() && length > 0.0) {
+    length -= 1.0;
+    JsValue candidate = list.slice(length).join(".");
+    JsValue cookie = key + "=1;domain=." + candidate + ";path=/";
+    cookieJar.cookie = cookie + ";max-age=3";
+    if (cookieJar.cookie.includes(key).truthy()) {
+      cookieJar.cookie = cookie + ";max-age=0";
+      firstNonPublicSubDomain = candidate;
+    }
+  }
+  return firstNonPublicSubDomain;
+}
+
+JsValue domainMatchRegex = JS.construct(RegExp, "[a-z0-9][a-z0-9-]+\\.[a-z]{2,}$", "i");
+export JsValue chooseCookieDomain(JsValue hostname, JsValue crossSubdomain) {
+  if (!crossSubdomain.truthy()) return "";
+  JsValue matched = seekFirstNonPublicSubDomain(hostname);
+  if (!matched.truthy()) {
+    JsValue matches = hostname.match(domainMatchRegex);
+    JsValue original = if (matches.truthy()) { matches[0.0] } else { "" };
+    if (original !== matched) logger.info("Warning: cookie subdomain discovery mismatch", original, matched);
+    matched = original;
+  }
+  return if (matched.truthy()) { "; domain=." + matched } else { "" };
+}
+
+JsValue cookieStorageSupported = null;
+export void resetCookieStorageSupported() { cookieStorageSupported = null; }
+
+export JsValue cookieStore = object {
+  _is_supported: (this JsValue receiver) => {
+    if (cookieStorageSupported !== null) return cookieStorageSupported;
+    cookieStorageSupported = false;
+    if (document.truthy()) {
+      try {
+        JsValue key = `__ph_cookie_support_${uuidv7()}`;
+        cookieStore._set(key, "xyz");
+        cookieStorageSupported = getCookieValue(key) === "\"xyz\"";
+        cookieStore._remove(key);
+      } catch { cookieStorageSupported = false; }
+    }
+    return cookieStorageSupported;
+  },
+  _error: (this JsValue receiver, JsValue message) => { logger.error("cookieStore error: " + message); return JS.undefined(); },
+  _get: getCookieValue,
+  _parse: (this JsValue receiver, JsValue name) => {
+    JsValue cookie = JS.undefined();
+    try { cookie = JSON.parse(cookieStore._get(name)) || JS.object(); } catch {}
+    return cookie;
+  },
+  _set: (this JsValue receiver, JsValue name, JsValue value, JsValue days, JsValue crossSubdomain, JsValue secureCookie) => {
+    if (!document.truthy()) return false;
+    try {
+      JsValue expires = "";
+      JsValue secure = "";
+      JsValue domain = chooseCookieDomain(document.location.hostname, crossSubdomain);
+      if (days.truthy()) {
+        JsValue date = JS.construct(Date);
+        date.setTime(date.getTime() + days * 24.0 * 60.0 * 60.0 * 1000.0);
+        expires = "; expires=" + date.toUTCString();
+      }
+      if (secureCookie.truthy()) secure = "; secure";
+      JsValue cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + expires + "; SameSite=Lax; path=/" + domain + secure;
+      if (cookie.length > 3686.4) logger.warn("cookieStore warning: large cookie, len=" + cookie.length);
+      document.cookie = cookie;
+      return true;
+    } catch { return false; }
+  },
+  _remove: (this JsValue receiver, JsValue name, JsValue crossSubdomain) => {
+    JsValue cookies = if (JS.isNullish(document)) { JS.undefined() } else { document.cookie };
+    if (!cookies.truthy()) return JS.undefined();
+    if (crossSubdomain.truthy() && getCookieValue(name) === null) return JS.undefined();
+    try { cookieStore._set(name, "", -1.0, crossSubdomain); } catch {}
+    return JS.undefined();
+  }
+};
+
+JsValue localStorageSupported = null;
+export void resetLocalStorageSupported() { localStorageSupported = null; }
+export JsValue localStore = object {
+  _is_supported: (this JsValue receiver) => {
+    if (localStorageSupported !== null) return localStorageSupported;
+    bool supported = true;
+    if (!JS.isUndefined(window)) {
+      try {
+        localStore._set("__mplssupport__", "xyz");
+        if (localStore._get("__mplssupport__") !== "\"xyz\"") supported = false;
+        localStore._remove("__mplssupport__");
+      } catch { supported = false; }
+    } else { supported = false; }
+    if (!supported) logger.error("localStorage unsupported; falling back to cookie store");
+    localStorageSupported = supported;
+    return supported;
+  },
+  _error: (this JsValue receiver, JsValue message) => { logger.error("localStorage error: " + message); return JS.undefined(); },
+  _get: (this JsValue receiver, JsValue name) => {
+    try { return if (JS.isNullish(window)) { JS.undefined() } else { window.localStorage.getItem(name) }; }
+    catch (JsValue error) { localStore._error(error); }
+    return null;
+  },
+  _parse: (this JsValue receiver, JsValue name) => {
+    try { return JSON.parse(localStore._get(name)) || JS.object(); } catch {}
+    return null;
+  },
+  _set: (this JsValue receiver, JsValue name, JsValue value) => {
+    try {
+      if (!JS.isNullish(window)) window.localStorage.setItem(name, JSON.stringify(value));
+      return true;
+    } catch (JsValue error) { localStore._error(error); }
+    return false;
+  },
+  _remove: (this JsValue receiver, JsValue name) => {
+    try { if (!JS.isNullish(window)) window.localStorage.removeItem(name); }
+    catch (JsValue error) { localStore._error(error); }
+    return JS.undefined();
+  }
+};
+
+export JsValue COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES = JS.array(STORED_PERSON_PROPERTIES_KEY, PERSISTENCE_ACTIVE_FEATURE_FLAGS, ENABLED_FEATURE_FLAGS, PERSISTENCE_FEATURE_FLAG_DETAILS, PERSISTENCE_FEATURE_FLAG_PAYLOADS, PERSISTENCE_FEATURE_FLAG_REQUEST_ID, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, PERSISTENCE_FEATURE_FLAG_ERRORS, FLAG_CALL_REPORTED);
+export JsValue COOKIE_PERSISTED_PROPERTIES = JS.array(DEVICE_ID, DISTINCT_ID, SESSION_ID, SESSION_RECORDING_IS_SAMPLED, ENABLE_PERSON_PROCESSING, INITIAL_PERSON_INFO, PERSISTENCE_FACEBOOK_CLICK_ID, USER_STATE);
+export JsValue getCookiePersistedPropertiesMetadataName(JsValue name) { return name + "_cpm"; }
+
+export JsValue getSafeCookieProperties(JsValue value) {
+  if (!isObject(value).truthy()) return JS.object();
+  JsValue safe = JS.object();
+  Object.keys(value).forEach((JsValue key) => {
+    if (JS.array("__proto__", "constructor", "prototype").indexOf(key) === -1.0) safe[key] = value[key];
+    return JS.undefined();
+  });
+  return safe;
+}
+
+JsValue concatProperties(JsValue first, JsValue second) {
+  JsValue[] left = JS.assume(first);
+  JsValue[] right = JS.assume(second);
+  return [...left, ...right];
+}
+
+export JsValue getCookiePersistedProperties(JsValue value, JsValue custom = JS.array()) {
+  JsValue result = JS.object();
+  concatProperties(COOKIE_PERSISTED_PROPERTIES, custom).forEach((JsValue key) => {
+    JsValue item = value[key];
+    if (!JS.isUndefined(item) && item !== null && item !== "") result[key] = item;
+    return JS.undefined();
+  });
+  return result;
+}
+
+string snapshotFingerprint(string value) {
+  int first = 5381;
+  int second = -2128831035;
+  for (int i = 0; i < value.length; i += 1) {
+    int code = value.charCodeAt(i);
+    first = first * 33 ^ code;
+    second = (second ^ code) * 16777619;
+  }
+  number firstNumber = first;
+  number secondNumber = second;
+  number unsignedFirst = if (first < 0) { firstNumber + 4294967296.0 } else { firstNumber };
+  number unsignedSecond = if (second < 0) { secondNumber + 4294967296.0 } else { secondNumber };
+  JsValue length = value.length;
+  JsValue one = unsignedFirst;
+  JsValue two = unsignedSecond;
+  return JS.assume(length.toString(36.0) + "." + one.toString(36.0) + "." + two.toString(36.0));
+}
+
+export JsValue getCookiePersistedPropertiesMetadata(JsValue properties, JsValue custom) {
+  string serialized = JS.assume(JSON.stringify(properties));
+  return object { p: custom, f: snapshotFingerprint(serialized) };
+}
+
+export JsValue getCookiePersistedPropertiesMetadataState(JsValue name, JsValue cookieValue) {
+  if (!cookieValue.truthy()) return object { properties: JS.array(), isValid: false };
+  try {
+    JsValue metadata = cookieStore._parse(getCookiePersistedPropertiesMetadataName(name));
+    JsValue fingerprint = if (JS.isNullish(metadata)) { JS.undefined() } else { metadata.f };
+    string value = JS.assume(cookieValue);
+    JsValue valid = fingerprint === snapshotFingerprint(value) && isArray(metadata.p);
+    return object { properties: if (valid.truthy()) { metadata.p } else { JS.array() }, isValid: valid };
+  } catch { return object { properties: JS.array(), isValid: false }; }
+}
+
+export JsValue getCookiePersistedPropertiesFromMetadata(JsValue name, JsValue value) {
+  return getCookiePersistedPropertiesMetadataState(name, value).properties;
+}
+
+export JsValue getCookiePropertiesFingerprint(JsValue name, JsValue value) {
+  return value + "|" + (cookieStore._get(getCookiePersistedPropertiesMetadataName(name)) || "");
+}
+
+export JsValue createLocalPlusCookieStore(JsValue custom = JS.array(), JsValue preferCookie = false, JsValue readOnly = () => false) {
+  JsValue persisted = concatProperties(COOKIE_PERSISTED_PROPERTIES, custom);
+  JsValue store = copyProperties(JS.object(), localStore);
+  setOwn(store, "_parse", (this JsValue receiver, JsValue name) => {
+    try {
+      JsValue cookieValue = JS.undefined();
+      JsValue cookieProperties = JS.object();
+      try {
+        cookieValue = cookieStore._get(name) || JS.undefined();
+        cookieProperties = if (cookieValue.truthy()) { getSafeCookieProperties(JSON.parse(cookieValue)) } else { JS.object() };
+      } catch {}
+      JsValue local = JSON.parse(localStore._get(name) || "{}");
+      JsValue value = JS.undefined();
+      if (preferCookie.truthy()) {
+        JsValue state = getCookiePersistedPropertiesMetadataState(name, cookieValue);
+        JsValue authoritative = concatProperties(COOKIE_PERSISTED_PROPERTIES, state.properties);
+        JsValue safe = JS.object();
+        Object.keys(cookieProperties).forEach((JsValue key) => {
+          JsValue item = cookieProperties[key];
+          if (item !== null && item !== "" && (key !== USER_STATE || item === USER_STATE_ANONYMOUS || item === USER_STATE_IDENTIFIED)) safe[key] = item;
+          return JS.undefined();
+        });
+        bool hasIdentity = JS.in(DISTINCT_ID, safe) || safe[USER_STATE] === USER_STATE_ANONYMOUS || safe[USER_STATE] === USER_STATE_IDENTIFIED;
+        if (Object.keys(safe).length > 0.0) {
+          JsValue previousId = local[DISTINCT_ID];
+          JsValue previousState = local[USER_STATE];
+          if (JS.isNullish(previousState)) previousState = USER_STATE_ANONYMOUS;
+          persisted.forEach((JsValue key) => {
+            if (authoritative.indexOf(key) !== -1.0 && !JS.in(key, cookieProperties) && (hasIdentity || (key !== DISTINCT_ID && key !== USER_STATE))) {
+              JsValue old = local[key];
+              bool legacyFalsy = !state.isValid.truthy() && COOKIE_PERSISTED_PROPERTIES.indexOf(key) !== -1.0 && (old === false || old === 0.0);
+              if (!legacyFalsy) JS.delete(local, key);
+            }
+            return JS.undefined();
+          });
+          if (hasIdentity && !JS.in(USER_STATE, cookieProperties) && !JS.in(USER_STATE, local)) local[USER_STATE] = USER_STATE_ANONYMOUS;
+          JsValue nextId = if (JS.in(DISTINCT_ID, safe)) { safe[DISTINCT_ID] } else { local[DISTINCT_ID] };
+          JsValue nextState = if (JS.in(USER_STATE, safe)) { safe[USER_STATE] } else { local[USER_STATE] };
+          if (hasIdentity && (nextId !== previousId || nextState !== previousState)) {
+            COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES.forEach((JsValue key) => JS.delete(local, key));
+            if (safe[USER_STATE] === USER_STATE_IDENTIFIED && JS.in(DISTINCT_ID, safe)) local.$user_id = safe[DISTINCT_ID];
+            else JS.delete(local, "$user_id");
+            if (safe[USER_STATE] !== USER_STATE_IDENTIFIED) {
+              JS.delete(local, GROUPS);
+              JS.delete(local, STORED_GROUP_PROPERTIES_KEY);
+            }
+            JS.delete(local, "__alias");
+          }
+        }
+        value = extend(local, safe);
+      } else { value = extend(cookieProperties, local); }
+      if (!readOnly().truthy()) localStore._set(name, value);
+      return value;
+    } catch {}
+    return null;
+  });
+  setOwn(store, "_set", (this JsValue receiver, JsValue name, JsValue value, JsValue days, JsValue crossSubdomain, JsValue secureCookie, JsValue debug) => {
+    JsValue stored = localStore._set(name, value, JS.undefined(), JS.undefined(), debug);
+    try {
+      JsValue properties = getCookiePersistedProperties(value, custom);
+      if (Object.keys(properties)["length"].truthy()) {
+        if (preferCookie.truthy()) {
+          JsValue metadataName = getCookiePersistedPropertiesMetadataName(name);
+          JsValue metadata = getCookiePersistedPropertiesMetadata(properties, custom);
+          cookieStore._set(metadataName, metadata, days, crossSubdomain, secureCookie, debug);
+          if (cookieStore._get(metadataName) !== JSON.stringify(metadata)) {
+            cookieStore._remove(metadataName, crossSubdomain);
+            cookieStore._set(name, getCookiePersistedProperties(value), days, crossSubdomain, secureCookie, debug);
+            return stored;
+          }
+        }
+        cookieStore._set(name, properties, days, crossSubdomain, secureCookie, debug);
+      }
+    } catch (JsValue error) { localStore._error(error); }
+    return stored;
+  });
+  setOwn(store, "_remove", (this JsValue receiver, JsValue name, JsValue crossSubdomain) => {
+    try {
+      if (!JS.isNullish(window)) window.localStorage.removeItem(name);
+      cookieStore._remove(name, crossSubdomain);
+      cookieStore._remove(getCookiePersistedPropertiesMetadataName(name), crossSubdomain);
+    } catch (JsValue error) { localStore._error(error); }
+    return JS.undefined();
+  });
+  return store;
+}
+
+JsValue memoryStorage = JS.object();
+export JsValue memoryStore = object {
+  _is_supported: (this JsValue receiver) => true,
+  _error: (this JsValue receiver, JsValue message) => { logger.error("memoryStorage error: " + message); return JS.undefined(); },
+  _get: (this JsValue receiver, JsValue name) => if (JS.in(name, memoryStorage)) { memoryStorage[name] } else { null },
+  _parse: (this JsValue receiver, JsValue name) => if (JS.in(name, memoryStorage)) { memoryStorage[name] } else { null },
+  _set: (this JsValue receiver, JsValue name, JsValue value) => { memoryStorage[name] = value; return true; },
+  _remove: (this JsValue receiver, JsValue name) => { JS.delete(memoryStorage, name); return JS.undefined(); }
+};
+
+JsValue sessionStorageSupported = null;
+export void resetSessionStorageSupported() { sessionStorageSupported = null; }
+export JsValue sessionStore = object {
+  _is_supported: (this JsValue receiver) => {
+    if (sessionStorageSupported !== null) return sessionStorageSupported;
+    sessionStorageSupported = true;
+    if (!JS.isUndefined(window)) {
+      try {
+        sessionStore._set("__support__", "xyz");
+        if (sessionStore._get("__support__") !== "\"xyz\"") sessionStorageSupported = false;
+        sessionStore._remove("__support__");
+      } catch { sessionStorageSupported = false; }
+    } else { sessionStorageSupported = false; }
+    return sessionStorageSupported;
+  },
+  _error: (this JsValue receiver, JsValue message) => { logger.error("sessionStorage error: ", message); return JS.undefined(); },
+  _get: (this JsValue receiver, JsValue name) => {
+    try { return if (JS.isNullish(window)) { JS.undefined() } else { window.sessionStorage.getItem(name) }; }
+    catch (JsValue error) { sessionStore._error(error); }
+    return null;
+  },
+  _parse: (this JsValue receiver, JsValue name) => {
+    try { return JSON.parse(sessionStore._get(name)) || null; } catch {}
+    return null;
+  },
+  _set: (this JsValue receiver, JsValue name, JsValue value) => {
+    try {
+      if (!JS.isNullish(window)) window.sessionStorage.setItem(name, JSON.stringify(value));
+      return true;
+    } catch (JsValue error) { sessionStore._error(error); }
+    return false;
+  },
+  _remove: (this JsValue receiver, JsValue name) => {
+    try { if (!JS.isNullish(window)) window.sessionStorage.removeItem(name); }
+    catch (JsValue error) { sessionStore._error(error); }
+    return JS.undefined();
+  }
+};

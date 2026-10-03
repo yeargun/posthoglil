@@ -1,0 +1,153 @@
+import extern { hasOwnProperty, isArray, isError, isFormData, isNullish, isNumber, isString, trySafe } from "../../vendor/posthog-js/packages/core/src/index.ts";
+import extern { logger } from "../../vendor/posthog-js/packages/browser-common/src/utils/logger.ts";
+import extern {copyProperties} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue hasOwnProperty;
+extern JsValue isArray;
+extern JsValue isError;
+extern JsValue isFormData;
+extern JsValue isNullish;
+extern JsValue isNumber;
+extern JsValue isString;
+extern JsValue trySafe;
+extern JsValue logger;
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue Set;
+export { trySafe };
+
+export JsValue find(JsValue value, JsValue predicate) {
+  for (number i = 0.0; i < value.length; i += 1.0) {
+    if (predicate(value[i]).truthy()) return value[i];
+  }
+  return JS.undefined();
+}
+
+export void eachArray(JsValue obj, JsValue iterator) {
+  if (isArray(obj).truthy()) obj.forEach(iterator);
+}
+
+export void each(JsValue obj, JsValue iterator) {
+  if (isNullish(obj).truthy()) return;
+  if (isArray(obj).truthy()) { obj.forEach(iterator); return; }
+  if (isFormData(obj).truthy()) {
+    obj.forEach((JsValue value, JsValue key) => iterator(value, key));
+    return;
+  }
+  for (string key in obj) {
+    if (hasOwnProperty.call(obj, key).truthy()) iterator(obj[key], key);
+  }
+}
+
+export JsValue extend(JsValue obj, JsValue... args) {
+  for (JsValue source of args) {
+    for (string prop in source) {
+      if (!JS.isUndefined(source[prop])) obj[prop] = source[prop];
+    }
+  }
+  return obj;
+}
+
+export JsValue entries(JsValue obj) {
+  JsValue keys = Object.keys(obj);
+  number i = keys.length;
+  JsValue result = JS.construct(Array, i);
+  while (i > 0.0) {
+    i -= 1.0;
+    result[i] = JS.array(keys[i], obj[keys[i]]);
+  }
+  return result;
+}
+
+export JsValue safewrap(JsValue f) {
+  return (this JsValue receiver, JsValue... args) => {
+    try { return f.apply(receiver, args); }
+    catch (JsValue error) {
+      logger.critical("Implementation error. Please turn on debug mode and open a ticket on https://app.posthog.com/home#panel=support%3Asupport%3A.");
+      logger.critical(error);
+      return JS.undefined();
+    }
+  };
+}
+
+export void safewrapClass(JsValue klass, JsValue functions) {
+  for (number i = 0.0; i < functions.length; i += 1.0) {
+    klass.prototype[functions[i]] = safewrap(klass.prototype[functions[i]]);
+  }
+}
+
+export JsValue stripEmptyProperties(JsValue properties) {
+  JsValue result = JS.object();
+  each(properties, (JsValue value, JsValue key) => {
+    if ((isString(value).truthy() && value.length > 0.0) || isNumber(value).truthy()) result[key] = value;
+    return JS.undefined();
+  });
+  return result;
+}
+
+export JsValue errorToProperties(JsValue error) {
+  JsValue copy = copyProperties(JS.object(), error);
+  for (string key of ["name", "message", "stack", "cause", "errors"]) {
+    try { if (JS.in(key, error)) copy[key] = error[key]; } catch {}
+  }
+  return copy;
+}
+
+JsValue circularCopy(JsValue value, JsValue key, JsValue seen, JsValue customizer) {
+  if (value !== Object(value)) return if (customizer.truthy()) { customizer(value, key) } else { value };
+  if (seen.has(value).truthy()) return JS.undefined();
+  seen.add(value);
+  if (isArray(value).truthy()) {
+    JsValue result = JS.array();
+    eachArray(value, (JsValue item) => {
+      result.push(circularCopy(item, JS.undefined(), seen, customizer));
+      return JS.undefined();
+    });
+    return result;
+  }
+  JsValue copy = JS.object();
+  each(if (isError(value).truthy()) { errorToProperties(value) } else { value }, (JsValue item, JsValue itemKey) => {
+    if (!seen.has(item).truthy()) copy[itemKey] = circularCopy(item, itemKey, seen, customizer);
+    return JS.undefined();
+  });
+  return copy;
+}
+
+export JsValue _copyAndTruncateStrings(JsValue value, JsValue maxStringLength) {
+  return circularCopy(value, JS.undefined(), JS.construct(Set), (JsValue item) => {
+    if (isString(item).truthy()) return item.slice(0.0, maxStringLength);
+    return item;
+  });
+}
+
+export bool isCrossDomainCookie(JsValue documentLocation) {
+  JsValue hostname = if (JS.isNullish(documentLocation)) { JS.undefined() } else { documentLocation.hostname };
+  if (!isString(hostname).truthy()) return false;
+  JsValue suffix = hostname.split(".").slice(-2.0).join(".");
+  for (string excluded of ["herokuapp.com", "vercel.app", "netlify.app"]) {
+    if (suffix === excluded) return false;
+  }
+  return true;
+}
+
+export void addEventListener(JsValue element, JsValue event, JsValue callback, JsValue options) {
+  JsValue source = if (JS.isNullish(options)) { JS.object() } else { options };
+  JsValue capture = source.capture;
+  if (JS.isUndefined(capture)) capture = false;
+  JsValue passive = source.passive;
+  if (JS.isUndefined(passive)) passive = true;
+  if (!JS.isNullish(element)) element.addEventListener(event, callback, object { capture: capture, passive: passive });
+}
+
+export JsValue migrateConfigField(JsValue config, JsValue newField, JsValue oldField, JsValue defaultValue, JsValue instance) {
+  bool hasNew = JS.in(newField, config) && !isNullish(config[newField]).truthy();
+  bool hasOld = JS.in(oldField, config) && !isNullish(config[oldField]).truthy();
+  if (hasNew) return config[newField];
+  if (hasOld) {
+    if (instance.truthy()) instance.warn(`Config field '${oldField}' is deprecated. Please use '${newField}' instead. The old field will be removed in a future major version.`);
+    return config[oldField];
+  }
+  return defaultValue;
+}
+
+export bool isToolbarInstance(JsValue config) { return config.name === "ph_toolbar_internal"; }

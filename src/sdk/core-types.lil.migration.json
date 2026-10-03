@@ -1,0 +1,28 @@
+{
+  "source": "packages/core/src/types.ts",
+  "implementation": "src/sdk/core-types.lil",
+  "exports": [
+    "PostHogPersistedProperty",
+    "Compression",
+    "FeatureFlagError",
+    "SurveyPosition",
+    "SurveyWidgetType",
+    "SurveyType",
+    "SurveyQuestionDescriptionContentType",
+    "SurveyValidationType",
+    "SurveyRatingDisplay",
+    "SurveyQuestionType",
+    "SurveyQuestionBranchingType",
+    "SurveyMatchType",
+    "SurveySchedule",
+    "ActionStepStringMatching",
+    "knownUnsafeEditableEvent",
+    "knownUnsafeEditableEventProperty"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [],
+  "asyncClosures": [],
+  "qualified": false
+}

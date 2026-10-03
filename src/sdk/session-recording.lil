@@ -1,0 +1,335 @@
+// Whole-module migration from packages/browser/src/extensions/replay/session-recording.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { COOKIELESS_ALWAYS as COOKIELESS_ALWAYS, SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED as SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED, SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS as SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS, SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS as SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS, SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS as SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS, SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS as SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS, SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG as SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG, SDK_DEBUG_REPLAY_STALE_CONFIG as SDK_DEBUG_REPLAY_STALE_CONFIG, SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT as SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT, SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS as SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS, RECORDING_REMOTE_CONFIG_TTL_MS as RECORDING_REMOTE_CONFIG_TTL_MS, SESSION_RECORDING_IS_SAMPLED as SESSION_RECORDING_IS_SAMPLED, SESSION_RECORDING_SAMPLE_RATE as SESSION_RECORDING_SAMPLE_RATE, SESSION_RECORDING_OVERRIDE_SAMPLING as SESSION_RECORDING_OVERRIDE_SAMPLING, SESSION_RECORDING_OVERRIDE_LINKED_FLAG as SESSION_RECORDING_OVERRIDE_LINKED_FLAG, SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER as SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER, SESSION_RECORDING_OVERRIDE_URL_TRIGGER as SESSION_RECORDING_OVERRIDE_URL_TRIGGER, SESSION_RECORDING_REMOTE_CONFIG as SESSION_RECORDING_REMOTE_CONFIG } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { RemoteConfigLoader as RemoteConfigLoader } from "../../vendor/posthog-js/packages/browser/src/remote-config.ts";
+import extern { isNullish as isNullish, isNumber as isNumber, isUndefined as isUndefined, isValidSampleRate as isValidSampleRate } from "@posthog/core";
+import extern { createLogger as createLogger } from "@posthog/browser-common/utils/logger";
+import extern { document as document, window as window } from "@posthog/browser-common/utils/globals";
+import extern { addEventListener as addEventListener } from "@posthog/browser-common/utils/general-utils";
+import extern { assignableWindow as assignableWindow } from "../../vendor/posthog-js/packages/browser/src/utils/globals.ts";
+import extern { AWAITING_CONFIG as AWAITING_CONFIG, DISABLED as DISABLED, LAZY_LOADING as LAZY_LOADING, MISSING_CONFIG as MISSING_CONFIG } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/triggerMatching.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue Error;
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue __lil_object_4;
+extern JsValue parseFloat;
+extern JsValue Date;
+extern JsValue __lil_object_7;
+extern JsValue __lil_object_6;
+extern JsValue __lil_object_5;
+extern JsValue __lil_object_8;
+extern JsValue JSON;
+extern JsValue __lil_object_9;
+extern JsValue __lil_object_10;
+extern JsValue __lil_object_11;
+extern JsValue __lil_object_12;
+extern JsValue __lil_object_13;
+extern JsValue COOKIELESS_ALWAYS;
+extern JsValue SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED;
+extern JsValue SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS;
+extern JsValue SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS;
+extern JsValue SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS;
+extern JsValue SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS;
+extern JsValue SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG;
+extern JsValue SDK_DEBUG_REPLAY_STALE_CONFIG;
+extern JsValue SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT;
+extern JsValue SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS;
+extern JsValue RECORDING_REMOTE_CONFIG_TTL_MS;
+extern JsValue SESSION_RECORDING_IS_SAMPLED;
+extern JsValue SESSION_RECORDING_SAMPLE_RATE;
+extern JsValue SESSION_RECORDING_OVERRIDE_SAMPLING;
+extern JsValue SESSION_RECORDING_OVERRIDE_LINKED_FLAG;
+extern JsValue SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER;
+extern JsValue SESSION_RECORDING_OVERRIDE_URL_TRIGGER;
+extern JsValue SESSION_RECORDING_REMOTE_CONFIG;
+
+extern JsValue RemoteConfigLoader;
+
+extern JsValue isNullish;
+extern JsValue isNumber;
+extern JsValue isUndefined;
+extern JsValue isValidSampleRate;
+
+extern JsValue createLogger;
+
+extern JsValue document;
+extern JsValue window;
+
+extern JsValue addEventListener;
+
+extern JsValue assignableWindow;
+
+extern JsValue AWAITING_CONFIG;
+extern JsValue DISABLED;
+extern JsValue LAZY_LOADING;
+extern JsValue MISSING_CONFIG;
+
+JsValue LOGGER_PREFIX = "[SessionRecording]";
+
+JsValue logger = (createLogger as JsValue)(LOGGER_PREFIX);
+
+JsValue SESSION_DEBUG_PROPERTY_KEYS = JS.array(SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED, SDK_DEBUG_REPLAY_STALE_CONFIG, SDK_DEBUG_REPLAY_EVENT_TRIGGER_STATUS, SDK_DEBUG_REPLAY_LINKED_FLAG_TRIGGER_STATUS, SDK_DEBUG_REPLAY_MATCHED_RECORDING_TRIGGER_GROUPS, SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS, SDK_DEBUG_REPLAY_REMOTE_TRIGGER_MATCHING_CONFIG, SDK_DEBUG_REPLAY_TRIGGER_GROUPS_COUNT, SDK_DEBUG_REPLAY_URL_TRIGGER_STATUS);
+
+func()->JsValue hasDocumentEverBeenVisible = () => __port_0();
+
+export class SessionRecording {
+JsValue __lil_get__config() { 
+return (((this as JsValue) as JsValue)["_instance"] as JsValue)["config"];
+return JS.undefined(); }
+
+JsValue __lil_get__persistence() { 
+return (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"];
+return JS.undefined(); }
+
+JsValue __lil_get_started() { 
+JsValue _a = JS.undefined();
+return !(!((if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["isStarted"] as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+return JS.undefined(); }
+
+JsValue __lil_get_status() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((((((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) === (AWAITING_CONFIG as JsValue)) as JsValue) || (((((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) === (MISSING_CONFIG as JsValue)) as JsValue)) as JsValue).truthy()) {return ((this as JsValue) as JsValue)["_recordingStatus"];}
+return if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["status"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) };
+return JS.undefined(); }
+
+init(JsValue _instance) { 
+((((this as JsValue) as JsValue)["_instance"] = _instance));
+((((this as JsValue) as JsValue)["_forceAllowLocalhostNetworkCapture"] = false));
+((((this as JsValue) as JsValue)["_recordingStatus"] = DISABLED));
+((((this as JsValue) as JsValue)["_persistFlagsOnSessionListener"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_sessionRecordingDisposed"] = false));
+((((this as JsValue) as JsValue)["_documentWasEverVisible"] = hasDocumentEverBeenVisible()));
+((((this as JsValue) as JsValue)["_onVisibilityChange"] = () => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if (((((if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["visibilityState"] as JsValue) }) as JsValue) === ("visible" as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_documentWasEverVisible"] = true));
+(if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["setDocumentWasEverVisible"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a, true) as JsValue) });}
+return JS.undefined(); }));
+if ((!((((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"] as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["error"]("started without valid sessionManager"));
+throw JS.construct(Error, ((LOGGER_PREFIX as JsValue) + (" started without valid sessionManager. This is a bug." as JsValue)));}
+if (((((((this as JsValue) as JsValue)["_config"] as JsValue)["cookieless_mode"] as JsValue) === (COOKIELESS_ALWAYS as JsValue)) as JsValue).truthy()) {throw JS.construct(Error, ((LOGGER_PREFIX as JsValue) + (" cannot be used with cookieless_mode=\"always\"" as JsValue)));}
+if ((if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["addEventListener"] as JsValue) } as JsValue).truthy()) {((addEventListener as JsValue)(document, "visibilitychange", ((this as JsValue) as JsValue)["_onVisibilityChange"]));}
+ }
+
+JsValue initialize() { 
+(((this as JsValue) as JsValue)["startIfEnabledOrStop"]());
+return JS.undefined(); }
+
+JsValue dispose(JsValue __port_1 = object {  }) { JsValue __port_2 = __port_1;
+JsValue __port_3 = __port_2["discardBufferedEvents"];
+JsValue discardBufferedEvents = if (JS.isUndefined(__port_3)) { (false as JsValue) } else { __port_3 };
+JsValue _a = JS.undefined();
+((((this as JsValue) as JsValue)["_sessionRecordingDisposed"] = true));
+(if ((((((((_a = if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"](document, "visibilitychange", ((this as JsValue) as JsValue)["_onVisibilityChange"]) as JsValue) });
+if ((discardBufferedEvents as JsValue).truthy()) {(((this as JsValue) as JsValue)["_discardRecording"](true));} else {(((this as JsValue) as JsValue)["stopRecording"]());}
+return JS.undefined(); }
+
+JsValue __lil_get__isRecordingEnabled() { 
+JsValue _a = JS.undefined();
+JsValue enabled_server_side = !(!((if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["get_property"](SESSION_RECORDING_REMOTE_CONFIG))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["enabled"] as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+JsValue enabled_client_side = !((((this as JsValue) as JsValue)["_config"] as JsValue)["disable_session_recording"] as JsValue).truthy();
+JsValue isDisabled = (((((this as JsValue) as JsValue)["_config"] as JsValue)["disable_session_recording"] as JsValue) || (((((this as JsValue) as JsValue)["_instance"] as JsValue)["consent"] as JsValue)["isOptedOut"]() as JsValue));
+return ((((((window as JsValue) && (enabled_server_side as JsValue)) as JsValue) && (enabled_client_side as JsValue)) as JsValue) && (!(isDisabled as JsValue).truthy() as JsValue));
+return JS.undefined(); }
+
+JsValue startIfEnabledOrStop(JsValue startReason) { 
+JsValue _a = JS.undefined();
+if ((((this as JsValue) as JsValue)["_sessionRecordingDisposed"] as JsValue).truthy()) {return JS.undefined();}
+if ((((((this as JsValue) as JsValue)["_isRecordingEnabled"] as JsValue) && ((if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["isStarted"] as JsValue) }) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue canRunReplay = ((!((isUndefined as JsValue)((Object as JsValue)["assign"]) as JsValue).truthy() as JsValue) && (!((isUndefined as JsValue)((Array as JsValue)["from"]) as JsValue).truthy() as JsValue));
+if ((((((this as JsValue) as JsValue)["_isRecordingEnabled"] as JsValue) && (canRunReplay as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_lazyLoadAndStart"](startReason));
+((logger as JsValue)["info"]("starting"));} else {((((this as JsValue) as JsValue)["_recordingStatus"] = DISABLED));
+(((this as JsValue) as JsValue)["stopRecording"]());}
+return JS.undefined(); }
+
+JsValue _lazyLoadAndStart(JsValue startReason) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+if ((!(((this as JsValue) as JsValue)["_isRecordingEnabled"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if ((((((((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) !== (AWAITING_CONFIG as JsValue)) as JsValue) && (((((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) !== (MISSING_CONFIG as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_recordingStatus"] = LAZY_LOADING));}
+if ((((!((if ((((((((_b = if ((((((((_a = if ((((((assignableWindow as JsValue) === (null as JsValue)) as JsValue) || (((assignableWindow as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((assignableWindow as JsValue)["__PosthogExtensions__"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["rrweb"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["record"] as JsValue) }) as JsValue).truthy() as JsValue) || (!((if ((((((((_c = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["initSessionRecording"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue sessionManager = (((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"];
+(if ((((((((_e = if ((((((((_d = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["loadExternalDependency"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["call"](_d, ((this as JsValue) as JsValue)["_instance"], ((this as JsValue) as JsValue)["_scriptName"], (JsValue err) => { 
+if ((((((((this as JsValue) as JsValue)["_sessionRecordingDisposed"] as JsValue) || (!(((this as JsValue) as JsValue)["_isRecordingEnabled"] as JsValue).truthy() as JsValue)) as JsValue) || ((((((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"] as JsValue) !== (sessionManager as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_recordingStatus"] = DISABLED));
+return JS.undefined();}
+if ((err as JsValue).truthy()) {((((this as JsValue) as JsValue)["_instance"] as JsValue)["register_for_session"](__lil_object_4(() => (SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED as JsValue), () => (true as JsValue))));
+return (logger as JsValue)["error"]("could not load recorder", err);}
+(((this as JsValue) as JsValue)["_onScriptLoaded"](startReason));
+return JS.undefined(); }) as JsValue) });} else {(((this as JsValue) as JsValue)["_onScriptLoaded"](startReason));}
+return JS.undefined(); }
+
+JsValue stopRecording() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_persistFlagsOnSessionListener"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_persistFlagsOnSessionListener"] = JS.undefined()));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["stop"]() as JsValue) });
+return JS.undefined(); }
+
+JsValue _discardRecording(JsValue discardProducerEvents = false) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_persistFlagsOnSessionListener"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_persistFlagsOnSessionListener"] = JS.undefined()));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["discard"](object { "discardProducerEvents": discardProducerEvents }) as JsValue) });
+return JS.undefined(); }
+
+JsValue _resetSampling() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["unregister"](SESSION_RECORDING_IS_SAMPLED) as JsValue) });
+(if ((((((((_b = ((this as JsValue) as JsValue)["_persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["unregister"](SESSION_RECORDING_SAMPLE_RATE) as JsValue) });
+return JS.undefined(); }
+
+JsValue _validateSampleRate(JsValue rate, JsValue source) { 
+if (((isNullish as JsValue)(rate) as JsValue).truthy()) {return null;}
+JsValue parsed = if (((isNumber as JsValue)(rate) as JsValue).truthy()) { (rate as JsValue) } else { ((parseFloat as JsValue)(rate) as JsValue) };
+if ((!((isValidSampleRate as JsValue)(parsed) as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"](`${source} must be between 0 and 1. Ignoring invalid value:`, rate));
+return null;}
+return parsed;
+return JS.undefined(); }
+
+JsValue _persistRemoteConfig(JsValue response) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((this as JsValue) as JsValue)["_persistence"] as JsValue).truthy()) {JsValue persistence = ((this as JsValue) as JsValue)["_persistence"];
+JsValue persistResponse = () => { 
+JsValue _a = JS.undefined();
+JsValue sessionRecordingConfigResponse = if (((((response as JsValue)["sessionRecording"] as JsValue) === (false as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((response as JsValue)["sessionRecording"] as JsValue) };
+JsValue localSampleRate = ((this as JsValue) as JsValue)["_validateSampleRate"](if ((((((((_a = (((this as JsValue) as JsValue)["_config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["sampleRate"] as JsValue) }, "session_recording.sampleRate");
+JsValue remoteSampleRate = ((this as JsValue) as JsValue)["_validateSampleRate"](if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["sampleRate"] as JsValue) }, "remote config sampleRate");
+JsValue parsedSampleRate = if ((((((localSampleRate as JsValue) !== (null as JsValue)) as JsValue) && (((localSampleRate as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (localSampleRate as JsValue) } else { (remoteSampleRate as JsValue) };
+if (((isNullish as JsValue)(parsedSampleRate) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_resetSampling"]());}
+JsValue receivedMinimumDuration = if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["minimumDurationMilliseconds"] as JsValue) };
+((persistence as JsValue)["register"](__lil_object_5(() => (SESSION_RECORDING_REMOTE_CONFIG as JsValue), () => (__lil_object_6(() => ((Date as JsValue)["now"]() as JsValue), () => (!(!(sessionRecordingConfigResponse as JsValue).truthy() as JsValue).truthy() as JsValue), () => (sessionRecordingConfigResponse as JsValue), () => (__lil_object_7(() => ((response as JsValue)["capturePerformance"] as JsValue), () => (if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["networkPayloadCapture"] as JsValue) } as JsValue)) as JsValue), () => (object { "enabled": if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["recordCanvas"] as JsValue) }, "fps": if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["canvasFps"] as JsValue) }, "quality": if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["canvasQuality"] as JsValue) } } as JsValue), () => (parsedSampleRate as JsValue), () => (if (((isUndefined as JsValue)(receivedMinimumDuration) as JsValue).truthy()) { (null as JsValue) } else { (receivedMinimumDuration as JsValue) } as JsValue), () => (if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["endpoint"] as JsValue) } as JsValue), () => (if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["triggerMatchType"] as JsValue) } as JsValue), () => (if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["masking"] as JsValue) } as JsValue), () => (if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["urlTriggers"] as JsValue) } as JsValue), () => (if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["version"] as JsValue) } as JsValue), () => (if ((((((sessionRecordingConfigResponse as JsValue) === (null as JsValue)) as JsValue) || (((sessionRecordingConfigResponse as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionRecordingConfigResponse as JsValue)["triggerGroups"] as JsValue) } as JsValue)) as JsValue))));
+return JS.undefined(); };
+((persistResponse as JsValue)());
+(if ((((((((_a = ((this as JsValue) as JsValue)["_persistFlagsOnSessionListener"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_persistFlagsOnSessionListener"] = if ((((((((_b = (((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["onSessionId"](persistResponse) as JsValue) }));}
+return JS.undefined(); }
+
+JsValue onRemoteConfig(JsValue result) { 
+JsValue response = if (((result as JsValue)["ok"] as JsValue).truthy()) { ((result as JsValue)["config"] as JsValue) } else { (JS.undefined() as JsValue) };
+if ((((!(response as JsValue).truthy() as JsValue) || (!((JS.in("sessionRecording", response)) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if ((((((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) === (AWAITING_CONFIG as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_recordingStatus"] = MISSING_CONFIG));
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["register_for_session"](__lil_object_8(() => (SDK_DEBUG_REPLAY_STALE_CONFIG as JsValue), () => (true as JsValue))));
+((logger as JsValue)["warn"]("config refresh failed, recording will not start until page reload"));}
+(((this as JsValue) as JsValue)["startIfEnabledOrStop"]());
+return JS.undefined();}
+if (((((response as JsValue)["sessionRecording"] as JsValue) === (false as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_persistRemoteConfig"](response));
+(((this as JsValue) as JsValue)["_discardRecording"]());
+return JS.undefined();}
+(((this as JsValue) as JsValue)["_persistRemoteConfig"](response));
+(((this as JsValue) as JsValue)["startIfEnabledOrStop"]());
+return JS.undefined(); }
+
+JsValue log(JsValue message, JsValue level = "log") { 
+JsValue _a = JS.undefined();
+if ((if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["log"] as JsValue) } as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] as JsValue)["log"](message, level));} else {((logger as JsValue)["warn"]("log called before recorder was ready"));}
+return JS.undefined(); }
+
+JsValue __lil_get__scriptName() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue remoteConfig = if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_instance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["persistence"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["get_property"](SESSION_RECORDING_REMOTE_CONFIG) as JsValue) };
+return (((if ((((((((_c = if ((((((remoteConfig as JsValue) === (null as JsValue)) as JsValue) || (((remoteConfig as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((remoteConfig as JsValue)["scriptConfig"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["script"] as JsValue) }) as JsValue) || ("lazy-recorder" as JsValue));
+return JS.undefined(); }
+
+JsValue _isRemoteConfigFresh() { 
+JsValue persistedConfig = (((this as JsValue) as JsValue)["_instance"] as JsValue)["get_property"](SESSION_RECORDING_REMOTE_CONFIG);
+if ((!(persistedConfig as JsValue).truthy() as JsValue).truthy()) {return false;}
+JsValue config = JS.undefined();
+try {((config = if ((((JS.typeOf(persistedConfig) as JsValue) === ("object" as JsValue)) as JsValue).truthy()) { (persistedConfig as JsValue) } else { ((JSON as JsValue)["parse"](persistedConfig) as JsValue) }));} catch (JsValue e) {((logger as JsValue)["warn"]("persisted remote config for session recording is invalid and will be ignored", e));
+return false;}
+if (((isNullish as JsValue)((config as JsValue)["cache_timestamp"]) as JsValue).truthy()) {return false;}
+return (((((Date as JsValue)["now"]() as JsValue) - ((config as JsValue)["cache_timestamp"] as JsValue)) as JsValue) <= (RECORDING_REMOTE_CONFIG_TTL_MS as JsValue));
+return JS.undefined(); }
+
+JsValue _onScriptLoaded(JsValue startReason) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+if ((((((((this as JsValue) as JsValue)["_sessionRecordingDisposed"] as JsValue) || (!(((this as JsValue) as JsValue)["_isRecordingEnabled"] as JsValue).truthy() as JsValue)) as JsValue) || (!((((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_recordingStatus"] = DISABLED));
+return JS.undefined();}
+if ((!((if ((((((((_a = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["initSessionRecording"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"]("Called on script loaded before session recording is available. This can be caused by adblockers."));
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["register_for_session"](__lil_object_9(() => (SDK_DEBUG_RECORDING_SCRIPT_NOT_LOADED as JsValue), () => (true as JsValue))));
+return JS.undefined();}
+if ((!(((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] = if ((((((((_b = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["initSessionRecording"](((this as JsValue) as JsValue)["_instance"], ((this as JsValue) as JsValue)["_documentWasEverVisible"]) as JsValue) }));
+(((((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] as JsValue)["_forceAllowLocalhostNetworkCapture"] = ((this as JsValue) as JsValue)["_forceAllowLocalhostNetworkCapture"]));}
+if ((!(((this as JsValue) as JsValue)["_isRemoteConfigFresh"]() as JsValue).truthy() as JsValue).truthy()) {if ((((((((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) === (MISSING_CONFIG as JsValue)) as JsValue) || (((((this as JsValue) as JsValue)["_recordingStatus"] as JsValue) === (AWAITING_CONFIG as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_recordingStatus"] = AWAITING_CONFIG));
+((logger as JsValue)["info"]("persisted remote config is stale, requesting fresh config before starting"));
+((JS.construct(RemoteConfigLoader, ((this as JsValue) as JsValue)["_instance"]) as JsValue)["load"]());
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_recordingStatus"] = LAZY_LOADING));
+(if ((((((((_d = (((_c = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue)["setDocumentWasEverVisible"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["call"](_c, ((this as JsValue) as JsValue)["_documentWasEverVisible"]) as JsValue) });
+((((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] as JsValue)["start"](startReason));
+return JS.undefined(); }
+
+JsValue onRRwebEmit(JsValue rawEvent) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["onRRwebEmit"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a, rawEvent) as JsValue) });
+return JS.undefined(); }
+
+JsValue overrideLinkedFlag() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((!(((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] as JsValue).truthy() as JsValue).truthy()) {(if ((((((((_a = ((this as JsValue) as JsValue)["_persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["register"](__lil_object_10(() => (SESSION_RECORDING_OVERRIDE_LINKED_FLAG as JsValue), () => (true as JsValue))) as JsValue) });}
+(if ((((((((_b = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["overrideLinkedFlag"]() as JsValue) });
+return JS.undefined(); }
+
+JsValue overrideSampling() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((!(((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] as JsValue).truthy() as JsValue).truthy()) {(if ((((((((_a = ((this as JsValue) as JsValue)["_persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["register"](__lil_object_11(() => (SESSION_RECORDING_OVERRIDE_SAMPLING as JsValue), () => (true as JsValue))) as JsValue) });}
+(if ((((((((_b = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["overrideSampling"]() as JsValue) });
+return JS.undefined(); }
+
+JsValue overrideTrigger(JsValue triggerType) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((!(((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"] as JsValue).truthy() as JsValue).truthy()) {(if ((((((((_a = ((this as JsValue) as JsValue)["_persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["register"](__lil_object_12(() => (if ((((triggerType as JsValue) === ("url" as JsValue)) as JsValue).truthy()) { (SESSION_RECORDING_OVERRIDE_URL_TRIGGER as JsValue) } else { (SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER as JsValue) } as JsValue), () => (true as JsValue))) as JsValue) });}
+(if ((((((((_b = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["overrideTrigger"](triggerType) as JsValue) });
+return JS.undefined(); }
+
+JsValue __lil_get_sdkDebugProperties() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue properties = object {  };
+for (JsValue key of SESSION_DEBUG_PROPERTY_KEYS) {
+JsValue value = if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionPersistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["get_property"](key) as JsValue) };
+if ((!((isUndefined as JsValue)(value) as JsValue).truthy() as JsValue).truthy()) {(((properties as JsValue)[key] = value));}}
+return __lil_object_13(() => (properties as JsValue), () => (((((if ((((((((_b = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["sdkDebugProperties"] as JsValue) }) as JsValue) || (object { "$recording_status": ((this as JsValue) as JsValue)["status"] } as JsValue))) as JsValue));
+return JS.undefined(); }
+
+JsValue tryAddCustomEvent(JsValue tag, JsValue payload) { 
+JsValue _a = JS.undefined();
+return !(!((if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["tryAddCustomEvent"](tag, payload) as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+return JS.undefined(); }
+
+JsValue flushBeforeIdentityReset() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_lazyLoadedSessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["flushBeforeIdentityReset"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a) as JsValue) });
+return JS.undefined(); }
+}
+export constructor SessionRecording;
+
+JsValue __port_0() {
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((!((if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["visibilityState"] as JsValue) }) as JsValue).truthy() as JsValue) || ((((document as JsValue)["visibilityState"] as JsValue) === ("visible" as JsValue)) as JsValue)) as JsValue).truthy()) {return true;}
+JsValue visibilityEntries = if ((((((((_b = if ((((((((_a = if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["performance"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["getEntriesByType"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a, "visibility-state") as JsValue) };
+return ((!((if ((((((visibilityEntries as JsValue) === (null as JsValue)) as JsValue) || (((visibilityEntries as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((visibilityEntries as JsValue)["length"] as JsValue) }) as JsValue).truthy() as JsValue) || ((visibilityEntries as JsValue)["some"]((JsValue entry) => { 
+return ((((entry as JsValue)["name"] as JsValue) === ("visible" as JsValue)) as JsValue);
+return JS.undefined(); }) as JsValue));
+return JS.undefined();}

@@ -1,0 +1,28 @@
+{
+  "source": "packages/browser/src/extensions/surveys.tsx",
+  "implementation": "src/sdk/surveys-renderer.lil",
+  "exports": [
+    "getNextSurveyStep",
+    "INTRO_SCREEN_PREVIEW_INDEX",
+    "SurveyManager",
+    "renderSurveysPreview",
+    "renderFeedbackWidgetPreview",
+    "generateSurveys",
+    "useHideSurveyOnURLChange",
+    "usePopupVisibility",
+    "SurveyPopup",
+    "Questions",
+    "FeedbackWidget"
+  ],
+  "classMembers": [
+    {
+      "class": "SurveyManager",
+      "implementation": "__lil_get__featureFlags",
+      "kind": "get",
+      "name": "_featureFlags"
+    }
+  ],
+  "classBases": [],
+  "asyncClosures": [],
+  "qualified": false
+}

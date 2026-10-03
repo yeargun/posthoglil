@@ -1,0 +1,1322 @@
+// Whole-module migration from packages/browser/src/extensions/surveys.tsx.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { createElement as _createElement } from "preact";
+import extern { jsx as _jsx, jsxs as _jsxs } from "preact/jsx-runtime";
+import extern { render as render, Fragment as Fragment } from "preact";
+import extern { useContext as useContext, useEffect as useEffect, useMemo as useMemo, useRef as useRef, useState as useState } from "preact/hooks";
+import extern { SurveyEventName as SurveyEventName, SurveyEventProperties as SurveyEventProperties, SurveyPosition as SurveyPosition, SurveyQuestionBranchingType as SurveyQuestionBranchingType, SurveyQuestionType as SurveyQuestionType, SurveySchedule as SurveySchedule, SurveyTabPosition as SurveyTabPosition, SurveyType as SurveyType, SurveyWidgetType as SurveyWidgetType } from "../../vendor/posthog-js/packages/browser/src/posthog-surveys-types.ts";
+import extern { addEventListener as addEventListener } from "@posthog/browser-common/utils/general-utils";
+import extern { document as _document, window as _window } from "@posthog/browser-common/utils/globals";
+import extern { doesSurveyActivateByAction as doesSurveyActivateByAction, doesSurveyActivateByEvent as doesSurveyActivateByEvent, IN_APP_SURVEY_TYPES as IN_APP_SURVEY_TYPES, isCapturingEnabled as isCapturingEnabled, isSurveyIterationBased as isSurveyIterationBased, isSurveyRunning as isSurveyRunning, SURVEY_LOGGER as logger, SURVEY_CAPTURING_DISABLED as SURVEY_CAPTURING_DISABLED } from "../../vendor/posthog-js/packages/browser/src/utils/survey-utils.ts";
+import extern { isArray as isArray, isNull as isNull, isNumber as isNumber, isUndefined as isUndefined } from "@posthog/core";
+import extern { recordSurveyAnswer as recordSurveyAnswer } from "@posthog/core/surveys";
+import extern { FeatureFlagsExtension as FeatureFlagsExtension } from "../../vendor/posthog-js/packages/browser/src/extension-tokens.ts";
+import extern { SURVEYS as SURVEYS } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { uuidv7 as uuidv7 } from "@posthog/browser-common/utils/uuidv7";
+import extern { ConfirmationMessage as ConfirmationMessage } from "../../vendor/posthog-js/packages/browser/src/extensions/surveys/components/ConfirmationMessage.tsx";
+import extern { IntroScreen as IntroScreen } from "../../vendor/posthog-js/packages/browser/src/extensions/surveys/components/IntroScreen.tsx";
+import extern { Cancel as Cancel } from "../../vendor/posthog-js/packages/browser/src/extensions/surveys/components/QuestionHeader.tsx";
+import extern { LinkQuestion as LinkQuestion, MultipleChoiceQuestion as MultipleChoiceQuestion, OpenTextQuestion as OpenTextQuestion, RatingQuestion as RatingQuestion } from "../../vendor/posthog-js/packages/browser/src/extensions/surveys/components/QuestionTypes.tsx";
+import extern { canActivateRepeatedly as canActivateRepeatedly, retrieveSurveyShadow as retrieveSurveyShadow, defaultSurveyAppearance as defaultSurveyAppearance, dismissedSurveyEvent as dismissedSurveyEvent, clearAllInMemoryInProgressSurveyState as clearAllInMemoryInProgressSurveyState, clearInProgressSurveyState as clearInProgressSurveyState, doesSurveyDeviceTypesMatch as doesSurveyDeviceTypesMatch, doesSurveyMatchSelector as doesSurveyMatchSelector, doesSurveyUrlMatch as doesSurveyUrlMatch, getDisplayOrderQuestions as getDisplayOrderQuestions, getQuestionOrder as getQuestionOrder, getInProgressSurveyState as getInProgressSurveyState, getSurveyContainerClass as getSurveyContainerClass, getSurveyResponseKey as getSurveyResponseKey, getSurveySeen as getSurveySeen, hasWaitPeriodPassed as hasWaitPeriodPassed, isSurveyInProgress as isSurveyInProgress, sendSurveyEvent as sendSurveyEvent, sendSurveyAbandonedEvent as sendSurveyAbandonedEvent, setInProgressSurveyState as setInProgressSurveyState, SurveyContext as SurveyContext, getSurveyStylesheet as getSurveyStylesheet, addSurveyCSSVariablesToElement as addSurveyCSSVariablesToElement, getPopoverPosition as getPopoverPosition } from "../../vendor/posthog-js/packages/browser/src/extensions/surveys/surveys-extension-utils.tsx";
+import extern { extractPrefillParamsFromUrl as extractPrefillParamsFromUrl, convertPrefillToResponses as convertPrefillToResponses, calculatePrefillStartIndex as calculatePrefillStartIndex } from "../../vendor/posthog-js/packages/browser/src/utils/survey-url-prefill.ts";
+import extern { getNextSurveyStep as getNextSurveyStep } from "../../vendor/posthog-js/packages/browser/src/utils/survey-branching.ts";
+import extern { applySurveyTranslationForUser as applySurveyTranslationForUser } from "../../vendor/posthog-js/packages/browser/src/utils/survey-translations.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue Map;
+extern JsValue Set;
+extern JsValue Object;
+extern JsValue parseInt;
+extern JsValue Math;
+extern JsValue Date;
+extern JsValue CustomEvent;
+extern JsValue Array;
+extern JsValue clearTimeout;
+extern JsValue String;
+extern JsValue setInterval;
+extern JsValue clearInterval;
+extern JsValue setTimeout;
+extern JsValue localStorage;
+extern JsValue Event;
+extern JsValue Number;
+extern JsValue _createElement;
+
+extern JsValue _jsx;
+extern JsValue _jsxs;
+
+extern JsValue render;
+extern JsValue Fragment;
+
+extern JsValue useContext;
+extern JsValue useEffect;
+extern JsValue useMemo;
+extern JsValue useRef;
+extern JsValue useState;
+
+extern JsValue SurveyEventName;
+extern JsValue SurveyEventProperties;
+extern JsValue SurveyPosition;
+extern JsValue SurveyQuestionBranchingType;
+extern JsValue SurveyQuestionType;
+extern JsValue SurveySchedule;
+extern JsValue SurveyTabPosition;
+extern JsValue SurveyType;
+extern JsValue SurveyWidgetType;
+
+extern JsValue addEventListener;
+
+extern JsValue _document;
+extern JsValue _window;
+
+extern JsValue doesSurveyActivateByAction;
+extern JsValue doesSurveyActivateByEvent;
+extern JsValue IN_APP_SURVEY_TYPES;
+extern JsValue isCapturingEnabled;
+extern JsValue isSurveyIterationBased;
+extern JsValue isSurveyRunning;
+extern JsValue logger;
+extern JsValue SURVEY_CAPTURING_DISABLED;
+
+extern JsValue isArray;
+extern JsValue isNull;
+extern JsValue isNumber;
+extern JsValue isUndefined;
+
+extern JsValue recordSurveyAnswer;
+
+extern JsValue FeatureFlagsExtension;
+
+extern JsValue SURVEYS;
+
+extern JsValue uuidv7;
+
+extern JsValue ConfirmationMessage;
+
+extern JsValue IntroScreen;
+
+extern JsValue Cancel;
+
+extern JsValue LinkQuestion;
+extern JsValue MultipleChoiceQuestion;
+extern JsValue OpenTextQuestion;
+extern JsValue RatingQuestion;
+
+extern JsValue canActivateRepeatedly;
+extern JsValue retrieveSurveyShadow;
+extern JsValue defaultSurveyAppearance;
+extern JsValue dismissedSurveyEvent;
+extern JsValue clearAllInMemoryInProgressSurveyState;
+extern JsValue clearInProgressSurveyState;
+extern JsValue doesSurveyDeviceTypesMatch;
+extern JsValue doesSurveyMatchSelector;
+extern JsValue doesSurveyUrlMatch;
+extern JsValue getDisplayOrderQuestions;
+extern JsValue getQuestionOrder;
+extern JsValue getInProgressSurveyState;
+extern JsValue getSurveyContainerClass;
+extern JsValue getSurveyResponseKey;
+extern JsValue getSurveySeen;
+extern JsValue hasWaitPeriodPassed;
+extern JsValue isSurveyInProgress;
+extern JsValue sendSurveyEvent;
+extern JsValue sendSurveyAbandonedEvent;
+extern JsValue setInProgressSurveyState;
+extern JsValue SurveyContext;
+extern JsValue getSurveyStylesheet;
+extern JsValue addSurveyCSSVariablesToElement;
+extern JsValue getPopoverPosition;
+
+extern JsValue extractPrefillParamsFromUrl;
+extern JsValue convertPrefillToResponses;
+extern JsValue calculatePrefillStartIndex;
+
+extern JsValue getNextSurveyStep;
+
+extern JsValue applySurveyTranslationForUser;
+
+
+
+JsValue INTRO_SCREEN_PREVIEW_INDEX = (-(1.0 as JsValue));
+
+JsValue window = _window;
+
+JsValue document = _document;
+
+JsValue DISPATCH_FEEDBACK_WIDGET_EVENT = "ph:show_survey_widget";
+
+JsValue WIDGET_LISTENER_ATTRIBUTE = "PHWidgetSurveyClickListener";
+
+JsValue SURVEY_NEXT_TO_TRIGGER_PARAMS = object { "ESTIMATED_MIN_HEIGHT": 250.0, "HORIZONTAL_PADDING": 20.0, "TRIGGER_SPACING": 12.0 };
+
+
+
+JsValue SURVEY_TARGETING_FLAG_PREFIX = "survey-targeting-";
+
+export class SurveyManager {
+init(JsValue posthog) { 
+((((this as JsValue) as JsValue)["_surveyTimeouts"] = JS.construct(Map)));
+((((this as JsValue) as JsValue)["_widgetSelectorListeners"] = JS.construct(Map)));
+((((this as JsValue) as JsValue)["_renderedTabWidgets"] = JS.construct(Map)));
+((((this as JsValue) as JsValue)["_renderedTargets"] = JS.construct(Map)));
+((((this as JsValue) as JsValue)["_prefillHandledSurveys"] = JS.construct(Set)));
+((((this as JsValue) as JsValue)["_currentLanguage"] = null));
+((((this as JsValue) as JsValue)["_surveyIsRendered"] = false));
+((((this as JsValue) as JsValue)["_languageChangeListener"] = null));
+((((this as JsValue) as JsValue)["_unsubscribeFeatureFlags"] = null));
+((((this as JsValue) as JsValue)["_surveyPopupProps"] = null));
+((((this as JsValue) as JsValue)["_loggedFeatureFlagsDisabledWarning"] = false));
+((((this as JsValue) as JsValue)["handlePageUnload"] = () => { 
+JsValue surveys = (((this as JsValue) as JsValue)["_posthog"] as JsValue)["get_property"](SURVEYS);
+if ((!(surveys as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+for (JsValue survey of surveys) {
+if (((isSurveyInProgress as JsValue)(survey) as JsValue).truthy()) {((sendSurveyAbandonedEvent as JsValue)(survey, ((this as JsValue) as JsValue)["_posthog"]));}}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["handlePopoverSurvey"] = (JsValue surveyParam, JsValue options, JsValue __port_0 = object {  }) => { JsValue __port_1 = __port_0;
+JsValue __port_2 = __port_1["resumeDelayFromActivation"];
+JsValue resumeDelayFromActivation = if (JS.isUndefined(__port_2)) { (false as JsValue) } else { __port_2 };
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue _h = JS.undefined();
+if ((!((isCapturingEnabled as JsValue)(((this as JsValue) as JsValue)["_posthog"]) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue __port_3 = ((this as JsValue) as JsValue)["_translateSurveyForRendering"](surveyParam);
+JsValue translatedSurvey = __port_3["survey"];
+JsValue surveyLanguage = __port_3["language"];
+((((this as JsValue) as JsValue)["_currentLanguage"] = surveyLanguage));
+((((this as JsValue) as JsValue)["_surveyPopupProps"] = null));
+((((this as JsValue) as JsValue)["_displayOptions"] = options));
+JsValue survey = ((this as JsValue) as JsValue)["_applyDisplayOverrides"](translatedSurvey, options);
+(((this as JsValue) as JsValue)["_clearSurveyTimeout"]((survey as JsValue)["id"]));
+JsValue __port_4 = if ((((((options as JsValue) !== (null as JsValue)) as JsValue) && (((options as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (options as JsValue) } else { (object {  } as JsValue) };
+JsValue properties = __port_4["properties"];
+JsValue initialResponses = __port_4["initialResponses"];
+JsValue hasPrefillData = ((initialResponses as JsValue) && (((((Object as JsValue)["keys"](initialResponses) as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue));
+JsValue isSurveyCompleted = if ((hasPrefillData as JsValue).truthy()) { (((this as JsValue) as JsValue)["_handleInitialResponses"](survey, initialResponses, properties, surveyLanguage) as JsValue) } else { (false as JsValue) };
+if ((((isSurveyCompleted as JsValue) && (!((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["displayThankYouMessage"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_addSurveyToFocus"](survey));
+JsValue positionStyle = object {  };
+if (((((((if ((((((((_b = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["position"] as JsValue) }) as JsValue) === ((SurveyPosition as JsValue)["NextToTrigger"] as JsValue)) as JsValue) && ((if ((((((((_c = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["widgetSelector"] as JsValue) }) as JsValue)) as JsValue).truthy()) {JsValue targetElement = (document as JsValue)["querySelector"](((survey as JsValue)["appearance"] as JsValue)["widgetSelector"]);
+if ((targetElement as JsValue).truthy()) {((positionStyle = (((getNextToTriggerPosition as JsValue)(targetElement, (parseInt as JsValue)((((if ((((((((_d = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["maxWidth"] as JsValue) }) as JsValue) || ((defaultSurveyAppearance as JsValue)["maxWidth"] as JsValue)))) as JsValue) || (object {  } as JsValue))));}}
+JsValue delaySeconds = (((if ((((((((_e = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["surveyPopupDelaySeconds"] as JsValue) }) as JsValue) || (0.0 as JsValue));
+JsValue __port_5 = (retrieveSurveyShadow as JsValue)(survey, ((this as JsValue) as JsValue)["_posthog"]);
+JsValue shadow = __port_5["shadow"];
+((((this as JsValue) as JsValue)["_renderedTargets"] as JsValue)["set"](shadow, (shadow as JsValue)["host"]));
+JsValue surveyPopupProps = object { "posthog": ((this as JsValue) as JsValue)["_posthog"], "survey": survey, "removeSurveyFromFocus": ((this as JsValue) as JsValue)["_removeSurveyFromFocus"], "properties": properties, "style": positionStyle, "isSurveyCompleted": isSurveyCompleted, "skipShownEvent": if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["skipShownEvent"] as JsValue) }, "surveyLanguage": surveyLanguage };
+((((this as JsValue) as JsValue)["_surveyPopupProps"] = surveyPopupProps));
+if ((((delaySeconds as JsValue) <= (0.0 as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_surveyIsRendered"] = true));
+return (render as JsValue)((_jsx as JsValue)(SurveyPopup, (() => { JsValue __port_6 = JS.object();
+copyProperties(__port_6, surveyPopupProps);return __port_6; })()), shadow);}
+JsValue renderAfterDelay = () => { 
+((((this as JsValue) as JsValue)["_surveyIsRendered"] = true));
+JsValue __port_7 = ((this as JsValue) as JsValue)["_translateSurveyForRendering"](surveyParam);
+JsValue freshlyTranslated = __port_7["survey"];
+JsValue freshLanguage = __port_7["language"];
+((((this as JsValue) as JsValue)["_currentLanguage"] = freshLanguage));
+JsValue freshSurvey = ((this as JsValue) as JsValue)["_applyDisplayOverrides"](freshlyTranslated, options);
+JsValue freshPopupProps = (() => { JsValue __port_8 = JS.object();
+copyProperties(__port_8, surveyPopupProps);
+setOwn(__port_8, "survey", freshSurvey);
+setOwn(__port_8, "surveyLanguage", freshLanguage);return __port_8; })();
+((((this as JsValue) as JsValue)["_surveyPopupProps"] = freshPopupProps));
+((render as JsValue)((_jsx as JsValue)(SurveyPopup, (() => { JsValue __port_9 = JS.object();
+copyProperties(__port_9, freshPopupProps);
+setOwn(__port_9, "survey", (() => { JsValue __port_10 = JS.object();
+copyProperties(__port_10, freshSurvey);
+setOwn(__port_10, "appearance", (() => { JsValue __port_11 = JS.object();
+copyProperties(__port_11, (freshSurvey as JsValue)["appearance"]);
+setOwn(__port_11, "surveyPopupDelaySeconds", 0.0);return __port_11; })());return __port_10; })());return __port_9; })()), shadow));
+return JS.undefined(); };
+JsValue renderIfStillEligible = () => { 
+if ((((!((isCapturingEnabled as JsValue)(((this as JsValue) as JsValue)["_posthog"]) as JsValue).truthy() as JsValue) || (!(((this as JsValue) as JsValue)["_shouldDisplaySurvey"](survey) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((logger as JsValue)["info"](`Survey ${(survey as JsValue)["id"]} no longer eligible when its display delay elapsed; not displaying`));
+return ((this as JsValue) as JsValue)["_removeSurveyFromFocus"](survey);}
+((renderAfterDelay as JsValue)());
+return JS.undefined(); };
+JsValue activatedAt = if ((resumeDelayFromActivation as JsValue).truthy()) { (if ((((((((_h = if ((((((((_g = if ((((((((_f = (((this as JsValue) as JsValue)["_posthog"] as JsValue)["surveys"])) as JsValue) === (null as JsValue)) as JsValue) || (((_f as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_f as JsValue)["_surveyEventReceiver"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_g as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_g as JsValue)["getActivationTimestamp"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_h as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_h as JsValue)["call"](_g, (survey as JsValue)["id"]) as JsValue) } as JsValue) } else { (JS.undefined() as JsValue) };
+JsValue elapsedMs = if (((isNumber as JsValue)(activatedAt) as JsValue).truthy()) { ((Math as JsValue)["max"](0.0, (((Date as JsValue)["now"]() as JsValue) - (activatedAt as JsValue))) as JsValue) } else { (0.0 as JsValue) };
+JsValue remainingMs = (Math as JsValue)["max"](0.0, ((((delaySeconds as JsValue) * (1000.0 as JsValue)) as JsValue) - (elapsedMs as JsValue)));
+if ((((remainingMs as JsValue) <= (0.0 as JsValue)) as JsValue).truthy()) {return (renderIfStillEligible as JsValue)();}
+JsValue timeoutId = (window as JsValue)["setTimeout"](() => { 
+((((this as JsValue) as JsValue)["_surveyTimeouts"] as JsValue)["delete"]((survey as JsValue)["id"]));
+((renderIfStillEligible as JsValue)());
+return JS.undefined(); }, remainingMs);
+((((this as JsValue) as JsValue)["_surveyTimeouts"] as JsValue)["set"]((survey as JsValue)["id"], timeoutId));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_handleWidget"] = (JsValue survey) => { 
+JsValue _a = JS.undefined();
+JsValue __port_12 = ((this as JsValue) as JsValue)["_translateSurveyForRendering"](survey);
+JsValue translatedSurvey = __port_12["survey"];
+JsValue surveyLanguage = __port_12["language"];
+JsValue __port_13 = (retrieveSurveyShadow as JsValue)(translatedSurvey, ((this as JsValue) as JsValue)["_posthog"]);
+JsValue shadow = __port_13["shadow"];
+JsValue isNewlyCreated = __port_13["isNewlyCreated"];
+((((this as JsValue) as JsValue)["_renderedTargets"] as JsValue)["set"](shadow, (shadow as JsValue)["host"]));
+if (((((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["widgetType"] as JsValue) }) as JsValue) === ((SurveyWidgetType as JsValue)["Tab"] as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_renderedTabWidgets"] as JsValue)["set"]((survey as JsValue)["id"], survey));}
+if ((!(isNewlyCreated as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((render as JsValue)((_jsx as JsValue)(FeedbackWidget, object { "posthog": ((this as JsValue) as JsValue)["_posthog"], "survey": translatedSurvey, "surveyLanguage": surveyLanguage }, (survey as JsValue)["id"]), shadow));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_detachWidgetSelectorListener"] = (JsValue surveyId) => { 
+JsValue existing = (((this as JsValue) as JsValue)["_widgetSelectorListeners"] as JsValue)["get"](surveyId);
+if ((existing as JsValue).truthy()) {(((existing as JsValue)["element"] as JsValue)["removeEventListener"]("click", (existing as JsValue)["listener"]));
+(((existing as JsValue)["element"] as JsValue)["removeAttribute"](WIDGET_LISTENER_ATTRIBUTE));
+((((this as JsValue) as JsValue)["_widgetSelectorListeners"] as JsValue)["delete"](surveyId));
+((logger as JsValue)["info"](`Removed click listener for survey ${surveyId}`));}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_removeWidgetSelectorListener"] = (JsValue survey) => { 
+if ((((this as JsValue) as JsValue)["_isWidgetSurveyOpen"](survey) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_removeSurveyFromDom"](survey));
+(((this as JsValue) as JsValue)["_detachWidgetSelectorListener"]((survey as JsValue)["id"]));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_removeTabWidget"] = (JsValue survey) => { 
+if ((((this as JsValue) as JsValue)["_isWidgetSurveyOpen"](survey) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_removeSurveyFromDom"](survey));
+((((this as JsValue) as JsValue)["_renderedTabWidgets"] as JsValue)["delete"]((survey as JsValue)["id"]));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_isWidgetSurveyOpen"] = (JsValue survey) => { 
+JsValue _a = JS.undefined();
+try {JsValue shadowContainer = (document as JsValue)["querySelector"]((getSurveyContainerClass as JsValue)(survey, true));
+return !(!((if ((((((((_a = if ((((((shadowContainer as JsValue) === (null as JsValue)) as JsValue) || (((shadowContainer as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((shadowContainer as JsValue)["shadowRoot"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["querySelector"](".ph-survey") as JsValue) }) as JsValue).truthy() as JsValue).truthy();} catch (JsValue __port_14) {return false;}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_manageWidgetSelectorListener"] = (JsValue survey, JsValue selector) => { 
+JsValue currentElement = (document as JsValue)["querySelector"](selector);
+JsValue existingListenerData = (((this as JsValue) as JsValue)["_widgetSelectorListeners"] as JsValue)["get"]((survey as JsValue)["id"]);
+if ((!(currentElement as JsValue).truthy() as JsValue).truthy()) {if ((existingListenerData as JsValue).truthy()) {(((this as JsValue) as JsValue)["_removeWidgetSelectorListener"](survey));}
+return JS.undefined();}
+(((this as JsValue) as JsValue)["_handleWidget"](survey));
+if ((existingListenerData as JsValue).truthy()) {if ((((currentElement as JsValue) !== ((existingListenerData as JsValue)["element"] as JsValue)) as JsValue).truthy()) {((logger as JsValue)["info"](`Selector element changed for survey ${(survey as JsValue)["id"]}. Re-attaching listener.`));
+(((this as JsValue) as JsValue)["_detachWidgetSelectorListener"]((survey as JsValue)["id"]));} else {return JS.undefined();}}
+if ((!((currentElement as JsValue)["hasAttribute"](WIDGET_LISTENER_ATTRIBUTE) as JsValue).truthy() as JsValue).truthy()) {JsValue listener = (JsValue event) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+((event as JsValue)["stopPropagation"]());
+JsValue positionStyles = if (((((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["position"] as JsValue) }) as JsValue) === ((SurveyPosition as JsValue)["NextToTrigger"] as JsValue)) as JsValue).truthy()) { ((getNextToTriggerPosition as JsValue)((event as JsValue)["currentTarget"], (parseInt as JsValue)((((if ((((((((_b = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["maxWidth"] as JsValue) }) as JsValue) || ((defaultSurveyAppearance as JsValue)["maxWidth"] as JsValue)))) as JsValue) } else { (object {  } as JsValue) };
+((window as JsValue)["dispatchEvent"](JS.construct(CustomEvent, DISPATCH_FEEDBACK_WIDGET_EVENT, object { "detail": object { "surveyId": (survey as JsValue)["id"], "position": positionStyles } })));
+return JS.undefined(); };
+((addEventListener as JsValue)(currentElement, "click", listener));
+((currentElement as JsValue)["setAttribute"](WIDGET_LISTENER_ATTRIBUTE, "true"));
+((((this as JsValue) as JsValue)["_widgetSelectorListeners"] as JsValue)["set"]((survey as JsValue)["id"], object { "element": currentElement, "listener": listener, "survey": survey }));
+((logger as JsValue)["info"](`Attached click listener for feedback button survey ${(survey as JsValue)["id"]}`));}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["renderPopover"] = (JsValue survey) => { 
+if ((!((isCapturingEnabled as JsValue)(((this as JsValue) as JsValue)["_posthog"]) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue __port_15 = ((this as JsValue) as JsValue)["_translateSurveyForRendering"](survey);
+JsValue translatedSurvey = __port_15["survey"];
+JsValue surveyLanguage = __port_15["language"];
+JsValue __port_16 = (retrieveSurveyShadow as JsValue)(translatedSurvey, ((this as JsValue) as JsValue)["_posthog"]);
+JsValue shadow = __port_16["shadow"];
+((((this as JsValue) as JsValue)["_renderedTargets"] as JsValue)["set"](shadow, (shadow as JsValue)["host"]));
+((render as JsValue)((_jsx as JsValue)(SurveyPopup, object { "posthog": ((this as JsValue) as JsValue)["_posthog"], "survey": translatedSurvey, "removeSurveyFromFocus": ((this as JsValue) as JsValue)["_removeSurveyFromFocus"], "surveyLanguage": surveyLanguage }), shadow));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["renderSurvey"] = (JsValue survey, JsValue selector, JsValue properties) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((!((isCapturingEnabled as JsValue)(((this as JsValue) as JsValue)["_posthog"]) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue __port_17 = ((this as JsValue) as JsValue)["_translateSurveyForRendering"](survey);
+JsValue translatedSurvey = __port_17["survey"];
+JsValue surveyLanguage = __port_17["language"];
+JsValue isSurveyCompleted = false;
+if ((if ((((((((_b = if ((((((((_a = (((this as JsValue) as JsValue)["_posthog"] as JsValue)["config"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveys"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["prefillFromUrl"] as JsValue) } as JsValue).truthy()) {((isSurveyCompleted = ((this as JsValue) as JsValue)["_handleUrlPrefill"](translatedSurvey, surveyLanguage, properties)));}
+((render as JsValue)((_jsx as JsValue)(SurveyPopup, object { "posthog": ((this as JsValue) as JsValue)["_posthog"], "survey": translatedSurvey, "removeSurveyFromFocus": ((this as JsValue) as JsValue)["_removeSurveyFromFocus"], "isPopup": false, "properties": properties, "isSurveyCompleted": isSurveyCompleted, "surveyLanguage": surveyLanguage }), selector));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["getActiveMatchingSurveys"] = (JsValue callback, JsValue forceReload = false) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_posthog"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveys"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["getSurveys"]((JsValue surveys) => { 
+JsValue targetingMatchedSurveys = (surveys as JsValue)["filter"]((JsValue survey) => { 
+return (((this as JsValue) as JsValue)["_shouldDisplaySurvey"](survey) as JsValue);
+return JS.undefined(); });
+((callback as JsValue)(targetingMatchedSurveys));
+return JS.undefined(); }, forceReload) as JsValue) });
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["callSurveysAndEvaluateDisplayLogic"] = (JsValue forceReload = false) => { 
+(((this as JsValue) as JsValue)["getActiveMatchingSurveys"]((JsValue surveys) => { 
+JsValue canCaptureResponse = (isCapturingEnabled as JsValue)(((this as JsValue) as JsValue)["_posthog"]);
+JsValue inAppSurveysWithDisplayLogic = (surveys as JsValue)["filter"]((JsValue survey) => { 
+return (((canCaptureResponse as JsValue) && (((((((survey as JsValue)["type"] as JsValue) === ((SurveyType as JsValue)["Popover"] as JsValue)) as JsValue) || ((((survey as JsValue)["type"] as JsValue) === ((SurveyType as JsValue)["Widget"] as JsValue)) as JsValue))) as JsValue)) as JsValue);
+return JS.undefined(); });
+JsValue matchingIds = JS.construct(Set, (inAppSurveysWithDisplayLogic as JsValue)["map"]((JsValue survey) => { 
+return ((survey as JsValue)["id"] as JsValue);
+return JS.undefined(); }));
+for (JsValue pendingSurveyId of (Array as JsValue)["from"]((((this as JsValue) as JsValue)["_surveyTimeouts"] as JsValue)["keys"]())) {
+if ((!((matchingIds as JsValue)["has"](pendingSurveyId) as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["cancelSurvey"](pendingSurveyId));}}
+JsValue inAppSurveysQueue = ((this as JsValue) as JsValue)["_sortSurveysByAppearanceDelay"](inAppSurveysWithDisplayLogic);
+JsValue activeSelectorSurveys = JS.construct(Set);
+JsValue activeTabWidgetSurveys = JS.construct(Set);
+((inAppSurveysQueue as JsValue)["forEach"]((JsValue survey) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+if (((((survey as JsValue)["type"] as JsValue) === ((SurveyType as JsValue)["Widget"] as JsValue)) as JsValue).truthy()) {if (((((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["widgetType"] as JsValue) }) as JsValue) === ((SurveyWidgetType as JsValue)["Tab"] as JsValue)) as JsValue).truthy()) {((activeTabWidgetSurveys as JsValue)["add"]((survey as JsValue)["id"]));
+(((this as JsValue) as JsValue)["_handleWidget"](survey));
+return JS.undefined();}
+if (((((((if ((((((((_b = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["widgetType"] as JsValue) }) as JsValue) === ((SurveyWidgetType as JsValue)["Selector"] as JsValue)) as JsValue) && ((if ((((((((_c = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["widgetSelector"] as JsValue) }) as JsValue)) as JsValue).truthy()) {((activeSelectorSurveys as JsValue)["add"]((survey as JsValue)["id"]));
+(((this as JsValue) as JsValue)["_manageWidgetSelectorListener"](survey, if ((((((((_d = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["widgetSelector"] as JsValue) }));}}
+if (((((isNull as JsValue)(((this as JsValue) as JsValue)["_surveyInFocus"]) as JsValue) && ((((survey as JsValue)["type"] as JsValue) === ((SurveyType as JsValue)["Popover"] as JsValue)) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["handlePopoverSurvey"](survey, JS.undefined(), object { "resumeDelayFromActivation": true }));}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_widgetSelectorListeners"] as JsValue)["forEach"]((JsValue __port_18) => { JsValue __port_19 = __port_18;
+JsValue survey = __port_19["survey"];
+if ((!((activeSelectorSurveys as JsValue)["has"]((survey as JsValue)["id"]) as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_removeWidgetSelectorListener"](survey));}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_renderedTabWidgets"] as JsValue)["forEach"]((JsValue tabSurvey, JsValue surveyId) => { 
+if ((!((activeTabWidgetSurveys as JsValue)["has"](surveyId) as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_removeTabWidget"](tabSurvey));}
+return JS.undefined(); }));
+return JS.undefined(); }, forceReload));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_addSurveyToFocus"] = (JsValue survey) => { 
+if ((!((isNull as JsValue)(((this as JsValue) as JsValue)["_surveyInFocus"]) as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["error"](`Survey ${((this as JsValue) as JsValue)["_surveyInFocus"]} already in focus. Cannot add survey ${(survey as JsValue)["id"]}.`));}
+((((this as JsValue) as JsValue)["_surveyInFocus"] = (survey as JsValue)["id"]));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_removeSurveyFromFocus"] = (JsValue survey) => { 
+if ((((((this as JsValue) as JsValue)["_surveyInFocus"] as JsValue) !== ((survey as JsValue)["id"] as JsValue)) as JsValue).truthy()) {((logger as JsValue)["error"](`Survey ${(survey as JsValue)["id"]} is not in focus. Cannot remove survey ${(survey as JsValue)["id"]}.`));}
+(((this as JsValue) as JsValue)["_clearSurveyTimeout"]((survey as JsValue)["id"]));
+((((this as JsValue) as JsValue)["_surveyInFocus"] = null));
+((((this as JsValue) as JsValue)["_currentLanguage"] = null));
+((((this as JsValue) as JsValue)["_surveyIsRendered"] = false));
+((((this as JsValue) as JsValue)["_surveyPopupProps"] = null));
+((((this as JsValue) as JsValue)["_displayOptions"] = JS.undefined()));
+(((this as JsValue) as JsValue)["_removeSurveyFromDom"](survey));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_posthog"] = posthog));
+((((this as JsValue) as JsValue)["_surveyInFocus"] = null));
+((((this as JsValue) as JsValue)["_languageChangeListener"] = () => { 
+return (((this as JsValue) as JsValue)["_onLanguageChange"]() as JsValue);
+return JS.undefined(); }));
+((addEventListener as JsValue)(window, "languagechange", ((this as JsValue) as JsValue)["_languageChangeListener"]));
+((((this as JsValue) as JsValue)["_unsubscribeFeatureFlags"] = (posthog as JsValue)["onFeatureFlags"](() => { 
+return (((this as JsValue) as JsValue)["_onLanguageChange"]() as JsValue);
+return JS.undefined(); })));
+ }
+
+JsValue _onLanguageChange() { 
+if (((isNull as JsValue)(((this as JsValue) as JsValue)["_surveyInFocus"]) as JsValue).truthy()) {return JS.undefined();}
+JsValue surveys = (((this as JsValue) as JsValue)["_posthog"] as JsValue)["get_property"](SURVEYS);
+JsValue survey = if ((((((surveys as JsValue) === (null as JsValue)) as JsValue) || (((surveys as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((surveys as JsValue)["find"]((JsValue s) => { 
+return ((((s as JsValue)["id"] as JsValue) === (((this as JsValue) as JsValue)["_surveyInFocus"] as JsValue)) as JsValue);
+return JS.undefined(); }) as JsValue) };
+if ((!(survey as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue __port_20 = ((this as JsValue) as JsValue)["_translateSurveyForRendering"](survey);
+JsValue translatedSurvey = __port_20["survey"];
+JsValue newLanguage = __port_20["language"];
+if ((((newLanguage as JsValue) === (((this as JsValue) as JsValue)["_currentLanguage"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_currentLanguage"] = newLanguage));
+if ((!(((this as JsValue) as JsValue)["_surveyIsRendered"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue overriddenSurvey = ((this as JsValue) as JsValue)["_applyDisplayOverrides"](translatedSurvey, ((this as JsValue) as JsValue)["_displayOptions"]);
+JsValue __port_21 = (retrieveSurveyShadow as JsValue)(overriddenSurvey, ((this as JsValue) as JsValue)["_posthog"]);
+JsValue shadow = __port_21["shadow"];
+((render as JsValue)((_jsx as JsValue)(SurveyPopup, (() => { JsValue __port_22 = JS.object();
+copyProperties(__port_22, ((this as JsValue) as JsValue)["_surveyPopupProps"]);
+setOwn(__port_22, "posthog", ((this as JsValue) as JsValue)["_posthog"]);
+setOwn(__port_22, "survey", overriddenSurvey);
+setOwn(__port_22, "removeSurveyFromFocus", ((this as JsValue) as JsValue)["_removeSurveyFromFocus"]);
+setOwn(__port_22, "surveyLanguage", newLanguage);return __port_22; })()), shadow));
+return JS.undefined(); }
+
+JsValue __lil_get__featureFlags() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+return if ((((((((_c = if ((((((((_b = (((_a = ((this as JsValue) as JsValue)["_posthog"])) as JsValue)["getExtension"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a, FeatureFlagsExtension) as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { ((((this as JsValue) as JsValue)["_posthog"] as JsValue)["featureFlags"] as JsValue) };
+return JS.undefined(); }
+
+JsValue _applyDisplayOverrides(JsValue survey, JsValue options) { 
+return if (((((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["position"] as JsValue) }) as JsValue) || ((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["selector"] as JsValue) }) as JsValue)) as JsValue).truthy()) { ((() => { JsValue __port_23 = JS.object();
+copyProperties(__port_23, survey);
+setOwn(__port_23, "appearance", (() => { JsValue __port_24 = JS.object();
+copyProperties(__port_24, (survey as JsValue)["appearance"]);
+copyProperties(__port_24, ((((options as JsValue)["position"] as JsValue) && (object { "position": (options as JsValue)["position"] } as JsValue))));
+copyProperties(__port_24, ((((options as JsValue)["selector"] as JsValue) && (object { "widgetSelector": (options as JsValue)["selector"] } as JsValue))));return __port_24; })());return __port_23; })() as JsValue) } else { (survey as JsValue) };
+return JS.undefined(); }
+
+JsValue _clearSurveyTimeout(JsValue surveyId) { 
+JsValue timeout = (((this as JsValue) as JsValue)["_surveyTimeouts"] as JsValue)["get"](surveyId);
+if ((timeout as JsValue).truthy()) {((clearTimeout as JsValue)(timeout));
+((((this as JsValue) as JsValue)["_surveyTimeouts"] as JsValue)["delete"](surveyId));}
+return JS.undefined(); }
+
+JsValue cancelSurvey(JsValue surveyId) { 
+if ((!((((this as JsValue) as JsValue)["_surveyTimeouts"] as JsValue)["has"](surveyId) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((logger as JsValue)["info"](`Cancelled pending survey ${surveyId}`));
+(((this as JsValue) as JsValue)["_clearSurveyTimeout"](surveyId));
+if ((((((this as JsValue) as JsValue)["_surveyInFocus"] as JsValue) === (surveyId as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_surveyInFocus"] = null));
+((((this as JsValue) as JsValue)["_currentLanguage"] = null));
+((((this as JsValue) as JsValue)["_surveyIsRendered"] = false));
+((((this as JsValue) as JsValue)["_surveyPopupProps"] = null));
+((((this as JsValue) as JsValue)["_displayOptions"] = JS.undefined()));}
+return JS.undefined(); }
+
+JsValue clearInMemoryInProgressSurveyState() { 
+((clearAllInMemoryInProgressSurveyState as JsValue)());
+return JS.undefined(); }
+
+JsValue setAutomaticDisplayDispose(JsValue dispose) { 
+((((this as JsValue) as JsValue)["_automaticDisplayDispose"] = dispose));
+return JS.undefined(); }
+
+JsValue dispose() { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_automaticDisplayDispose"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_automaticDisplayDispose"] = JS.undefined()));
+if ((((this as JsValue) as JsValue)["_languageChangeListener"] as JsValue).truthy()) {((window as JsValue)["removeEventListener"]("languagechange", ((this as JsValue) as JsValue)["_languageChangeListener"]));
+((((this as JsValue) as JsValue)["_languageChangeListener"] = null));}
+if ((((this as JsValue) as JsValue)["_unsubscribeFeatureFlags"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_unsubscribeFeatureFlags"]());
+((((this as JsValue) as JsValue)["_unsubscribeFeatureFlags"] = null));}
+((((this as JsValue) as JsValue)["_surveyTimeouts"] as JsValue)["forEach"]((JsValue _timeout, JsValue surveyId) => { 
+return (((this as JsValue) as JsValue)["_clearSurveyTimeout"](surveyId) as JsValue);
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_widgetSelectorListeners"] as JsValue)["forEach"]((JsValue _listener, JsValue surveyId) => { 
+return (((this as JsValue) as JsValue)["_detachWidgetSelectorListener"](surveyId) as JsValue);
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_renderedTargets"] as JsValue)["forEach"]((JsValue container, JsValue target) => { 
+((render as JsValue)(null, target));
+(if ((((((container as JsValue) === (null as JsValue)) as JsValue) || (((container as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((container as JsValue)["remove"]() as JsValue) });
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_renderedTargets"] as JsValue)["clear"]());
+((((this as JsValue) as JsValue)["_renderedTabWidgets"] as JsValue)["clear"]());
+((((this as JsValue) as JsValue)["_surveyInFocus"] = null));
+return JS.undefined(); }
+
+JsValue _sortSurveysByAppearanceDelay(JsValue surveys) { 
+return (surveys as JsValue)["sort"]((JsValue a, JsValue b) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue isSurveyInProgressA = (isSurveyInProgress as JsValue)(a);
+JsValue isSurveyInProgressB = (isSurveyInProgress as JsValue)(b);
+if ((((isSurveyInProgressA as JsValue) && (!(isSurveyInProgressB as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return (-(1.0 as JsValue));}
+if ((((!(isSurveyInProgressA as JsValue).truthy() as JsValue) && (isSurveyInProgressB as JsValue)) as JsValue).truthy()) {return 1.0;}
+JsValue aIsAlways = (((a as JsValue)["schedule"] as JsValue) === ((SurveySchedule as JsValue)["Always"] as JsValue));
+JsValue bIsAlways = (((b as JsValue)["schedule"] as JsValue) === ((SurveySchedule as JsValue)["Always"] as JsValue));
+if ((((aIsAlways as JsValue) && (!(bIsAlways as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return 1.0;}
+if ((((!(aIsAlways as JsValue).truthy() as JsValue) && (bIsAlways as JsValue)) as JsValue).truthy()) {return (-(1.0 as JsValue));}
+return ((((((if ((((((((_a = (a as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveyPopupDelaySeconds"] as JsValue) }) as JsValue) || (0.0 as JsValue))) as JsValue) - (((((if ((((((((_b = (b as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["surveyPopupDelaySeconds"] as JsValue) }) as JsValue) || (0.0 as JsValue))) as JsValue));
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue _translateSurveyForRendering(JsValue survey) { 
+return (applySurveyTranslationForUser as JsValue)(survey, ((this as JsValue) as JsValue)["_posthog"]);
+return JS.undefined(); }
+
+JsValue _handleUrlPrefill(JsValue survey, JsValue surveyLanguage, JsValue properties) { 
+if (((((this as JsValue) as JsValue)["_prefillHandledSurveys"] as JsValue)["has"]((survey as JsValue)["id"]) as JsValue).truthy()) {return false;}
+JsValue __port_25 = (extractPrefillParamsFromUrl as JsValue)(((window as JsValue)["location"] as JsValue)["search"]);
+JsValue params = __port_25["params"];
+if ((((((Object as JsValue)["keys"](params) as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {return false;}
+((logger as JsValue)["info"]("[Survey Prefill] Detected URL prefill parameters"));
+JsValue result = ((this as JsValue) as JsValue)["_processPrefillData"](survey, params, surveyLanguage);
+if ((!(result as JsValue).truthy() as JsValue).truthy()) {return false;}
+(((this as JsValue) as JsValue)["_autoSubmitPrefilledResponses"](survey, result, properties, surveyLanguage));
+((((this as JsValue) as JsValue)["_prefillHandledSurveys"] as JsValue)["add"]((survey as JsValue)["id"]));
+return (result as JsValue)["isSurveyCompleted"];
+return JS.undefined(); }
+
+JsValue _autoSubmitPrefilledResponses(JsValue survey, JsValue result, JsValue properties, JsValue surveyLanguage) { 
+JsValue __port_26 = result;
+JsValue responses = __port_26["responses"];
+JsValue submissionId = __port_26["submissionId"];
+JsValue isSurveyCompleted = __port_26["isSurveyCompleted"];
+JsValue skippedResponses = __port_26["skippedResponses"];
+JsValue shouldAutoSubmitPrefilled = ((((((Object as JsValue)["keys"](skippedResponses) as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue) && ((survey as JsValue)["enable_partial_responses"] as JsValue));
+if ((((shouldAutoSubmitPrefilled as JsValue) || (isSurveyCompleted as JsValue)) as JsValue).truthy()) {((sendSurveyEvent as JsValue)(object { "responses": if ((isSurveyCompleted as JsValue).truthy()) { (responses as JsValue) } else { (skippedResponses as JsValue) }, "survey": survey, "surveySubmissionId": submissionId, "posthog": ((this as JsValue) as JsValue)["_posthog"], "isSurveyCompleted": isSurveyCompleted, "properties": properties, "surveyLanguage": surveyLanguage }));}
+return JS.undefined(); }
+
+JsValue _handleInitialResponses(JsValue survey, JsValue initialResponses, JsValue properties, JsValue surveyLanguage) { 
+JsValue prefillParams = object {  };
+for (JsValue __port_27 of (Object as JsValue)["entries"](initialResponses)) {JsValue __port_28 = __port_27;
+JsValue indexStr = JS.undefined();
+JsValue value = JS.undefined();
+int __port_29 = 0;
+for (JsValue __port_30 of __port_28) {
+if (__port_29 === 0) { indexStr = __port_30; }
+if (__port_29 === 1) { value = __port_30; }
+__port_29 += 1; if (__port_29 === 2) break;
+}
+JsValue index = (parseInt as JsValue)(indexStr);
+(((prefillParams as JsValue)[index] = if (((isArray as JsValue)(value) as JsValue).truthy()) { ((value as JsValue)["map"](String) as JsValue) } else { (JS.array((String as JsValue)(value)) as JsValue) }));}
+((logger as JsValue)["info"]("[Survey] Processing initial responses"));
+JsValue result = ((this as JsValue) as JsValue)["_processPrefillData"](survey, prefillParams, surveyLanguage);
+if ((!(result as JsValue).truthy() as JsValue).truthy()) {return false;}
+(((this as JsValue) as JsValue)["_autoSubmitPrefilledResponses"](survey, result, properties, surveyLanguage));
+return (result as JsValue)["isSurveyCompleted"];
+return JS.undefined(); }
+
+JsValue _processPrefillData(JsValue survey, JsValue prefillParams, JsValue surveyLanguage) { 
+try {JsValue responses = (convertPrefillToResponses as JsValue)(survey, prefillParams);
+if ((((((Object as JsValue)["keys"](responses) as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {((logger as JsValue)["warn"]("[Survey Prefill] No valid responses after conversion"));
+return null;}
+JsValue submissionId = (uuidv7 as JsValue)();
+JsValue prefilledIndices = ((Object as JsValue)["keys"](prefillParams) as JsValue)["map"]((JsValue k) => { 
+return ((parseInt as JsValue)(k, 10.0) as JsValue);
+return JS.undefined(); });
+JsValue __port_31 = (calculatePrefillStartIndex as JsValue)(survey, prefilledIndices, responses);
+JsValue startQuestionIndex = __port_31["startQuestionIndex"];
+JsValue skippedResponses = __port_31["skippedResponses"];
+JsValue skippedIndices = __port_31["skippedIndices"];
+JsValue isSurveyCompleted = ((startQuestionIndex as JsValue) >= (((survey as JsValue)["questions"] as JsValue)["length"] as JsValue));
+((setInProgressSurveyState as JsValue)(survey, object { "surveySubmissionId": submissionId, "responses": responses, "lastQuestionIndex": startQuestionIndex, "questionOrder": (getQuestionOrder as JsValue)((survey as JsValue)["questions"]), "visitedIndices": skippedIndices, "surveyLanguage": surveyLanguage }));
+((logger as JsValue)["info"]("[Survey Prefill] Stored prefilled responses in localStorage"));
+return object { "responses": responses, "submissionId": submissionId, "startQuestionIndex": startQuestionIndex, "isSurveyCompleted": isSurveyCompleted, "skippedResponses": skippedResponses };} catch (JsValue error) {((logger as JsValue)["error"]("[Survey Prefill] Error handling prefill:", error));
+return null;}
+return JS.undefined(); }
+
+JsValue _isSurveyFeatureFlagEnabled(JsValue flagKey, JsValue flagVariant = JS.undefined()) { 
+if ((!(flagKey as JsValue).truthy() as JsValue).truthy()) {return true;}
+JsValue featureFlags = ((this as JsValue) as JsValue)["_featureFlags"];
+JsValue isFeatureEnabled = !(!((if ((((((featureFlags as JsValue) === (null as JsValue)) as JsValue) || (((featureFlags as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((featureFlags as JsValue)["isFeatureEnabled"](flagKey, object { "send_event": !((flagKey as JsValue)["startsWith"](SURVEY_TARGETING_FLAG_PREFIX) as JsValue).truthy() }) as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+JsValue flagVariantCheck = true;
+if ((flagVariant as JsValue).truthy()) {JsValue flagVariantValue = if ((((((featureFlags as JsValue) === (null as JsValue)) as JsValue) || (((featureFlags as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((featureFlags as JsValue)["getFeatureFlag"](flagKey, object { "send_event": false }) as JsValue) };
+((flagVariantCheck = ((((flagVariantValue as JsValue) === (flagVariant as JsValue)) as JsValue) || (((flagVariant as JsValue) === ("any" as JsValue)) as JsValue))));}
+JsValue enabled = ((isFeatureEnabled as JsValue) && (flagVariantCheck as JsValue));
+if ((!(enabled as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_warnIfFeatureFlagsDisabled"](flagKey));}
+return enabled;
+return JS.undefined(); }
+
+JsValue _warnIfFeatureFlagsDisabled(JsValue flagKey) { 
+JsValue _a = JS.undefined();
+if ((((((this as JsValue) as JsValue)["_loggedFeatureFlagsDisabledWarning"] as JsValue) || (!((if ((((((((_a = (((this as JsValue) as JsValue)["_posthog"] as JsValue)["config"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["advanced_disable_feature_flags"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_loggedFeatureFlagsDisabledWarning"] = true));
+((logger as JsValue)["warn"](((((((`Survey feature flag "${flagKey}" evaluated to false because advanced_disable_feature_flags is set. ` as JsValue) + ("PostHog creates an internal targeting flag for almost every survey, so no survey can display while flags are disabled. " as JsValue)) as JsValue) + ("To keep surveys working, replace advanced_disable_feature_flags with advanced_only_evaluate_survey_feature_flags, " as JsValue)) as JsValue) + ("which evaluates survey flags only." as JsValue))));
+return JS.undefined(); }
+
+JsValue _isSurveyConditionMatched(JsValue survey) { 
+if ((!((survey as JsValue)["conditions"] as JsValue).truthy() as JsValue).truthy()) {return true;}
+return ((((((doesSurveyUrlMatch as JsValue)(survey, ((this as JsValue) as JsValue)["_posthog"]) as JsValue) && ((doesSurveyDeviceTypesMatch as JsValue)(survey) as JsValue)) as JsValue) && ((doesSurveyMatchSelector as JsValue)(survey) as JsValue)));
+return JS.undefined(); }
+
+JsValue _internalFlagCheckSatisfied(JsValue survey) { 
+JsValue _a = JS.undefined();
+if (((canActivateRepeatedly as JsValue)(survey) as JsValue).truthy()) {return object { "satisfied": true };}
+if (((((((survey as JsValue)["internal_targeting_flag_key"] as JsValue) && ((isSurveyIterationBased as JsValue)(survey) as JsValue)) as JsValue) && (!((if ((((((((_a = ((this as JsValue) as JsValue)["_featureFlags"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["hasLoadedFlags"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_warnIfFeatureFlagsDisabled"]((survey as JsValue)["internal_targeting_flag_key"]));
+return object { "satisfied": false, "reason": "Feature flags have not loaded yet; deferring internal targeting flag check" };}
+return object { "satisfied": ((this as JsValue) as JsValue)["_isSurveyFeatureFlagEnabled"]((survey as JsValue)["internal_targeting_flag_key"]) };
+return JS.undefined(); }
+
+JsValue checkSurveyEligibility(JsValue survey) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue eligibility = object { "eligible": true, "reason": JS.undefined() };
+if ((!((isSurveyRunning as JsValue)(survey) as JsValue).truthy() as JsValue).truthy()) {(((eligibility as JsValue)["eligible"] = false));
+(((eligibility as JsValue)["reason"] = `Survey is not running. It was completed on ${(survey as JsValue)["end_date"]}`));
+return eligibility;}
+if ((!((IN_APP_SURVEY_TYPES as JsValue)["includes"]((survey as JsValue)["type"]) as JsValue).truthy() as JsValue).truthy()) {(((eligibility as JsValue)["eligible"] = false));
+(((eligibility as JsValue)["reason"] = `Surveys of type ${(survey as JsValue)["type"]} are never eligible to be shown in the app`));
+return eligibility;}
+JsValue linkedFlagVariant = if ((((((((_a = (survey as JsValue)["conditions"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["linkedFlagVariant"] as JsValue) };
+if ((!(((this as JsValue) as JsValue)["_isSurveyFeatureFlagEnabled"]((survey as JsValue)["linked_flag_key"], linkedFlagVariant) as JsValue).truthy() as JsValue).truthy()) {(((eligibility as JsValue)["eligible"] = false));
+if ((!(linkedFlagVariant as JsValue).truthy() as JsValue).truthy()) {(((eligibility as JsValue)["reason"] = "Survey linked feature flag is not enabled"));} else {(((eligibility as JsValue)["reason"] = `Survey linked feature flag is not enabled for variant ${linkedFlagVariant}`));}
+return eligibility;}
+if ((!(((this as JsValue) as JsValue)["_isSurveyFeatureFlagEnabled"]((survey as JsValue)["targeting_flag_key"]) as JsValue).truthy() as JsValue).truthy()) {(((eligibility as JsValue)["eligible"] = false));
+(((eligibility as JsValue)["reason"] = "Survey targeting feature flag is not enabled"));
+return eligibility;}
+JsValue internalFlagCheck = ((this as JsValue) as JsValue)["_internalFlagCheckSatisfied"](survey);
+if ((!((internalFlagCheck as JsValue)["satisfied"] as JsValue).truthy() as JsValue).truthy()) {(((eligibility as JsValue)["eligible"] = false));
+(((eligibility as JsValue)["reason"] = if ((((((((_b = (internalFlagCheck as JsValue)["reason"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { ("Survey internal targeting flag is not enabled and survey cannot activate repeatedly and survey is not in progress" as JsValue) }));
+return eligibility;}
+if ((!((hasWaitPeriodPassed as JsValue)(if ((((((((_c = (survey as JsValue)["conditions"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["seenSurveyWaitPeriodInDays"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {(((eligibility as JsValue)["eligible"] = false));
+(((eligibility as JsValue)["reason"] = "Survey wait period has not passed"));
+return eligibility;}
+if (((getSurveySeen as JsValue)(survey) as JsValue).truthy()) {(((eligibility as JsValue)["eligible"] = false));
+(((eligibility as JsValue)["reason"] = "Survey has already been seen and it can't be activated again"));
+return eligibility;}
+return eligibility;
+return JS.undefined(); }
+
+JsValue checkSurveyCaptureEligibility() { 
+if ((!((isCapturingEnabled as JsValue)(((this as JsValue) as JsValue)["_posthog"]) as JsValue).truthy() as JsValue).truthy()) {return object { "eligible": false, "reason": SURVEY_CAPTURING_DISABLED };}
+return object { "eligible": true };
+return JS.undefined(); }
+
+JsValue checkSurveyDisplayEligibility(JsValue survey) { 
+JsValue captureEligibility = ((this as JsValue) as JsValue)["checkSurveyCaptureEligibility"]();
+if ((!((captureEligibility as JsValue)["eligible"] as JsValue).truthy() as JsValue).truthy()) {return captureEligibility;}
+return ((this as JsValue) as JsValue)["checkSurveyEligibility"](survey);
+return JS.undefined(); }
+
+JsValue checkSurveyRenderability(JsValue survey) { 
+JsValue eligibility = ((this as JsValue) as JsValue)["checkSurveyDisplayEligibility"](survey);
+if (((((eligibility as JsValue)["eligible"] as JsValue) && (!(((this as JsValue) as JsValue)["_hasActionOrEventTriggeredSurvey"](survey) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return object { "eligible": false, "reason": "Survey event/action trigger has not been fired yet" };}
+return eligibility;
+return JS.undefined(); }
+
+JsValue _hasActionOrEventTriggeredSurvey(JsValue survey) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((!((doesSurveyActivateByEvent as JsValue)(survey) as JsValue).truthy() as JsValue) && (!((doesSurveyActivateByAction as JsValue)(survey) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return true;}
+JsValue surveysActivatedByEventsOrActions = if ((((((((_b = if ((((((((_a = (((this as JsValue) as JsValue)["_posthog"] as JsValue)["surveys"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["_surveyEventReceiver"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["getSurveys"]() as JsValue) };
+return !(!((if ((((((surveysActivatedByEventsOrActions as JsValue) === (null as JsValue)) as JsValue) || (((surveysActivatedByEventsOrActions as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((surveysActivatedByEventsOrActions as JsValue)["includes"]((survey as JsValue)["id"]) as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+return JS.undefined(); }
+
+JsValue _checkFlags(JsValue survey) { 
+JsValue _a = JS.undefined();
+if ((!((if ((((((((_a = (survey as JsValue)["feature_flag_keys"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["length"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {return true;}
+return ((survey as JsValue)["feature_flag_keys"] as JsValue)["every"]((JsValue __port_32) => { JsValue __port_33 = __port_32;
+JsValue key = __port_33["key"];
+JsValue value = __port_33["value"];
+if ((((!(key as JsValue).truthy() as JsValue) || (!(value as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return true;}
+return ((this as JsValue) as JsValue)["_isSurveyFeatureFlagEnabled"](value);
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue _shouldDisplaySurvey(JsValue survey) { 
+return ((((((((((this as JsValue) as JsValue)["checkSurveyEligibility"](survey) as JsValue)["eligible"] as JsValue) && (((this as JsValue) as JsValue)["_isSurveyConditionMatched"](survey) as JsValue)) as JsValue) && (((this as JsValue) as JsValue)["_hasActionOrEventTriggeredSurvey"](survey) as JsValue)) as JsValue) && (((this as JsValue) as JsValue)["_checkFlags"](survey) as JsValue)));
+return JS.undefined(); }
+
+JsValue _removeSurveyFromDom(JsValue survey) { 
+try {JsValue shadowContainer = (document as JsValue)["querySelector"]((getSurveyContainerClass as JsValue)(survey, true));
+if ((if ((((((shadowContainer as JsValue) === (null as JsValue)) as JsValue) || (((shadowContainer as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((shadowContainer as JsValue)["shadowRoot"] as JsValue) } as JsValue).truthy()) {((render as JsValue)(null, (shadowContainer as JsValue)["shadowRoot"]));
+((((this as JsValue) as JsValue)["_renderedTargets"] as JsValue)["delete"]((shadowContainer as JsValue)["shadowRoot"]));}
+(if ((((((shadowContainer as JsValue) === (null as JsValue)) as JsValue) || (((shadowContainer as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((shadowContainer as JsValue)["remove"]() as JsValue) });} catch (JsValue error) {((logger as JsValue)["warn"](`Failed to remove survey ${(survey as JsValue)["id"]} from DOM:`, error));}
+return JS.undefined(); }
+
+JsValue getTestAPI() { 
+return object { "addSurveyToFocus": ((this as JsValue) as JsValue)["_addSurveyToFocus"], "removeSurveyFromFocus": ((this as JsValue) as JsValue)["_removeSurveyFromFocus"], "surveyInFocus": ((this as JsValue) as JsValue)["_surveyInFocus"], "surveyTimeouts": ((this as JsValue) as JsValue)["_surveyTimeouts"], "handleWidget": ((this as JsValue) as JsValue)["_handleWidget"], "handlePopoverSurvey": ((this as JsValue) as JsValue)["handlePopoverSurvey"], "manageWidgetSelectorListener": ((this as JsValue) as JsValue)["_manageWidgetSelectorListener"], "sortSurveysByAppearanceDelay": ((this as JsValue) as JsValue)["_sortSurveysByAppearanceDelay"], "checkFlags": (((this as JsValue) as JsValue)["_checkFlags"] as JsValue)["bind"]((this as JsValue)), "isSurveyFeatureFlagEnabled": (((this as JsValue) as JsValue)["_isSurveyFeatureFlagEnabled"] as JsValue)["bind"]((this as JsValue)), "onLanguageChange": (((this as JsValue) as JsValue)["_onLanguageChange"] as JsValue)["bind"]((this as JsValue)), "currentLanguage": ((this as JsValue) as JsValue)["_currentLanguage"], "surveyIsRendered": ((this as JsValue) as JsValue)["_surveyIsRendered"] };
+return JS.undefined(); }
+}
+export constructor SurveyManager;
+
+JsValue DEFAULT_PREVIEW_POSITION_STYLES = object { "position": "relative", "left": "unset", "right": "unset", "top": "unset", "bottom": "unset", "transform": "unset" };
+
+JsValue renderSurveysPreview = (JsValue __port_35) => __port_34(__port_35);
+
+JsValue renderFeedbackWidgetPreview = (JsValue __port_39) => __port_38(__port_39);
+
+
+
+
+
+JsValue CLOSE_ANIMATION_DURATION_MS = 200.0;
+
+
+
+
+
+
+
+
+
+
+
+JsValue getQuestionComponent = (JsValue __port_42) => __port_41(__port_42);
+
+JsValue getNextToTriggerPosition(JsValue target, JsValue surveyWidth) {
+try {JsValue buttonRect = (target as JsValue)["getBoundingClientRect"]();
+JsValue viewportHeight = (window as JsValue)["innerHeight"];
+JsValue viewportWidth = (window as JsValue)["innerWidth"];
+JsValue estimatedMinSurveyHeight = (SURVEY_NEXT_TO_TRIGGER_PARAMS as JsValue)["ESTIMATED_MIN_HEIGHT"];
+JsValue buttonCenterX = (((buttonRect as JsValue)["left"] as JsValue) + ((((buttonRect as JsValue)["width"] as JsValue) / (2.0 as JsValue)) as JsValue));
+JsValue left = ((buttonCenterX as JsValue) - (((surveyWidth as JsValue) / (2.0 as JsValue)) as JsValue));
+JsValue horizontalPadding = (SURVEY_NEXT_TO_TRIGGER_PARAMS as JsValue)["HORIZONTAL_PADDING"];
+if ((((((left as JsValue) + (surveyWidth as JsValue)) as JsValue) > (((viewportWidth as JsValue) - (horizontalPadding as JsValue)) as JsValue)) as JsValue).truthy()) {((left = ((((viewportWidth as JsValue) - (surveyWidth as JsValue)) as JsValue) - (horizontalPadding as JsValue))));}
+if ((((left as JsValue) < (horizontalPadding as JsValue)) as JsValue).truthy()) {((left = horizontalPadding));}
+JsValue spacing = (SURVEY_NEXT_TO_TRIGGER_PARAMS as JsValue)["TRIGGER_SPACING"];
+JsValue spaceBelow = ((viewportHeight as JsValue) - ((buttonRect as JsValue)["bottom"] as JsValue));
+JsValue spaceAbove = (buttonRect as JsValue)["top"];
+JsValue showAbove = ((((spaceBelow as JsValue) < (estimatedMinSurveyHeight as JsValue)) as JsValue) && (((spaceAbove as JsValue) > (spaceBelow as JsValue)) as JsValue));
+return object { "position": "fixed", "top": if ((showAbove as JsValue).truthy()) { ("auto" as JsValue) } else { (`${(((buttonRect as JsValue)["bottom"] as JsValue) + (spacing as JsValue))}px` as JsValue) }, "left": `${left}px`, "right": "auto", "bottom": if ((showAbove as JsValue).truthy()) { (`${((((viewportHeight as JsValue) - ((buttonRect as JsValue)["top"] as JsValue)) as JsValue) + (spacing as JsValue))}px` as JsValue) } else { ("auto" as JsValue) }, "zIndex": (defaultSurveyAppearance as JsValue)["zIndex"] };} catch (JsValue error) {((logger as JsValue)["warn"]("Failed to calculate trigger position:", error));
+return null;}
+return JS.undefined();}
+
+JsValue __port_34(JsValue __port_35) {JsValue __port_36 = __port_35;
+JsValue survey = __port_36["survey"];
+JsValue parentElement = __port_36["parentElement"];
+JsValue previewPageIndex = __port_36["previewPageIndex"];
+JsValue forceDisableHtml = __port_36["forceDisableHtml"];
+JsValue onPreviewSubmit = __port_36["onPreviewSubmit"];
+JsValue onPreviewBack = __port_36["onPreviewBack"];
+JsValue __port_37 = __port_36["positionStyles"];
+JsValue positionStyles = if (JS.isUndefined(__port_37)) { (DEFAULT_PREVIEW_POSITION_STYLES as JsValue) } else { __port_37 };
+JsValue currentStyle = (parentElement as JsValue)["querySelector"]("style[data-ph-survey-style]");
+if ((currentStyle as JsValue).truthy()) {((currentStyle as JsValue)["remove"]());}
+JsValue stylesheet = (getSurveyStylesheet as JsValue)();
+if ((stylesheet as JsValue).truthy()) {((parentElement as JsValue)["appendChild"](stylesheet));
+((addSurveyCSSVariablesToElement as JsValue)(parentElement, (survey as JsValue)["type"], (survey as JsValue)["appearance"]));}
+((render as JsValue)((_jsx as JsValue)(SurveyPopup, object { "survey": survey, "forceDisableHtml": forceDisableHtml, "style": positionStyles, "onPreviewSubmit": onPreviewSubmit, "onPreviewBack": onPreviewBack, "previewPageIndex": previewPageIndex, "removeSurveyFromFocus": () => { 
+
+return JS.undefined(); } }), parentElement));
+return JS.undefined();}
+
+JsValue __port_38(JsValue __port_39) {JsValue __port_40 = __port_39;
+JsValue survey = __port_40["survey"];
+JsValue root = __port_40["root"];
+JsValue forceDisableHtml = __port_40["forceDisableHtml"];
+JsValue stylesheet = (getSurveyStylesheet as JsValue)();
+if ((stylesheet as JsValue).truthy()) {((root as JsValue)["appendChild"](stylesheet));
+((addSurveyCSSVariablesToElement as JsValue)(root, (survey as JsValue)["type"], (survey as JsValue)["appearance"]));}
+((render as JsValue)((_jsx as JsValue)(FeedbackWidget, object { "forceDisableHtml": forceDisableHtml, "survey": survey, "readOnly": true }), root));
+return JS.undefined();}
+
+JsValue generateSurveys(JsValue posthog, JsValue isSurveysEnabled) {
+if ((((!(document as JsValue).truthy() as JsValue) || (!(window as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue surveyManager = JS.construct((SurveyManager as JsValue), posthog);
+if ((((posthog as JsValue)["config"] as JsValue)["disable_surveys_automatic_display"] as JsValue).truthy()) {((logger as JsValue)["info"]("Surveys automatic display is disabled. Skipping call surveys and evaluate display logic."));
+return surveyManager;}
+if ((((isSurveysEnabled as JsValue) === (false as JsValue)) as JsValue).truthy()) {((logger as JsValue)["info"]("There are no surveys to load or Surveys is disabled in the project settings."));
+return surveyManager;}
+((surveyManager as JsValue)["callSurveysAndEvaluateDisplayLogic"](true));
+JsValue intervalId = JS.undefined();
+JsValue startInterval = () => { 
+if ((!((isUndefined as JsValue)(intervalId) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((intervalId = (setInterval as JsValue)(() => { 
+((surveyManager as JsValue)["callSurveysAndEvaluateDisplayLogic"](false));
+return JS.undefined(); }, 1000.0)));
+return JS.undefined(); };
+JsValue stopInterval = () => { 
+if ((!((isUndefined as JsValue)(intervalId) as JsValue).truthy() as JsValue).truthy()) {((clearInterval as JsValue)(intervalId));
+((intervalId = JS.undefined()));}
+return JS.undefined(); };
+((startInterval as JsValue)());
+JsValue onVisibilityChange = () => { 
+if (((document as JsValue)["hidden"] as JsValue).truthy()) {((stopInterval as JsValue)());} else {((surveyManager as JsValue)["callSurveysAndEvaluateDisplayLogic"](false));
+((startInterval as JsValue)());}
+return JS.undefined(); };
+((addEventListener as JsValue)(document, "visibilitychange", onVisibilityChange));
+((surveyManager as JsValue)["setAutomaticDisplayDispose"](() => { 
+((stopInterval as JsValue)());
+((document as JsValue)["removeEventListener"]("visibilitychange", onVisibilityChange));
+return JS.undefined(); }));
+return surveyManager;
+return JS.undefined();}
+
+JsValue useHideSurveyOnURLChange(JsValue __port_44) {JsValue __port_45 = __port_44;
+JsValue survey = __port_45["survey"];
+JsValue __port_46 = __port_45["removeSurveyFromFocus"];
+JsValue removeSurveyFromFocus = if (JS.isUndefined(__port_46)) { (() => { 
+
+return JS.undefined(); } as JsValue) } else { __port_46 };
+JsValue setSurveyVisible = __port_45["setSurveyVisible"];
+JsValue __port_47 = __port_45["isPreviewMode"];
+JsValue isPreviewMode = if (JS.isUndefined(__port_47)) { (false as JsValue) } else { __port_47 };
+JsValue posthog = __port_45["posthog"];
+((useEffect as JsValue)(() => { 
+JsValue _a = JS.undefined();
+if ((((isPreviewMode as JsValue) || (!((if ((((((((_a = (survey as JsValue)["conditions"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["url"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue checkUrlMatch = () => { 
+JsValue _a = JS.undefined();
+JsValue isSurveyTypeWidget = (((survey as JsValue)["type"] as JsValue) === ((SurveyType as JsValue)["Widget"] as JsValue));
+JsValue doesSurveyMatchUrlCondition = (doesSurveyUrlMatch as JsValue)(survey, posthog);
+JsValue isSurveyWidgetTypeTab = (((((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["widgetType"] as JsValue) }) as JsValue) === ((SurveyWidgetType as JsValue)["Tab"] as JsValue)) as JsValue) && (isSurveyTypeWidget as JsValue));
+if ((doesSurveyMatchUrlCondition as JsValue).truthy()) {if ((isSurveyWidgetTypeTab as JsValue).truthy()) {((logger as JsValue)["info"](`Showing survey ${(survey as JsValue)["id"]} because it is a feedback button tab and URL matches`));
+((setSurveyVisible as JsValue)(true));}
+return JS.undefined();}
+((logger as JsValue)["info"](`Hiding survey ${(survey as JsValue)["id"]} because URL does not match`));
+((setSurveyVisible as JsValue)(false));
+return (removeSurveyFromFocus as JsValue)(survey);
+return JS.undefined(); };
+((addEventListener as JsValue)(window, "popstate", checkUrlMatch));
+((addEventListener as JsValue)(window, "hashchange", checkUrlMatch));
+JsValue originalPushState = ((window as JsValue)["history"] as JsValue)["pushState"];
+JsValue originalReplaceState = ((window as JsValue)["history"] as JsValue)["replaceState"];
+((((window as JsValue)["history"] as JsValue)["pushState"] = (this JsValue __port_48, JsValue... args) => { 
+((originalPushState as JsValue)["apply"](__port_48, args));
+((checkUrlMatch as JsValue)());
+return JS.undefined(); }));
+((((window as JsValue)["history"] as JsValue)["replaceState"] = (this JsValue __port_49, JsValue... args) => { 
+((originalReplaceState as JsValue)["apply"](__port_49, args));
+((checkUrlMatch as JsValue)());
+return JS.undefined(); }));
+return () => { 
+((window as JsValue)["removeEventListener"]("popstate", checkUrlMatch));
+((window as JsValue)["removeEventListener"]("hashchange", checkUrlMatch));
+((((window as JsValue)["history"] as JsValue)["pushState"] = originalPushState));
+((((window as JsValue)["history"] as JsValue)["replaceState"] = originalReplaceState));
+return JS.undefined(); };
+return JS.undefined(); }, JS.array(isPreviewMode, survey, removeSurveyFromFocus, setSurveyVisible, posthog)));
+return JS.undefined();}
+
+JsValue usePopupVisibility(JsValue survey, JsValue posthog, JsValue millisecondDelay, JsValue isPreviewMode, JsValue removeSurveyFromFocus, JsValue isPopup, JsValue surveyContainerRef, JsValue skipShownEvent, JsValue surveyLanguage) {
+JsValue __port_50 = (useState as JsValue)(((((isPreviewMode as JsValue) || (((millisecondDelay as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue) || ((((survey as JsValue)["type"] as JsValue) === ((SurveyType as JsValue)["ExternalSurvey"] as JsValue)) as JsValue)));
+JsValue isPopupVisible = JS.undefined();
+JsValue setIsPopupVisible = JS.undefined();
+int __port_51 = 0;
+for (JsValue __port_52 of __port_50) {
+if (__port_51 === 0) { isPopupVisible = __port_52; }
+if (__port_51 === 1) { setIsPopupVisible = __port_52; }
+__port_51 += 1; if (__port_51 === 2) break;
+}
+JsValue __port_53 = (useState as JsValue)(false);
+JsValue isSurveySent = JS.undefined();
+JsValue setIsSurveySent = JS.undefined();
+int __port_54 = 0;
+for (JsValue __port_55 of __port_53) {
+if (__port_54 === 0) { isSurveySent = __port_55; }
+if (__port_54 === 1) { setIsSurveySent = __port_55; }
+__port_54 += 1; if (__port_54 === 2) break;
+}
+JsValue isClosingRef = (useRef as JsValue)(false);
+JsValue hidePopupWithAnimation = () => { 
+JsValue removeDOMAndHidePopup = () => { 
+if ((isPopup as JsValue).truthy()) {((removeSurveyFromFocus as JsValue)(survey));}
+((setIsPopupVisible as JsValue)(false));
+return JS.undefined(); };
+if (((isClosingRef as JsValue)["current"] as JsValue).truthy()) {return JS.undefined();}
+JsValue container = if ((((((surveyContainerRef as JsValue) === (null as JsValue)) as JsValue) || (((surveyContainerRef as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((surveyContainerRef as JsValue)["current"] as JsValue) };
+if ((!(container as JsValue).truthy() as JsValue).truthy()) {((removeDOMAndHidePopup as JsValue)());
+return JS.undefined();}
+(((isClosingRef as JsValue)["current"] = true));
+((((container as JsValue)["style"] as JsValue)["transition"] = `opacity ${CLOSE_ANIMATION_DURATION_MS}ms ease-out`));
+((((container as JsValue)["style"] as JsValue)["opacity"] = "0"));
+((setTimeout as JsValue)(() => { 
+(((isClosingRef as JsValue)["current"] = false));
+((removeDOMAndHidePopup as JsValue)());
+return JS.undefined(); }, ((CLOSE_ANIMATION_DURATION_MS as JsValue) + (50.0 as JsValue))));
+return JS.undefined(); };
+JsValue handleSurveyClosed = (JsValue event) => { 
+if ((((((event as JsValue)["detail"] as JsValue)["surveyId"] as JsValue) !== ((survey as JsValue)["id"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((hidePopupWithAnimation as JsValue)());
+return JS.undefined(); };
+((useEffect as JsValue)(() => { 
+if ((!(posthog as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["error"]("usePopupVisibility hook called without a PostHog instance."));
+return JS.undefined();}
+if ((isPreviewMode as JsValue).truthy()) {return JS.undefined();}
+JsValue autoDisappearTimeout = JS.undefined();
+JsValue handleSurveySent = (JsValue event) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((((event as JsValue)["detail"] as JsValue)["surveyId"] as JsValue) !== ((survey as JsValue)["id"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((!((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["displayThankYouMessage"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {return (hidePopupWithAnimation as JsValue)();}
+((setIsSurveySent as JsValue)(true));
+if ((if ((((((((_b = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["autoDisappear"] as JsValue) } as JsValue).truthy()) {if ((autoDisappearTimeout as JsValue).truthy()) {((clearTimeout as JsValue)(autoDisappearTimeout));}
+((autoDisappearTimeout = (setTimeout as JsValue)(hidePopupWithAnimation, 5000.0)));}
+return JS.undefined(); };
+JsValue showSurvey = () => { 
+JsValue _a = JS.undefined();
+if ((!((doesSurveyUrlMatch as JsValue)(survey, posthog) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((setIsPopupVisible as JsValue)(true));
+try {((localStorage as JsValue)["setItem"]("lastSeenSurveyDate", (JS.construct(Date) as JsValue)["toISOString"]()));} catch (JsValue __port_56) {}
+((window as JsValue)["dispatchEvent"](JS.construct(Event, "PHSurveyShown")));
+if ((!(skipShownEvent as JsValue).truthy() as JsValue).truthy()) {((posthog as JsValue)["capture"]((SurveyEventName as JsValue)["SHOWN"], (() => { JsValue __port_57 = JS.object();
+setOwn(__port_57, (SurveyEventProperties as JsValue)["SURVEY_NAME"], (survey as JsValue)["name"]);
+setOwn(__port_57, (SurveyEventProperties as JsValue)["SURVEY_ID"], (survey as JsValue)["id"]);
+setOwn(__port_57, (SurveyEventProperties as JsValue)["SURVEY_ITERATION"], (survey as JsValue)["current_iteration"]);
+setOwn(__port_57, (SurveyEventProperties as JsValue)["SURVEY_ITERATION_START_DATE"], (survey as JsValue)["current_iteration_start_date"]);
+copyProperties(__port_57, (((surveyLanguage as JsValue) && ((() => { JsValue __port_58 = JS.object();
+setOwn(__port_58, (SurveyEventProperties as JsValue)["SURVEY_LANGUAGE"], surveyLanguage);return __port_58; })() as JsValue))));
+setOwn(__port_57, "sessionRecordingUrl", if ((((((((_a = (posthog as JsValue)["get_session_replay_url"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"](posthog) as JsValue) });return __port_57; })()));}
+return JS.undefined(); };
+((addEventListener as JsValue)(window, "PHSurveyClosed", handleSurveyClosed));
+((addEventListener as JsValue)(window, "PHSurveySent", handleSurveySent));
+JsValue showTimeout = if ((((millisecondDelay as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) { ((setTimeout as JsValue)(showSurvey, millisecondDelay) as JsValue) } else { (JS.undefined() as JsValue) };
+if (((isUndefined as JsValue)(showTimeout) as JsValue).truthy()) {((showSurvey as JsValue)());}
+return () => { 
+if ((!((isUndefined as JsValue)(showTimeout) as JsValue).truthy() as JsValue).truthy()) {((clearTimeout as JsValue)(showTimeout));}
+if ((!((isUndefined as JsValue)(autoDisappearTimeout) as JsValue).truthy() as JsValue).truthy()) {((clearTimeout as JsValue)(autoDisappearTimeout));}
+((window as JsValue)["removeEventListener"]("PHSurveyClosed", handleSurveyClosed));
+((window as JsValue)["removeEventListener"]("PHSurveySent", handleSurveySent));
+return JS.undefined(); };
+return JS.undefined(); }, JS.array()));
+((useHideSurveyOnURLChange as JsValue)(object { "survey": survey, "removeSurveyFromFocus": removeSurveyFromFocus, "setSurveyVisible": setIsPopupVisible, "isPreviewMode": isPreviewMode, "posthog": posthog }));
+return object { "isPopupVisible": isPopupVisible, "isSurveySent": isSurveySent, "setIsPopupVisible": setIsPopupVisible, "hidePopupWithAnimation": hidePopupWithAnimation };
+return JS.undefined();}
+
+JsValue getTabPositionStyles(JsValue position = (SurveyTabPosition as JsValue)["Right"]) {
+{JsValue __port_59 = position;
+int __port_60 = -1;
+if (__port_59 === ((SurveyTabPosition as JsValue)["Top"] as JsValue)) { __port_60 = 0; }
+else if (__port_59 === ((SurveyTabPosition as JsValue)["Left"] as JsValue)) { __port_60 = 1; }
+else if (__port_59 === ((SurveyTabPosition as JsValue)["Bottom"] as JsValue)) { __port_60 = 2; }
+else if (__port_59 === ((SurveyTabPosition as JsValue)["Right"] as JsValue)) { __port_60 = 4; }
+else {__port_60 = 3;}
+while (true) {
+if (__port_60 >= 0 && __port_60 <= 0) {return object { "top": "0", "left": "50%", "transform": "translateX(-50%)" };}
+if (__port_60 >= 0 && __port_60 <= 1) {return object { "top": "50%", "left": "0", "transform": "rotate(90deg) translateY(-100%)", "transformOrigin": "left top" };}
+if (__port_60 >= 0 && __port_60 <= 2) {return object { "bottom": "0", "left": "50%", "transform": "translateX(-50%)" };}
+if (__port_60 >= 0 && __port_60 <= 3) {}
+if (__port_60 >= 0 && __port_60 <= 4) {return object { "top": "50%", "right": "0", "transform": "rotate(-90deg) translateY(-100%)", "transformOrigin": "right top" };}
+break;
+}}
+return JS.undefined();}
+
+JsValue SurveyPopup(JsValue __port_61) {JsValue __port_62 = __port_61;
+JsValue survey = __port_62["survey"];
+JsValue forceDisableHtml = __port_62["forceDisableHtml"];
+JsValue posthog = __port_62["posthog"];
+JsValue __port_63 = __port_62["style"];
+JsValue style = if (JS.isUndefined(__port_63)) { (object {  } as JsValue) } else { __port_63 };
+JsValue previewPageIndex = __port_62["previewPageIndex"];
+JsValue __port_64 = __port_62["removeSurveyFromFocus"];
+JsValue removeSurveyFromFocus = if (JS.isUndefined(__port_64)) { (() => { 
+
+return JS.undefined(); } as JsValue) } else { __port_64 };
+JsValue __port_65 = __port_62["isPopup"];
+JsValue isPopup = if (JS.isUndefined(__port_65)) { (true as JsValue) } else { __port_65 };
+JsValue __port_66 = __port_62["onPreviewSubmit"];
+JsValue onPreviewSubmit = if (JS.isUndefined(__port_66)) { (() => { 
+
+return JS.undefined(); } as JsValue) } else { __port_66 };
+JsValue __port_67 = __port_62["onPreviewBack"];
+JsValue onPreviewBack = if (JS.isUndefined(__port_67)) { (() => { 
+
+return JS.undefined(); } as JsValue) } else { __port_67 };
+JsValue __port_68 = __port_62["onPopupSurveyDismissed"];
+JsValue onPopupSurveyDismissed = if (JS.isUndefined(__port_68)) { (() => { 
+
+return JS.undefined(); } as JsValue) } else { __port_68 };
+JsValue __port_69 = __port_62["onCloseConfirmationMessage"];
+JsValue onCloseConfirmationMessage = if (JS.isUndefined(__port_69)) { (() => { 
+
+return JS.undefined(); } as JsValue) } else { __port_69 };
+JsValue properties = __port_62["properties"];
+JsValue isSurveyCompleted = __port_62["isSurveyCompleted"];
+JsValue skipShownEvent = __port_62["skipShownEvent"];
+JsValue surveyLanguage = __port_62["surveyLanguage"];
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue _h = JS.undefined();
+JsValue _j = JS.undefined();
+JsValue _k = JS.undefined();
+JsValue _l = JS.undefined();
+JsValue _m = JS.undefined();
+JsValue surveyContainerRef = (useRef as JsValue)(null);
+JsValue isPreviewMode = (Number as JsValue)["isInteger"](previewPageIndex);
+JsValue surveyPopupDelayMilliseconds = if (((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveyPopupDelaySeconds"] as JsValue) }) as JsValue).truthy()) { (((((survey as JsValue)["appearance"] as JsValue)["surveyPopupDelaySeconds"] as JsValue) * (1000.0 as JsValue)) as JsValue) } else { (0.0 as JsValue) };
+JsValue __port_70 = (usePopupVisibility as JsValue)(survey, posthog, surveyPopupDelayMilliseconds, isPreviewMode, removeSurveyFromFocus, isPopup, surveyContainerRef, skipShownEvent, surveyLanguage);
+JsValue isPopupVisible = __port_70["isPopupVisible"];
+JsValue isSurveySent = __port_70["isSurveySent"];
+JsValue hidePopupWithAnimation = __port_70["hidePopupWithAnimation"];
+JsValue shouldShowConfirmation = ((((isSurveySent as JsValue) || (((previewPageIndex as JsValue) === (((survey as JsValue)["questions"] as JsValue)["length"] as JsValue)) as JsValue)) as JsValue) || (((isSurveyCompleted as JsValue) === (true as JsValue)) as JsValue));
+JsValue __port_71 = (useState as JsValue)(false);
+JsValue introScreenDismissed = JS.undefined();
+JsValue setIntroScreenDismissed = JS.undefined();
+int __port_72 = 0;
+for (JsValue __port_73 of __port_71) {
+if (__port_72 === 0) { introScreenDismissed = __port_73; }
+if (__port_72 === 1) { setIntroScreenDismissed = __port_73; }
+__port_72 += 1; if (__port_72 === 2) break;
+}
+JsValue hasInProgressState = (useMemo as JsValue)(() => { 
+return (!(!((getInProgressSurveyState as JsValue)(survey) as JsValue).truthy() as JsValue).truthy() as JsValue);
+return JS.undefined(); }, JS.array(survey));
+JsValue hasIntroContent = !(!(((((if ((((((((_b = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["introScreenHeader"] as JsValue) }) as JsValue) || ((if ((((((((_c = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["introScreenDescription"] as JsValue) }) as JsValue))) as JsValue).truthy() as JsValue).truthy();
+JsValue shouldShowIntroScreen = if ((isPreviewMode as JsValue).truthy()) { (((previewPageIndex as JsValue) === (INTRO_SCREEN_PREVIEW_INDEX as JsValue)) as JsValue) } else { (((((((!(!((if ((((((((_d = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["displayIntroScreen"] as JsValue) }) as JsValue).truthy() as JsValue).truthy() as JsValue) && (hasIntroContent as JsValue)) as JsValue) && (!(introScreenDismissed as JsValue).truthy() as JsValue)) as JsValue) && (!(hasInProgressState as JsValue).truthy() as JsValue)) as JsValue) };
+JsValue surveyContextValue = (useMemo as JsValue)(() => { 
+JsValue getInProgressSurvey = (getInProgressSurveyState as JsValue)(survey);
+JsValue surveySubmissionId = (((if ((((((getInProgressSurvey as JsValue) === (null as JsValue)) as JsValue) || (((getInProgressSurvey as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((getInProgressSurvey as JsValue)["surveySubmissionId"] as JsValue) }) as JsValue) || ((uuidv7 as JsValue)() as JsValue));
+return object { "isPreviewMode": isPreviewMode, "previewPageIndex": previewPageIndex, "onPopupSurveyDismissed": () => { 
+if ((surveyLanguage as JsValue).truthy()) {((dismissedSurveyEvent as JsValue)(survey, posthog, isPreviewMode, surveyLanguage));} else {((dismissedSurveyEvent as JsValue)(survey, posthog, isPreviewMode));}
+((onPopupSurveyDismissed as JsValue)());
+return JS.undefined(); }, "isPopup": ((isPopup as JsValue) || (false as JsValue)), "surveySubmissionId": surveySubmissionId, "onPreviewSubmit": onPreviewSubmit, "onPreviewBack": onPreviewBack, "posthog": posthog, "properties": properties, "surveyLanguage": surveyLanguage };
+return JS.undefined(); }, JS.array(isPreviewMode, previewPageIndex, isPopup, posthog, survey, onPopupSurveyDismissed, onPreviewSubmit, onPreviewBack, properties, surveyLanguage));
+if ((!(isPopupVisible as JsValue).truthy() as JsValue).truthy()) {return null;}
+return ((_jsx as JsValue)((SurveyContext as JsValue)["Provider"], object { "value": surveyContextValue, "children": (_jsx as JsValue)("div", object { "className": "ph-survey", "style": (() => { JsValue __port_74 = JS.object();
+copyProperties(__port_74, (getPopoverPosition as JsValue)((survey as JsValue)["type"], if ((((((((_e = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["position"] as JsValue) }, if ((((((((_f = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_f as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_f as JsValue)["widgetType"] as JsValue) }));
+copyProperties(__port_74, style);return __port_74; })(), "ref": surveyContainerRef, "children": if ((shouldShowConfirmation as JsValue).truthy()) { (((_jsx as JsValue)(ConfirmationMessage, object { "header": (((if ((((((((_g = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_g as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_g as JsValue)["thankYouMessageHeader"] as JsValue) }) as JsValue) || ("Thank you!" as JsValue)), "description": (((if ((((((((_h = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_h as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_h as JsValue)["thankYouMessageDescription"] as JsValue) }) as JsValue) || ("" as JsValue)), "forceDisableHtml": !(!(forceDisableHtml as JsValue).truthy() as JsValue).truthy(), "contentType": if ((((((((_j = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_j as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_j as JsValue)["thankYouMessageDescriptionContentType"] as JsValue) }, "appearance": (((survey as JsValue)["appearance"] as JsValue) || (defaultSurveyAppearance as JsValue)), "onClose": () => { 
+((hidePopupWithAnimation as JsValue)());
+((onCloseConfirmationMessage as JsValue)());
+return JS.undefined(); } })) as JsValue) } else { (if ((shouldShowIntroScreen as JsValue).truthy()) { (((_jsx as JsValue)(IntroScreen, object { "header": (((if ((((((((_k = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_k as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_k as JsValue)["introScreenHeader"] as JsValue) }) as JsValue) || ("" as JsValue)), "description": (((if ((((((((_l = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_l as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_l as JsValue)["introScreenDescription"] as JsValue) }) as JsValue) || ("" as JsValue)), "forceDisableHtml": !(!(forceDisableHtml as JsValue).truthy() as JsValue).truthy(), "contentType": if ((((((((_m = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_m as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_m as JsValue)["introScreenDescriptionContentType"] as JsValue) }, "appearance": (((survey as JsValue)["appearance"] as JsValue) || (defaultSurveyAppearance as JsValue)), "onStart": () => { 
+return ((setIntroScreenDismissed as JsValue)(true) as JsValue);
+return JS.undefined(); } })) as JsValue) } else { (((_jsx as JsValue)(Questions, object { "survey": survey, "forceDisableHtml": !(!(forceDisableHtml as JsValue).truthy() as JsValue).truthy(), "posthog": posthog })) as JsValue) } as JsValue) } }) }));
+return JS.undefined();}
+
+JsValue Questions(JsValue __port_75) {JsValue __port_76 = __port_75;
+JsValue survey = __port_76["survey"];
+JsValue forceDisableHtml = __port_76["forceDisableHtml"];
+JsValue posthog = __port_76["posthog"];
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue initialInProgressState = (useMemo as JsValue)(() => { 
+JsValue state = (getInProgressSurveyState as JsValue)(survey);
+if ((!(state as JsValue).truthy() as JsValue).truthy()) {return null;}
+JsValue hasIndex = (isNumber as JsValue)((state as JsValue)["lastQuestionIndex"]);
+JsValue isIndexInRange = ((((hasIndex as JsValue) && ((((state as JsValue)["lastQuestionIndex"] as JsValue) >= (0.0 as JsValue)) as JsValue)) as JsValue) && ((((state as JsValue)["lastQuestionIndex"] as JsValue) < (((survey as JsValue)["questions"] as JsValue)["length"] as JsValue)) as JsValue));
+if ((((hasIndex as JsValue) && (!(isIndexInRange as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((clearInProgressSurveyState as JsValue)(survey));
+return null;}
+return state;
+return JS.undefined(); }, JS.array(survey));
+JsValue __port_77 = (useState as JsValue)(() => { 
+if ((if ((((((initialInProgressState as JsValue) === (null as JsValue)) as JsValue) || (((initialInProgressState as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((initialInProgressState as JsValue)["responses"] as JsValue) } as JsValue).truthy()) {((logger as JsValue)["info"]("Survey is already in progress, filling in initial responses"));}
+return (((if ((((((initialInProgressState as JsValue) === (null as JsValue)) as JsValue) || (((initialInProgressState as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((initialInProgressState as JsValue)["responses"] as JsValue) }) as JsValue) || (object {  } as JsValue));
+return JS.undefined(); });
+JsValue questionsResponses = JS.undefined();
+JsValue setQuestionsResponses = JS.undefined();
+int __port_78 = 0;
+for (JsValue __port_79 of __port_77) {
+if (__port_78 === 0) { questionsResponses = __port_79; }
+if (__port_78 === 1) { setQuestionsResponses = __port_79; }
+__port_78 += 1; if (__port_78 === 2) break;
+}
+JsValue __port_80 = (useState as JsValue)(false);
+JsValue submissionBlocked = JS.undefined();
+JsValue setSubmissionBlocked = JS.undefined();
+int __port_81 = 0;
+for (JsValue __port_82 of __port_80) {
+if (__port_81 === 0) { submissionBlocked = __port_82; }
+if (__port_81 === 1) { setSubmissionBlocked = __port_82; }
+__port_81 += 1; if (__port_81 === 2) break;
+}
+JsValue __port_83 = (useContext as JsValue)(SurveyContext);
+JsValue previewPageIndex = __port_83["previewPageIndex"];
+JsValue onPopupSurveyDismissed = __port_83["onPopupSurveyDismissed"];
+JsValue isPopup = __port_83["isPopup"];
+JsValue onPreviewSubmit = __port_83["onPreviewSubmit"];
+JsValue onPreviewBack = __port_83["onPreviewBack"];
+JsValue surveySubmissionId = __port_83["surveySubmissionId"];
+JsValue isPreviewMode = __port_83["isPreviewMode"];
+JsValue properties = __port_83["properties"];
+JsValue surveyLanguage = __port_83["surveyLanguage"];
+JsValue __port_84 = (useState as JsValue)(() => { 
+JsValue savedIndex = if ((((((initialInProgressState as JsValue) === (null as JsValue)) as JsValue) || (((initialInProgressState as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((initialInProgressState as JsValue)["lastQuestionIndex"] as JsValue) };
+JsValue validSavedIndex = if (((((((isNumber as JsValue)(savedIndex) as JsValue) && (((savedIndex as JsValue) >= (0.0 as JsValue)) as JsValue)) as JsValue) && (((savedIndex as JsValue) < (((survey as JsValue)["questions"] as JsValue)["length"] as JsValue)) as JsValue)) as JsValue).truthy()) { (savedIndex as JsValue) } else { (0.0 as JsValue) };
+return if (((((isNumber as JsValue)(previewPageIndex) as JsValue) && (((previewPageIndex as JsValue) >= (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) { (previewPageIndex as JsValue) } else { (validSavedIndex as JsValue) };
+return JS.undefined(); });
+JsValue currentQuestionIndex = JS.undefined();
+JsValue setCurrentQuestionIndex = JS.undefined();
+int __port_85 = 0;
+for (JsValue __port_86 of __port_84) {
+if (__port_85 === 0) { currentQuestionIndex = __port_86; }
+if (__port_85 === 1) { setCurrentQuestionIndex = __port_86; }
+__port_85 += 1; if (__port_85 === 2) break;
+}
+JsValue __port_87 = (useState as JsValue)(() => { 
+JsValue _a = JS.undefined();
+return ((if ((((((((_a = if ((((((initialInProgressState as JsValue) === (null as JsValue)) as JsValue) || (((initialInProgressState as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((initialInProgressState as JsValue)["visitedIndices"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (JS.array() as JsValue) }) as JsValue)["filter"]((JsValue index) => { 
+return (((((index as JsValue) >= (0.0 as JsValue)) as JsValue) && (((index as JsValue) < (((survey as JsValue)["questions"] as JsValue)["length"] as JsValue)) as JsValue)) as JsValue);
+return JS.undefined(); });
+return JS.undefined(); });
+JsValue visitedIndices = JS.undefined();
+JsValue setVisitedIndices = JS.undefined();
+int __port_88 = 0;
+for (JsValue __port_89 of __port_87) {
+if (__port_88 === 0) { visitedIndices = __port_89; }
+if (__port_88 === 1) { setVisitedIndices = __port_89; }
+__port_88 += 1; if (__port_88 === 2) break;
+}
+JsValue __port_90 = (useState as JsValue)(() => { 
+JsValue _a = JS.undefined();
+JsValue inProgressSurveyData = (getInProgressSurveyState as JsValue)(survey);
+return if ((((((((_a = if ((((((inProgressSurveyData as JsValue) === (null as JsValue)) as JsValue) || (((inProgressSurveyData as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((inProgressSurveyData as JsValue)["questionSnapshots"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (object {  } as JsValue) };
+return JS.undefined(); });
+JsValue questionSnapshots = JS.undefined();
+JsValue setQuestionSnapshots = JS.undefined();
+int __port_91 = 0;
+for (JsValue __port_92 of __port_90) {
+if (__port_91 === 0) { questionSnapshots = __port_92; }
+if (__port_91 === 1) { setQuestionSnapshots = __port_92; }
+__port_91 += 1; if (__port_91 === 2) break;
+}
+JsValue questionOrderIds = (useMemo as JsValue)(() => { 
+return ((getQuestionOrder as JsValue)((getDisplayOrderQuestions as JsValue)(survey, initialInProgressState)) as JsValue);
+return JS.undefined(); }, JS.array((survey as JsValue)["id"], initialInProgressState));
+JsValue surveyQuestions = (useMemo as JsValue)(() => { 
+JsValue hasUsableIds = ((!(!(questionOrderIds as JsValue).truthy() as JsValue).truthy() as JsValue) && ((((JS.construct(Set, questionOrderIds) as JsValue)["size"] as JsValue) === ((questionOrderIds as JsValue)["length"] as JsValue)) as JsValue));
+if ((!(hasUsableIds as JsValue).truthy() as JsValue).truthy()) {return (getDisplayOrderQuestions as JsValue)(survey, initialInProgressState);}
+JsValue byId = JS.construct(Map, ((survey as JsValue)["questions"] as JsValue)["map"]((JsValue question) => { 
+return (JS.array((question as JsValue)["id"], question) as JsValue);
+return JS.undefined(); }));
+JsValue mapped = ((questionOrderIds as JsValue)["map"]((JsValue id) => { 
+return ((byId as JsValue)["get"](id) as JsValue);
+return JS.undefined(); }) as JsValue)["filter"]((JsValue question) => { 
+return (!(!(question as JsValue).truthy() as JsValue).truthy() as JsValue);
+return JS.undefined(); });
+return if (((((mapped as JsValue)["length"] as JsValue) === ((questionOrderIds as JsValue)["length"] as JsValue)) as JsValue).truthy()) { (mapped as JsValue) } else { ((survey as JsValue)["questions"] as JsValue) };
+return JS.undefined(); }, JS.array(questionOrderIds, (survey as JsValue)["questions"], survey, initialInProgressState));
+((useEffect as JsValue)(() => { 
+if ((((((isPreviewMode as JsValue) && (!((isUndefined as JsValue)(previewPageIndex) as JsValue).truthy() as JsValue)) as JsValue) && (((previewPageIndex as JsValue) >= (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {((setCurrentQuestionIndex as JsValue)(previewPageIndex));}
+return JS.undefined(); }, JS.array(previewPageIndex, isPreviewMode)));
+JsValue onNextButtonClick = (JsValue __port_93) => { JsValue __port_94 = __port_93;
+JsValue res = __port_94["res"];
+JsValue displayQuestionIndex = __port_94["displayQuestionIndex"];
+JsValue questionId = __port_94["questionId"];
+if ((!(posthog as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["error"]("onNextButtonClick called without a PostHog instance."));
+return JS.undefined();}
+if ((!((isCapturingEnabled as JsValue)(posthog) as JsValue).truthy() as JsValue).truthy()) {((setSubmissionBlocked as JsValue)(true));
+return JS.undefined();}
+((setSubmissionBlocked as JsValue)(false));
+if ((!(questionId as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["error"]("onNextButtonClick called without a questionId."));
+return JS.undefined();}
+JsValue __port_95 = (recordSurveyAnswer as JsValue)(object { "responses": questionsResponses, "questionSnapshots": questionSnapshots }, questionId, res, (surveyQuestions as JsValue)[displayQuestionIndex]);
+JsValue newResponses = __port_95["responses"];
+JsValue newSnapshots = __port_95["questionSnapshots"];
+((setQuestionsResponses as JsValue)(newResponses));
+((setQuestionSnapshots as JsValue)(newSnapshots));
+JsValue nextStep = (getNextSurveyStep as JsValue)(survey, displayQuestionIndex, res);
+JsValue isSurveyCompleted = ((nextStep as JsValue) === ((SurveyQuestionBranchingType as JsValue)["End"] as JsValue));
+JsValue newVisitedIndices = (() => { JsValue __port_96 = JS.array();
+for (JsValue __port_97 of visitedIndices) { __port_96.push(__port_97); }
+__port_96.push(displayQuestionIndex);return __port_96; })();
+if ((!(isSurveyCompleted as JsValue).truthy() as JsValue).truthy()) {((setVisitedIndices as JsValue)(newVisitedIndices));
+((setCurrentQuestionIndex as JsValue)(nextStep));
+((setInProgressSurveyState as JsValue)(survey, object { "surveySubmissionId": surveySubmissionId, "responses": newResponses, "lastQuestionIndex": nextStep, "questionOrder": (getQuestionOrder as JsValue)(surveyQuestions), "visitedIndices": newVisitedIndices, "surveyLanguage": surveyLanguage, "questionSnapshots": newSnapshots }));}
+if (((((survey as JsValue)["enable_partial_responses"] as JsValue) || (isSurveyCompleted as JsValue)) as JsValue).truthy()) {JsValue visitedResponseKeys = JS.construct(Set, (((newVisitedIndices as JsValue)["map"]((JsValue i) => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = (surveyQuestions as JsValue)[i])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["id"] as JsValue) };
+return JS.undefined(); }) as JsValue)["filter"]((JsValue id) => { 
+return (!(!(id as JsValue).truthy() as JsValue).truthy() as JsValue);
+return JS.undefined(); }) as JsValue)["map"]((JsValue id) => { 
+return ((getSurveyResponseKey as JsValue)(id) as JsValue);
+return JS.undefined(); }));
+JsValue responsesOnPath = (Object as JsValue)["fromEntries"](((Object as JsValue)["entries"](newResponses) as JsValue)["filter"]((JsValue __port_98) => { JsValue __port_99 = __port_98;
+JsValue key = JS.undefined();
+int __port_100 = 0;
+for (JsValue __port_101 of __port_99) {
+if (__port_100 === 0) { key = __port_101; }
+__port_100 += 1; if (__port_100 === 1) break;
+}
+return ((visitedResponseKeys as JsValue)["has"](key) as JsValue);
+return JS.undefined(); }));
+((sendSurveyEvent as JsValue)(object { "responses": responsesOnPath, "survey": survey, "surveySubmissionId": surveySubmissionId, "isSurveyCompleted": isSurveyCompleted, "posthog": posthog, "properties": properties, "surveyLanguage": surveyLanguage, "questionSnapshots": newSnapshots }));}
+return JS.undefined(); };
+JsValue onBackButtonClick = () => { 
+if ((isPreviewMode as JsValue).truthy()) {((onPreviewBack as JsValue)());
+return JS.undefined();}
+if (((((visitedIndices as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue previousIndex = (visitedIndices as JsValue)[(((visitedIndices as JsValue)["length"] as JsValue) - (1.0 as JsValue))];
+JsValue newVisitedIndices = (visitedIndices as JsValue)["slice"](0.0, (-(1.0 as JsValue)));
+((setVisitedIndices as JsValue)(newVisitedIndices));
+((setCurrentQuestionIndex as JsValue)(previousIndex));
+((setInProgressSurveyState as JsValue)(survey, object { "surveySubmissionId": surveySubmissionId, "responses": questionsResponses, "lastQuestionIndex": previousIndex, "questionOrder": (getQuestionOrder as JsValue)(surveyQuestions), "visitedIndices": newVisitedIndices, "surveyLanguage": surveyLanguage, "questionSnapshots": questionSnapshots }));
+return JS.undefined(); };
+JsValue canGoBack = ((!(!((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["allowGoBack"] as JsValue) }) as JsValue).truthy() as JsValue).truthy() as JsValue) && ((if ((isPreviewMode as JsValue).truthy()) { ((((if ((((((previewPageIndex as JsValue) !== (null as JsValue)) as JsValue) && (((previewPageIndex as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (previewPageIndex as JsValue) } else { (0.0 as JsValue) }) as JsValue) > (0.0 as JsValue)) as JsValue) } else { ((((visitedIndices as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue) }) as JsValue));
+JsValue currentQuestion = (surveyQuestions as JsValue)["at"](currentQuestionIndex);
+if ((!(currentQuestion as JsValue).truthy() as JsValue).truthy()) {return null;}
+JsValue renderCancelButton = ((isPopup as JsValue) && ((((if ((((((((_b = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["hideCancelButton"] as JsValue) }) as JsValue) !== (true as JsValue)) as JsValue));
+return ((_jsxs as JsValue)("form", object { "className": "survey-form", "name": "surveyForm", "children": JS.array(((renderCancelButton as JsValue) && (((_jsx as JsValue)(Cancel, object { "onClick": () => { 
+((onPopupSurveyDismissed as JsValue)());
+return JS.undefined(); } })) as JsValue)), (_jsxs as JsValue)("div", object { "className": "survey-box", "data-question-index": currentQuestionIndex, "children": JS.array(((submissionBlocked as JsValue) && ((_jsx as JsValue)("p", object { "role": "alert", "children": "Your response could not be sent. Please try again later." }) as JsValue)), (getQuestionComponent as JsValue)(object { "question": currentQuestion, "forceDisableHtml": forceDisableHtml, "displayQuestionIndex": currentQuestionIndex, "appearance": (((survey as JsValue)["appearance"] as JsValue) || (defaultSurveyAppearance as JsValue)), "onSubmit": (JsValue res) => { 
+return ((onNextButtonClick as JsValue)(object { "res": res, "displayQuestionIndex": currentQuestionIndex, "questionId": (currentQuestion as JsValue)["id"] }) as JsValue);
+return JS.undefined(); }, "onPreviewSubmit": onPreviewSubmit, "initialValue": if (((currentQuestion as JsValue)["id"] as JsValue).truthy()) { ((questionsResponses as JsValue)[(getSurveyResponseKey as JsValue)((currentQuestion as JsValue)["id"])] as JsValue) } else { (JS.undefined() as JsValue) }, "canGoBack": canGoBack, "onBack": onBackButtonClick })) })) }));
+return JS.undefined();}
+
+JsValue FeedbackWidget(JsValue __port_102) {JsValue __port_103 = __port_102;
+JsValue survey = __port_103["survey"];
+JsValue forceDisableHtml = __port_103["forceDisableHtml"];
+JsValue posthog = __port_103["posthog"];
+JsValue readOnly = __port_103["readOnly"];
+JsValue surveyLanguage = __port_103["surveyLanguage"];
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue __port_104 = (useState as JsValue)(true);
+JsValue isFeedbackButtonVisible = JS.undefined();
+JsValue setIsFeedbackButtonVisible = JS.undefined();
+int __port_105 = 0;
+for (JsValue __port_106 of __port_104) {
+if (__port_105 === 0) { isFeedbackButtonVisible = __port_106; }
+if (__port_105 === 1) { setIsFeedbackButtonVisible = __port_106; }
+__port_105 += 1; if (__port_105 === 2) break;
+}
+JsValue __port_107 = (useState as JsValue)(false);
+JsValue showSurvey = JS.undefined();
+JsValue setShowSurvey = JS.undefined();
+int __port_108 = 0;
+for (JsValue __port_109 of __port_107) {
+if (__port_108 === 0) { showSurvey = __port_109; }
+if (__port_108 === 1) { setShowSurvey = __port_109; }
+__port_108 += 1; if (__port_108 === 2) break;
+}
+JsValue __port_110 = (useState as JsValue)(object {  });
+JsValue styleOverrides = JS.undefined();
+JsValue setStyleOverrides = JS.undefined();
+int __port_111 = 0;
+for (JsValue __port_112 of __port_110) {
+if (__port_111 === 0) { styleOverrides = __port_112; }
+if (__port_111 === 1) { setStyleOverrides = __port_112; }
+__port_111 += 1; if (__port_111 === 2) break;
+}
+JsValue resetTimeout = (useRef as JsValue)(JS.undefined());
+JsValue toggleSurvey = () => { 
+if ((((((((!(showSurvey as JsValue).truthy() as JsValue) && (posthog as JsValue)) as JsValue) && (!(readOnly as JsValue).truthy() as JsValue)) as JsValue) && (!((isCapturingEnabled as JsValue)(posthog) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((setShowSurvey as JsValue)(!(showSurvey as JsValue).truthy()));
+return JS.undefined(); };
+((useEffect as JsValue)(() => { 
+JsValue _a = JS.undefined();
+if ((!(posthog as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["error"]("FeedbackWidget called without a PostHog instance."));
+return JS.undefined();}
+if ((readOnly as JsValue).truthy()) {return JS.undefined();}
+if (((((if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["widgetType"] as JsValue) }) as JsValue) === ("tab" as JsValue)) as JsValue).truthy()) {((setStyleOverrides as JsValue)(object { "top": "50%", "bottom": "auto" }));}
+JsValue handleShowSurvey = (JsValue event) => { 
+JsValue _a = JS.undefined();
+JsValue customEvent = event;
+if (((((if ((((((((_a = (customEvent as JsValue)["detail"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["surveyId"] as JsValue) }) as JsValue) === ((survey as JsValue)["id"] as JsValue)) as JsValue).truthy()) {((logger as JsValue)["info"](`Received show event for feedback button survey ${(survey as JsValue)["id"]}`));
+((setStyleOverrides as JsValue)(((((customEvent as JsValue)["detail"] as JsValue)["position"] as JsValue) || (object {  } as JsValue))));
+((toggleSurvey as JsValue)());}
+return JS.undefined(); };
+((addEventListener as JsValue)(window, DISPATCH_FEEDBACK_WIDGET_EVENT, handleShowSurvey));
+return () => { 
+if ((!((isUndefined as JsValue)((resetTimeout as JsValue)["current"]) as JsValue).truthy() as JsValue).truthy()) {((clearTimeout as JsValue)((resetTimeout as JsValue)["current"]));
+(((resetTimeout as JsValue)["current"] = JS.undefined()));}
+((window as JsValue)["removeEventListener"](DISPATCH_FEEDBACK_WIDGET_EVENT, handleShowSurvey));
+return JS.undefined(); };
+return JS.undefined(); }, JS.array(posthog, readOnly, (survey as JsValue)["id"], if ((((((((_a = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["widgetType"] as JsValue) }, if ((((((((_b = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["widgetSelector"] as JsValue) }, if ((((((((_c = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["borderColor"] as JsValue) })));
+((useHideSurveyOnURLChange as JsValue)(object { "survey": survey, "setSurveyVisible": setIsFeedbackButtonVisible, "posthog": posthog }));
+if ((!(isFeedbackButtonVisible as JsValue).truthy() as JsValue).truthy()) {return null;}
+JsValue resetShowSurvey = () => { 
+if (((((survey as JsValue)["schedule"] as JsValue) !== ((SurveySchedule as JsValue)["Always"] as JsValue)) as JsValue).truthy()) {((setIsFeedbackButtonVisible as JsValue)(false));}
+if ((!((isUndefined as JsValue)((resetTimeout as JsValue)["current"]) as JsValue).truthy() as JsValue).truthy()) {((clearTimeout as JsValue)((resetTimeout as JsValue)["current"]));}
+(((resetTimeout as JsValue)["current"] = (setTimeout as JsValue)(() => { 
+(((resetTimeout as JsValue)["current"] = JS.undefined()));
+((setShowSurvey as JsValue)(false));
+return JS.undefined(); }, 200.0)));
+return JS.undefined(); };
+return ((_jsxs as JsValue)(Fragment, object { "children": JS.array((((((if ((((((((_d = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["widgetType"] as JsValue) }) as JsValue) === ("tab" as JsValue)) as JsValue) && (((_jsx as JsValue)("button", object { "className": `ph-survey-widget-tab ${if (((((if ((((((((_e = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["tabPosition"] as JsValue) }) as JsValue) === ((SurveyTabPosition as JsValue)["Top"] as JsValue)) as JsValue).truthy()) { ("widget-tab-top" as JsValue) } else { ("" as JsValue) }}`, "onClick": toggleSurvey, "disabled": readOnly, "style": (getTabPositionStyles as JsValue)(if ((((((((_f = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_f as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_f as JsValue)["tabPosition"] as JsValue) }), "children": (((if ((((((((_g = (survey as JsValue)["appearance"])) as JsValue) === (null as JsValue)) as JsValue) || (((_g as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_g as JsValue)["widgetLabel"] as JsValue) }) as JsValue) || ("" as JsValue)) })) as JsValue)), ((showSurvey as JsValue) && (((_jsx as JsValue)(SurveyPopup, object { "posthog": posthog, "survey": survey, "forceDisableHtml": forceDisableHtml, "style": styleOverrides, "onPopupSurveyDismissed": resetShowSurvey, "onCloseConfirmationMessage": resetShowSurvey, "surveyLanguage": surveyLanguage })) as JsValue))) }));
+return JS.undefined();}
+
+JsValue __port_41(JsValue __port_42) {JsValue __port_43 = __port_42;
+JsValue question = __port_43["question"];
+JsValue forceDisableHtml = __port_43["forceDisableHtml"];
+JsValue displayQuestionIndex = __port_43["displayQuestionIndex"];
+JsValue appearance = __port_43["appearance"];
+JsValue onSubmit = __port_43["onSubmit"];
+JsValue onPreviewSubmit = __port_43["onPreviewSubmit"];
+JsValue initialValue = __port_43["initialValue"];
+JsValue canGoBack = __port_43["canGoBack"];
+JsValue onBack = __port_43["onBack"];
+JsValue baseProps = object { "forceDisableHtml": forceDisableHtml, "appearance": appearance, "onPreviewSubmit": (JsValue res) => { 
+((onPreviewSubmit as JsValue)(res));
+return JS.undefined(); }, "onSubmit": (JsValue res) => { 
+((onSubmit as JsValue)(res));
+return JS.undefined(); }, "initialValue": initialValue, "displayQuestionIndex": displayQuestionIndex, "canGoBack": canGoBack, "onBack": onBack };
+{JsValue __port_113 = (question as JsValue)["type"];
+int __port_114 = -1;
+if (__port_113 === ((SurveyQuestionType as JsValue)["Open"] as JsValue)) { __port_114 = 0; }
+else if (__port_113 === ((SurveyQuestionType as JsValue)["Link"] as JsValue)) { __port_114 = 1; }
+else if (__port_113 === ((SurveyQuestionType as JsValue)["Rating"] as JsValue)) { __port_114 = 2; }
+else if (__port_113 === ((SurveyQuestionType as JsValue)["SingleChoice"] as JsValue)) { __port_114 = 3; }
+else if (__port_113 === ((SurveyQuestionType as JsValue)["MultipleChoice"] as JsValue)) { __port_114 = 4; }
+else {__port_114 = 5;}
+while (true) {
+if (__port_114 >= 0 && __port_114 <= 0) {return (_createElement as JsValue)(OpenTextQuestion, (() => { JsValue __port_115 = JS.object();
+copyProperties(__port_115, baseProps);
+setOwn(__port_115, "question", question);
+setOwn(__port_115, "key", (question as JsValue)["id"]);return __port_115; })());}
+if (__port_114 >= 0 && __port_114 <= 1) {return (_createElement as JsValue)(LinkQuestion, (() => { JsValue __port_116 = JS.object();
+copyProperties(__port_116, baseProps);
+setOwn(__port_116, "question", question);
+setOwn(__port_116, "key", (question as JsValue)["id"]);return __port_116; })());}
+if (__port_114 >= 0 && __port_114 <= 2) {return (_createElement as JsValue)(RatingQuestion, (() => { JsValue __port_117 = JS.object();
+copyProperties(__port_117, baseProps);
+setOwn(__port_117, "question", question);
+setOwn(__port_117, "key", (question as JsValue)["id"]);return __port_117; })());}
+if (__port_114 >= 0 && __port_114 <= 3) {}
+if (__port_114 >= 0 && __port_114 <= 4) {return (_createElement as JsValue)(MultipleChoiceQuestion, (() => { JsValue __port_118 = JS.object();
+copyProperties(__port_118, baseProps);
+setOwn(__port_118, "question", question);
+setOwn(__port_118, "key", (question as JsValue)["id"]);return __port_118; })());}
+if (__port_114 >= 0 && __port_114 <= 5) {((logger as JsValue)["error"](`Unsupported question type: ${(question as JsValue)["type"]}`));
+return null;}
+break;
+}}
+return JS.undefined();}
+export { getNextSurveyStep as getNextSurveyStep };
+export { INTRO_SCREEN_PREVIEW_INDEX as INTRO_SCREEN_PREVIEW_INDEX };
+export { renderSurveysPreview as renderSurveysPreview };
+export { renderFeedbackWidgetPreview as renderFeedbackWidgetPreview };
+export { generateSurveys as generateSurveys };
+export { useHideSurveyOnURLChange as useHideSurveyOnURLChange };
+export { usePopupVisibility as usePopupVisibility };
+export { SurveyPopup as SurveyPopup };
+export { Questions as Questions };
+export { FeedbackWidget as FeedbackWidget };

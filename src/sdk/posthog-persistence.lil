@@ -1,0 +1,1004 @@
+// Whole-module migration from packages/browser/src/posthog-persistence.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { each as each, extend as extend, stripEmptyProperties as stripEmptyProperties, addEventListener as addEventListener } from "@posthog/browser-common/utils/general-utils";
+import extern { COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES as COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES, COOKIE_PERSISTED_PROPERTIES as COOKIE_PERSISTED_PROPERTIES, cookieStore as cookieStore, createLocalPlusCookieStore as createLocalPlusCookieStore, getCookiePersistedProperties as getCookiePersistedProperties, getCookiePersistedPropertiesMetadata as getCookiePersistedPropertiesMetadata, getCookiePersistedPropertiesMetadataState as getCookiePersistedPropertiesMetadataState, getCookiePropertiesFingerprint as getCookiePropertiesFingerprint, getSafeCookieProperties as getSafeCookieProperties, localStore as localStore, memoryStore as memoryStore, sessionStore as sessionStore } from "../../vendor/posthog-js/packages/browser/src/storage.ts";
+import extern { document as document, window as window } from "@posthog/browser-common/utils/globals";
+import extern { ALIAS_ID_KEY as ALIAS_ID_KEY, DISTINCT_ID as DISTINCT_ID, ENABLED_FEATURE_FLAGS as ENABLED_FEATURE_FLAGS, EVENT_TIMERS_KEY as EVENT_TIMERS_KEY, FLAG_CALL_REPORTED as FLAG_CALL_REPORTED, INITIAL_CAMPAIGN_PARAMS as INITIAL_CAMPAIGN_PARAMS, INITIAL_PERSON_INFO as INITIAL_PERSON_INFO, INITIAL_REFERRER_INFO as INITIAL_REFERRER_INFO, PERSISTENCE_ACTIVE_FEATURE_FLAGS as PERSISTENCE_ACTIVE_FEATURE_FLAGS, PERSISTENCE_FEATURE_FLAG_DETAILS as PERSISTENCE_FEATURE_FLAG_DETAILS, PERSISTENCE_FEATURE_FLAG_ERRORS as PERSISTENCE_FEATURE_FLAG_ERRORS, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT as PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, PERSISTENCE_FEATURE_FLAG_PAYLOADS as PERSISTENCE_FEATURE_FLAG_PAYLOADS, PERSISTENCE_FEATURE_FLAG_REQUEST_ID as PERSISTENCE_FEATURE_FLAG_REQUEST_ID, PERSISTENCE_FACEBOOK_BROWSER_ID as PERSISTENCE_FACEBOOK_BROWSER_ID, PERSISTENCE_FACEBOOK_CLICK_ID as PERSISTENCE_FACEBOOK_CLICK_ID, PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS as PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS, STORED_GROUP_PROPERTIES_KEY as STORED_GROUP_PROPERTIES_KEY, STORED_PERSON_PROPERTIES_KEY as STORED_PERSON_PROPERTIES_KEY, SURVEYS_LOADED_AT as SURVEYS_LOADED_AT, USER_STATE as USER_STATE, USER_STATE_ANONYMOUS as USER_STATE_ANONYMOUS, USER_STATE_IDENTIFIED as USER_STATE_IDENTIFIED } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { getPersistenceKeyPolicy as getPersistenceKeyPolicy, PERSISTENCE_STORAGE_GROUPS as PERSISTENCE_STORAGE_GROUPS } from "../../vendor/posthog-js/packages/browser/src/persistence-key-policy.ts";
+import extern { isArray as isArray, isNull as isNull, isNumber as isNumber, isUndefined as isUndefined } from "@posthog/core";
+import extern { getCampaignParams as getCampaignParams, getInitialPersonPropsFromInfo as getInitialPersonPropsFromInfo, getPersonInfo as getPersonInfo, getReferrerInfo as getReferrerInfo, getSearchInfo as getSearchInfo } from "@posthog/browser-common/utils/event-utils";
+import extern { logger as logger } from "@posthog/browser-common/utils/logger";
+import extern { stripLeadingDollar as stripLeadingDollar, isEmptyObject as isEmptyObject, isObject as isObject } from "@posthog/core";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue Map;
+extern JsValue Set;
+extern JsValue __lil_object_9;
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue __lil_object_18;
+extern JsValue JSON;
+extern JsValue clearTimeout;
+extern JsValue setTimeout;
+extern JsValue __lil_object_42;
+extern JsValue __lil_object_45;
+extern JsValue __lil_object_46;
+extern JsValue encodeURIComponent;
+extern JsValue RegExp;
+extern JsValue each;
+extern JsValue extend;
+extern JsValue stripEmptyProperties;
+extern JsValue addEventListener;
+
+extern JsValue COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES;
+extern JsValue COOKIE_PERSISTED_PROPERTIES;
+extern JsValue cookieStore;
+extern JsValue createLocalPlusCookieStore;
+extern JsValue getCookiePersistedProperties;
+extern JsValue getCookiePersistedPropertiesMetadata;
+extern JsValue getCookiePersistedPropertiesMetadataState;
+extern JsValue getCookiePropertiesFingerprint;
+extern JsValue getSafeCookieProperties;
+extern JsValue localStore;
+extern JsValue memoryStore;
+extern JsValue sessionStore;
+
+extern JsValue document;
+extern JsValue window;
+
+extern JsValue ALIAS_ID_KEY;
+extern JsValue DISTINCT_ID;
+extern JsValue ENABLED_FEATURE_FLAGS;
+extern JsValue EVENT_TIMERS_KEY;
+extern JsValue FLAG_CALL_REPORTED;
+extern JsValue INITIAL_CAMPAIGN_PARAMS;
+extern JsValue INITIAL_PERSON_INFO;
+extern JsValue INITIAL_REFERRER_INFO;
+extern JsValue PERSISTENCE_ACTIVE_FEATURE_FLAGS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_DETAILS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_ERRORS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_EVALUATED_AT;
+extern JsValue PERSISTENCE_FEATURE_FLAG_PAYLOADS;
+extern JsValue PERSISTENCE_FEATURE_FLAG_REQUEST_ID;
+extern JsValue PERSISTENCE_FACEBOOK_BROWSER_ID;
+extern JsValue PERSISTENCE_FACEBOOK_CLICK_ID;
+extern JsValue PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS;
+extern JsValue STORED_GROUP_PROPERTIES_KEY;
+extern JsValue STORED_PERSON_PROPERTIES_KEY;
+extern JsValue SURVEYS_LOADED_AT;
+extern JsValue USER_STATE;
+extern JsValue USER_STATE_ANONYMOUS;
+extern JsValue USER_STATE_IDENTIFIED;
+
+extern JsValue getPersistenceKeyPolicy;
+extern JsValue PERSISTENCE_STORAGE_GROUPS;
+
+JsValue VOLATILE_FINGERPRINT_PLACEHOLDER = "__volatile__";
+
+JsValue GROUP_FRESHNESS_KEY = object { "flags": PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, "surveys": SURVEYS_LOADED_AT };
+
+extern JsValue isArray;
+extern JsValue isNull;
+extern JsValue isNumber;
+extern JsValue isUndefined;
+
+extern JsValue getCampaignParams;
+extern JsValue getInitialPersonPropsFromInfo;
+extern JsValue getPersonInfo;
+extern JsValue getReferrerInfo;
+extern JsValue getSearchInfo;
+
+extern JsValue logger;
+
+extern JsValue stripLeadingDollar;
+extern JsValue isEmptyObject;
+extern JsValue isObject;
+
+JsValue CASE_INSENSITIVE_PERSISTENCE_TYPES = JS.array("cookie", "localstorage", "localstorage+cookie", "sessionstorage", "memory");
+
+func(JsValue)->JsValue getCookieIdentityChangePendingName = (JsValue name) => __port_0(name);
+
+JsValue MAX_COOKIE_PERSON_INFO_FIELD_SIZE = 1000.0;
+
+func(JsValue)->JsValue truncateForCookie = (JsValue value) => __port_1(value);
+
+func(JsValue)->JsValue parseName = (JsValue config) => __port_2(config);
+
+JsValue MAIN_STORAGE_SLOT = "main";
+
+JsValue CROSS_TAB_FEATURE_FLAG_KEYS = JS.array(ENABLED_FEATURE_FLAGS, PERSISTENCE_ACTIVE_FEATURE_FLAGS, PERSISTENCE_FEATURE_FLAG_DETAILS, PERSISTENCE_FEATURE_FLAG_PAYLOADS, PERSISTENCE_FEATURE_FLAG_REQUEST_ID, PERSISTENCE_FEATURE_FLAG_EVALUATED_AT, PERSISTENCE_MINIMAL_FLAG_CALLED_EVENTS, STORED_PERSON_PROPERTIES_KEY);
+
+func(JsValue)->JsValue isCrossTabFeatureFlagKey = (JsValue key) => __port_3(key);
+
+JsValue META_IDENTIFIER_PERSISTENCE_KEYS = JS.array(PERSISTENCE_FACEBOOK_CLICK_ID, PERSISTENCE_FACEBOOK_BROWSER_ID);
+
+func(JsValue)->JsValue isMetaIdentifierKey = (JsValue key) => __port_4(key);
+
+func(JsValue, JsValue)->JsValue isStorageValueEqual = (JsValue left, JsValue right) => __port_5(left, right);
+
+func(JsValue)->JsValue parseStorageValue = (JsValue value) => __port_6(value);
+
+func(JsValue, JsValue)->JsValue isArrayContentsEqual = (JsValue arr1, JsValue arr2) => __port_7(arr1, arr2);
+
+func(JsValue, JsValue)->JsValue clearStaleEventProperties = (JsValue props, JsValue cookieProperties) => __port_8(props, cookieProperties);
+
+export class PostHogPersistence {
+init(JsValue config, JsValue isDisabled, JsValue ownsSplitStorage = true, JsValue allowDisabledRead = !((config as JsValue)["cookieless_mode"] as JsValue).truthy()) { 
+((((this as JsValue) as JsValue)["_slotState"] = object {  }));
+((((this as JsValue) as JsValue)["_splitStorageEligible"] = false));
+((((this as JsValue) as JsValue)["_storesIdentityInCookie"] = false));
+((((this as JsValue) as JsValue)["_splitStorage"] = false));
+((((this as JsValue) as JsValue)["_cookieIdentityChangePending"] = false));
+((((this as JsValue) as JsValue)["_cookieSyncSuppressed"] = false));
+((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] = JS.construct(Map)));
+((((this as JsValue) as JsValue)["_storageMigrationInProgress"] = false));
+((((this as JsValue) as JsValue)["_localIdentityChangePending"] = false));
+((((this as JsValue) as JsValue)["_crossTabFeatureFlagIdentityMismatch"] = false));
+((((this as JsValue) as JsValue)["_metaIdentifierChangePending"] = JS.construct(Set)));
+((((this as JsValue) as JsValue)["_crossTabFeatureFlagHandlers"] = JS.construct(Set)));
+((((this as JsValue) as JsValue)["_config"] = config));
+((((this as JsValue) as JsValue)["_ownsSplitStorage"] = ownsSplitStorage));
+((((this as JsValue) as JsValue)["props"] = object {  }));
+((((this as JsValue) as JsValue)["_campaign_params_url"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_name"] = parseName(config)));
+((((this as JsValue) as JsValue)["_disabled"] = (((config as JsValue)["disable_persistence"] as JsValue) || (!(!(isDisabled as JsValue).truthy() as JsValue).truthy() as JsValue))));
+((((this as JsValue) as JsValue)["_storage"] = ((this as JsValue) as JsValue)["_buildStorage"](config)));
+((((this as JsValue) as JsValue)["_splitStorage"] = ((this as JsValue) as JsValue)["_resolveSplitStorage"](config)));
+(((this as JsValue) as JsValue)["load"](allowDisabledRead));
+(((this as JsValue) as JsValue)["_markLoadedCrossTabFeatureFlagChangesPending"]());
+if (((config as JsValue)["debug"] as JsValue).truthy()) {((logger as JsValue)["info"]("Persistence loaded", (config as JsValue)["persistence"], __lil_object_9(() => (((this as JsValue) as JsValue)["props"] as JsValue))));}
+(((this as JsValue) as JsValue)["update_config"](config, config, isDisabled));
+(((this as JsValue) as JsValue)["save"]());
+if ((window as JsValue).truthy()) {JsValue flush = () => { 
+return (((this as JsValue) as JsValue)["flush"]() as JsValue);
+return JS.undefined(); };
+((addEventListener as JsValue)(window, "beforeunload", flush, object { "capture": false }));
+((addEventListener as JsValue)(window, "pagehide", flush, object { "capture": false }));
+((((this as JsValue) as JsValue)["_onStorage"] = (JsValue event) => { 
+if ((((((!(((this as JsValue) as JsValue)["_splitStorageEligible"] as JsValue).truthy() as JsValue) || (((((event as JsValue)["storageArea"] as JsValue) && ((((event as JsValue)["storageArea"] as JsValue) !== ((if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["localStorage"] as JsValue) }) as JsValue)) as JsValue))) as JsValue)) as JsValue) || (!((event as JsValue)["key"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if (((((event as JsValue)["key"] as JsValue) === (((this as JsValue) as JsValue)["_name"] as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_syncCrossTabFeatureFlagProperties"]((event as JsValue)["key"], MAIN_STORAGE_SLOT));
+return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) {JsValue group = (PERSISTENCE_STORAGE_GROUPS as JsValue)["find"]((JsValue group) => { 
+return ((((event as JsValue)["key"] as JsValue) === (((this as JsValue) as JsValue)["_groupEntryName"](group) as JsValue)) as JsValue);
+return JS.undefined(); });
+if ((group as JsValue).truthy()) {(((this as JsValue) as JsValue)["_syncCrossTabFeatureFlagProperties"]((event as JsValue)["key"], group));}}
+return JS.undefined(); }));
+((addEventListener as JsValue)(window, "storage", ((this as JsValue) as JsValue)["_onStorage"]));}
+ }
+
+JsValue markCrossTabFeatureFlagChanges(JsValue changes) { 
+(((Object as JsValue)["entries"](changes) as JsValue)["forEach"]((JsValue __port_10) => { JsValue __port_11 = __port_10;
+JsValue key = JS.undefined();
+JsValue properties = JS.undefined();
+int __port_12 = 0;
+for (JsValue __port_13 of __port_11) {
+if (__port_12 === 0) { key = __port_13; }
+if (__port_12 === 1) { properties = __port_13; }
+__port_12 += 1; if (__port_12 === 2) break;
+}
+JsValue existingPendingChanges = (((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["get"](key);
+if ((((!(isCrossTabFeatureFlagKey(key) as JsValue).truthy() as JsValue) || (((existingPendingChanges as JsValue) === (true as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((((properties as JsValue) === (true as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, true));
+return JS.undefined();}
+JsValue pendingChanges = JS.construct(Set, ((existingPendingChanges as JsValue) || (JS.array() as JsValue)));
+((properties as JsValue)["forEach"]((JsValue property) => { 
+return ((pendingChanges as JsValue)["add"](property) as JsValue);
+return JS.undefined(); }));
+if (((pendingChanges as JsValue)["size"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, pendingChanges));}
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue onCrossTabFeatureFlagChange(JsValue handler) { 
+((((this as JsValue) as JsValue)["_crossTabFeatureFlagHandlers"] as JsValue)["add"](handler));
+return () => { 
+return ((((this as JsValue) as JsValue)["_crossTabFeatureFlagHandlers"] as JsValue)["delete"](handler) as JsValue);
+return JS.undefined(); };
+return JS.undefined(); }
+
+JsValue destroy() { 
+if ((((((this as JsValue) as JsValue)["_onStorage"] as JsValue) && (window as JsValue)) as JsValue).truthy()) {((window as JsValue)["removeEventListener"]("storage", ((this as JsValue) as JsValue)["_onStorage"]));
+((((this as JsValue) as JsValue)["_onStorage"] = JS.undefined()));}
+((((this as JsValue) as JsValue)["_crossTabFeatureFlagHandlers"] as JsValue)["clear"]());
+return JS.undefined(); }
+
+JsValue _syncCrossTabFeatureFlagProperties(JsValue storageKey, JsValue slot, JsValue notify = true) { 
+if ((((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy()) {return false;}
+JsValue nextEntry = JS.undefined();
+JsValue storageValue = JS.undefined();
+try {((storageValue = (localStore as JsValue)["_get"](storageKey)));
+if (((isNull as JsValue)(storageValue) as JsValue).truthy()) {JsValue state = ((this as JsValue) as JsValue)["_slotWriteState"](slot);
+(((state as JsValue)["storageValue"] = null));
+if ((((slot as JsValue) !== (MAIN_STORAGE_SLOT as JsValue)) as JsValue).truthy()) {(((state as JsValue)["persisted"] = false));}
+return false;}
+((nextEntry = parseStorageValue(storageValue)));} catch (JsValue __port_14) {return false;}
+JsValue identityEntry = if ((((slot as JsValue) === (MAIN_STORAGE_SLOT as JsValue)) as JsValue).truthy()) { (nextEntry as JsValue) } else { ((localStore as JsValue)["_parse"](((this as JsValue) as JsValue)["_name"]) as JsValue) };
+if ((((identityEntry as JsValue) && (((this as JsValue) as JsValue)["_hasCrossTabFeatureFlagIdentityMismatch"](identityEntry) as JsValue)) as JsValue).truthy()) {return false;}
+JsValue changed = ((this as JsValue) as JsValue)["_mergeCrossTabFeatureFlagProperties"](nextEntry, slot, notify);
+if ((((((((slot as JsValue) !== (MAIN_STORAGE_SLOT as JsValue)) as JsValue) || (!(((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy() as JsValue)) as JsValue) || (isStorageValueEqual((((this as JsValue) as JsValue)["_partitionProps"]() as JsValue)["main"], nextEntry) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_rememberCrossTabStorageFingerprint"](nextEntry, slot, true, storageValue));}
+return changed;
+return JS.undefined(); }
+
+JsValue _hasCrossTabFeatureFlagIdentityMismatch(JsValue entry) { 
+JsValue localDistinctId = (((this as JsValue) as JsValue)["props"] as JsValue)[DISTINCT_ID];
+JsValue persistedDistinctId = (entry as JsValue)[DISTINCT_ID];
+return (((((!((isUndefined as JsValue)(localDistinctId) as JsValue).truthy() as JsValue) && (!((isUndefined as JsValue)(persistedDistinctId) as JsValue).truthy() as JsValue)) as JsValue) && (((localDistinctId as JsValue) !== (persistedDistinctId as JsValue)) as JsValue)));
+return JS.undefined(); }
+
+JsValue _rememberCrossTabStorageFingerprint(JsValue entry, JsValue slot, JsValue materialized, JsValue storageValue) { 
+JsValue state = ((this as JsValue) as JsValue)["_slotWriteState"](slot);
+(((state as JsValue)["storageValue"] = storageValue));
+if ((((slot as JsValue) !== (MAIN_STORAGE_SLOT as JsValue)) as JsValue).truthy()) {(((state as JsValue)["persisted"] = materialized));}
+try {(((state as JsValue)["fingerprint"] = ((this as JsValue) as JsValue)["_entryFingerprint"](entry, slot)));} catch (JsValue __port_15) {(((state as JsValue)["fingerprint"] = JS.undefined()));}
+return JS.undefined(); }
+
+JsValue _mergeCrossTabFeatureFlagProperties(JsValue nextEntry, JsValue slot, JsValue notify) { 
+JsValue changed = false;
+((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["forEach"]((JsValue prop) => { 
+JsValue _a = JS.undefined();
+JsValue group = if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(prop))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) };
+if (((((((((((slot as JsValue) === (MAIN_STORAGE_SLOT as JsValue)) as JsValue) && (((this as JsValue) as JsValue)["_splitStorage"] as JsValue)) as JsValue) && (group as JsValue))) as JsValue) || ((((((slot as JsValue) !== (MAIN_STORAGE_SLOT as JsValue)) as JsValue) && (((group as JsValue) !== (slot as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue hasNextValue = JS.in(prop, nextEntry);
+JsValue nextValue = ((this as JsValue) as JsValue)["_mergePendingCrossTabFeatureFlagChanges"](prop, if ((hasNextValue as JsValue).truthy()) { ((nextEntry as JsValue)[prop] as JsValue) } else { (JS.undefined() as JsValue) });
+JsValue keepKey = if (((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["has"](prop) as JsValue).truthy()) { (JS.in(prop, ((this as JsValue) as JsValue)["props"]) as JsValue) } else { (hasNextValue as JsValue) };
+if ((((((keepKey as JsValue) === (JS.in(prop, ((this as JsValue) as JsValue)["props"]) as JsValue)) as JsValue) && (isStorageValueEqual(nextValue, (((this as JsValue) as JsValue)["props"] as JsValue)[prop]) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((keepKey as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setProp"](prop, nextValue, false));} else {(((this as JsValue) as JsValue)["_deleteProp"](prop, false));}
+((changed = true));
+return JS.undefined(); }));
+if ((((changed as JsValue) && (notify as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_crossTabFeatureFlagHandlers"] as JsValue)["forEach"]((JsValue handler) => { 
+return ((handler as JsValue)() as JsValue);
+return JS.undefined(); }));}
+return changed;
+return JS.undefined(); }
+
+JsValue _reconcileCrossTabFeatureFlagPropertiesBeforeWrite() { 
+if ((!(((this as JsValue) as JsValue)["_splitStorageEligible"] as JsValue).truthy() as JsValue).truthy()) {return false;}
+try {((((this as JsValue) as JsValue)["_crossTabFeatureFlagIdentityMismatch"] = false));
+JsValue mainValue = (localStore as JsValue)["_get"](((this as JsValue) as JsValue)["_name"]);
+JsValue mainState = ((this as JsValue) as JsValue)["_slotWriteState"](MAIN_STORAGE_SLOT);
+JsValue mainEntry = JS.undefined();
+JsValue mainChanged = false;
+JsValue changed = false;
+if ((((mainValue as JsValue) !== ((mainState as JsValue)["storageValue"] as JsValue)) as JsValue).truthy()) {if (((isNull as JsValue)(mainValue) as JsValue).truthy()) {(((mainState as JsValue)["storageValue"] = null));} else {((mainEntry = parseStorageValue(mainValue)));
+((((this as JsValue) as JsValue)["_crossTabFeatureFlagIdentityMismatch"] = ((!(((this as JsValue) as JsValue)["_localIdentityChangePending"] as JsValue).truthy() as JsValue) && (((this as JsValue) as JsValue)["_hasCrossTabFeatureFlagIdentityMismatch"](mainEntry) as JsValue))));
+if ((((this as JsValue) as JsValue)["_crossTabFeatureFlagIdentityMismatch"] as JsValue).truthy()) {return false;}
+((changed = ((this as JsValue) as JsValue)["_mergeCrossTabFeatureFlagProperties"](mainEntry, MAIN_STORAGE_SLOT, false)));
+if ((((!(((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy() as JsValue) || (isStorageValueEqual((((this as JsValue) as JsValue)["_partitionProps"]() as JsValue)["main"], mainEntry) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_rememberCrossTabStorageFingerprint"](mainEntry, MAIN_STORAGE_SLOT, true, mainValue));} else {(((mainState as JsValue)["storageValue"] = mainValue));}
+((mainChanged = true));}}
+if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) {((PERSISTENCE_STORAGE_GROUPS as JsValue)["forEach"]((JsValue group) => { 
+JsValue groupValue = (localStore as JsValue)["_get"](((this as JsValue) as JsValue)["_groupEntryName"](group));
+JsValue groupState = ((this as JsValue) as JsValue)["_slotWriteState"](group);
+JsValue mainFallback = ((mainEntry as JsValue) || (object {  } as JsValue));
+JsValue mainCarriesGroup = ((mainChanged as JsValue) && ((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["some"]((JsValue key) => { 
+JsValue _a = JS.undefined();
+return (((((if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) }) as JsValue) === (group as JsValue)) as JsValue) && (JS.in(key, mainFallback) as JsValue));
+return JS.undefined(); }) as JsValue));
+if ((((((groupValue as JsValue) === ((groupState as JsValue)["storageValue"] as JsValue)) as JsValue) && (!(mainCarriesGroup as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if (((isNull as JsValue)(groupValue) as JsValue).truthy()) {(((groupState as JsValue)["storageValue"] = null));
+(((groupState as JsValue)["persisted"] = false));
+if ((mainCarriesGroup as JsValue).truthy()) {((changed = ((((this as JsValue) as JsValue)["_mergeCrossTabFeatureFlagProperties"](mainFallback, group, false) as JsValue) || (changed as JsValue))));}
+return JS.undefined();}
+JsValue groupEntry = parseStorageValue(groupValue);
+((changed = ((((this as JsValue) as JsValue)["_mergeCrossTabFeatureFlagProperties"](groupEntry, group, false) as JsValue) || (changed as JsValue))));
+(((this as JsValue) as JsValue)["_rememberCrossTabStorageFingerprint"](groupEntry, group, true, groupValue));
+return JS.undefined(); }));}
+return changed;} catch (JsValue __port_16) {return false;}
+return JS.undefined(); }
+
+JsValue _setCrossTabFeatureFlagChangesPending(JsValue key, JsValue changes) { 
+((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["set"](key, changes));
+JsValue policy = (getPersistenceKeyPolicy as JsValue)(key);
+if ((!((if ((((((policy as JsValue) === (null as JsValue)) as JsValue) || (((policy as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((policy as JsValue)["volatile"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {JsValue group = if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) { (if ((((((policy as JsValue) === (null as JsValue)) as JsValue) || (((policy as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((policy as JsValue)["storageGroup"] as JsValue) } as JsValue) } else { (JS.undefined() as JsValue) };
+(((((this as JsValue) as JsValue)["_slotWriteState"](((group as JsValue) || (MAIN_STORAGE_SLOT as JsValue))) as JsValue)["fingerprint"] = JS.undefined()));
+(((this as JsValue) as JsValue)["_markGroupDirty"](key));}
+return JS.undefined(); }
+
+JsValue _markAllCrossTabFeatureFlagChangesPending() { 
+((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["forEach"]((JsValue key) => { 
+return ((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["set"](key, true) as JsValue);
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue _markLoadedCrossTabFeatureFlagChangesPending() { 
+if ((!(((this as JsValue) as JsValue)["_splitStorageEligible"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+try {JsValue mainValue = (localStore as JsValue)["_get"](((this as JsValue) as JsValue)["_name"]);
+JsValue mainEntry = parseStorageValue(mainValue);
+(((((this as JsValue) as JsValue)["_slotWriteState"](MAIN_STORAGE_SLOT) as JsValue)["storageValue"] = mainValue));
+((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["forEach"]((JsValue key) => { 
+JsValue _a = JS.undefined();
+JsValue group = if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) { (if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) } as JsValue) } else { (JS.undefined() as JsValue) };
+JsValue groupValue = if ((group as JsValue).truthy()) { ((localStore as JsValue)["_get"](((this as JsValue) as JsValue)["_groupEntryName"](group)) as JsValue) } else { (null as JsValue) };
+if ((group as JsValue).truthy()) {JsValue groupState = ((this as JsValue) as JsValue)["_slotWriteState"](group);
+(((groupState as JsValue)["storageValue"] = groupValue));
+(((groupState as JsValue)["persisted"] = !((isNull as JsValue)(groupValue) as JsValue).truthy()));}
+JsValue storedEntry = if ((((group as JsValue) && (!((isNull as JsValue)(groupValue) as JsValue).truthy() as JsValue)) as JsValue).truthy()) { (parseStorageValue(groupValue) as JsValue) } else { (mainEntry as JsValue) };
+if ((JS.in(key, ((this as JsValue) as JsValue)["props"]) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_markPendingCrossTabFeatureFlagChanges"](key, (storedEntry as JsValue)[key], (((this as JsValue) as JsValue)["props"] as JsValue)[key]));} else {if ((JS.in(key, storedEntry) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, true));}}
+return JS.undefined(); }));} catch (JsValue __port_17) {}
+return JS.undefined(); }
+
+JsValue _mergePendingCrossTabFeatureFlagChanges(JsValue key, JsValue nextValue) { 
+JsValue pendingChanges = (((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["get"](key);
+if ((!(pendingChanges as JsValue).truthy() as JsValue).truthy()) {return nextValue;}
+if ((((pendingChanges as JsValue) === (true as JsValue)) as JsValue).truthy()) {return (((this as JsValue) as JsValue)["props"] as JsValue)[key];}
+if ((((key as JsValue) === (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue)) as JsValue).truthy()) {JsValue merged = JS.construct(Set, if (((isArray as JsValue)(nextValue) as JsValue).truthy()) { (nextValue as JsValue) } else { (JS.array() as JsValue) });
+JsValue local = JS.construct(Set, if (((isArray as JsValue)((((this as JsValue) as JsValue)["props"] as JsValue)[key]) as JsValue).truthy()) { ((((this as JsValue) as JsValue)["props"] as JsValue)[key] as JsValue) } else { (JS.array() as JsValue) });
+((pendingChanges as JsValue)["forEach"]((JsValue flag) => { 
+return ((if (((local as JsValue)["has"](flag) as JsValue).truthy()) { ((merged as JsValue)["add"](flag) as JsValue) } else { ((merged as JsValue)["delete"](flag) as JsValue) }) as JsValue);
+return JS.undefined(); }));
+return (Array as JsValue)["from"](merged);}
+JsValue merged = if (((isObject as JsValue)(nextValue) as JsValue).truthy()) { (__lil_object_18(() => (nextValue as JsValue)) as JsValue) } else { (object {  } as JsValue) };
+JsValue local = if (((isObject as JsValue)((((this as JsValue) as JsValue)["props"] as JsValue)[key]) as JsValue).truthy()) { ((((this as JsValue) as JsValue)["props"] as JsValue)[key] as JsValue) } else { (object {  } as JsValue) };
+((pendingChanges as JsValue)["forEach"]((JsValue property) => { 
+if ((JS.in(property, local) as JsValue).truthy()) {(((merged as JsValue)[property] = (local as JsValue)[property]));} else {((() => { JS.delete(merged, property); return true; })());}
+return JS.undefined(); }));
+return merged;
+return JS.undefined(); }
+
+JsValue _markPendingCrossTabFeatureFlagChanges(JsValue key, JsValue previousValue, JsValue nextValue) { 
+JsValue _a = JS.undefined();
+if ((!(isCrossTabFeatureFlagKey(key) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue existingPendingChanges = (((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["get"](key);
+if ((((existingPendingChanges as JsValue) === (true as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue durableValue = previousValue;
+if ((((this as JsValue) as JsValue)["_splitStorageEligible"] as JsValue).truthy()) {try {JsValue group = if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) { (if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) } as JsValue) } else { (JS.undefined() as JsValue) };
+JsValue storageKey = if ((group as JsValue).truthy()) { (((this as JsValue) as JsValue)["_groupEntryName"](group) as JsValue) } else { (((this as JsValue) as JsValue)["_name"] as JsValue) };
+((durableValue = (parseStorageValue((localStore as JsValue)["_get"](storageKey)) as JsValue)[key]));} catch (JsValue __port_19) {}}
+JsValue pendingChanges = JS.construct(Set, ((existingPendingChanges as JsValue) || (JS.array() as JsValue)));
+if ((((key as JsValue) === (PERSISTENCE_ACTIVE_FEATURE_FLAGS as JsValue)) as JsValue).truthy()) {if (((((((((!((isUndefined as JsValue)(previousValue) as JsValue).truthy() as JsValue) && (!((isArray as JsValue)(previousValue) as JsValue).truthy() as JsValue))) as JsValue) || ((((!((isUndefined as JsValue)(durableValue) as JsValue).truthy() as JsValue) && (!((isArray as JsValue)(durableValue) as JsValue).truthy() as JsValue))) as JsValue)) as JsValue) || (!((isArray as JsValue)(nextValue) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, true));
+return JS.undefined();}
+JsValue previous = JS.construct(Set, ((previousValue as JsValue) || (JS.array() as JsValue)));
+JsValue durable = JS.construct(Set, ((durableValue as JsValue) || (JS.array() as JsValue)));
+JsValue next = JS.construct(Set, nextValue);
+((JS.construct(Set, (() => { JsValue __port_20 = JS.array();
+for (JsValue __port_21 of previous) { __port_20.push(__port_21); }
+for (JsValue __port_22 of next) { __port_20.push(__port_22); }return __port_20; })()) as JsValue)["forEach"]((JsValue flag) => { 
+if (((((previous as JsValue)["has"](flag) as JsValue) !== ((next as JsValue)["has"](flag) as JsValue)) as JsValue).truthy()) {((pendingChanges as JsValue)["add"](flag));}
+return JS.undefined(); }));
+((pendingChanges as JsValue)["forEach"]((JsValue flag) => { 
+if (((((durable as JsValue)["has"](flag) as JsValue) === ((next as JsValue)["has"](flag) as JsValue)) as JsValue).truthy()) {((pendingChanges as JsValue)["delete"](flag));}
+return JS.undefined(); }));} else {if (((isObject as JsValue)(nextValue) as JsValue).truthy()) {if (((((((!((isUndefined as JsValue)(previousValue) as JsValue).truthy() as JsValue) && (!((isObject as JsValue)(previousValue) as JsValue).truthy() as JsValue))) as JsValue) || (((((((isUndefined as JsValue)(previousValue) as JsValue) && ((isEmptyObject as JsValue)(nextValue) as JsValue)) as JsValue) && ((isUndefined as JsValue)(durableValue) as JsValue))) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, true));
+return JS.undefined();}
+JsValue previous = if (((isObject as JsValue)(previousValue) as JsValue).truthy()) { (previousValue as JsValue) } else { (object {  } as JsValue) };
+JsValue durable = if (((isObject as JsValue)(durableValue) as JsValue).truthy()) { (durableValue as JsValue) } else { (object {  } as JsValue) };
+((JS.construct(Set, (() => { JsValue __port_23 = JS.array();
+for (JsValue __port_24 of (Object as JsValue)["keys"](previous)) { __port_23.push(__port_24); }
+for (JsValue __port_25 of (Object as JsValue)["keys"](nextValue)) { __port_23.push(__port_25); }return __port_23; })()) as JsValue)["forEach"]((JsValue property) => { 
+if ((((((JS.in(property, previous) as JsValue) !== (JS.in(property, nextValue) as JsValue)) as JsValue) || (!(isStorageValueEqual((previous as JsValue)[property], (nextValue as JsValue)[property]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((pendingChanges as JsValue)["add"](property));}
+return JS.undefined(); }));
+((pendingChanges as JsValue)["forEach"]((JsValue property) => { 
+if ((((((JS.in(property, durable) as JsValue) === (JS.in(property, nextValue) as JsValue)) as JsValue) && (isStorageValueEqual((durable as JsValue)[property], (nextValue as JsValue)[property]) as JsValue)) as JsValue).truthy()) {((pendingChanges as JsValue)["delete"](property));}
+return JS.undefined(); }));} else {if ((!(isStorageValueEqual(durableValue, nextValue) as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, true));} else {((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["delete"](key));}
+return JS.undefined();}}
+if (((pendingChanges as JsValue)["size"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, pendingChanges));} else {((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["delete"](key));}
+return JS.undefined(); }
+
+JsValue _saveDebounceMs() { 
+JsValue _a = JS.undefined();
+JsValue value = if ((((((((_a = ((this as JsValue) as JsValue)["_config"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["persistence_save_debounce_ms"] as JsValue) };
+return if (((((isNumber as JsValue)(value) as JsValue) && (((value as JsValue) > (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) { (value as JsValue) } else { (0.0 as JsValue) };
+return JS.undefined(); }
+
+JsValue _rememberCurrentCookieProperties(JsValue props) { 
+if ((((!((((this as JsValue) as JsValue)["_config"] as JsValue)["cookieWinsOnConflict"] as JsValue).truthy() as JsValue) || (((((((this as JsValue) as JsValue)["_config"] as JsValue)["persistence"] as JsValue)["toLowerCase"]() as JsValue) !== ("localstorage+cookie" as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((props as JsValue).truthy()) {try {JsValue cookieProperties = (getCookiePersistedProperties as JsValue)(props, (((((this as JsValue) as JsValue)["_config"] as JsValue)["cookie_persisted_properties"] as JsValue) || (JS.array() as JsValue)));
+JsValue customCookieProperties = (((((this as JsValue) as JsValue)["_config"] as JsValue)["cookie_persisted_properties"] as JsValue) || (JS.array() as JsValue));
+JsValue metadata = (getCookiePersistedPropertiesMetadata as JsValue)(cookieProperties, customCookieProperties);
+JsValue expectedFingerprint = (((((JSON as JsValue)["stringify"](cookieProperties) as JsValue) + ("|" as JsValue)) as JsValue) + ((JSON as JsValue)["stringify"](metadata) as JsValue));
+JsValue currentCookieValue = (((cookieStore as JsValue)["_get"](((this as JsValue) as JsValue)["_name"]) as JsValue) || (JS.undefined() as JsValue));
+if ((((currentCookieValue as JsValue) && ((((getCookiePropertiesFingerprint as JsValue)(((this as JsValue) as JsValue)["_name"], currentCookieValue) as JsValue) === (expectedFingerprint as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lastSeenCookiePropertiesFingerprint"] = expectedFingerprint));
+((((this as JsValue) as JsValue)["_lastSeenMainCookieValue"] = currentCookieValue));}} catch (JsValue __port_26) {}
+return JS.undefined();}
+try {JsValue cookieValue = (((cookieStore as JsValue)["_get"](((this as JsValue) as JsValue)["_name"]) as JsValue) || (JS.undefined() as JsValue));
+((((this as JsValue) as JsValue)["_lastSeenCookiePropertiesFingerprint"] = if ((cookieValue as JsValue).truthy()) { ((getCookiePropertiesFingerprint as JsValue)(((this as JsValue) as JsValue)["_name"], cookieValue) as JsValue) } else { (JS.undefined() as JsValue) }));
+((((this as JsValue) as JsValue)["_lastSeenMainCookieValue"] = cookieValue));} catch (JsValue __port_27) {}
+return JS.undefined(); }
+
+JsValue syncCookieProperties() { 
+return ((this as JsValue) as JsValue)["_syncCookieProperties"](((this as JsValue) as JsValue)["_config"]);
+return JS.undefined(); }
+
+JsValue _syncCookieProperties(JsValue config, JsValue ignoreDisabled = false) { 
+if (((((((((((((this as JsValue) as JsValue)["_disabled"] as JsValue) && (!(ignoreDisabled as JsValue).truthy() as JsValue))) as JsValue) || (((this as JsValue) as JsValue)["_cookieSyncSuppressed"] as JsValue)) as JsValue) || (!((config as JsValue)["cookieWinsOnConflict"] as JsValue).truthy() as JsValue)) as JsValue) || (((((config as JsValue)["persistence"] as JsValue)["toLowerCase"]() as JsValue) !== ("localstorage+cookie" as JsValue)) as JsValue)) as JsValue).truthy()) {return false;}
+JsValue cookieValue = JS.undefined();
+try {((cookieValue = (((cookieStore as JsValue)["_get"](((this as JsValue) as JsValue)["_name"]) as JsValue) || (JS.undefined() as JsValue))));} catch (JsValue __port_28) {}
+if ((((!(cookieValue as JsValue).truthy() as JsValue) || (((cookieValue as JsValue) === (((this as JsValue) as JsValue)["_lastSeenMainCookieValue"] as JsValue)) as JsValue)) as JsValue).truthy()) {return false;}
+JsValue cookieFingerprint = (getCookiePropertiesFingerprint as JsValue)(((this as JsValue) as JsValue)["_name"], cookieValue);
+JsValue cookieProperties = JS.undefined();
+try {((cookieProperties = (getSafeCookieProperties as JsValue)((JSON as JsValue)["parse"](cookieValue))));} catch (JsValue __port_29) {return false;}
+if ((((((((cookieStore as JsValue)["_get"](((this as JsValue) as JsValue)["_name"]) as JsValue) || (JS.undefined() as JsValue))) as JsValue) !== (cookieValue as JsValue)) as JsValue).truthy()) {return false;}
+((((this as JsValue) as JsValue)["_lastSeenCookiePropertiesFingerprint"] = cookieFingerprint));
+((((this as JsValue) as JsValue)["_lastSeenMainCookieValue"] = cookieValue));
+JsValue metadataState = (getCookiePersistedPropertiesMetadataState as JsValue)(((this as JsValue) as JsValue)["_name"], cookieValue);
+JsValue authoritativeCookieProperties = (() => { JsValue __port_30 = JS.array();
+for (JsValue __port_31 of COOKIE_PERSISTED_PROPERTIES) { __port_30.push(__port_31); }
+for (JsValue __port_32 of (metadataState as JsValue)["properties"]) { __port_30.push(__port_32); }return __port_30; })();
+JsValue invalidCookieProperties = object {  };
+(((Object as JsValue)["keys"](cookieProperties) as JsValue)["forEach"]((JsValue key) => { 
+JsValue value = (cookieProperties as JsValue)[key];
+if (((((((((isUndefined as JsValue)(value) as JsValue) || ((isNull as JsValue)(value) as JsValue)) as JsValue) || (((value as JsValue) === ("" as JsValue)) as JsValue)) as JsValue) || ((((((((key as JsValue) === (USER_STATE as JsValue)) as JsValue) && (((value as JsValue) !== (USER_STATE_ANONYMOUS as JsValue)) as JsValue)) as JsValue) && (((value as JsValue) !== (USER_STATE_IDENTIFIED as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {(((invalidCookieProperties as JsValue)[key] = true));
+((() => { JS.delete(cookieProperties, key); return true; })());}
+return JS.undefined(); }));
+if (((isEmptyObject as JsValue)(cookieProperties) as JsValue).truthy()) {return false;}
+JsValue hasValidCookieIdentity = ((((JS.in(DISTINCT_ID, cookieProperties) as JsValue) || ((((cookieProperties as JsValue)[USER_STATE] as JsValue) === (USER_STATE_ANONYMOUS as JsValue)) as JsValue)) as JsValue) || ((((cookieProperties as JsValue)[USER_STATE] as JsValue) === (USER_STATE_IDENTIFIED as JsValue)) as JsValue));
+JsValue previousProps = ((this as JsValue) as JsValue)["props"];
+JsValue previousDistinctId = (previousProps as JsValue)[DISTINCT_ID];
+JsValue previousUserState = (previousProps as JsValue)[USER_STATE];
+JsValue nextProps = (extend as JsValue)(object {  }, previousProps);
+JsValue cookiePersistedProperties = (() => { JsValue __port_33 = JS.array();
+for (JsValue __port_34 of COOKIE_PERSISTED_PROPERTIES) { __port_33.push(__port_34); }
+for (JsValue __port_35 of ((((config as JsValue)["cookie_persisted_properties"] as JsValue) || (JS.array() as JsValue)))) { __port_33.push(__port_35); }return __port_33; })();
+((cookiePersistedProperties as JsValue)["forEach"]((JsValue key) => { 
+if (((((((((((authoritativeCookieProperties as JsValue)["indexOf"](key) as JsValue) !== ((-(1.0 as JsValue)) as JsValue)) as JsValue) && (!((JS.in(key, cookieProperties)) as JsValue).truthy() as JsValue)) as JsValue) && (!((invalidCookieProperties as JsValue)[key] as JsValue).truthy() as JsValue)) as JsValue) && ((((hasValidCookieIdentity as JsValue) || ((((((key as JsValue) !== (DISTINCT_ID as JsValue)) as JsValue) && (((key as JsValue) !== (USER_STATE as JsValue)) as JsValue))) as JsValue))) as JsValue)) as JsValue).truthy()) {JsValue localValue = (nextProps as JsValue)[key];
+JsValue legacyFalsyBuiltIn = ((((!((metadataState as JsValue)["isValid"] as JsValue).truthy() as JsValue) && ((((COOKIE_PERSISTED_PROPERTIES as JsValue)["indexOf"](key) as JsValue) !== ((-(1.0 as JsValue)) as JsValue)) as JsValue)) as JsValue) && ((((((localValue as JsValue) === (false as JsValue)) as JsValue) || (((localValue as JsValue) === (0.0 as JsValue)) as JsValue))) as JsValue));
+if ((!(legacyFalsyBuiltIn as JsValue).truthy() as JsValue).truthy()) {((() => { JS.delete(nextProps, key); return true; })());}}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["props"] = (extend as JsValue)(nextProps, cookieProperties)));
+((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["forEach"]((JsValue key) => { 
+JsValue hadPreviousValue = JS.in(key, previousProps);
+JsValue hasNextValue = JS.in(key, ((this as JsValue) as JsValue)["props"]);
+if ((((((hadPreviousValue as JsValue) !== (hasNextValue as JsValue)) as JsValue) || (!(isStorageValueEqual((previousProps as JsValue)[key], (((this as JsValue) as JsValue)["props"] as JsValue)[key]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if ((hasNextValue as JsValue).truthy()) {(((this as JsValue) as JsValue)["_markPendingCrossTabFeatureFlagChanges"](key, (previousProps as JsValue)[key], (((this as JsValue) as JsValue)["props"] as JsValue)[key]));} else {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](key, true));}}
+return JS.undefined(); }));
+if ((((((hasValidCookieIdentity as JsValue) && (!((JS.in(USER_STATE, cookieProperties)) as JsValue).truthy() as JsValue)) as JsValue) && (!((JS.in(USER_STATE, ((this as JsValue) as JsValue)["props"])) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setProp"](USER_STATE, USER_STATE_ANONYMOUS));}
+JsValue nextDistinctId = (((this as JsValue) as JsValue)["props"] as JsValue)[DISTINCT_ID];
+JsValue nextUserState = (((this as JsValue) as JsValue)["props"] as JsValue)[USER_STATE];
+if ((((hasValidCookieIdentity as JsValue) && ((((((nextDistinctId as JsValue) !== (previousDistinctId as JsValue)) as JsValue) || (((nextUserState as JsValue) !== (previousUserState as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_localIdentityChangePending"] = true));
+((((this as JsValue) as JsValue)["_cookieIdentityChangePending"] = true));
+((sessionStore as JsValue)["_set"](getCookieIdentityChangePendingName(((this as JsValue) as JsValue)["_name"]), true));
+(((this as JsValue) as JsValue)["_deleteProp"](STORED_PERSON_PROPERTIES_KEY));
+(((this as JsValue) as JsValue)["_deleteProp"](PERSISTENCE_ACTIVE_FEATURE_FLAGS));
+(((this as JsValue) as JsValue)["_deleteProp"](ENABLED_FEATURE_FLAGS));
+(((this as JsValue) as JsValue)["_deleteProp"](PERSISTENCE_FEATURE_FLAG_DETAILS));
+(((this as JsValue) as JsValue)["_deleteProp"](PERSISTENCE_FEATURE_FLAG_PAYLOADS));
+(((this as JsValue) as JsValue)["_deleteProp"](PERSISTENCE_FEATURE_FLAG_REQUEST_ID));
+(((this as JsValue) as JsValue)["_deleteProp"](PERSISTENCE_FEATURE_FLAG_EVALUATED_AT));
+(((this as JsValue) as JsValue)["_deleteProp"](PERSISTENCE_FEATURE_FLAG_ERRORS));
+(((this as JsValue) as JsValue)["_deleteProp"](FLAG_CALL_REPORTED));
+JsValue siblingReset = ((((nextUserState as JsValue) === (USER_STATE_ANONYMOUS as JsValue)) as JsValue) && ((((((((previousUserState as JsValue) === (USER_STATE_IDENTIFIED as JsValue)) as JsValue) || ((((cookieProperties as JsValue)[USER_STATE] as JsValue) === (USER_STATE_ANONYMOUS as JsValue)) as JsValue)) as JsValue) || ((((!((isUndefined as JsValue)(previousDistinctId) as JsValue).truthy() as JsValue) && (((nextDistinctId as JsValue) !== (previousDistinctId as JsValue)) as JsValue))) as JsValue))) as JsValue));
+if ((siblingReset as JsValue).truthy()) {(clearStaleEventProperties(((this as JsValue) as JsValue)["props"], cookieProperties));
+(((this as JsValue) as JsValue)["_deleteProp"](STORED_GROUP_PROPERTIES_KEY));}
+if ((((nextUserState as JsValue) === (USER_STATE_IDENTIFIED as JsValue)) as JsValue).truthy()) {(((((this as JsValue) as JsValue)["props"] as JsValue)["$user_id"] = nextDistinctId));} else {((() => { JS.delete(((this as JsValue) as JsValue)["props"], "$user_id"); return true; })());}
+(((this as JsValue) as JsValue)["_deleteProp"](ALIAS_ID_KEY));}
+return true;
+return JS.undefined(); }
+
+JsValue consumeCookieIdentityChange() { 
+JsValue pendingName = getCookieIdentityChangePendingName(((this as JsValue) as JsValue)["_name"]);
+JsValue changed = ((((this as JsValue) as JsValue)["_cookieIdentityChangePending"] as JsValue) || (!(!((sessionStore as JsValue)["_get"](pendingName) as JsValue).truthy() as JsValue).truthy() as JsValue));
+((((this as JsValue) as JsValue)["_cookieIdentityChangePending"] = false));
+if ((changed as JsValue).truthy()) {((sessionStore as JsValue)["_remove"](pendingName));}
+return changed;
+return JS.undefined(); }
+
+JsValue _beginCookieSyncSuppression(JsValue ignoreDisabled = false) { 
+if ((((((((!(((this as JsValue) as JsValue)["_cookieSyncSuppressed"] as JsValue).truthy() as JsValue) && ((((!(((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy() as JsValue) || (ignoreDisabled as JsValue))) as JsValue)) as JsValue) && ((((this as JsValue) as JsValue)["_config"] as JsValue)["cookieWinsOnConflict"] as JsValue)) as JsValue) && (((((((this as JsValue) as JsValue)["_config"] as JsValue)["persistence"] as JsValue)["toLowerCase"]() as JsValue) === ("localstorage+cookie" as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_cookieSyncSuppressed"] = true));
+return true;}
+return false;
+return JS.undefined(); }
+
+JsValue _publishSuppressedCookieSnapshot() { 
+if ((!(((this as JsValue) as JsValue)["_cookieSyncSuppressed"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]) as JsValue).truthy() as JsValue).truthy()) {((clearTimeout as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]));
+((((this as JsValue) as JsValue)["_pendingSaveTimer"] = JS.undefined()));}
+((() => { JS.delete(((this as JsValue) as JsValue)["_slotState"], MAIN_STORAGE_SLOT); return true; })());
+(((this as JsValue) as JsValue)["_writeNow"](true));
+return JS.undefined(); }
+
+JsValue _endCookieSyncSuppression(JsValue publish = true) { 
+if ((!(((this as JsValue) as JsValue)["_cookieSyncSuppressed"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+try {if ((publish as JsValue).truthy()) {(((this as JsValue) as JsValue)["_publishSuppressedCookieSnapshot"]());} else {if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]) as JsValue).truthy() as JsValue).truthy()) {((clearTimeout as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]));
+((((this as JsValue) as JsValue)["_pendingSaveTimer"] = JS.undefined()));}}} finally {((((this as JsValue) as JsValue)["_cookieSyncSuppressed"] = false));}
+return JS.undefined(); }
+
+JsValue isDisabled() { 
+return !(!(((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy() as JsValue).truthy();
+return JS.undefined(); }
+
+JsValue _buildStorage(JsValue config) { 
+if (((((CASE_INSENSITIVE_PERSISTENCE_TYPES as JsValue)["indexOf"](((config as JsValue)["persistence"] as JsValue)["toLowerCase"]()) as JsValue) === ((-(1.0 as JsValue)) as JsValue)) as JsValue).truthy()) {((logger as JsValue)["critical"]((((("Unknown persistence type " as JsValue) + ((config as JsValue)["persistence"] as JsValue)) as JsValue) + ("; falling back to localStorage+cookie" as JsValue))));
+(((config as JsValue)["persistence"] = "localStorage+cookie"));}
+JsValue localPlusCookieStore = (createLocalPlusCookieStore as JsValue)((((config as JsValue)["cookie_persisted_properties"] as JsValue) || (JS.array() as JsValue)), (config as JsValue)["cookieWinsOnConflict"], () => { 
+return (!(!(((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy() as JsValue).truthy() as JsValue);
+return JS.undefined(); });
+JsValue store = JS.undefined();
+JsValue storesIdentityInCookie = false;
+JsValue splitEligible = false;
+JsValue storage_type = ((config as JsValue)["persistence"] as JsValue)["toLowerCase"]();
+if ((((((storage_type as JsValue) === ("localstorage" as JsValue)) as JsValue) && ((localStore as JsValue)["_is_supported"]() as JsValue)) as JsValue).truthy()) {((store = localStore));
+((splitEligible = true));} else {if ((((((storage_type as JsValue) === ("localstorage+cookie" as JsValue)) as JsValue) && ((localPlusCookieStore as JsValue)["_is_supported"]() as JsValue)) as JsValue).truthy()) {((store = localPlusCookieStore));
+((splitEligible = true));
+((storesIdentityInCookie = true));} else {if ((((((storage_type as JsValue) === ("sessionstorage" as JsValue)) as JsValue) && ((sessionStore as JsValue)["_is_supported"]() as JsValue)) as JsValue).truthy()) {((store = sessionStore));} else {if ((((storage_type as JsValue) === ("memory" as JsValue)) as JsValue).truthy()) {((store = memoryStore));} else {if ((((((storage_type as JsValue) === ("cookie" as JsValue)) as JsValue) && ((cookieStore as JsValue)["_is_supported"]() as JsValue)) as JsValue).truthy()) {((store = cookieStore));
+((storesIdentityInCookie = true));} else {if (((localPlusCookieStore as JsValue)["_is_supported"]() as JsValue).truthy()) {((store = localPlusCookieStore));
+((splitEligible = true));
+((storesIdentityInCookie = true));} else {if (((cookieStore as JsValue)["_is_supported"]() as JsValue).truthy()) {((store = cookieStore));
+((storesIdentityInCookie = true));} else {((store = memoryStore));}}}}}}}
+((((this as JsValue) as JsValue)["_splitStorageEligible"] = splitEligible));
+((((this as JsValue) as JsValue)["_storesIdentityInCookie"] = storesIdentityInCookie));
+return store;
+return JS.undefined(); }
+
+JsValue _groupEntryName(JsValue group) { 
+return `${((this as JsValue) as JsValue)["_name"]}__${group}`;
+return JS.undefined(); }
+
+JsValue _resolveSplitStorage(JsValue config) { 
+return ((((this as JsValue) as JsValue)["_splitStorageEligible"] as JsValue) && (!(!((config as JsValue)["split_storage"] as JsValue).truthy() as JsValue).truthy() as JsValue));
+return JS.undefined(); }
+
+JsValue properties() { 
+JsValue p = object {  };
+((each as JsValue)(((this as JsValue) as JsValue)["props"], (JsValue v, JsValue k) => { 
+JsValue _a = JS.undefined();
+JsValue policy = (getPersistenceKeyPolicy as JsValue)(k);
+if ((((!(policy as JsValue).truthy() as JsValue) || ((((policy as JsValue)["exposure"] as JsValue) === ("event" as JsValue)) as JsValue)) as JsValue).truthy()) {if ((if ((((((((_a = if ((((((policy as JsValue) === (null as JsValue)) as JsValue) || (((policy as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((policy as JsValue)["shouldSkipFromEventProperties"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"](policy, v) as JsValue) } as JsValue).truthy()) {return JS.undefined();}
+(((p as JsValue)[k] = v));}
+return JS.undefined(); }));
+return p;
+return JS.undefined(); }
+
+JsValue load(JsValue allowDisabled = false) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((((this as JsValue) as JsValue)["_disabled"] as JsValue) && (!(allowDisabled as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue reconcileCookieIdentity = (((((this as JsValue) as JsValue)["_config"] as JsValue)["cookieWinsOnConflict"] as JsValue) && (((((((this as JsValue) as JsValue)["_config"] as JsValue)["persistence"] as JsValue)["toLowerCase"]() as JsValue) === ("localstorage+cookie" as JsValue)) as JsValue));
+JsValue localEntryBeforeMerge = if ((reconcileCookieIdentity as JsValue).truthy()) { ((localStore as JsValue)["_parse"](((this as JsValue) as JsValue)["_name"]) as JsValue) } else { (null as JsValue) };
+JsValue cookieEntryBeforeMerge = object {  };
+if ((reconcileCookieIdentity as JsValue).truthy()) {try {((cookieEntryBeforeMerge = (getSafeCookieProperties as JsValue)((cookieStore as JsValue)["_parse"](((this as JsValue) as JsValue)["_name"]))));
+((each as JsValue)(cookieEntryBeforeMerge, (JsValue value, JsValue key) => { 
+if (((((((isUndefined as JsValue)(value) as JsValue) || ((isNull as JsValue)(value) as JsValue)) as JsValue) || (((value as JsValue) === ("" as JsValue)) as JsValue)) as JsValue).truthy()) {((() => { JS.delete(cookieEntryBeforeMerge, key); return true; })());}
+return JS.undefined(); }));} catch (JsValue __port_36) {}}
+JsValue entry = (((this as JsValue) as JsValue)["_storage"] as JsValue)["_parse"](((this as JsValue) as JsValue)["_name"]);
+if ((entry as JsValue).truthy()) {((((this as JsValue) as JsValue)["props"] = (extend as JsValue)(object {  }, entry)));}
+if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_loadGroupEntries"]());}
+if ((((reconcileCookieIdentity as JsValue) && (entry as JsValue)) as JsValue).truthy()) {JsValue previousDistinctId = if ((((((localEntryBeforeMerge as JsValue) === (null as JsValue)) as JsValue) || (((localEntryBeforeMerge as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((localEntryBeforeMerge as JsValue)[DISTINCT_ID] as JsValue) };
+JsValue previousUserState = if ((((((((_a = if ((((((localEntryBeforeMerge as JsValue) === (null as JsValue)) as JsValue) || (((localEntryBeforeMerge as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((localEntryBeforeMerge as JsValue)[USER_STATE] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (USER_STATE_ANONYMOUS as JsValue) };
+JsValue nextDistinctId = (entry as JsValue)[DISTINCT_ID];
+JsValue nextUserState = if ((((((((_b = (entry as JsValue)[USER_STATE])) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (USER_STATE_ANONYMOUS as JsValue) };
+if ((((((nextDistinctId as JsValue) !== (previousDistinctId as JsValue)) as JsValue) || (((nextUserState as JsValue) !== (previousUserState as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_cookieIdentityChangePending"] = true));
+if ((!(((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy() as JsValue).truthy()) {((sessionStore as JsValue)["_set"](getCookieIdentityChangePendingName(((this as JsValue) as JsValue)["_name"]), true));}
+JsValue nextProps = (extend as JsValue)(object {  }, ((this as JsValue) as JsValue)["props"]);
+((COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES as JsValue)["forEach"]((JsValue key) => { 
+return ((() => { JS.delete(nextProps, key); return true; })() as JsValue);
+return JS.undefined(); }));
+JsValue siblingReset = ((((nextUserState as JsValue) === (USER_STATE_ANONYMOUS as JsValue)) as JsValue) && ((((((((previousUserState as JsValue) === (USER_STATE_IDENTIFIED as JsValue)) as JsValue) || ((((cookieEntryBeforeMerge as JsValue)[USER_STATE] as JsValue) === (USER_STATE_ANONYMOUS as JsValue)) as JsValue)) as JsValue) || ((((!((isUndefined as JsValue)(previousDistinctId) as JsValue).truthy() as JsValue) && (((nextDistinctId as JsValue) !== (previousDistinctId as JsValue)) as JsValue))) as JsValue))) as JsValue));
+if ((siblingReset as JsValue).truthy()) {(clearStaleEventProperties(nextProps, cookieEntryBeforeMerge));
+((() => { JS.delete(nextProps, STORED_GROUP_PROPERTIES_KEY); return true; })());}
+((((this as JsValue) as JsValue)["props"] = nextProps));
+JsValue affectedGroups = JS.construct(Set);
+((COOKIE_IDENTITY_BOUND_LOCAL_PROPERTIES as JsValue)["forEach"]((JsValue key) => { 
+JsValue _a = JS.undefined();
+JsValue group = if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) };
+if ((group as JsValue).truthy()) {((affectedGroups as JsValue)["add"](group));}
+return JS.undefined(); }));
+((affectedGroups as JsValue)["forEach"]((JsValue group) => { 
+if ((((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy()) {return JS.undefined();}
+JsValue groupProps = object {  };
+((each as JsValue)(((this as JsValue) as JsValue)["props"], (JsValue value, JsValue key) => { 
+JsValue _a = JS.undefined();
+if (((((if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) }) as JsValue) === (group as JsValue)) as JsValue).truthy()) {(((groupProps as JsValue)[key] = value));}
+return JS.undefined(); }));
+if (((isEmptyObject as JsValue)(groupProps) as JsValue).truthy()) {((localStore as JsValue)["_remove"](((this as JsValue) as JsValue)["_groupEntryName"](group)));
+(((((this as JsValue) as JsValue)["_slotState"] as JsValue)[group] = object {  }));} else {if (((localStore as JsValue)["_set"](((this as JsValue) as JsValue)["_groupEntryName"](group), groupProps) as JsValue).truthy()) {(((((this as JsValue) as JsValue)["_slotState"] as JsValue)[group] = object { "persisted": true, "fingerprint": ((this as JsValue) as JsValue)["_entryFingerprint"](groupProps, group) }));}}
+return JS.undefined(); }));}}
+if (((sessionStore as JsValue)["_get"](getCookieIdentityChangePendingName(((this as JsValue) as JsValue)["_name"])) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_cookieIdentityChangePending"] = true));}
+return JS.undefined(); }
+
+JsValue _loadGroupEntries() { 
+for (JsValue group of PERSISTENCE_STORAGE_GROUPS) {
+JsValue groupEntry = (localStore as JsValue)["_parse"](((this as JsValue) as JsValue)["_groupEntryName"](group));
+if ((((groupEntry as JsValue) && (!((isEmptyObject as JsValue)(groupEntry) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue state = ((this as JsValue) as JsValue)["_slotWriteState"](group);
+(((state as JsValue)["persisted"] = true));
+if ((!(((this as JsValue) as JsValue)["_mainCarriesGroupKey"](group) as JsValue).truthy() as JsValue).truthy()) {(((state as JsValue)["fingerprint"] = ((this as JsValue) as JsValue)["_entryFingerprint"](groupEntry, group)));}
+if ((!(((this as JsValue) as JsValue)["_groupEntryIsStale"](group, groupEntry) as JsValue).truthy() as JsValue).truthy()) {((extend as JsValue)(((this as JsValue) as JsValue)["props"], groupEntry));}}}
+return JS.undefined(); }
+
+JsValue _mainCarriesGroupKey(JsValue group) { 
+return ((Object as JsValue)["keys"](((this as JsValue) as JsValue)["props"]) as JsValue)["some"]((JsValue key) => { 
+JsValue _a = JS.undefined();
+return (((if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) }) as JsValue) === (group as JsValue));
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue _groupEntryIsStale(JsValue group, JsValue groupEntry) { 
+JsValue freshnessKey = (GROUP_FRESHNESS_KEY as JsValue)[group];
+if ((!(freshnessKey as JsValue).truthy() as JsValue).truthy()) {return false;}
+JsValue groupLoadedAt = (groupEntry as JsValue)[freshnessKey];
+JsValue mainLoadedAt = (((this as JsValue) as JsValue)["props"] as JsValue)[freshnessKey];
+return (((((isNumber as JsValue)(groupLoadedAt) as JsValue) && ((isNumber as JsValue)(mainLoadedAt) as JsValue)) as JsValue) && (((mainLoadedAt as JsValue) > (groupLoadedAt as JsValue)) as JsValue));
+return JS.undefined(); }
+
+JsValue refreshKey(JsValue prop) { 
+JsValue _a = JS.undefined();
+if ((((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy()) {return JS.undefined();}
+if (((((this as JsValue) as JsValue)["_metaIdentifierChangePending"] as JsValue)["has"](prop) as JsValue).truthy()) {return JS.undefined();}
+JsValue group = if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) { (if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(prop))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) } as JsValue) } else { (JS.undefined() as JsValue) };
+JsValue entry = if ((group as JsValue).truthy()) { ((localStore as JsValue)["_parse"](((this as JsValue) as JsValue)["_groupEntryName"](group)) as JsValue) } else { ((((this as JsValue) as JsValue)["_storage"] as JsValue)["_parse"](((this as JsValue) as JsValue)["_name"]) as JsValue) };
+if ((((entry as JsValue) && (JS.in(prop, entry) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setProp"](prop, (entry as JsValue)[prop], false));
+return JS.undefined();}
+if ((group as JsValue).truthy()) {JsValue mainEntry = (((this as JsValue) as JsValue)["_storage"] as JsValue)["_parse"](((this as JsValue) as JsValue)["_name"]);
+if ((((mainEntry as JsValue) && (JS.in(prop, mainEntry) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setProp"](prop, (mainEntry as JsValue)[prop], false));
+return JS.undefined();}}
+(((this as JsValue) as JsValue)["_deleteProp"](prop, false));
+return JS.undefined(); }
+
+JsValue save() { 
+if ((((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy()) {return JS.undefined();}
+JsValue debounce = ((this as JsValue) as JsValue)["_saveDebounceMs"]();
+if ((((debounce as JsValue) <= (0.0 as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_writeNow"]());
+return JS.undefined();}
+if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_pendingSaveTimer"] = (setTimeout as JsValue)(() => { 
+((((this as JsValue) as JsValue)["_pendingSaveTimer"] = JS.undefined()));
+(((this as JsValue) as JsValue)["_writeNow"]());
+return JS.undefined(); }, debounce)));
+return JS.undefined(); }
+
+JsValue flush() { 
+if (((isUndefined as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]) as JsValue).truthy()) {return JS.undefined();}
+((clearTimeout as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]));
+((((this as JsValue) as JsValue)["_pendingSaveTimer"] = JS.undefined()));
+(((this as JsValue) as JsValue)["_writeNow"]());
+return JS.undefined(); }
+
+JsValue _writeNow(JsValue forceSuppressedSnapshot = false) { 
+if ((((((this as JsValue) as JsValue)["_disabled"] as JsValue) || ((((((this as JsValue) as JsValue)["_cookieSyncSuppressed"] as JsValue) && (!(forceSuppressedSnapshot as JsValue).truthy() as JsValue))) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((!(forceSuppressedSnapshot as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["syncCookieProperties"]());
+if ((((!((((this as JsValue) as JsValue)["_config"] as JsValue)["cookieWinsOnConflict"] as JsValue).truthy() as JsValue) || (((((((this as JsValue) as JsValue)["_config"] as JsValue)["persistence"] as JsValue)["toLowerCase"]() as JsValue) !== ("localstorage+cookie" as JsValue)) as JsValue)) as JsValue).truthy()) {((META_IDENTIFIER_PERSISTENCE_KEYS as JsValue)["forEach"]((JsValue key) => { 
+return (((this as JsValue) as JsValue)["refreshKey"](key) as JsValue);
+return JS.undefined(); }));}}
+JsValue shouldReconcileCrossTabProperties = ((!(forceSuppressedSnapshot as JsValue).truthy() as JsValue) && (!(((this as JsValue) as JsValue)["_storageMigrationInProgress"] as JsValue).truthy() as JsValue));
+if ((!(shouldReconcileCrossTabProperties as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_crossTabFeatureFlagIdentityMismatch"] = false));}
+JsValue crossTabPropertiesChanged = if ((shouldReconcileCrossTabProperties as JsValue).truthy()) { (((this as JsValue) as JsValue)["_reconcileCrossTabFeatureFlagPropertiesBeforeWrite"]() as JsValue) } else { (false as JsValue) };
+if ((((this as JsValue) as JsValue)["_crossTabFeatureFlagIdentityMismatch"] as JsValue).truthy()) {if (((((this as JsValue) as JsValue)["_config"] as JsValue)["debug"] as JsValue).truthy()) {((logger as JsValue)["warn"]("skipping persistence write because storage belongs to a different distinct ID"));}
+return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_splitStorage"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_writeNowSplit"]());
+if ((crossTabPropertiesChanged as JsValue).truthy()) {((((this as JsValue) as JsValue)["_crossTabFeatureFlagHandlers"] as JsValue)["forEach"]((JsValue handler) => { 
+return ((handler as JsValue)() as JsValue);
+return JS.undefined(); }));}
+return JS.undefined();}
+JsValue writeResult = ((this as JsValue) as JsValue)["_writeEntry"](((this as JsValue) as JsValue)["_storage"], ((this as JsValue) as JsValue)["_name"], ((this as JsValue) as JsValue)["props"], MAIN_STORAGE_SLOT);
+if ((((writeResult as JsValue) === ("written" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_rememberCurrentCookieProperties"](((this as JsValue) as JsValue)["props"]));}
+if ((((writeResult as JsValue) !== ("failed" as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["clear"]());
+((((this as JsValue) as JsValue)["_localIdentityChangePending"] = false));
+((((this as JsValue) as JsValue)["_metaIdentifierChangePending"] as JsValue)["clear"]());}
+if ((crossTabPropertiesChanged as JsValue).truthy()) {((((this as JsValue) as JsValue)["_crossTabFeatureFlagHandlers"] as JsValue)["forEach"]((JsValue handler) => { 
+return ((handler as JsValue)() as JsValue);
+return JS.undefined(); }));}
+return JS.undefined(); }
+
+JsValue _writeNowSplit() { 
+JsValue _a = JS.undefined();
+JsValue __port_37 = ((this as JsValue) as JsValue)["_partitionProps"]();
+JsValue main = __port_37["main"];
+JsValue groups = __port_37["groups"];
+JsValue mainWriteResult = ((this as JsValue) as JsValue)["_writeEntry"](((this as JsValue) as JsValue)["_storage"], ((this as JsValue) as JsValue)["_name"], main, MAIN_STORAGE_SLOT);
+if ((((mainWriteResult as JsValue) === ("written" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_rememberCurrentCookieProperties"](main));}
+if ((((mainWriteResult as JsValue) !== ("failed" as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_localIdentityChangePending"] = false));
+((((this as JsValue) as JsValue)["_metaIdentifierChangePending"] as JsValue)["clear"]());
+((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["forEach"]((JsValue key) => { 
+JsValue _a = JS.undefined();
+if ((!((if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["delete"](key));}
+return JS.undefined(); }));}
+for (JsValue group of PERSISTENCE_STORAGE_GROUPS) {
+JsValue groupProps = (groups as JsValue)[group];
+if (((((isEmptyObject as JsValue)(groupProps) as JsValue) && (!((if ((((((((_a = (((this as JsValue) as JsValue)["_slotState"] as JsValue)[group])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["persisted"] as JsValue) }) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["forEach"]((JsValue key) => { 
+JsValue _a = JS.undefined();
+if (((((if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) }) as JsValue) === (group as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["delete"](key));}
+return JS.undefined(); }));
+continue;}
+JsValue groupWriteResult = ((this as JsValue) as JsValue)["_writeEntry"](localStore, ((this as JsValue) as JsValue)["_groupEntryName"](group), groupProps, group);
+if ((((groupWriteResult as JsValue) !== ("failed" as JsValue)) as JsValue).truthy()) {((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["forEach"]((JsValue key) => { 
+JsValue policy = (getPersistenceKeyPolicy as JsValue)(key);
+if (((((((if ((((((policy as JsValue) === (null as JsValue)) as JsValue) || (((policy as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((policy as JsValue)["storageGroup"] as JsValue) }) as JsValue) === (group as JsValue)) as JsValue) && ((((((groupWriteResult as JsValue) === ("written" as JsValue)) as JsValue) || (!((policy as JsValue)["volatile"] as JsValue).truthy() as JsValue))) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_pendingCrossTabFeatureFlagChanges"] as JsValue)["delete"](key));}
+return JS.undefined(); }));}}
+return JS.undefined(); }
+
+JsValue _partitionProps() { 
+JsValue main = object {  };
+JsValue groups = object { "flags": object {  }, "surveys": object {  } };
+((each as JsValue)(((this as JsValue) as JsValue)["props"], (JsValue value, JsValue key) => { 
+JsValue _a = JS.undefined();
+JsValue group = if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) };
+if ((group as JsValue).truthy()) {((((groups as JsValue)[group] as JsValue)[key] = value));} else {(((main as JsValue)[key] = value));}
+return JS.undefined(); }));
+return object { "main": main, "groups": groups };
+return JS.undefined(); }
+
+JsValue _entryFingerprint(JsValue props, JsValue slot) { 
+if ((((slot as JsValue) === (MAIN_STORAGE_SLOT as JsValue)) as JsValue).truthy()) {return (((((((((((((JSON as JsValue)["stringify"](props) as JsValue) + ("|" as JsValue)) as JsValue) + (((this as JsValue) as JsValue)["_expire_days"] as JsValue)) as JsValue) + ("|" as JsValue)) as JsValue) + (((this as JsValue) as JsValue)["_cross_subdomain"] as JsValue)) as JsValue) + ("|" as JsValue)) as JsValue) + (((this as JsValue) as JsValue)["_secure"] as JsValue));}
+JsValue stable = object {  };
+((each as JsValue)(props, (JsValue value, JsValue key) => { 
+JsValue _a = JS.undefined();
+(((stable as JsValue)[key] = if (((if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(key))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["volatile"] as JsValue) }) as JsValue).truthy()) { (VOLATILE_FINGERPRINT_PLACEHOLDER as JsValue) } else { (value as JsValue) }));
+return JS.undefined(); }));
+return (JSON as JsValue)["stringify"](stable);
+return JS.undefined(); }
+
+JsValue _writeEntry(JsValue storage, JsValue name, JsValue props, JsValue slot) { 
+JsValue state = ((this as JsValue) as JsValue)["_slotWriteState"](slot);
+if ((((((((slot as JsValue) !== (MAIN_STORAGE_SLOT as JsValue)) as JsValue) && (!((state as JsValue)["dirty"] as JsValue).truthy() as JsValue)) as JsValue) && (!((isUndefined as JsValue)((state as JsValue)["fingerprint"]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return "skipped";}
+JsValue fingerprint = JS.undefined();
+try {((fingerprint = ((this as JsValue) as JsValue)["_entryFingerprint"](props, slot)));
+if ((((fingerprint as JsValue) === ((state as JsValue)["fingerprint"] as JsValue)) as JsValue).truthy()) {(((state as JsValue)["dirty"] = false));
+return "skipped";}} catch (JsValue __port_38) {((fingerprint = JS.undefined()));}
+if (((storage as JsValue)["_set"](name, props, ((this as JsValue) as JsValue)["_expire_days"], ((this as JsValue) as JsValue)["_cross_subdomain"], ((this as JsValue) as JsValue)["_secure"], (((this as JsValue) as JsValue)["_config"] as JsValue)["debug"]) as JsValue).truthy()) {(((state as JsValue)["dirty"] = false));
+if ((((slot as JsValue) !== (MAIN_STORAGE_SLOT as JsValue)) as JsValue).truthy()) {(((state as JsValue)["persisted"] = true));}
+if ((!((isUndefined as JsValue)(fingerprint) as JsValue).truthy() as JsValue).truthy()) {(((state as JsValue)["fingerprint"] = fingerprint));}
+if ((((this as JsValue) as JsValue)["_splitStorageEligible"] as JsValue).truthy()) {(((state as JsValue)["storageValue"] = (localStore as JsValue)["_get"](name)));}
+return "written";} else {if (((((this as JsValue) as JsValue)["_config"] as JsValue)["debug"] as JsValue).truthy()) {((logger as JsValue)["warn"](`failed to persist storage entry "${name}"; will retry on next save`));}}
+return "failed";
+return JS.undefined(); }
+
+JsValue remove(JsValue __port_39 = object {  }) { JsValue __port_40 = __port_39;
+JsValue __port_41 = __port_40["keepGroupEntries"];
+JsValue keepGroupEntries = if (JS.isUndefined(__port_41)) { (false as JsValue) } else { __port_41 };
+(((this as JsValue) as JsValue)["_markAllCrossTabFeatureFlagChangesPending"]());
+if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]) as JsValue).truthy() as JsValue).truthy()) {((clearTimeout as JsValue)(((this as JsValue) as JsValue)["_pendingSaveTimer"]));
+((((this as JsValue) as JsValue)["_pendingSaveTimer"] = JS.undefined()));}
+((((this as JsValue) as JsValue)["_storage"] as JsValue)["_remove"](((this as JsValue) as JsValue)["_name"], false));
+((((this as JsValue) as JsValue)["_storage"] as JsValue)["_remove"](((this as JsValue) as JsValue)["_name"], true));
+if ((((!(keepGroupEntries as JsValue).truthy() as JsValue) && (((this as JsValue) as JsValue)["_ownsSplitStorage"] as JsValue)) as JsValue).truthy()) {for (JsValue group of PERSISTENCE_STORAGE_GROUPS) {
+((localStore as JsValue)["_remove"](((this as JsValue) as JsValue)["_groupEntryName"](group)));}}
+if ((keepGroupEntries as JsValue).truthy()) {((() => { JS.delete(((this as JsValue) as JsValue)["_slotState"], MAIN_STORAGE_SLOT); return true; })());} else {((((this as JsValue) as JsValue)["_slotState"] = object {  }));}
+((((this as JsValue) as JsValue)["_lastSeenCookiePropertiesFingerprint"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_lastSeenMainCookieValue"] = JS.undefined()));
+return JS.undefined(); }
+
+JsValue clear() { 
+(((this as JsValue) as JsValue)["remove"]());
+((((this as JsValue) as JsValue)["props"] = object {  }));
+return JS.undefined(); }
+
+JsValue register_once(JsValue props, JsValue default_value, JsValue days) { 
+if (((isObject as JsValue)(props) as JsValue).truthy()) {(((this as JsValue) as JsValue)["syncCookieProperties"]());
+if (((isUndefined as JsValue)(default_value) as JsValue).truthy()) {((default_value = "None"));}
+((((this as JsValue) as JsValue)["_expire_days"] = if (((isUndefined as JsValue)(days) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_default_expiry"] as JsValue) } else { (days as JsValue) }));
+JsValue hasChanges = false;
+((each as JsValue)(props, (JsValue val, JsValue prop) => { 
+if ((((!((((this as JsValue) as JsValue)["props"] as JsValue)["hasOwnProperty"](prop) as JsValue).truthy() as JsValue) || ((((((this as JsValue) as JsValue)["props"] as JsValue)[prop] as JsValue) === (default_value as JsValue)) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setProp"](prop, val));
+((hasChanges = true));}
+return JS.undefined(); }));
+if ((hasChanges as JsValue).truthy()) {(((this as JsValue) as JsValue)["save"]());
+return true;}}
+return false;
+return JS.undefined(); }
+
+JsValue register(JsValue props, JsValue days) { 
+if (((isObject as JsValue)(props) as JsValue).truthy()) {(((this as JsValue) as JsValue)["syncCookieProperties"]());
+((((this as JsValue) as JsValue)["_expire_days"] = if (((isUndefined as JsValue)(days) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_default_expiry"] as JsValue) } else { (days as JsValue) }));
+JsValue hasChanges = false;
+((each as JsValue)(props, (JsValue val, JsValue prop) => { 
+if (((((props as JsValue)["hasOwnProperty"](prop) as JsValue) && (((((((((((this as JsValue) as JsValue)["props"] as JsValue)[prop] as JsValue) !== (val as JsValue)) as JsValue) || ((isObject as JsValue)(val) as JsValue)) as JsValue) || ((isArray as JsValue)(val) as JsValue))) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setProp"](prop, val));
+((hasChanges = true));}
+return JS.undefined(); }));
+if ((hasChanges as JsValue).truthy()) {(((this as JsValue) as JsValue)["save"]());
+return true;}}
+return false;
+return JS.undefined(); }
+
+JsValue unregister(JsValue propOrProps) { 
+(((this as JsValue) as JsValue)["syncCookieProperties"]());
+JsValue props = if ((((JS.typeOf(propOrProps) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (JS.array(propOrProps) as JsValue) } else { (propOrProps as JsValue) };
+JsValue hasChanges = false;
+for (JsValue prop of props) {
+if ((JS.in(prop, ((this as JsValue) as JsValue)["props"]) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_deleteProp"](prop));
+((hasChanges = true));}}
+if ((hasChanges as JsValue).truthy()) {(((this as JsValue) as JsValue)["save"]());}
+return JS.undefined(); }
+
+JsValue update_campaign_params() { 
+JsValue currentUrl = if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["URL"] as JsValue) };
+if ((((currentUrl as JsValue) === (((this as JsValue) as JsValue)["_campaign_params_url"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue campaignParams = (getCampaignParams as JsValue)((((this as JsValue) as JsValue)["_config"] as JsValue)["custom_campaign_params"], (((this as JsValue) as JsValue)["_config"] as JsValue)["mask_personal_data_properties"], (((this as JsValue) as JsValue)["_config"] as JsValue)["custom_personal_data_properties"]);
+JsValue hasCampaignParams = !((isEmptyObject as JsValue)((stripEmptyProperties as JsValue)(campaignParams)) as JsValue).truthy();
+if ((hasCampaignParams as JsValue).truthy()) {(((this as JsValue) as JsValue)["register"](campaignParams));}
+((((this as JsValue) as JsValue)["_campaign_params_url"] = currentUrl));
+return if ((hasCampaignParams as JsValue).truthy()) { (campaignParams as JsValue) } else { (JS.undefined() as JsValue) };
+return JS.undefined(); }
+
+JsValue update_search_keyword() { 
+(((this as JsValue) as JsValue)["register"]((getSearchInfo as JsValue)()));
+return JS.undefined(); }
+
+JsValue update_referrer_info() { 
+(((this as JsValue) as JsValue)["register_once"]((getReferrerInfo as JsValue)(), JS.undefined()));
+return JS.undefined(); }
+
+JsValue set_initial_person_info() { 
+if (((((((this as JsValue) as JsValue)["props"] as JsValue)[INITIAL_CAMPAIGN_PARAMS] as JsValue) || ((((this as JsValue) as JsValue)["props"] as JsValue)[INITIAL_REFERRER_INFO] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue personInfo = (getPersonInfo as JsValue)((((this as JsValue) as JsValue)["_config"] as JsValue)["mask_personal_data_properties"], (((this as JsValue) as JsValue)["_config"] as JsValue)["custom_personal_data_properties"], (((this as JsValue) as JsValue)["_config"] as JsValue)["disable_capture_url_hashes"]);
+(((this as JsValue) as JsValue)["register_once"](__lil_object_42(() => (INITIAL_PERSON_INFO as JsValue), () => (if ((((this as JsValue) as JsValue)["_storesIdentityInCookie"] as JsValue).truthy()) { (object { "r": truncateForCookie((personInfo as JsValue)["r"]), "u": if (((personInfo as JsValue)["u"] as JsValue).truthy()) { (truncateForCookie((personInfo as JsValue)["u"]) as JsValue) } else { (JS.undefined() as JsValue) } } as JsValue) } else { (personInfo as JsValue) } as JsValue)), JS.undefined()));
+return JS.undefined(); }
+
+JsValue get_initial_props() { 
+JsValue p = object {  };
+((each as JsValue)(JS.array(INITIAL_REFERRER_INFO, INITIAL_CAMPAIGN_PARAMS), (JsValue key) => { 
+JsValue initialReferrerInfo = (((this as JsValue) as JsValue)["props"] as JsValue)[key];
+if ((initialReferrerInfo as JsValue).truthy()) {((each as JsValue)(initialReferrerInfo, (this JsValue __port_43, JsValue v, JsValue k) => { 
+(((p as JsValue)[(("$initial_" as JsValue) + ((stripLeadingDollar as JsValue)(k) as JsValue))] = v));
+return JS.undefined(); }));}
+return JS.undefined(); }));
+JsValue initialPersonInfo = (((this as JsValue) as JsValue)["props"] as JsValue)[INITIAL_PERSON_INFO];
+if ((initialPersonInfo as JsValue).truthy()) {JsValue initialPersonProps = (getInitialPersonPropsFromInfo as JsValue)(initialPersonInfo, (((this as JsValue) as JsValue)["_config"] as JsValue)["disable_capture_url_hashes"]);
+((extend as JsValue)(p, initialPersonProps));}
+return p;
+return JS.undefined(); }
+
+JsValue safe_merge(JsValue props) { 
+((each as JsValue)(((this as JsValue) as JsValue)["props"], (this JsValue __port_44, JsValue val, JsValue prop) => { 
+if ((!((JS.in(prop, props)) as JsValue).truthy() as JsValue).truthy()) {(((props as JsValue)[prop] = val));}
+return JS.undefined(); }));
+return props;
+return JS.undefined(); }
+
+JsValue update_config(JsValue config, JsValue oldConfig, JsValue isDisabled) { 
+JsValue persistenceModeChanged = (((config as JsValue)["persistence"] as JsValue) !== ((oldConfig as JsValue)["persistence"] as JsValue));
+JsValue cookiePersistedPropertiesChanged = !(isArrayContentsEqual((((config as JsValue)["cookie_persisted_properties"] as JsValue) || (JS.array() as JsValue)), (((oldConfig as JsValue)["cookie_persisted_properties"] as JsValue) || (JS.array() as JsValue))) as JsValue).truthy();
+JsValue persistenceChanged = ((persistenceModeChanged as JsValue) || (cookiePersistedPropertiesChanged as JsValue));
+JsValue cookiePrecedenceChanged = (((config as JsValue)["cookieWinsOnConflict"] as JsValue) !== ((oldConfig as JsValue)["cookieWinsOnConflict"] as JsValue));
+JsValue disabled = (((config as JsValue)["disable_persistence"] as JsValue) || (!(!(isDisabled as JsValue).truthy() as JsValue).truthy() as JsValue));
+JsValue reEnabling = ((!(!(((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy() as JsValue).truthy() as JsValue) && (!(disabled as JsValue).truthy() as JsValue));
+if ((!(disabled as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_syncCookieProperties"](oldConfig, reEnabling));}
+((((this as JsValue) as JsValue)["_config"] = config));
+if ((((!(disabled as JsValue).truthy() as JsValue) && ((((((persistenceModeChanged as JsValue) || (cookiePersistedPropertiesChanged as JsValue)) as JsValue) || (cookiePrecedenceChanged as JsValue))) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lastSeenCookiePropertiesFingerprint"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_lastSeenMainCookieValue"] = JS.undefined()));
+(((this as JsValue) as JsValue)["_syncCookieProperties"](__lil_object_45(() => (config as JsValue), () => ((oldConfig as JsValue)["cookie_persisted_properties"] as JsValue)), reEnabling));}
+JsValue newStore = if ((((persistenceChanged as JsValue) || (cookiePrecedenceChanged as JsValue)) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_buildStorage"](config) as JsValue) } else { (((this as JsValue) as JsValue)["_storage"] as JsValue) };
+(((this as JsValue) as JsValue)["_truncateExistingPersonInfoForCookie"]());
+JsValue wantSplit = ((this as JsValue) as JsValue)["_resolveSplitStorage"](config);
+JsValue storageMigration = ((persistenceChanged as JsValue) || (((wantSplit as JsValue) !== (((this as JsValue) as JsValue)["_splitStorage"] as JsValue)) as JsValue));
+JsValue cookieOptionsChanged = (((((config as JsValue)["cross_subdomain_cookie"] as JsValue) !== (((this as JsValue) as JsValue)["_cross_subdomain"] as JsValue)) as JsValue) || ((((config as JsValue)["secure_cookie"] as JsValue) !== (((this as JsValue) as JsValue)["_secure"] as JsValue)) as JsValue));
+JsValue cookieSyncSuppressionStarted = ((((!(disabled as JsValue).truthy() as JsValue) && ((((storageMigration as JsValue) || (cookieOptionsChanged as JsValue))) as JsValue)) as JsValue) && (((this as JsValue) as JsValue)["_beginCookieSyncSuppression"](reEnabling) as JsValue));
+((((this as JsValue) as JsValue)["_storageMigrationInProgress"] = storageMigration));
+try {((((this as JsValue) as JsValue)["_default_expiry"] = (((this as JsValue) as JsValue)["_expire_days"] = (config as JsValue)["cookie_expiration"])));
+(((this as JsValue) as JsValue)["set_disabled"](disabled));
+(((this as JsValue) as JsValue)["set_cross_subdomain"]((config as JsValue)["cross_subdomain_cookie"]));
+(((this as JsValue) as JsValue)["set_secure"]((config as JsValue)["secure_cookie"]));
+if ((storageMigration as JsValue).truthy()) {JsValue props = ((this as JsValue) as JsValue)["props"];
+(((this as JsValue) as JsValue)["clear"]());
+((((this as JsValue) as JsValue)["_storage"] = newStore));
+((((this as JsValue) as JsValue)["_splitStorage"] = wantSplit));
+((((this as JsValue) as JsValue)["props"] = props));
+(((this as JsValue) as JsValue)["save"]());} else {if ((cookiePrecedenceChanged as JsValue).truthy()) {((((this as JsValue) as JsValue)["_storage"] = newStore));
+if ((!(disabled as JsValue).truthy() as JsValue).truthy()) {((() => { JS.delete(((this as JsValue) as JsValue)["_slotState"], MAIN_STORAGE_SLOT); return true; })());
+(((this as JsValue) as JsValue)["_writeNow"]());}}}} finally {((((this as JsValue) as JsValue)["_storageMigrationInProgress"] = false));
+if ((cookieSyncSuppressionStarted as JsValue).truthy()) {(((this as JsValue) as JsValue)["_endCookieSyncSuppression"]());}}
+return JS.undefined(); }
+
+JsValue _truncateExistingPersonInfoForCookie() { 
+JsValue personInfo = (((this as JsValue) as JsValue)["props"] as JsValue)[INITIAL_PERSON_INFO];
+if ((((((!(((this as JsValue) as JsValue)["_storesIdentityInCookie"] as JsValue).truthy() as JsValue) || (!((isObject as JsValue)(personInfo) as JsValue).truthy() as JsValue)) as JsValue) || (((JS.typeOf((personInfo as JsValue)["r"]) as JsValue) !== ("string" as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue truncatedReferrer = truncateForCookie((personInfo as JsValue)["r"]);
+JsValue truncatedUrl = if ((((JS.typeOf((personInfo as JsValue)["u"]) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (truncateForCookie((personInfo as JsValue)["u"]) as JsValue) } else { ((personInfo as JsValue)["u"] as JsValue) };
+if ((((((truncatedReferrer as JsValue) !== ((personInfo as JsValue)["r"] as JsValue)) as JsValue) || (((truncatedUrl as JsValue) !== ((personInfo as JsValue)["u"] as JsValue)) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setProp"](INITIAL_PERSON_INFO, __lil_object_46(() => (personInfo as JsValue), () => (truncatedReferrer as JsValue), () => (truncatedUrl as JsValue))));}
+return JS.undefined(); }
+
+JsValue set_disabled(JsValue disabled) { 
+((((this as JsValue) as JsValue)["_disabled"] = disabled));
+if ((((this as JsValue) as JsValue)["_disabled"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["remove"]());} else {(((this as JsValue) as JsValue)["save"]());}
+return JS.undefined(); }
+
+JsValue set_cross_subdomain(JsValue cross_subdomain) { 
+if ((((cross_subdomain as JsValue) !== (((this as JsValue) as JsValue)["_cross_subdomain"] as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_cross_subdomain"] = cross_subdomain));
+(((this as JsValue) as JsValue)["remove"](object { "keepGroupEntries": true }));
+(((this as JsValue) as JsValue)["save"]());}
+return JS.undefined(); }
+
+JsValue set_secure(JsValue secure) { 
+if ((((secure as JsValue) !== (((this as JsValue) as JsValue)["_secure"] as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_secure"] = secure));
+(((this as JsValue) as JsValue)["remove"](object { "keepGroupEntries": true }));
+(((this as JsValue) as JsValue)["save"]());}
+return JS.undefined(); }
+
+JsValue set_event_timer(JsValue event_name, JsValue timestamp) { 
+JsValue timers = (((((this as JsValue) as JsValue)["props"] as JsValue)[EVENT_TIMERS_KEY] as JsValue) || (object {  } as JsValue));
+(((timers as JsValue)[event_name] = timestamp));
+(((this as JsValue) as JsValue)["_setProp"](EVENT_TIMERS_KEY, timers));
+(((this as JsValue) as JsValue)["save"]());
+return JS.undefined(); }
+
+JsValue remove_event_timer(JsValue event_name) { 
+JsValue timers = (((((this as JsValue) as JsValue)["props"] as JsValue)[EVENT_TIMERS_KEY] as JsValue) || (object {  } as JsValue));
+JsValue timestamp = (timers as JsValue)[event_name];
+if ((!((isUndefined as JsValue)(timestamp) as JsValue).truthy() as JsValue).truthy()) {((() => { JS.delete(timers, event_name); return true; })());
+(((this as JsValue) as JsValue)["_setProp"](EVENT_TIMERS_KEY, timers));
+(((this as JsValue) as JsValue)["save"]());}
+return timestamp;
+return JS.undefined(); }
+
+JsValue get_property(JsValue prop) { 
+return (((this as JsValue) as JsValue)["props"] as JsValue)[prop];
+return JS.undefined(); }
+
+JsValue set_property(JsValue prop, JsValue to) { 
+(((this as JsValue) as JsValue)["_setProp"](prop, to));
+(((this as JsValue) as JsValue)["save"]());
+return JS.undefined(); }
+
+JsValue _setProp(JsValue prop, JsValue to, JsValue trackLocalChange = true) { 
+JsValue _a = JS.undefined();
+JsValue previousValue = (((this as JsValue) as JsValue)["props"] as JsValue)[prop];
+(((((this as JsValue) as JsValue)["props"] as JsValue)[prop] = to));
+if ((!(trackLocalChange as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if (((((((((prop as JsValue) === (DISTINCT_ID as JsValue)) as JsValue) || (((prop as JsValue) === (USER_STATE as JsValue)) as JsValue))) as JsValue) && (((previousValue as JsValue) !== (to as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_localIdentityChangePending"] = true));}
+if ((((isMetaIdentifierKey(prop) as JsValue) && (!(isStorageValueEqual(previousValue, to) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_metaIdentifierChangePending"] as JsValue)["add"](prop));}
+(((this as JsValue) as JsValue)["_markPendingCrossTabFeatureFlagChanges"](prop, previousValue, to));
+if ((!((if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(prop))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["volatile"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_markGroupDirty"](prop));}
+return JS.undefined(); }
+
+JsValue _deleteProp(JsValue prop, JsValue trackLocalChange = true) { 
+((() => { JS.delete(((this as JsValue) as JsValue)["props"], prop); return true; })());
+if ((!(trackLocalChange as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if ((isCrossTabFeatureFlagKey(prop) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setCrossTabFeatureFlagChangesPending"](prop, true));}
+if ((isMetaIdentifierKey(prop) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_metaIdentifierChangePending"] as JsValue)["add"](prop));}
+(((this as JsValue) as JsValue)["_markGroupDirty"](prop));
+return JS.undefined(); }
+
+JsValue _markGroupDirty(JsValue prop) { 
+JsValue _a = JS.undefined();
+JsValue group = if ((((((((_a = (getPersistenceKeyPolicy as JsValue)(prop))) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["storageGroup"] as JsValue) };
+if ((group as JsValue).truthy()) {(((((this as JsValue) as JsValue)["_slotWriteState"](group) as JsValue)["dirty"] = true));}
+return JS.undefined(); }
+
+JsValue _slotWriteState(JsValue slot) { 
+return (((((this as JsValue) as JsValue)["_slotState"] as JsValue)[slot] as JsValue) || ((((((this as JsValue) as JsValue)["_slotState"] as JsValue)[slot] = object {  })) as JsValue));
+return JS.undefined(); }
+}
+export constructor PostHogPersistence;
+
+JsValue __port_0(JsValue name) {
+return (`${name}_cookie_identity_change_pending` as JsValue);
+return JS.undefined();}
+
+JsValue __port_1(JsValue value) {
+JsValue result = "";
+JsValue encodedLength = 0.0;
+for (JsValue character of value) {
+JsValue encodedCharacterLength = ((encodeURIComponent as JsValue)(((JSON as JsValue)["stringify"](character) as JsValue)["slice"](1.0, (-(1.0 as JsValue)))) as JsValue)["length"];
+if ((((((encodedLength as JsValue) + (encodedCharacterLength as JsValue)) as JsValue) > (MAX_COOKIE_PERSON_INFO_FIELD_SIZE as JsValue)) as JsValue).truthy()) {break;}
+((result = ((result as JsValue) + (character as JsValue))));
+((encodedLength = ((encodedLength as JsValue) + (encodedCharacterLength as JsValue))));}
+return result;
+return JS.undefined();}
+
+JsValue __port_2(JsValue config) {
+JsValue token = "";
+if (((config as JsValue)["token"] as JsValue).truthy()) {((token = ((((config as JsValue)["token"] as JsValue)["replace"](JS.construct(RegExp, "\\+", "g"), "PL") as JsValue)["replace"](JS.construct(RegExp, "\\/", "g"), "SL") as JsValue)["replace"](JS.construct(RegExp, "=", "g"), "EQ")));}
+if (((config as JsValue)["persistence_name"] as JsValue).truthy()) {return (("ph_" as JsValue) + ((config as JsValue)["persistence_name"] as JsValue));} else {return (((("ph_" as JsValue) + (token as JsValue)) as JsValue) + ("_posthog" as JsValue));}
+return JS.undefined();}
+
+JsValue __port_3(JsValue key) {
+return ((((CROSS_TAB_FEATURE_FLAG_KEYS as JsValue)["indexOf"](key) as JsValue) !== ((-(1.0 as JsValue)) as JsValue)) as JsValue);
+return JS.undefined();}
+
+JsValue __port_4(JsValue key) {
+return ((((META_IDENTIFIER_PERSISTENCE_KEYS as JsValue)["indexOf"](key) as JsValue) !== ((-(1.0 as JsValue)) as JsValue)) as JsValue);
+return JS.undefined();}
+
+JsValue __port_5(JsValue left, JsValue right) {
+try {return (((JSON as JsValue)["stringify"](left) as JsValue) === ((JSON as JsValue)["stringify"](right) as JsValue));} catch (JsValue __port_47) {return ((left as JsValue) === (right as JsValue));}
+return JS.undefined();}
+
+JsValue __port_6(JsValue value) {
+if ((!(value as JsValue).truthy() as JsValue).truthy()) {return object {  };}
+JsValue parsed = (JSON as JsValue)["parse"](value);
+return if (((isObject as JsValue)(parsed) as JsValue).truthy()) { (parsed as JsValue) } else { (object {  } as JsValue) };
+return JS.undefined();}
+
+JsValue __port_7(JsValue arr1, JsValue arr2) {
+if (((((arr1 as JsValue)["length"] as JsValue) !== ((arr2 as JsValue)["length"] as JsValue)) as JsValue).truthy()) {return false;}
+JsValue sortedArr1 = ((() => { JsValue __port_48 = JS.array();
+for (JsValue __port_49 of arr1) { __port_48.push(__port_49); }return __port_48; })() as JsValue)["sort"]();
+JsValue sortedArr2 = ((() => { JsValue __port_50 = JS.array();
+for (JsValue __port_51 of arr2) { __port_50.push(__port_51); }return __port_50; })() as JsValue)["sort"]();
+return (sortedArr1 as JsValue)["every"]((JsValue item, JsValue index) => { 
+return (((item as JsValue) === ((sortedArr2 as JsValue)[index] as JsValue)) as JsValue);
+return JS.undefined(); });
+return JS.undefined();}
+
+JsValue __port_8(JsValue props, JsValue cookieProperties) {
+((each as JsValue)(props, (JsValue _value, JsValue key) => { 
+JsValue policy = (getPersistenceKeyPolicy as JsValue)(key);
+if (((((((!(policy as JsValue).truthy() as JsValue) || ((((policy as JsValue)["exposure"] as JsValue) === ("event" as JsValue)) as JsValue))) as JsValue) && (!((((Object as JsValue)["prototype"] as JsValue)["hasOwnProperty"] as JsValue)["call"](cookieProperties, key) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((() => { JS.delete(props, key); return true; })());}
+return JS.undefined(); }));
+return JS.undefined();}

@@ -1,0 +1,142 @@
+// UUIDv7 algorithm derived from LiosK's Apache-2.0 implementation, as pinned by
+// PostHog. Generator state is private and typed; the public UUID byte view stays
+// observable, including caller changes to its bytes and prototype methods.
+import extern { window } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { isNumber } from "../../vendor/posthog-js/packages/core/src/utils/type-utils.ts";
+extern JsValue window;
+extern JsValue isNumber;
+extern JsValue Math;
+extern JsValue Number;
+extern JsValue Date;
+extern JsValue Object;
+extern JsValue Error;
+extern JsValue TypeError;
+extern JsValue RangeError;
+extern JsValue Uint8Array;
+extern JsValue Uint32Array;
+extern JsValue crypto;
+extern JsValue UUIDV7_DENY_WEAK_RNG;
+extern JsValue isFinite;
+extern JsValue parseInt;
+extern JsValue RegExp;
+extern JsValue Infinity;
+
+if (!Math.trunc.truthy()) Math.trunc = (this JsValue receiver, JsValue value) => if (value < 0.0) { Math.ceil(value) } else { Math.floor(value) };
+if (!Number.isInteger.truthy()) Number.isInteger = (this JsValue receiver, JsValue value) => isNumber(value) && isFinite(value) && Math.floor(value) === value;
+
+export class UUID {
+  JsValue __lil_static_fromFieldsV7(JsValue timestamp, JsValue randA, JsValue randBHigh, JsValue randBLow) {
+    return fromFields(timestamp, randA, randBHigh, randBLow);
+  }
+
+  init(JsValue bytes) {
+    (this as JsValue).bytes = bytes;
+    if (bytes.length !== 16.0) throw JS.construct(TypeError, "not 128-bit length");
+  }
+
+  JsValue toString() {
+    JsValue self = this as JsValue;
+    JsValue text = "";
+    for (number i = 0.0; i < self.bytes.length; i += 1.0) {
+      JsValue high = JS.number(self.bytes[i]).toInt() >>> 4;
+      text = text + high.toString(16.0);
+      JsValue low = JS.number(self.bytes[i]).toInt() & 15;
+      text = text + low.toString(16.0);
+      if (i === 3.0 || i === 5.0 || i === 7.0 || i === 9.0) text += "-";
+    }
+    if (text.length !== 36.0) throw JS.construct(Error, "Invalid UUIDv7 was generated");
+    return text;
+  }
+
+  UUID clone() { return new UUID((this as JsValue).bytes.slice(0.0)); }
+  bool equals(JsValue other) { return (this as JsValue).compareTo(other) === 0.0; }
+  JsValue compareTo(JsValue other) {
+    JsValue self = this as JsValue;
+    for (number i = 0.0; i < 16.0; i += 1.0) {
+      JsValue diff = self.bytes[i] - other.bytes[i];
+      if (diff !== 0.0) return Math.sign(diff);
+    }
+    return 0.0;
+  }
+}
+export constructor UUID;
+
+JsValue fromFields(JsValue timestamp, JsValue randA, JsValue randBHigh, JsValue randBLow) {
+  if (!Number.isInteger(timestamp).truthy() || !Number.isInteger(randA).truthy() || !Number.isInteger(randBHigh).truthy() || !Number.isInteger(randBLow).truthy()
+    || timestamp < 0.0 || randA < 0.0 || randBHigh < 0.0 || randBLow < 0.0
+    || timestamp > 281474976710655.0 || randA > 4095.0 || randBHigh > 1073741823.0 || randBLow > 4294967295.0) throw JS.construct(RangeError, "invalid field value");
+  JsValue bytes = JS.construct(Uint8Array, 16.0);
+  bytes[0.0] = timestamp / 1099511627776.0;
+  bytes[1.0] = timestamp / 4294967296.0;
+  bytes[2.0] = timestamp / 16777216.0;
+  bytes[3.0] = timestamp / 65536.0;
+  bytes[4.0] = timestamp / 256.0;
+  bytes[5.0] = timestamp;
+  bytes[6.0] = 112 | (JS.number(randA).toInt() >>> 8);
+  bytes[7.0] = randA;
+  bytes[8.0] = 128 | (JS.number(randBHigh).toInt() >>> 24);
+  bytes[9.0] = JS.number(randBHigh).toInt() >>> 16;
+  bytes[10.0] = JS.number(randBHigh).toInt() >>> 8;
+  bytes[11.0] = randBHigh;
+  bytes[12.0] = JS.number(randBLow).toInt() >>> 24;
+  bytes[13.0] = JS.number(randBLow).toInt() >>> 16;
+  bytes[14.0] = JS.number(randBLow).toInt() >>> 8;
+  bytes[15.0] = randBLow;
+  return new UUID(bytes);
+}
+
+JsValue getRandomValues = (JsValue buffer) => {
+  if (JS.typeOf(UUIDV7_DENY_WEAK_RNG) !== "undefined" && UUIDV7_DENY_WEAK_RNG.truthy()) throw JS.construct(Error, "no cryptographically strong RNG available");
+  for (number i = 0.0; i < buffer.length; i += 1.0) buffer[i] = Math.trunc(Math.random() * 65536.0) * 65536.0 + Math.trunc(Math.random() * 65536.0);
+  return buffer;
+};
+if (window.truthy() && !JS.isUndefined(window.crypto) && crypto.getRandomValues.truthy()) getRandomValues = (JsValue buffer) => crypto.getRandomValues(buffer);
+
+// The two upstream private classes never escape. Their state is represented
+// directly, keeping 48-bit timestamps and 42-bit counters as doubles.
+number lastTimestamp = 0.0;
+number counter = 0.0;
+JsValue randomBuffer = JS.undefined();
+number randomCursor = JS.assume(Infinity);
+
+number nextUint32() {
+  if (randomCursor >= randomBuffer.length) {
+    getRandomValues(randomBuffer);
+    randomCursor = 0.0;
+  }
+  number index = randomCursor;
+  randomCursor += 1.0;
+  return JS.assume(randomBuffer[index]);
+}
+
+void resetCounter() { counter = nextUint32() * 1024.0 + (nextUint32().toInt() & 1023); }
+
+JsValue generateOrAbort() {
+  JsValue now = Date.now();
+  number timestamp = 0.0;
+  if (isNumber(now).truthy() && isFinite(now).truthy()) timestamp = JS.assume(Math.min(Math.max(Math.floor(now), 0.0), 281474976710655.0));
+  if (timestamp > lastTimestamp) { lastTimestamp = timestamp; resetCounter(); }
+  else if (timestamp + 10000.0 > lastTimestamp) {
+    counter += 1.0;
+    if (counter > 4398046511103.0) { lastTimestamp += 1.0; resetCounter(); }
+  } else { return JS.undefined(); }
+  return (UUID as JsValue).fromFieldsV7(lastTimestamp, Math.trunc(counter / 1073741824.0), counter.toInt() & 1073741823, nextUint32());
+}
+
+export JsValue uuidv7() {
+  if (JS.isUndefined(randomBuffer)) randomBuffer = JS.construct(Uint32Array, 8.0);
+  JsValue value = generateOrAbort();
+  if (JS.isUndefined(value)) {
+    lastTimestamp = 0.0;
+    value = generateOrAbort();
+    if (JS.isUndefined(value)) throw JS.construct(Error, "Could not generate UUID after timestamp reset");
+  }
+  return value.toString();
+}
+
+export JsValue uuid7ToTimestampMs(JsValue uuid) {
+  JsValue hex = uuid.replace(JS.construct(RegExp, "-", "g"), "");
+  if (hex.length !== 32.0) throw JS.construct(Error, "Not a valid UUID");
+  if (hex[12.0] !== "7") throw JS.construct(Error, "Not a UUIDv7");
+  return parseInt(hex.substring(0.0, 12.0), 16.0);
+}

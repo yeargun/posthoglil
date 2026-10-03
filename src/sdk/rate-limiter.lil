@@ -1,0 +1,131 @@
+import extern { CAPTURE_RATE_LIMIT } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { createLogger } from "../../vendor/posthog-js/packages/browser-common/src/utils/logger.ts";
+import extern { location as browserLocation } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { isArray, isNumber } from "../../vendor/posthog-js/packages/core/src/utils/type-utils.ts";
+extern JsValue CAPTURE_RATE_LIMIT;
+extern JsValue createLogger;
+extern JsValue browserLocation;
+extern JsValue isArray;
+extern JsValue isNumber;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue JSON;
+extern JsValue Object;
+extern JsValue Boolean;
+
+JsValue logger = createLogger("[RateLimiter]");
+
+JsValue eventsPerSecond(JsValue self) {
+  JsValue config = self.instance.config.rate_limiting;
+  JsValue value = if (JS.isNullish(config)) { JS.undefined() } else { config.events_per_second };
+  return value || 10.0;
+}
+
+JsValue eventsBurstLimit(JsValue self) {
+  JsValue config = self.instance.config.rate_limiting;
+  JsValue value = if (JS.isNullish(config)) { JS.undefined() } else { config.events_burst_limit };
+  return Math.max(value || self.captureEventsPerSecond * 10.0, self.captureEventsPerSecond);
+}
+
+export class RateLimiter {
+  JsValue __lil_get_captureEventsPerSecond() { return eventsPerSecond(this as JsValue); }
+  JsValue __lil_get_captureEventsBurstLimit() { return eventsBurstLimit(this as JsValue); }
+
+  init(JsValue instance) {
+    JsValue self = this as JsValue;
+    self.instance = JS.undefined();
+    self.serverLimits = JS.object();
+    self.lastEventRateLimited = false;
+    self.checkForLimiting = (JsValue httpResponse) => {
+      JsValue text = httpResponse.text;
+      if (!text.truthy() || !text["length"].truthy()) return JS.undefined();
+      try {
+        JsValue response = JSON.parse(text);
+        JsValue products = response.quota_limited || JS.array();
+        products.forEach((JsValue batchKey) => {
+          JsValue product = batchKey || "events";
+          logger.info(`${product} is quota limited.`);
+          self.serverLimits[batchKey] = JS.construct(Date).getTime() + 60000.0;
+          return JS.undefined();
+        });
+      } catch (JsValue error) {
+        JsValue message = if (JS.isNullish(error)) { JS.undefined() } else { error.message };
+        logger.warn(`could not rate limit - continuing. Error: "${message}"`, object { text: text });
+      }
+      return JS.undefined();
+    };
+    self.instance = instance;
+    self.lastEventRateLimited = self.clientRateLimitContext(true).isRateLimited;
+  }
+
+  JsValue clientRateLimitContext(JsValue checkOnly = false) {
+    JsValue self = this as JsValue;
+    JsValue burstLimit = self.captureEventsBurstLimit;
+    JsValue perSecond = self.captureEventsPerSecond;
+    JsValue now = JS.construct(Date).getTime();
+    JsValue persistence = self.instance.persistence;
+    JsValue bucket = if (JS.isNullish(persistence)) { JS.undefined() } else { persistence.get_property(CAPTURE_RATE_LIMIT) };
+    if (JS.isNullish(bucket)) bucket = object { tokens: burstLimit, last: now };
+    bucket.tokens += ((now - bucket.last) / 1000.0) * perSecond;
+    bucket.last = now;
+    if (bucket.tokens > burstLimit) bucket.tokens = burstLimit;
+    bool isRateLimited = bucket.tokens < 1.0;
+    if (!isRateLimited && !checkOnly.truthy()) bucket.tokens = Math.max(0.0, bucket.tokens - 1.0);
+    if (isRateLimited && !checkOnly.truthy()) {
+      JsValue previousDropped = if (isNumber(bucket.dropped).truthy()) { bucket.dropped } else { 0.0 };
+      JsValue dropped = previousDropped + 1.0;
+      bucket.dropped = dropped;
+      if (!self.lastEventRateLimited.truthy() && self._captureWarning(dropped).truthy()) bucket.dropped = 0.0;
+    }
+    self.lastEventRateLimited = isRateLimited;
+    persistence = self.instance.persistence;
+    if (!JS.isNullish(persistence)) persistence.set_property(CAPTURE_RATE_LIMIT, bucket);
+    return object { isRateLimited: isRateLimited, remainingTokens: bucket.tokens };
+  }
+
+  JsValue _isPropertyAllowed(JsValue property) {
+    JsValue self = this as JsValue;
+    JsValue denylist = self.instance.config.property_denylist;
+    return !isArray(denylist).truthy() || !denylist.includes(property).truthy();
+  }
+
+  JsValue _triggeringPage() {
+    JsValue self = this as JsValue;
+    if (!self._isPropertyAllowed("$current_url").truthy() || !self._isPropertyAllowed("$pathname").truthy()) return JS.undefined();
+    JsValue pathname = if (JS.isNullish(browserLocation)) { JS.undefined() } else { browserLocation.pathname };
+    if (!pathname.truthy()) return JS.undefined();
+    JsValue origin = browserLocation.origin;
+    if (JS.isNullish(origin)) origin = "";
+    return `${origin}${browserLocation.pathname}`;
+  }
+
+  JsValue _captureWarning(JsValue dropped) {
+    JsValue self = this as JsValue;
+    JsValue burstLimit = self.captureEventsBurstLimit;
+    JsValue perSecond = self.captureEventsPerSecond;
+    JsValue page = self._triggeringPage();
+    JsValue sessionId = JS.undefined();
+    if (self._isPropertyAllowed("$session_id").truthy()) {
+      JsValue instance = self.instance;
+      JsValue method = instance.get_session_id;
+      if (!JS.isNullish(method)) sessionId = method.call(instance);
+    }
+    JsValue details = JS.array(
+      `${dropped} event(s) dropped since the last warning`,
+      if (page.truthy()) { `triggered on ${page}` } else { JS.undefined() },
+      if (sessionId.truthy()) { `session ${sessionId}` } else { JS.undefined() }
+    );
+    JsValue context = details.filter(Boolean).join(", ");
+    return self.instance.capture("$$client_ingestion_warning", object {
+      $$client_ingestion_warning_message: `posthog-js client rate limited: ${context}. Config is set to ${perSecond} events per second and ${burstLimit} events burst limit.`
+    }, object { skip_client_rate_limiting: true }).truthy();
+  }
+
+  JsValue isServerRateLimited(JsValue batchKey) {
+    JsValue self = this as JsValue;
+    JsValue retryAfter = self.serverLimits[batchKey || "events"] || false;
+    if (retryAfter === false) return false;
+    return JS.construct(Date).getTime() < retryAfter;
+  }
+}
+export constructor RateLimiter;

@@ -1,0 +1,14 @@
+{
+  "source": "packages/core/src/utils/webview-app-utils.ts",
+  "implementation": "src/sdk/core-webview-app-utils.lil",
+  "exports": [
+    "detectWebviewApp"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [],
+  "primitiveTypes": [],
+  "asyncClosures": [],
+  "qualified": false
+}

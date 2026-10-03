@@ -1,0 +1,129 @@
+// packages/core/src/utils/otlp-any-value.ts, PostHog 1.435.8.
+import { isArray, isBoolean, isNull, isNullish, isUndefined } from "./core-type-utils.lil";
+import { CIRCULAR_VALUE, FUNCTION_VALUE, MAX_JSON_SAFE_VALUE_DEPTH, MAX_JSON_SAFE_VALUE_ITEMS, MAX_JSON_SAFE_VALUE_NODES, sanitizeString, TRUNCATED_VALUE, UNSERIALIZABLE_VALUE } from "./core-json-utils.lil";
+extern JsValue Object;
+extern JsValue Number;
+extern JsValue String;
+extern JsValue BigInt;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue WeakSet;
+
+number INT64_RANGE_LIMIT = 9223372036854775808.0;
+string INT64_RANGE_LIMIT_DECIMAL = "9223372036854775808";
+JsValue propertyIsEnumerable = Object["prototype"]["propertyIsEnumerable"];
+
+// This object stays inside this module's typed call graph. Wire-format objects
+// below are deliberately ordinary JS objects with exact OTLP property names.
+class EncodeState {
+    JsValue ancestors;
+    number remainingNodes;
+    init() {
+        this.ancestors = JS.construct(WeakSet);
+        this.remainingNodes = MAX_JSON_SAFE_VALUE_NODES;
+    }
+}
+
+export JsValue toOtlpAnyValue(JsValue value, JsValue logger = JS.undefined()) {
+    try { return encodeAnyValue(value, logger, new EncodeState(), 0.0); }
+    catch { return object {stringValue: UNSERIALIZABLE_VALUE}; }
+}
+export JsValue toOtlpKeyValueList(JsValue attrs, JsValue logger = JS.undefined()) {
+    try { return encodeKeyValueList(attrs, logger, new EncodeState(), 0.0); }
+    catch { return JS.array(); }
+}
+
+JsValue encodeBigInt(JsValue value, JsValue logger) {
+    JsValue decimal = value.toString();
+    JsValue limit = BigInt(INT64_RANGE_LIMIT_DECIMAL);
+    if (value >= limit || value < -limit) {
+        if (!JS.isNullish(logger)) logger.debug(`Attribute ${decimal} is outside the int64 range; encoding it as a string`);
+        return object {stringValue: decimal};
+    }
+    return object {intValue: decimal};
+}
+
+JsValue encodeAnyValue(JsValue value, JsValue logger, EncodeState state, number depth) {
+    if (state.remainingNodes <= 0.0) return object {stringValue: TRUNCATED_VALUE};
+    state.remainingNodes -= 1.0;
+    if (isBoolean(value)) return object {boolValue: value};
+    if (JS.typeOf(value) == "bigint") return encodeBigInt(value, logger);
+    if (value is float) {
+        if (!Number["isFinite"](value).truthy()) return object {stringValue: String(value)};
+        if (Number["isInteger"](value).truthy()) {
+            if (Number["isSafeInteger"](value).truthy()) return object {intValue: String(value)};
+            if (JS.typeOf(BigInt) == "undefined") return object {stringValue: String(value)};
+            JsValue decimal = BigInt(value).toString();
+            if (value >= INT64_RANGE_LIMIT || value < -INT64_RANGE_LIMIT) {
+                if (!JS.isNullish(logger)) logger.debug(`Attribute ${decimal} is outside the int64 range; encoding it as a string`);
+                return object {stringValue: decimal};
+            }
+            return object {intValue: decimal};
+        }
+        return object {doubleValue: value};
+    }
+    if (value is string) return object {stringValue: sanitizeString(value)};
+    if (JS.typeOf(value) == "function") return object {stringValue: FUNCTION_VALUE};
+    if (JS.typeOf(value) == "symbol") return object {stringValue: String(value)};
+    if (JS.typeOf(value) == "object" && value !== null) {
+        if (state.ancestors.has(value).truthy()) return object {stringValue: CIRCULAR_VALUE};
+        if (depth >= MAX_JSON_SAFE_VALUE_DEPTH) return object {stringValue: TRUNCATED_VALUE};
+        if (value instanceof Date) {
+            JsValue time = value.getTime();
+            JsValue iso = if (Number["isFinite"](time).truthy()) { value.toISOString() } else { String(value) };
+            if (iso is string) return object {stringValue: sanitizeString(iso)};
+            return object {stringValue: String(iso)};
+        }
+        state.ancestors.add(value);
+        try {
+            try {
+                JsValue toJSON = value.toJSON;
+                if (JS.typeOf(toJSON) == "function") return encodeAnyValue(toJSON.call(value), logger, state, depth + 1.0);
+            } catch {}
+            if (isArray(value).truthy()) return object {arrayValue: object {values: encodeArrayValues(value, logger, state, depth + 1.0)}};
+            return object {kvlistValue: object {values: encodeKeyValueList(value, logger, state, depth + 1.0)}};
+        } finally {
+            state.ancestors["delete"](value);
+        }
+    }
+    // String is a JS boundary and can be patched; use its specified result type.
+    return object {stringValue: sanitizeString(JS.assume(String(value)))};
+}
+
+JsValue encodeArrayValues(JsValue values, JsValue logger, EncodeState state, number depth) {
+    JsValue result = JS.array();
+    JsValue itemCount = Math["min"](values.length, MAX_JSON_SAFE_VALUE_ITEMS);
+    number index = 0.0;
+    for (; index < itemCount && state.remainingNodes > 0.0; index += 1.0) {
+        try {
+            JsValue element = if (JS.in(index, values)) { values[index] } else { JS.undefined() };
+            if (isNullish(element)) continue;
+            result.push(encodeAnyValue(element, logger, state, depth));
+        } catch { result.push(object {stringValue: UNSERIALIZABLE_VALUE}); }
+    }
+    if (values.length > index) result.push(object {stringValue: TRUNCATED_VALUE});
+    return result;
+}
+
+JsValue encodeKeyValueList(JsValue attrs, JsValue logger, EncodeState state, number depth) {
+    JsValue result = JS.array();
+    for (string key in attrs) {
+        if (!propertyIsEnumerable.call(attrs, key).truthy()) continue;
+        if (key == "") {
+            if (!JS.isNullish(logger)) logger.debug("Dropping an attribute with an empty key");
+            continue;
+        }
+        if (result.length >= MAX_JSON_SAFE_VALUE_ITEMS || state.remainingNodes <= 0.0) {
+            if (!JS.isNullish(logger)) logger.debug("Attributes truncated: the value exceeds the OTLP encoder budget");
+            break;
+        }
+        try {
+            JsValue value = attrs[key];
+            if (isNull(value) || isUndefined(value)) continue;
+            result.push(object {key: sanitizeString(key), value: encodeAnyValue(value, logger, state, depth)});
+        } catch {
+            result.push(object {key: sanitizeString(key), value: object {stringValue: UNSERIALIZABLE_VALUE}});
+        }
+    }
+    return result;
+}

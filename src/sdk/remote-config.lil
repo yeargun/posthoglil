@@ -1,0 +1,65 @@
+// Whole-module migration from packages/browser/src/remote-config.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { createLogger as createLogger } from "@posthog/browser-common/utils/logger";
+import extern { assignableWindow as assignableWindow } from "../../vendor/posthog-js/packages/browser/src/utils/globals.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue createLogger;
+
+extern JsValue assignableWindow;
+
+JsValue logger = (createLogger as JsValue)("[RemoteConfig]");
+
+export class RemoteConfigLoader {
+init(JsValue _instance) { 
+((((this as JsValue) as JsValue)["_instance"] = _instance));
+ }
+
+JsValue __lil_get_remoteConfig() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+return if ((((((((_b = if ((((((((_a = (assignableWindow as JsValue)["_POSTHOG_REMOTE_CONFIG"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)[((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["token"]] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["config"] as JsValue) };
+return JS.undefined(); }
+
+JsValue _loadRemoteConfigJs(JsValue cb) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+if ((if ((((((((_a = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["loadExternalDependency"] as JsValue) } as JsValue).truthy()) {(if ((((((((_c = if ((((((((_b = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["loadExternalDependency"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["call"](_b, ((this as JsValue) as JsValue)["_instance"], "remote-config", () => { 
+return (cb as JsValue)(((this as JsValue) as JsValue)["remoteConfig"]);
+return JS.undefined(); }) as JsValue) });} else {((cb as JsValue)());}
+return JS.undefined(); }
+
+JsValue _loadRemoteConfigJSON(JsValue cb) { 
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["_send_request"](object { "method": "GET", "url": ((((this as JsValue) as JsValue)["_instance"] as JsValue)["requestRouter"] as JsValue)["endpointFor"]("assets", `/array/${((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["token"]}/config`), "callback": cb }));
+return JS.undefined(); }
+
+JsValue load() { 
+try {if ((((this as JsValue) as JsValue)["remoteConfig"] as JsValue).truthy()) {((logger as JsValue)["info"]("Using preloaded remote config", ((this as JsValue) as JsValue)["remoteConfig"]));
+(((this as JsValue) as JsValue)["_onRemoteConfig"](((this as JsValue) as JsValue)["remoteConfig"]));
+return JS.undefined();}
+if (((((this as JsValue) as JsValue)["_instance"] as JsValue)["_shouldDisableFlags"]() as JsValue).truthy()) {((logger as JsValue)["warn"]("Remote config is disabled. Falling back to local config."));
+return JS.undefined();}
+(((this as JsValue) as JsValue)["_loadRemoteConfigJs"]((JsValue config) => { 
+if ((!(config as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["info"]("No config found after loading remote JS config. Falling back to JSON."));
+(((this as JsValue) as JsValue)["_loadRemoteConfigJSON"]((JsValue response) => { 
+(((this as JsValue) as JsValue)["_onRemoteConfig"]((response as JsValue)["json"], response));
+return JS.undefined(); }));
+return JS.undefined();}
+(((this as JsValue) as JsValue)["_onRemoteConfig"](config));
+return JS.undefined(); }));} catch (JsValue error) {((logger as JsValue)["error"]("Error loading remote config", error));
+(((this as JsValue) as JsValue)["_onRemoteConfig"]());}
+return JS.undefined(); }
+
+JsValue _onRemoteConfig(JsValue config, JsValue response) { 
+JsValue _a = JS.undefined();
+if ((((!(config as JsValue).truthy() as JsValue) && (response as JsValue)) as JsValue).truthy()) {if (((((response as JsValue)["statusCode"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {if ((!((response as JsValue)["error"] as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"]("Failed to fetch remote config from PostHog."));}} else {((logger as JsValue)["error"]("Failed to fetch remote config from PostHog."));}}
+try {((((this as JsValue) as JsValue)["_instance"] as JsValue)["_onRemoteConfig"](if ((config as JsValue).truthy()) { (object { "ok": true, "config": config } as JsValue) } else { (object { "ok": false } as JsValue) }));} catch (JsValue error) {((logger as JsValue)["error"]("Error applying remote config", error));}
+if (((((((if ((((((config as JsValue) === (null as JsValue)) as JsValue) || (((config as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((config as JsValue)["hasFeatureFlags"] as JsValue) }) as JsValue) !== (false as JsValue)) as JsValue) && (!(((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["advanced_disable_feature_flags_on_first_load"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {try {(if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["featureFlags"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["ensureFlagsLoaded"]() as JsValue) });} catch (JsValue error) {((logger as JsValue)["error"]("Error loading feature flags", error));}}
+return JS.undefined(); }
+}
+export constructor RemoteConfigLoader;
+
+
