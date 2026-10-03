@@ -1,0 +1,196 @@
+// packages/browser/src/extensions/exception-autocapture/index.ts
+// `posthog.exceptionObserver` keeps upstream's public members (`isEnabled` getter,
+// `startIfEnabledOrStop`, `onRemoteConfig`, `onConfigChange`, `captureException`); `_instance` is a
+// reserved (unmangled) name upstream, so it stays a field of that name. The error wrapping
+// functions load lazily through `window.__PosthogExtensions__`.
+import { isObject, isUndefined } from "../../../core/utils/type-utils.lil";
+import extern { window } from "@upstream/browser-common/utils/globals";
+import extern { assignableWindow } from "@upstream/browser/utils/globals";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE } from "@upstream/browser/constants";
+import extern { BucketedRateLimiter, resolveExceptionRateLimiterConfig } from "@upstream/core/utils/bucketed-rate-limiter";
+extern JsValue window;
+extern JsValue assignableWindow;
+extern JsValue createLogger;
+extern string EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE;
+extern JsValue BucketedRateLimiter;
+extern JsValue resolveExceptionRateLimiterConfig(JsValue config);
+extern JsValue Object;
+
+JsValue logger = createLogger("[ExceptionAutocapture]");
+
+// upstream's private `_requiredConfig`
+JsValue requiredConfig(JsValue instance, bool remoteEnabled) {
+  JsValue providedConfig = instance.config.capture_exceptions;
+  JsValue config = object {
+    capture_unhandled_errors: false,
+    capture_unhandled_rejections: false,
+    capture_console_errors: false
+  };
+  if (isObject(providedConfig)) {
+    return Object.assign(config, providedConfig);
+  }
+  if (if (isUndefined(providedConfig)) { remoteEnabled } else { providedConfig.truthy() }) {
+    config.capture_unhandled_errors = true;
+    config.capture_unhandled_rejections = true;
+  }
+  return config;
+}
+
+export class ExceptionObserver {
+  JsValue _instance;
+  bool _remoteEnabled;
+  JsValue _rateLimiter;
+  JsValue _config;
+  JsValue _unwrapOnError = undefined;
+  JsValue _unwrapUnhandledRejection = undefined;
+  JsValue _unwrapConsoleError = undefined;
+
+  init(JsValue instance) {
+    this._instance = instance;
+    JsValue persistence = instance.persistence;
+    bool remoteEnabled = if (persistence == null) { false } else { persistence.props[EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE].truthy() };
+    this._remoteEnabled = remoteEnabled;
+    // Burst protection per exception type: ten exceptions before rate limiting, then one token
+    // per 10 second period; tunable via `exceptionRateLimiterBucketSize` and
+    // `exceptionRateLimiterRefillRate`.
+    JsValue options = resolveExceptionRateLimiterConfig(instance.config.error_tracking);
+    this._rateLimiter = new BucketedRateLimiter(object {
+      refillRate: options.refillRate,
+      bucketSize: options.bucketSize,
+      refillInterval: 10000,
+      _logger: logger
+    });
+    this._config = requiredConfig(instance, remoteEnabled);
+    this.startIfEnabledOrStop();
+  }
+
+  void startIfEnabledOrStop() {
+    if ((this as JsValue).isEnabled.truthy()) {
+      logger.info("enabled");
+      stopCapturing(this);
+      ExceptionObserver self = this;
+      loadScript(this, () => {
+        startCapturing(self);
+      });
+    } else {
+      stopCapturing(this);
+    }
+  }
+
+  void onRemoteConfig(JsValue result) {
+    if (!result.ok.truthy()) {
+      // Failure behaves like a response without an autocaptureExceptions key.
+      return;
+    }
+    JsValue response = result.config;
+    if (!("autocaptureExceptions" in response)) {
+      return;
+    }
+    // kept in memory in case persistence is disabled
+    this._remoteEnabled = response.autocaptureExceptions.truthy();
+    if (this._instance.persistence.truthy()) {
+      JsValue props = object {};
+      props[EXCEPTION_CAPTURE_ENABLED_SERVER_SIDE] = this._remoteEnabled;
+      this._instance.persistence.register(props);
+    }
+    this._config = requiredConfig(this._instance, this._remoteEnabled);
+    (this as JsValue).startIfEnabledOrStop();
+  }
+
+  void onConfigChange() {
+    this._config = requiredConfig(this._instance, this._remoteEnabled);
+  }
+
+  void captureException(JsValue errorProperties) {
+    try {
+      JsValue list = if (errorProperties == null) { undefined } else { errorProperties.$exception_list };
+      JsValue first = if (list == null) { undefined } else { list[0] };
+      JsValue type = if (first == null) { undefined } else { first.type };
+      JsValue exceptionType = type ?? "Exception";
+      if (this._rateLimiter.consumeRateLimit(exceptionType).truthy()) {
+        logger.info("Skipping exception capture because of client rate limiting.", object { exception: exceptionType });
+        return;
+      }
+      JsValue exceptions = this._instance.exceptions;
+      if (exceptions != null) {
+        exceptions.sendExceptionEvent(errorProperties);
+      }
+    } catch {
+      // Exception autocapture must never throw into customer code. Nothing is logged: console.error
+      // may be instrumented and would re-enter this method.
+    }
+  }
+}
+export constructor ExceptionObserver;
+
+Object.defineProperty((ExceptionObserver as JsValue).prototype, "isEnabled", object {
+  get: (this JsValue receiver) => {
+    JsValue config = (receiver as ExceptionObserver)._config;
+    return config.capture_console_errors || config.capture_unhandled_errors || config.capture_unhandled_rejections;
+  },
+  configurable: true
+});
+
+void loadScript(ExceptionObserver self, func()->void cb) {
+  JsValue extensions = assignableWindow.__PosthogExtensions__;
+  if (extensions != null && extensions.errorWrappingFunctions.truthy()) {
+    // already loaded
+    cb();
+    return;
+  }
+  JsValue current = assignableWindow.__PosthogExtensions__;
+  JsValue loader = if (current == null) { undefined } else { current.loadExternalDependency };
+  if (loader != null) {
+    loader.call(current, self._instance, "exception-autocapture", (JsValue err) => {
+      if (err.truthy()) {
+        return logger.error("failed to load script", err);
+      }
+      cb();
+      return undefined;
+    });
+  }
+}
+
+void startCapturing(ExceptionObserver self) {
+  if (!window.truthy() || !(self as JsValue).isEnabled.truthy()) {
+    return;
+  }
+  JsValue extensions = assignableWindow.__PosthogExtensions__;
+  if (extensions == null || !extensions.errorWrappingFunctions.truthy()) {
+    return;
+  }
+  JsValue wrapOnError = assignableWindow.__PosthogExtensions__.errorWrappingFunctions.wrapOnError;
+  JsValue wrapUnhandledRejection = assignableWindow.__PosthogExtensions__.errorWrappingFunctions.wrapUnhandledRejection;
+  JsValue wrapConsoleError = assignableWindow.__PosthogExtensions__.errorWrappingFunctions.wrapConsoleError;
+  JsValue receiver = self as JsValue;
+  try {
+    if (!self._unwrapOnError.truthy() && self._config.capture_unhandled_errors.truthy()) {
+      self._unwrapOnError = wrapOnError(receiver.captureException.bind(receiver));
+    }
+    if (!self._unwrapUnhandledRejection.truthy() && self._config.capture_unhandled_rejections.truthy()) {
+      self._unwrapUnhandledRejection = wrapUnhandledRejection(receiver.captureException.bind(receiver));
+    }
+    if (!self._unwrapConsoleError.truthy() && self._config.capture_console_errors.truthy()) {
+      self._unwrapConsoleError = wrapConsoleError(receiver.captureException.bind(receiver));
+    }
+  } catch (JsValue e) {
+    logger.error("failed to start", e);
+    stopCapturing(self);
+  }
+}
+
+void stopCapturing(ExceptionObserver self) {
+  if (self._unwrapOnError != null) {
+    self._unwrapOnError();
+  }
+  self._unwrapOnError = undefined;
+  if (self._unwrapUnhandledRejection != null) {
+    self._unwrapUnhandledRejection();
+  }
+  self._unwrapUnhandledRejection = undefined;
+  if (self._unwrapConsoleError != null) {
+    self._unwrapConsoleError();
+  }
+  self._unwrapConsoleError = undefined;
+}
