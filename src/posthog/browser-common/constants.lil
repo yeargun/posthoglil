@@ -1,0 +1,4 @@
+// packages/browser-common/src/constants.ts
+export string TOOLBAR_ID = "__POSTHOG_TOOLBAR__";
+export string TOOLBAR_CONTAINER_CLASS = "toolbar-global-fade-container";
+export string SDK_DIST_CHANNEL = "$sdk_dist_channel";

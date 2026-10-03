@@ -1,0 +1,8 @@
+// packages/browser/src/utils/stack-overflow.ts
+import { isError } from "../../core/utils/type-utils.lil";
+
+export bool isStackOverflowError(JsValue error) {
+  return isError(error) &&
+    ((error.name === "RangeError" && error["message"].indexOf("Maximum call stack size exceeded") === 0) ||
+      (error.name === "InternalError" && error["message"] === "too much recursion"));
+}

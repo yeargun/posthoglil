@@ -1,0 +1,3 @@
+// packages/browser-common/src/types/compression.ts — re-exported by @posthog/browser-common and
+// posthog-js, so it stays a plain mutable object with upstream's keys and order.
+export JsValue Compression = object { GZipJS: "gzip-js", Base64: "base64" };

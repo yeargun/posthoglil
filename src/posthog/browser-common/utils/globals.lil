@@ -1,0 +1,22 @@
+// packages/browser-common/src/utils/globals.ts — guarded reads of browser globals, evaluated once at
+// module load. The values are host objects that tests replace, so they stay dynamic.
+extern JsValue window;
+extern JsValue globalThis;
+
+JsValue win = if (JS.typeOf(window) != "undefined") { window } else { undefined };
+JsValue global = if (JS.typeOf(globalThis) != "undefined") { globalThis } else { win };
+
+export JsValue navigator = if (global == null) { undefined } else { global.navigator };
+export JsValue document = if (global == null) { undefined } else { global.document };
+export JsValue location = if (global == null) { undefined } else { global.location };
+export JsValue fetch = if (global == null) { undefined } else { global.fetch };
+export JsValue XMLHttpRequest = if (global != null && global.XMLHttpRequest.truthy() && "withCredentials" in new global.XMLHttpRequest()) { global.XMLHttpRequest } else { undefined };
+export JsValue AbortController = if (global == null) { undefined } else { global.AbortController };
+export JsValue CompressionStream = if (global == null) { undefined } else { global.CompressionStream };
+export JsValue userAgent = if (navigator == null) { undefined } else { navigator.userAgent };
+
+export bool isBrowserOnline() {
+  return win.truthy() && win.navigator.onLine !== false;
+}
+
+export { win as window };

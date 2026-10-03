@@ -1,0 +1,57 @@
+// packages/browser-common/src/utils/property-utils.ts — filters come from remote config and properties
+// from the page, so both stay dynamic. The shared matchers live in @posthog/core/surveys.
+import { isArray, isNull, isUndefined } from "../../core/utils/type-utils.lil";
+import { jsonStringify } from "./request-utils.lil";
+import extern { matchPropertyFilters, propertyComparisons } from "@upstream/core/surveys/property-matching";
+extern JsValue matchPropertyFilters;
+extern JsValue propertyComparisons;
+extern JsValue String;
+
+export { matchPropertyFilters, propertyComparisons };
+
+export string getPersonPropertiesHash(JsValue distinct_id, JsValue userPropertiesToSet, JsValue userPropertiesToSetOnce) {
+  return jsonStringify(object { distinct_id: distinct_id, userPropertiesToSet: userPropertiesToSet, userPropertiesToSetOnce: userPropertiesToSetOnce }, undefined) as string;
+}
+
+// Operators whose semantics mean "property is not X". When the property being
+// filtered on is missing or null, these match — absence of the property
+// satisfies a "not equal to X" check. This intentionally differs from the
+// shared map-level matcher used by survey event filters.
+string[] NEGATIVE_OPERATORS = ["is_not", "not_icontains", "not_regex"];
+
+/**
+ * Evaluate trigger property filters (WHERE clauses) against event and person properties.
+ * All filters must match (implicit AND). Returns true if no filters are present.
+ */
+export bool matchTriggerPropertyFilters(JsValue filters, JsValue eventProperties, JsValue personProperties) {
+  if (!filters.truthy() || filters["length"] === 0) {
+    return true;
+  }
+  return filters.every((JsValue filter) => {
+    JsValue source = if (filter.type === "person") { personProperties } else { eventProperties };
+    JsValue propertyValue = if (source == null) { undefined } else { source[filter.key] };
+    JsValue operator = filter.operator || "exact";
+
+    // Missing or null property: for negative operators, absence counts as a
+    // match (nothing can't equal EU, so "is_not EU" is satisfied). For
+    // positive operators, we can't confirm a match without a value.
+    if (isUndefined(propertyValue) || isNull(propertyValue)) {
+      return NEGATIVE_OPERATORS.includes(operator as string) as JsValue;
+    }
+
+    JsValue comparisonFunction = propertyComparisons[operator];
+    if (!comparisonFunction.truthy()) {
+      return false as JsValue;
+    }
+
+    if (isUndefined(filter.value) || isNull(filter.value)) {
+      return false as JsValue;
+    }
+
+    // Normalize filter value and property value to string arrays for comparison
+    JsValue targetValues = if (isArray(filter.value)) { filter.value.map(String) } else { [String(filter.value)] };
+    JsValue actualValues = if (isArray(propertyValue)) { propertyValue.map(String) } else { [String(propertyValue)] };
+
+    return comparisonFunction(targetValues, actualValues);
+  }).truthy();
+}

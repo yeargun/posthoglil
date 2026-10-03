@@ -1,0 +1,46 @@
+// packages/browser-common/src/utils/logger.ts — loggers stay plain objects of closures: modules and
+// tests call (and spy on) their methods by name, so every call between them goes through the object.
+// Upstream's private `_log` member is the module function `logAt`.
+import { default as Config } from "../config.lil";
+import { isUndefined } from "../../core/utils/type-utils.lil";
+import { window } from "./globals.lil";
+extern JsValue console;
+
+void logAt(string prefix, JsValue debugEnabled, string level, JsValue[] args) {
+  if (window.truthy() && (Config.DEBUG || window.POSTHOG_DEBUG || debugEnabled).truthy() && !isUndefined(window.console) && window.console.truthy()) {
+    JsValue consoleLog = if ("__rrweb_original__" in window.console[level]) { window.console[level]["__rrweb_original__"] } else { window.console[level] };
+    consoleLog(prefix, ...args);
+  }
+}
+
+JsValue createLoggerWith(string prefix, JsValue options = object {}) {
+  // `{ debugEnabled }: CreateLoggerOptions = {}`: read once, when the logger is created.
+  JsValue debugEnabled = options.debugEnabled;
+  JsValue logger = undefined;
+  logger = object {
+    debug: (JsValue... args) => {
+      logAt(prefix, debugEnabled, "debug", args);
+    },
+    info: (JsValue... args) => {
+      logAt(prefix, debugEnabled, "log", args);
+    },
+    warn: (JsValue... args) => {
+      logAt(prefix, debugEnabled, "warn", args);
+    },
+    error: (JsValue... args) => {
+      logAt(prefix, debugEnabled, "error", args);
+    },
+    critical: (JsValue... args) => {
+      console.error(prefix, ...args);
+    },
+    uninitializedWarning: (string methodName) => {
+      logger.error(`You must initialize PostHog before calling ${methodName}`);
+    },
+    createLogger: (string additionalPrefix, JsValue options) => createLoggerWith(`${prefix} ${additionalPrefix}`, options)
+  };
+  return logger;
+}
+
+export JsValue logger = createLoggerWith("[PostHog.js]");
+
+export JsValue createLogger = logger.createLogger;

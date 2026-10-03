@@ -1,0 +1,3 @@
+// packages/browser/src/logs-types.ts — the console levels the main bundle and the lazily loaded logs
+// entrypoint agree on (an exported array, mutable as upstream's `as const` array is at run time).
+export JsValue BUFFERED_CONSOLE_LEVELS = ["debug", "log", "warn", "error", "info"];

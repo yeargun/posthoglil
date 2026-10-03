@@ -1,0 +1,20 @@
+// packages/browser-common/src/utils/device-model-utils.ts — `navigator.userAgentData` is an
+// experimental host object, read defensively; the result resolves to a string or undefined.
+import { isString } from "../../core/utils/type-utils.lil";
+import { navigator } from "./globals.lil";
+import { logger } from "./logger.lil";
+
+export async JsValue getDeviceModel() {
+  JsValue uaData = if (navigator == null) { undefined } else { navigator.userAgentData };
+  if (uaData == null || !uaData.getHighEntropyValues.truthy()) {
+    return undefined;
+  }
+  try {
+    JsValue hints = await (uaData.getHighEntropyValues(["model"]) as Task<JsValue>);
+    JsValue model = if (hints == null) { undefined } else { hints.model };
+    return if (isString(model) && model.length > 0.0) { model } else { undefined };
+  } catch (JsValue e) {
+    logger.info("Unable to resolve $device_model from userAgentData.getHighEntropyValues", e);
+    return undefined;
+  }
+}

@@ -1,0 +1,5 @@
+// packages/browser/src/extension-tokens.ts — typed stable names; at run time they are the strings.
+export string AutocaptureExtension = "autocapture";
+export string FeatureFlagsExtension = "featureFlags";
+export string LogsExtension = "logs";
+export string SurveysExtension = "surveys";

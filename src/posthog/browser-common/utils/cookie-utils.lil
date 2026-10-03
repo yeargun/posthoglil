@@ -1,0 +1,25 @@
+// packages/browser-common/src/utils/cookie-utils.ts — returns undefined without a document, null when
+// the cookie is missing or reading it throws, so the result keeps both spellings.
+import { document } from "./globals.lil";
+extern JsValue decodeURIComponent;
+
+export JsValue getCookieValue(string name) {
+  if (!document.truthy()) {
+    return undefined;
+  }
+  try {
+    string nameEQ = name + "=";
+    string[] cookies = (document.cookie.split(";") as string[]).filter((string cookie) => cookie.length > 0);
+    for (int i = 0; i < cookies.length; i++) {
+      string cookie = cookies[i];
+      while (cookie.charAt(0) == " ") {
+        cookie = cookie.slice(1);
+      }
+      if (cookie.indexOf(nameEQ) == 0) {
+        return decodeURIComponent(cookie.slice(nameEQ.length));
+      }
+    }
+  } catch {
+  }
+  return null;
+}

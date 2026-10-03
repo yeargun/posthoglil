@@ -1,0 +1,64 @@
+// packages/browser-common/src/types/surveys.ts — the runtime values. Exported objects stay plain
+// mutable JavaScript objects with upstream's keys and order (the rest of the module is types).
+
+export JsValue SurveyEventType = object { Activation: "events", Cancellation: "cancelEvents" };
+
+export JsValue SurveyWidgetType = object { Button: "button", Tab: "tab", Selector: "selector" };
+
+export JsValue SurveyPosition = object {
+  TopLeft: "top_left",
+  TopRight: "top_right",
+  TopCenter: "top_center",
+  MiddleLeft: "middle_left",
+  MiddleRight: "middle_right",
+  MiddleCenter: "middle_center",
+  Left: "left",
+  Center: "center",
+  Right: "right",
+  NextToTrigger: "next_to_trigger"
+};
+
+export JsValue SurveyTabPosition = object { Top: "top", Left: "left", Right: "right", Bottom: "bottom" };
+
+export JsValue SurveyType = object { Popover: "popover", API: "api", Widget: "widget", ExternalSurvey: "external_survey" };
+
+export JsValue SurveyQuestionType = object {
+  Open: "open",
+  MultipleChoice: "multiple_choice",
+  SingleChoice: "single_choice",
+  Rating: "rating",
+  Link: "link"
+};
+
+export JsValue SurveyQuestionBranchingType = object {
+  NextQuestion: "next_question",
+  End: "end",
+  ResponseBased: "response_based",
+  SpecificQuestion: "specific_question"
+};
+
+export JsValue SurveySchedule = object { Once: "once", Recurring: "recurring", Always: "always" };
+
+export JsValue SurveyEventName = object {
+  SHOWN: "survey shown",
+  DISMISSED: "survey dismissed",
+  SENT: "survey sent",
+  ABANDONED: "survey abandoned"
+};
+
+export JsValue SurveyEventProperties = object {
+  SURVEY_ID: "$survey_id",
+  SURVEY_NAME: "$survey_name",
+  SURVEY_RESPONSE: "$survey_response",
+  SURVEY_ITERATION: "$survey_iteration",
+  SURVEY_ITERATION_START_DATE: "$survey_iteration_start_date",
+  SURVEY_PARTIALLY_COMPLETED: "$survey_partially_completed",
+  SURVEY_SUBMISSION_ID: "$survey_submission_id",
+  SURVEY_QUESTIONS: "$survey_questions",
+  SURVEY_COMPLETED: "$survey_completed",
+  PRODUCT_TOUR_ID: "$product_tour_id",
+  SURVEY_LAST_SEEN_DATE: "$survey_last_seen_date",
+  SURVEY_LANGUAGE: "$survey_language"
+};
+
+export JsValue DisplaySurveyType = object { Popover: "popover", Inline: "inline" };

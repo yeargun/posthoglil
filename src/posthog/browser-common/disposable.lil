@@ -1,0 +1,18 @@
+// packages/browser-common/src/disposable.ts — teardown runs at most once; a thenable result gets a
+// rejection handler and is not awaited.
+import { isFunction } from "../core/utils/type-utils.lil";
+
+export JsValue createDisposable(JsValue dispose) {
+  bool active = true;
+  return object {
+    dispose: () => {
+      if (active) {
+        active = false;
+        JsValue result = dispose();
+        if (result.truthy() && isFunction(result.then)) {
+          result.then(undefined, () => {});
+        }
+      }
+    }
+  };
+}

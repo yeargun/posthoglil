@@ -1,0 +1,47 @@
+// packages/browser-common/src/utils/elements-chain-utils.ts — `matching` stays a string: upstream
+// answers false for any value outside its three modes at run time.
+
+export string extractHref(string elementsChain) {
+  auto found = new Regex("(?::|\")href=\"(.*?)\"").exec(elementsChain);
+  return if (found == null) { "" } else { found[1] as string };
+}
+
+export string[] extractTexts(string elementsChain) {
+  string[] texts = [];
+  Regex regex = new Regex("(?::|\")text=\"(.*?)\"", "g");
+  auto found = regex.exec(elementsChain);
+  while (found != null) {
+    string text = found[1] as string;
+    if (!texts.includes(text)) {
+      texts.push(text);
+    }
+    found = regex.exec(elementsChain);
+  }
+  return texts;
+}
+
+export bool matchString(string? value, string pattern, string matching) {
+  if (value == null) {
+    return false;
+  }
+  if (matching == "exact") {
+    return value == pattern;
+  }
+  if (matching == "contains") {
+    // Simulating SQL LIKE behavior (_ = any single character, % = any zero or more characters)
+    string likePattern = pattern.replace(new Regex("[.*+?^${}()|[\\]\\\\]", "g"), "\\$&").replace(new Regex("_", "g"), ".").replace(new Regex("%", "g"), ".*");
+    return new Regex(likePattern, "i").test(value);
+  }
+  if (matching == "regex") {
+    try {
+      return new Regex(pattern).test(value);
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+export bool matchTexts(string[] texts, string pattern, string matching) {
+  return texts.some((string text) => matchString(text, pattern, matching));
+}

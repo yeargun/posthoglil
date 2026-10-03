@@ -1,0 +1,79 @@
+// packages/browser/src/feature-flags-config.ts — the snapshot is handed to the feature flags extension
+// and reads the page's config, so both stay dynamic. The class keeps its public `update`/`get`; its
+// private fields keep upstream's creation order.
+import { createLogger } from "../browser-common/utils/logger.lil";
+import { isArray, isUndefined } from "../core/utils/type-utils.lil";
+extern JsValue Math;
+
+JsValue logger = createLogger("[FeatureFlags]");
+float DEFAULT_REFRESH_INTERVAL_MS = 300000.0; // 5 * 60 * 1000
+
+// The config is read in upstream's order (the object literal's), each property once per mention.
+JsValue snapshot(JsValue config, JsValue remoteRequestsDisabled) {
+  JsValue bootstrap = config.bootstrap;
+  JsValue featureFlags = if (bootstrap == null) { undefined } else { bootstrap.featureFlags };
+  JsValue bootstrapAgain = config.bootstrap;
+  JsValue featureFlagPayloads = if (bootstrapAgain == null) { undefined } else { bootstrapAgain.featureFlagPayloads };
+  bool featureFlagsDisabled = config.advanced_disable_feature_flags.truthy();
+  bool onlyEvaluateSurveyFeatureFlags = config.advanced_only_evaluate_survey_feature_flags.truthy();
+  bool deduplicateCallsPerSession = config.advanced_feature_flags_dedup_per_session.truthy();
+  JsValue cacheTtlMs = config.feature_flag_cache_ttl_ms;
+  JsValue refreshIntervalMs = config.remote_config_refresh_interval_ms;
+  bool idleRefreshBackoff = isUndefined(config.remote_config_refresh_interval_ms);
+  JsValue requestTimeoutMs = config.feature_flag_request_timeout_ms;
+  JsValue maxRetries = config.feature_flag_request_max_retries;
+  JsValue requestMaxRetries = Math.max(0, if (maxRetries == null) { 1 as JsValue } else { maxRetries });
+  JsValue compression = if (config.disable_compression.truthy()) { undefined } else { "best-available" };
+  JsValue evaluationContexts = config.evaluation_contexts;
+  if (evaluationContexts == null) {
+    evaluationContexts = config.evaluation_environments;
+    if (evaluationContexts == null) {
+      evaluationContexts = [];
+    }
+  }
+  JsValue flagKeys = if (isArray(config.flag_keys)) { config.flag_keys } else { undefined };
+  return object {
+    bootstrap: object {
+      featureFlags: if (featureFlags == null) { undefined } else { featureFlags },
+      featureFlagPayloads: if (featureFlagPayloads == null) { undefined } else { featureFlagPayloads }
+    },
+    remoteRequestsDisabled: remoteRequestsDisabled,
+    featureFlagsDisabled: featureFlagsDisabled,
+    onlyEvaluateSurveyFeatureFlags: onlyEvaluateSurveyFeatureFlags,
+    deduplicateCallsPerSession: deduplicateCallsPerSession,
+    cacheTtlMs: cacheTtlMs,
+    refreshIntervalMs: if (refreshIntervalMs == null) { DEFAULT_REFRESH_INTERVAL_MS as JsValue } else { refreshIntervalMs },
+    idleRefreshBackoff: idleRefreshBackoff,
+    requestTimeoutMs: requestTimeoutMs,
+    requestMaxRetries: requestMaxRetries,
+    compression: compression,
+    evaluationContexts: evaluationContexts,
+    flagKeys: flagKeys
+  };
+}
+
+/** Mutable browser-v1 mapping kept outside the extension-facing config source. */
+export class MutableFeatureFlagsConfigSource {
+  bool loggedEvaluationEnvironmentsDeprecation = false;
+  JsValue currentSnapshot = undefined;
+
+  init(JsValue config, JsValue remoteRequestsDisabled = false) {
+    this.update(config, remoteRequestsDisabled);
+  }
+
+  void update(JsValue config, JsValue remoteRequestsDisabled) {
+    this.currentSnapshot = snapshot(config, remoteRequestsDisabled);
+    if (config.evaluation_environments.truthy() && !config.evaluation_contexts.truthy() && !this.loggedEvaluationEnvironmentsDeprecation) {
+      logger.warn("evaluation_environments is deprecated. Use evaluation_contexts instead. evaluation_environments will be removed in a future version.");
+      this.loggedEvaluationEnvironmentsDeprecation = true;
+    }
+    if (!isUndefined(config.flag_keys) && !isArray(config.flag_keys)) {
+      logger.error("Invalid flag_keys found:", config.flag_keys, "Expected array of non-empty strings");
+    }
+  }
+
+  JsValue get() {
+    return this.currentSnapshot;
+  }
+}
+export constructor MutableFeatureFlagsConfigSource;

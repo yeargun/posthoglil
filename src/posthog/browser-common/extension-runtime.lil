@@ -1,0 +1,76 @@
+// packages/browser-common/src/extension-runtime.ts — the class keeps its public methods; the private
+// fields keep upstream's creation order (parameter properties first) and `_disposeExtension` is a
+// module function. Extensions, the logger and the client are other bundles' objects: dynamic. The
+// registry is upstream's own `Map`, driven through the same operations (raw `get`, `values()` snapshot).
+import { isFunction } from "../core/utils/type-utils.lil";
+extern JsValue Error;
+extern JsValue Array;
+
+export class ExtensionRuntime {
+  JsValue logger;
+  JsValue client;
+  JsValue extensions = new Map<string, JsValue>();
+  bool disposed = false;
+
+  init(JsValue logger, JsValue client) {
+    this.logger = logger;
+    this.client = client;
+  }
+
+  async void add(JsValue extension) {
+    if (this.disposed) {
+      throw new Error("Cannot add an extension to a disposed ExtensionRuntime");
+    }
+    if (this.extensions.has(extension.name).truthy()) {
+      throw new Error(`Browser extension "${extension.name}" is already registered`);
+    }
+    this.extensions.set(extension.name, extension);
+    try {
+      JsValue setup = extension.setup(this.client);
+      if (setup.truthy()) {
+        await (setup as Task<JsValue>);
+      }
+    } catch (JsValue error) {
+      bool active = this.extensions.get(extension.name) === extension;
+      if (active) {
+        this.extensions.delete(extension.name);
+      }
+      this.logger.error(`Failed to set up browser extension "${extension.name}"`, error);
+      if (active) {
+        disposeExtension(this, extension);
+      }
+    }
+  }
+
+  JsValue getExtension(string name) {
+    return this.extensions.get(name);
+  }
+
+  void dispose() {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    JsValue extensions = Array.from(this.extensions.values()).reverse();
+    this.extensions.clear();
+    for (JsValue extension of extensions) {
+      disposeExtension(this, extension);
+    }
+  }
+}
+export constructor ExtensionRuntime;
+
+void disposeExtension(ExtensionRuntime self, JsValue extension) {
+  try {
+    // `extension.dispose?.()`: read once, called on the extension.
+    JsValue dispose = extension.dispose;
+    JsValue result = if (dispose == null) { undefined } else { dispose.call(extension) };
+    if (result.truthy() && isFunction(result.then)) {
+      result.then(undefined, (JsValue error) => {
+        self.logger.error(`Failed to dispose browser extension "${extension.name}"`, error);
+      });
+    }
+  } catch (JsValue error) {
+    self.logger.error(`Failed to dispose browser extension "${extension.name}"`, error);
+  }
+}

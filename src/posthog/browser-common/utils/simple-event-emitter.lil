@@ -1,0 +1,26 @@
+// packages/browser-common/src/utils/simple-event-emitter.ts — listeners live in a plain object keyed by
+// event name, exactly as upstream: an inherited name ("toString", "constructor") throws as it does there.
+export class SimpleEventEmitter {
+  JsValue events = object {};
+
+  func()->void on(string event, JsValue listener) {
+    if (!this.events[event].truthy()) {
+      this.events[event] = [];
+    }
+    this.events[event].push(listener);
+    SimpleEventEmitter self = this;
+    return () => {
+      self.events[event] = self.events[event].filter((JsValue x) => x !== listener);
+    };
+  }
+
+  void emit(string event, JsValue payload) {
+    for (JsValue listener of this.events[event] || []) {
+      listener(payload);
+    }
+    for (JsValue listener of this.events["*"] || []) {
+      listener(event, payload);
+    }
+  }
+}
+export constructor SimpleEventEmitter;

@@ -1,0 +1,155 @@
+// packages/browser-common/src/utils/request-utils.ts — URL strings are typed; values headed for JSON,
+// form data and page configs stay dynamic. Split parts that may be missing are read with `get`.
+import { isArray, isError, isFile, isUndefined } from "../../core/utils/type-utils.lil";
+import { safeJsonStringify } from "../../core/utils/string-utils.lil";
+import { each, errorToProperties } from "./general-utils.lil";
+import { document, isBrowserOnline, location } from "./globals.lil";
+import { logger } from "./logger.lil";
+extern JsValue JSON;
+extern JsValue WeakMap;
+extern JsValue encodeURIComponent;
+extern JsValue decodeURIComponent;
+
+string[] localDomains = ["localhost", "127.0.0.1"];
+
+export JsValue jsonStringify(JsValue data, JsValue space) {
+  try {
+    JsValue errors = undefined;
+    return JSON.stringify(data, (JsValue key, JsValue value) => {
+      // Native JSON.stringify invokes toJSON before this replacer, so custom serializers win.
+      if (isError(value)) {
+        if (errors == null) {
+          errors = new WeakMap();
+        }
+        if (!errors.has(value).truthy()) {
+          errors.set(value, errorToProperties(value));
+        }
+        // Reuse copies so circular Errors reach the existing fallback instead of
+        // creating a fresh object on every visit and overflowing the stack.
+        return errors.get(value);
+      }
+      // Plain JSON.stringify throws on BigInts. See issue #1440.
+      return if (JS.typeOf(value) == "bigint") { value.toString() } else { value };
+    }, space);
+  } catch {
+    // A self-referential value (most commonly a DOM node that retains a React fiber pointing back at
+    // the element) makes JSON.stringify throw; fall back to the shared circular-safe serializer.
+    // `space` formatting is dropped on this rare path.
+    return safeJsonStringify(data);
+  }
+}
+
+// IE11 doesn't support `new URL`, so an anchor element parses the URL.
+export JsValue convertToURL(string url) {
+  JsValue anchor = if (document == null) { undefined } else { document.createElement("a") };
+  if (isUndefined(anchor)) {
+    return null;
+  }
+  anchor.href = url;
+  return anchor;
+}
+
+export string formDataToQuery(JsValue formdata, string arg_separator = "&") {
+  string[] tph_arr = [];
+  each(formdata, (JsValue val, JsValue key) => {
+    // the key might be literally the string undefined for e.g. if {undefined: 'something'}
+    if (isUndefined(val) || isUndefined(key) || key === "undefined") {
+      return;
+    }
+    JsValue use_val = encodeURIComponent(if (isFile(val)) { val.name } else { val.toString() });
+    JsValue use_key = encodeURIComponent(key);
+    tph_arr.push(use_key + "=" + use_val);
+  });
+  return tph_arr.join(arg_separator);
+}
+
+export string getQueryParam(string url, string param) {
+  string withoutHash = url.split("#")[0];
+  // Split only on the first ? to sort problem out for those with multiple ?s
+  // and then remove them
+  JsValue afterQuestion = (withoutHash as JsValue).split(new Regex("\\?(.*)"))[1];
+  string queryParams = if (afterQuestion.truthy()) { afterQuestion as string } else { "" };
+  string cleanedQueryParams = queryParams.replace(new Regex("^\\?+", "g"), "");
+  string[] queryParts = cleanedQueryParams.split("&");
+  string[]? keyValuePair = null;
+  for (int i = 0; i < queryParts.length; i++) {
+    string[] parts = queryParts[i].split("=");
+    if (parts[0] == param) {
+      keyValuePair = parts;
+      break;
+    }
+  }
+  if (keyValuePair == null || keyValuePair.length < 2) {
+    return "";
+  }
+  string result = keyValuePair[1];
+  try {
+    result = decodeURIComponent(result) as string;
+  } catch {
+    logger.error("Skipping decoding for malformed query param: " + result);
+  }
+  return result.replace(new Regex("\\+", "g"), " ");
+}
+
+// replace any query params in the url with the provided mask value. Tries to keep the URL as instant as possible,
+// including preserving malformed text in most cases
+export JsValue maskQueryParams(JsValue url, JsValue maskedParams, string mask) {
+  if (!url.truthy() || !maskedParams.truthy() || !maskedParams["length"].truthy()) {
+    return url;
+  }
+  string[] splitHash = (url as string).split("#");
+  string withoutHash = splitHash[0];
+  string? hash = splitHash.get(1);
+  string[] splitQuery = withoutHash.split("?");
+  string? queryString = splitQuery.get(1);
+  string urlWithoutQueryAndHash = splitQuery[0];
+  string[] queryParts = (if (queryString == null) { "" } else { queryString }).split("&");
+  // use an array of strings rather than an object to preserve ordering and duplicates
+  string[] paramStrings = [];
+  for (int i = 0; i < queryParts.length; i++) {
+    string[] keyValuePair = queryParts[i].split("=");
+    if (maskedParams.includes(keyValuePair[0]).truthy()) {
+      paramStrings.push(keyValuePair[0] + "=" + mask);
+    } else {
+      paramStrings.push(queryParts[i]);
+    }
+  }
+  string result = urlWithoutQueryAndHash;
+  if (queryString != null) {
+    result += "?" + paramStrings.join("&");
+  }
+  if (hash != null) {
+    result += "#" + hash;
+  }
+  return result;
+}
+
+export JsValue _getHashParam(string hash, string param) {
+  JsValue matches = (hash as JsValue).match(new Regex(param + "=([^&]*)"));
+  if (!matches.truthy()) {
+    return null;
+  }
+  return matches[1];
+}
+
+export bool isLocalhost() {
+  return localDomains.includes(location.hostname as string);
+}
+
+export bool isStatusZeroFailureCircuitBreakerTripped(float consecutiveStatusZeroFailures, float maxConsecutiveStatusZeroFailures) {
+  return consecutiveStatusZeroFailures >= maxConsecutiveStatusZeroFailures && isBrowserOnline();
+}
+
+export float updateStatusZeroFailureCount(float statusCode, float consecutiveStatusZeroFailures, float maxConsecutiveStatusZeroFailures, JsValue onCircuitBreakerTripped) {
+  if (statusCode == 0.0) {
+    if (isBrowserOnline()) {
+      float updatedConsecutiveStatusZeroFailures = consecutiveStatusZeroFailures + 1.0;
+      if (updatedConsecutiveStatusZeroFailures == maxConsecutiveStatusZeroFailures) {
+        onCircuitBreakerTripped();
+      }
+      return updatedConsecutiveStatusZeroFailures;
+    }
+    return consecutiveStatusZeroFailures;
+  }
+  return 0.0;
+}
