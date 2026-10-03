@@ -1,1 +1,1 @@
-var i=function(r){let e=r.payloadSizeLimitBytes;if(e==null)return 1e6;let t=e|0;return t<1e6?t:1e6};export{i as effectivePayloadLimitBytes};
+var i;var o=function(e){let t=e.payloadSizeLimitBytes;if(t==null)return 1e6;let r=t|0;return r<1e6?r:1e6};var n=Array.isArray,s=Object.prototype.toString,l=n||(i=function(e){return s.call(e)==="[object Array]"},i);export{o as effectivePayloadLimitBytes};

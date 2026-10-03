@@ -2,12 +2,15 @@ import {existsSync, readFileSync, readdirSync} from 'node:fs'
 import {dirname, join, resolve, relative} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {rolldown} from 'rolldown'
+import ts from 'typescript'
 import {transform as transformCss,Features} from 'lightningcss'
+import {dependencyAliases} from './dependency-aliases.mjs'
 
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const upstreamVersion = '1.435.8'
 export const upstreamCommit = 'c9d890a4028b186a5e1b327161ea197001c0c46b'
 export const vendor = join(root, 'vendor/posthog-js')
+export const canonicalDependencies = dependencyAliases(root)
 
 export const surfaces = {
   standard: 'module.es.ts',
@@ -17,16 +20,19 @@ export const surfaces = {
 // Only explicitly listed, differentially checked exports cross this boundary.
 // Other exports continue to come from the pinned, unmodified upstream module.
 export const replacements = [
+  {id:'error-default-pipeline', declarations:true, source:'browser/src/posthog-exceptions.ts', lil:'sdk-errors.lil', exports:['buildErrorPropertiesBuilder']},
   {id:'flags', source:'core/src/featureFlagUtils.ts', lil:'flags.lil', complete:true, exports:['getEnabledFromValue','getVariantFromValue','MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES','MINIMAL_FLAG_CALLED_EVENT_PROPERTIES','normalizeFlagsResponse','getFlagValuesFromFlags','getPayloadsFromFlags','getFeatureFlagValue','parsePayload','createFlagsResponseFromFlagsAndPayloads','updateFlagValue','flagDetailsToResults','minimizeFlagCalledEventProperties']},
   {id:'numbers', complete:true, source:'core/src/utils/number-utils.ts', lil:'number.lil', exports:['clampToRange','getRemoteConfigBool','getRemoteConfigNumber','isValidSampleRate']},
   {id:'strings', source:'core/src/utils/string-utils.ts', lil:'string.lil', exports:['includes','trim','stripLeadingDollar','isDistinctIdStringLike','getPersonPropertiesHash']},
-  {id:'types', source:'core/src/utils/type-utils.ts', lil:'types.lil', exports:['isNumber','isEmptyObject','isEmptyString','isPositiveNumber','isPrimitive','isBuiltin','isYesLike','isNoLike','isKnownUnsafeEditableEvent','isKnownUnsafeEditableEventProperty','yesLikeValues','noLikeValues']},
+  {id:'types', complete:true, source:'core/src/utils/type-utils.ts', lil:'types.lil', exports:['hasOwnProperty','isArray','isFunction','isNativeFunction','isObject','isUndefined','isString','isNull','isNullish','isBoolean','isFormData','isFile','isPlainError','isError','isErrorEvent','isEvent','isPlainObject','isNumber','isEmptyObject','isEmptyString','isPositiveNumber','isPrimitive','isBuiltin','isYesLike','isNoLike','isKnownUnsafeEditableEvent','isKnownUnsafeEditableEventProperty','yesLikeValues','noLikeValues']},
   {id:'bots', complete:true, source:'core/src/utils/bot-detection.ts', lil:'bot.lil', exports:['DEFAULT_BLOCKED_UA_STRS','isBlockedUA']},
   {id:'autocapture', complete:true, source:'browser-common/src/utils/autocapture-utils.ts', lil:'autocapture-entry.lil', exports:['DEFAULT_AUTOCAPTURE_IGNORE_LIST','elementMatchesCSSSelector','DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS','MAX_DOM_ANCESTOR_DEPTH','autocaptureCompatibleElements','getClassNames','getDirectAndNestedSpanText','getElementsChainString','getEventTarget','getNestedSpanText','getParentElement','getSafeText','isAngularStyleAttr','isSensitiveElement','isTextSelectionTarget','makeSafeText','shouldCaptureDeadClick','shouldCaptureDomEvent','shouldCaptureElement','shouldCaptureRageclick','shouldCaptureValue','shouldSkipDeadClick','splitClassString']},
   {id:'replay-config', complete:true, source:'browser/src/extensions/replay/external/config.ts', lil:'replay-core.lil', exports:['buildNetworkRequestOptions','defaultNetworkOptions','effectivePayloadLimitBytes','isInitialMaskFallback','MAX_PAYLOAD_SIZE_BYTES']},
   {id:'replay-utils', complete:true, source:'browser/src/extensions/replay/external/sessionrecording-utils.ts', lil:'replay-core.lil', exports:['CONSOLE_LOG_PLUGIN_NAME','FULL_SNAPSHOT_EVENT_TYPE','INCREMENTAL_SNAPSHOT_EVENT_TYPE','MAX_MESSAGE_SIZE','META_EVENT_TYPE','MUTATION_SOURCE_TYPE','PLUGIN_EVENT_TYPE','SEVEN_MEGABYTES','UNSTRINGIFIABLE_EVENT_SIZE','circularReferenceReplacer','ensureMaxMessageSize','estimateCompressedEventSize','estimateSize','replacementImageURI','splitBuffer','truncateLargeConsoleLogs']},
   {id:'surveys', complete:true, source:'core/src/surveys/index.ts', lil:'surveys-entry.lil', exports:['SURVEY_LANGUAGE_PROPERTY','applySurveyTranslation','buildSurveyResponseProperties','canSurveyActivateRepeatedly','detectSurveyLanguage','doesSurveyActivateByEvent','findBestTranslationMatch','getBaseLanguage','getLanguageFromStoredPersonProperties','getLengthFromRules','getRequirementsHint','getSurveyInteractionProperty','getSurveyIterationKey','getSurveyOldResponseKey','getSurveyResponseKey','getSurveyResponseValue','getValidationError','isSurveyIterationBased','isSurveyKeyForSurvey','normalizeLanguageCode','surveyHasResponses','recordSurveyAnswer','buildSurveyResponseEventProperties','isValidRegex','isMatchingRegex','propertyComparisons','matchPropertyFilters','shuffle','getDisplayOrderChoices']},
-  {id:'error-tracking', constructors:['DOMExceptionCoercer','ErrorCoercer','ErrorEventCoercer','ErrorPropertiesBuilder','EventCoercer','ExceptionStepsBuffer','ObjectCoercer','PrimitiveCoercer','PromiseRejectionEventCoercer','ReduceableCache','StringCoercer'], complete:true, source:'core/src/error-tracking/index.ts', lil:'error-tracking-entry.lil', exports:['DEFAULT_EXCEPTION_STEPS_CONFIG','DOMExceptionCoercer','EXCEPTION_STEP_INTERNAL_FIELDS','ErrorCoercer','ErrorEventCoercer','ErrorPropertiesBuilder','EventCoercer','ExceptionStepsBuffer','ObjectCoercer','PrimitiveCoercer','PromiseRejectionEventCoercer','ReduceableCache','StringCoercer','chromeStackLineParser','createDefaultStackParser','createStackParser','geckoStackLineParser','getInjectedReleaseId','getUtf8ByteLength','nodeStackLineParser','opera10StackLineParser','opera11StackLineParser','resolveExceptionStepsConfig','reverseAndStripFrames','stripReservedExceptionStepFields','winjsStackLineParser']},
+  {id:'error-tracking', sdkFactories:{ExceptionStepsBuffer:{lil:'error-core.lil',export:'createSdkExceptionStepsBuffer'}}, constructors:['DOMExceptionCoercer','ErrorCoercer','ErrorEventCoercer','ErrorPropertiesBuilder','EventCoercer','ExceptionStepsBuffer','ObjectCoercer','PrimitiveCoercer','PromiseRejectionEventCoercer','ReduceableCache','StringCoercer'], complete:true, source:'core/src/error-tracking/index.ts', lil:'error-tracking-entry.lil', exports:['DEFAULT_EXCEPTION_STEPS_CONFIG','DOMExceptionCoercer','EXCEPTION_STEP_INTERNAL_FIELDS','ErrorCoercer','ErrorEventCoercer','ErrorPropertiesBuilder','EventCoercer','ExceptionStepsBuffer','ObjectCoercer','PrimitiveCoercer','PromiseRejectionEventCoercer','ReduceableCache','StringCoercer','chromeStackLineParser','createDefaultStackParser','createStackParser','geckoStackLineParser','getInjectedReleaseId','getUtf8ByteLength','nodeStackLineParser','opera10StackLineParser','opera11StackLineParser','resolveExceptionStepsConfig','reverseAndStripFrames','stripReservedExceptionStepFields','winjsStackLineParser']},
+  {id:'otlp-resource', source:'core/src/utils/otlp-resource.ts', lil:'otlp.lil', exports:['buildOtlpResourceAttributes','toOtlpResourceKeyValueList']},
+  {id:'json-strings', source:'core/src/utils/json-utils.ts', lil:'json.lil', exports:['sanitizeString']},
   {id:'otlp-values', complete:true, source:'core/src/utils/otlp-any-value.ts', lil:'otlp.lil', exports:['toOtlpAnyValue','toOtlpKeyValueList']},
   {id:'otlp-logs', complete:true, source:'core/src/logs/logs-utils.ts', lil:'otlp.lil', exports:['getOtlpSeverityText','getOtlpSeverityNumber','buildOtlpLogRecord','buildResourceAttributes','buildOtlpLogsPayload']},
   {id:'otlp-metrics', complete:true, source:'core/src/metrics/metrics-utils.ts', lil:'otlp.lil', exports:['DEFAULT_HISTOGRAM_BOUNDS','msToUnixNano','seriesKey','bucketIndexFor','buildMetricsResourceAttributes','buildOtlpMetricsPayload']},
@@ -60,6 +66,9 @@ export function workspaceSourcePlugin({objective, enabled=replacements.map(row=>
   return {
     name:'pinned-posthog-source',
     setup(build) {
+      for(const row of canonicalDependencies) {
+        build.onResolve({filter:new RegExp('^'+row.alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:/|$)')},args=>({path:fileURLToPath(import.meta.resolve(row.canonical+args.path.slice(row.alias.length)))}))
+      }
       // Match PostHog's build: CSS imports export text for the component to inject.
       // An unused replay stylesheet must not become a new network dependency.
       build.onLoad({filter:/\.css$/},args=>{
@@ -93,16 +102,27 @@ export function workspaceSourcePlugin({objective, enabled=replacements.map(row=>
       if (objective||probe) build.onLoad({filter:/\.[cm]?[jt]sx?$/,namespace:'file'},args=>{
         const row=selected.get(args.path)
         if (!row) return undefined
-        const original=row.complete?'':`export * from ${JSON.stringify('posthog-original:'+args.path)};`
+        let original=row.complete?'':`export * from ${JSON.stringify('posthog-original:'+args.path)};`
+        if(row.declarations) {
+          original=readFileSync(args.path,'utf8')
+          const source=ts.createSourceFile(args.path,original,ts.ScriptTarget.Latest,true)
+          const declarations=source.statements.filter(node=>ts.isFunctionDeclaration(node)&&row.exports.includes(node.name?.text))
+          if(declarations.length!==row.exports.length||declarations.some(node=>!node.body))throw Error(`Declaration boundary changed: ${args.path}`)
+          for(const declaration of declarations.reverse())original=original.slice(0,declaration.getStart(source))+original.slice(declaration.end)
+        }
         const key=name=>`${row.id.replaceAll('-','_')}_${name}`
-        if(probe)return {contents:original+'\n'+row.exports.map(name=>`export const ${name}=/* @__PURE__ */ globalThis.__posthog_lil_plan__(${JSON.stringify(key(name))});`).join('\n'),loader:'js',resolveDir:dirname(args.path)}
+        if(probe)return {contents:original+'\n'+row.exports.map(name=>`export const ${name}=/* @__PURE__ */ globalThis.__posthog_lil_plan__(${JSON.stringify(key(name))});`).join('\n'),loader:row.declarations?'ts':'js',resolveDir:dirname(args.path)}
         const artifact=join(root,'dist/sdk-internals',objective,plan?surface+'.mjs':layout==='combined'?'combined.mjs':row.id+'.mjs')
         if (!existsSync(artifact)) throw Error(`Compile the ${objective} internals first: ${row.id}`)
         applied.push(row.id)
         const included=row.exports.filter(name=>!plan||plan.includes(key(name)))
-        const names=included.map(name=>layout==='combined'||plan?`${key(name)} as ${name}`:name)
+        const factories=plan?included.filter(name=>row.sdkFactories?.[name]):[]
+        const names=included.filter(name=>!factories.includes(name)).map(name=>layout==='combined'||plan?`${key(name)} as ${name}`:name)
+        // These constructors are private to the complete SDK. Public utility
+        // entry points continue to export the original constructor ABI.
+        const factoryWrappers=factories.map(name=>`import {${key(name)} as __factory_${name}} from ${JSON.stringify(artifact)};\nexport function ${name}(config){return __factory_${name}(config)}`).join('\n')
         const unused=row.exports.filter(name=>!included.includes(name)).map(name=>`export const ${name}=/* @__PURE__ */ globalThis.__posthog_lil_unexpected__(${JSON.stringify(key(name))});`).join('\n')
-        return {contents:`${original}\nexport {${names.join(',')}} from ${JSON.stringify(artifact)};\n${unused}`,loader:'js',resolveDir:dirname(args.path)}
+        return {contents:row.declarations?`import {${names.join(',')}} from ${JSON.stringify(artifact)};\nexport {${included.join(',')}};\n${original}\n${unused}`:`${original}\nexport {${names.join(',')}} from ${JSON.stringify(artifact)};\n${factoryWrappers}\n${unused}`,loader:row.declarations?'ts':'js',resolveDir:dirname(args.path)}
       })
     },
   }

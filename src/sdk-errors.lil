@@ -1,0 +1,598 @@
+import {isArrayValue as isArr} from "./types.lil";
+// The SDK owns this default pipeline; constructor APIs remain in error-coercer-api.lil.
+// Only the buildFromUnknown closure crosses the SDK boundary.
+import {copyObj, hasKey, isFiniteNum, isNullish, isStr, isUndef, jsonParse, len, objectAssign, objectKeys, toNum, toStr, typeError, undef} from "./host.lil";
+import {explicitString, getPrototypeOf, isBuiltinValue, isEmptyStringValue, isErrorEventValue, isErrorValue, isEventValue, isNumberValue, isObjectValue, isPrimitiveValue, isStringValue, owns, safeJsonStringify} from "./error-host.lil";
+import {extractExceptionKeysForMessage} from "./error-coercers.lil";
+import {createDefaultStackParser} from "./error-parsers.lil";
+extern JsValue Map;
+extern JsValue Math;
+extern JsValue Number;
+extern JsValue Object;
+extern JsValue Set;
+extern JsValue encodeURIComponent;
+extern JsValue globalThis;
+// These records never escape into an event or the public constructor API.
+shape ExceptionNode {
+  data JsValue type;
+  data JsValue value;
+  data JsValue stack;
+  data bool synthetic;
+  // Both slots always exist internally. Explicit null avoids optional-key
+  // deletion/definition adapters intended for objects crossing into JavaScript.
+  data ExceptionNode | null cause;
+  data ExceptionNode[] | null errors;
+  data JsValue level;
+}
+shape CoercingContext {
+  data JsValue syntheticException;
+  data JsValue hint;
+  data JsValue input;
+  data CoercingState state;
+  data number depth;
+  data number wrapperDepth;
+}
+
+Regex errorTypesPatternApi = new Regex("^(?:[Uu]ncaught (?:exception: )?)?(?:((?:Eval|Internal|Range|Reference|Syntax|Type|URI|)Error): )?(.*)$", "i");
+string[] coercerSeverityLevels = ["fatal", "error", "warning", "log", "info", "debug"];
+JsValue optionalSyntheticStack(CoercingContext context) {
+  JsValue syntheticException = context.syntheticException;
+  if (!isNullish(syntheticException)) {
+    return syntheticException["stack"];
+  }
+  return undef();
+}
+
+JsValue domIsException(JsValue error) {
+  return isBuiltinValue(error, "DOMException");
+}
+
+JsValue domIsError(JsValue error) {
+  return isBuiltinValue(error, "DOMError");
+}
+
+JsValue domMatch(JsValue error) {
+  return domIsException(error).truthy() || domIsError(error).truthy();
+}
+
+JsValue domGetType(JsValue error) {
+  if (domIsError(error).truthy()) {
+    return "DOMError";
+  }
+  return "DOMException";
+}
+
+JsValue domGetValue(JsValue error) {
+  JsValue name = error["name"];
+  if (name.truthy()) {
+    if (error["message"].truthy()) {
+      return toStr(name) + ": " + toStr(error["message"]);
+    }
+    return name;
+  }
+  JsValue fallbackName = "DOMException";
+  if (domIsError(error).truthy()) {
+    fallbackName = "DOMError";
+  }
+  if (error["message"].truthy()) {
+    return toStr(fallbackName) + ": " + toStr(error["message"]);
+  }
+  return fallbackName;
+}
+
+ExceptionNode domCoerce(JsValue error, CoercingContext context) {
+  return ExceptionNode {
+    type: domGetType(error),
+    value: domGetValue(error),
+    stack: if (isStringValue(error["stack"])) { error["stack"] } else { undef() },
+    cause: if (error["cause"].truthy()) { nextException(context, error["cause"]) } else { null },
+    synthetic: false, errors: null, level: undef()
+  };
+}
+
+JsValue errorMatch(JsValue error) {
+  return isErrorValue(error);
+}
+
+JsValue errorGetType(JsValue error) {
+  if (error["name"].truthy()) {
+    return error["name"];
+  }
+  return error["constructor"]["name"];
+}
+
+JsValue errorGetMessage(JsValue error, CoercingContext context) {
+  JsValue message = error["message"];
+  if (message["error"].truthy() && JS.typeOf(message["error"]["message"]) == "string") {
+    return explicitString(message["error"]["message"]);
+  }
+  return explicitString(message);
+}
+
+JsValue errorGetStack(JsValue error) {
+  try {
+    JsValue stacktrace = error["stacktrace"];
+    if (JS.typeOf(stacktrace) == "string" && len(stacktrace) > 0) return stacktrace;
+    JsValue stack = error["stack"];
+    if (JS.typeOf(stack) == "string" && len(stack) > 0) return stack;
+  } catch {}
+  return undef();
+}
+
+ExceptionNode errorCoerce(JsValue error, CoercingContext context) {
+  JsValue stack = errorGetStack(error);
+  JsValue replacementStack = if (isUndef(stack)) { optionalSyntheticStack(context) } else { undef() };
+  bool synthetic = replacementStack.truthy();
+  return ExceptionNode {
+    type: errorGetType(error),
+    value: errorGetMessage(error, context),
+    stack: if (isNullish(stack)) { replacementStack } else { stack },
+    cause: if (error["cause"].truthy()) { nextException(context, error["cause"]) } else { null },
+    synthetic: synthetic, errors: null, level: undef()
+  };
+}
+
+JsValue errorEventHasUsableMessage(JsValue error) {
+  return isStringValue(error["message"]) && len(error["message"]) > 0;
+}
+
+JsValue errorEventMatch(JsValue error) {
+  if (!isErrorEventValue(error)) {
+    return false;
+  }
+  return !isNullish(error["error"]) || errorEventHasUsableMessage(error).truthy();
+}
+
+JsValue errorEventBuildLocationStack(JsValue error) {
+  JsValue lineNumber = error["lineno"];
+  JsValue columnNumber = error["colno"];
+  if (isNullish(lineNumber)) {
+    lineNumber = 0;
+  }
+  if (isNullish(columnNumber)) {
+    columnNumber = 0;
+  }
+  if (!isStringValue(error["filename"]) || len(error["filename"]) == 0 || JS.strictEqual(lineNumber, 0)) {
+    return undef();
+  }
+  return "Error\n    at " + toStr(error["filename"]) + ":" + toStr(lineNumber) + ":" + toStr(columnNumber);
+}
+
+ExceptionNode errorEventCoerce(JsValue error, CoercingContext context) {
+  if (!isNullish(error["error"])) {
+    return applyException(context, error["error"]);
+  }
+  ExceptionNode exceptionLike = applyException(context, error["message"]);
+  ExceptionNode out = exceptionLike;
+  JsValue locationStack = errorEventBuildLocationStack(error);
+  if (isNullish(locationStack)) {
+    out.stack = exceptionLike.stack;
+  } else {
+    out.stack = locationStack;
+  }
+  out.synthetic = true;
+  return out;
+}
+
+JsValue eventMatch(JsValue error) {
+  return isEventValue(error);
+}
+
+ExceptionNode eventCoerce(JsValue event, CoercingContext context) {
+  JsValue constructorName = event["constructor"]["name"];
+  return ExceptionNode {
+    type: constructorName,
+    value: toStr(constructorName) + " captured as exception with keys: " + extractExceptionKeysForMessage(event),
+    stack: optionalSyntheticStack(context),
+    synthetic: true, cause: null, errors: null, level: undef()
+  };
+}
+
+JsValue objectMatch(JsValue candidate) {
+  return JS.typeOf(candidate) == "object" && !JS.strictEqual(candidate, null);
+}
+
+JsValue objectIsSeverityLevel(JsValue value) {
+  if (!isStringValue(value) || isEmptyStringValue(value)) {
+    return false;
+  }
+  return JS.number(JS.invoke(coercerSeverityLevels, "indexOf", value)) >= 0.0;
+}
+
+JsValue objectGetStack(JsValue candidate) {
+  try {
+    if (isStringValue(candidate["stacktrace"]) && len(candidate["stacktrace"]) > 0) {
+      return candidate["stacktrace"];
+    }
+    if (isStringValue(candidate["stack"]) && len(candidate["stack"]) > 0) {
+      return candidate["stack"];
+    }
+  } catch {
+  }
+  return undef();
+}
+
+JsValue objectGetErrorProperty(JsValue object) {
+  for (string property in object) {
+    if (owns(object, property)) {
+      JsValue value = object[property];
+      if (isErrorValue(value)) {
+        return value;
+      }
+    }
+  }
+  return undef();
+}
+
+JsValue objectGetClassName(JsValue object) {
+  try {
+    JsValue prototype = getPrototypeOf(object);
+    if (prototype.truthy()) {
+      return prototype["constructor"]["name"];
+    }
+  } catch {
+  }
+  return undef();
+}
+
+JsValue objectGetType(JsValue error) {
+  if (isEventValue(error)) {
+    return error["constructor"]["name"];
+  }
+  JsValue name = undef();
+  if (hasKey(error, "name")) {
+    name = error["name"];
+  }
+  if (isStringValue(name) && !isEmptyStringValue(name)) {
+    return name;
+  }
+  return "Error";
+}
+
+JsValue objectGetValue(JsValue error) {
+  if (hasKey(error, "name") && JS.typeOf(error["name"]) == "string") {
+    string message = "'" + toStr(error["name"]) + "' captured as exception";
+    if (hasKey(error, "message") && JS.typeOf(error["message"]) == "string") {
+      message = message + " with message: '" + toStr(error["message"]) + "'";
+    }
+    return message;
+  }
+  if (hasKey(error, "message") && JS.typeOf(error["message"]) == "string") {
+    return error["message"];
+  }
+  JsValue className = objectGetClassName(error);
+  string kind = "Object";
+  if (className.truthy() && !JS.strictEqual(className, "Object")) {
+    kind = "'" + toStr(className) + "'";
+  }
+  return kind + " captured as exception with keys: " + extractExceptionKeysForMessage(error);
+}
+
+ExceptionNode objectCoerce(JsValue candidate, CoercingContext context) {
+  JsValue errorProperty = objectGetErrorProperty(candidate);
+  if (errorProperty.truthy()) return applyException(context, errorProperty);
+  JsValue type = objectGetType(candidate);
+  JsValue value = objectGetValue(candidate);
+  JsValue stack = objectGetStack(candidate);
+  if (isNullish(stack)) stack = optionalSyntheticStack(context);
+  return ExceptionNode {
+    type: type,
+    value: value,
+    stack: stack,
+    level: if (objectIsSeverityLevel(candidate["level"]).truthy()) { candidate["level"] } else { "error" },
+    synthetic: true, cause: null, errors: null
+  };
+}
+
+JsValue primitiveMatch(JsValue value) {
+  return isPrimitiveValue(value);
+}
+
+ExceptionNode primitiveCoerce(JsValue value, CoercingContext context) {
+  return ExceptionNode {
+    type: "Error",
+    value: "Primitive value captured as exception: " + explicitString(value),
+    stack: optionalSyntheticStack(context),
+    synthetic: true, cause: null, errors: null, level: undef()
+  };
+}
+
+JsValue promiseIsCustomEvent(JsValue error) {
+  if (!isEventValue(error)) {
+    return false;
+  }
+  try {
+    JsValue detail = error["detail"];
+    return !isNullish(detail) && JS.typeOf(detail) == "object" && hasKey(detail, "reason");
+  } catch {
+    return false;
+  }
+}
+
+JsValue promiseMatch(JsValue error) {
+  return isBuiltinValue(error, "PromiseRejectionEvent") || promiseIsCustomEvent(error).truthy();
+}
+
+JsValue promiseGetReason(JsValue error) {
+  try {
+    if (hasKey(error, "reason")) {
+      return error["reason"];
+    }
+    if (
+      hasKey(error, "detail") &&
+      !isNullish(error["detail"]) &&
+      JS.typeOf(error["detail"]) == "object" &&
+      hasKey(error["detail"], "reason")
+    ) {
+      return error["detail"]["reason"];
+    }
+  } catch {
+  }
+  return error;
+}
+
+ExceptionNode promiseCoerce(JsValue error, CoercingContext context) {
+  JsValue reason = promiseGetReason(error);
+  if (isPrimitiveValue(reason)) return ExceptionNode {
+    type: "UnhandledRejection",
+    value: "Non-Error promise rejection captured with value: " + explicitString(reason),
+    stack: optionalSyntheticStack(context),
+    synthetic: true, cause: null, errors: null, level: undef()
+  };
+  return applyException(context, reason);
+}
+
+JsValue stringMatch(JsValue input) {
+  return JS.typeOf(input) == "string";
+}
+
+// This pair is private compiler-owned state, never a host array or payload.
+shape StringExceptionInfo {
+  data JsValue type;
+  data JsValue value;
+}
+
+StringExceptionInfo stringGetInfos(JsValue candidate) {
+  JsValue type = "Error";
+  JsValue value = candidate;
+  JsValue groups = JS.invoke(candidate, "match", errorTypesPatternApi);
+  if (groups.truthy()) {
+    type = groups[1];
+    value = groups[2];
+  }
+  return StringExceptionInfo { type: type, value: value };
+}
+
+ExceptionNode stringCoerce(JsValue input, CoercingContext context) {
+  StringExceptionInfo infos = stringGetInfos(input);
+  return ExceptionNode {
+    type: if (isNullish(infos.type)) { "Error" } else { infos.type },
+    value: if (isNullish(infos.value)) { input } else { infos.value },
+    stack: optionalSyntheticStack(context),
+    synthetic: true, cause: null, errors: null, level: undef()
+  };
+}
+JsValue parsedStackResults = JS.undefined();
+JsValue lastKeysCount = JS.undefined();
+JsValue cachedFilenameChunkIds = JS.undefined();
+
+JsValue getFilenameToChunkIdMap(JsValue stackParser) {
+  JsValue chunkIdMap = globalThis["_posthogChunkIds"];
+  if (!chunkIdMap.truthy()) {
+    return undef();
+  }
+  JsValue chunkIdKeys = objectKeys(chunkIdMap);
+  if (cachedFilenameChunkIds.truthy() && JS.strictEqual(len(chunkIdKeys), lastKeysCount)) {
+    return cachedFilenameChunkIds;
+  }
+  lastKeysCount = len(chunkIdKeys);
+  cachedFilenameChunkIds = JS.object();
+  int keyIndex = 0;
+  while (keyIndex < len(chunkIdKeys)) {
+    JsValue stackKey = chunkIdKeys[keyIndex];
+    if (!parsedStackResults.truthy()) {
+      parsedStackResults = JS.object();
+    }
+    JsValue result = parsedStackResults[stackKey];
+    if (result.truthy()) {
+      cachedFilenameChunkIds[result[0]] = result[1];
+    } else {
+      JsValue parsedStack = stackParser(stackKey);
+      number frameIndex = len(parsedStack) - 1;
+      while (frameIndex >= 0) {
+        JsValue stackFrame = parsedStack[frameIndex];
+        JsValue filename = undef();
+        if (!isNullish(stackFrame)) {
+          filename = stackFrame["filename"];
+        }
+        JsValue chunkId = chunkIdMap[stackKey];
+        if (filename.truthy() && chunkId.truthy()) {
+          cachedFilenameChunkIds[filename] = chunkId;
+          JsValue pair = JS.array();
+          JS.invoke(pair, "push", filename);
+          JS.invoke(pair, "push", chunkId);
+          parsedStackResults[stackKey] = pair;
+          break;
+        }
+        frameIndex = frameIndex - 1;
+      }
+    }
+    keyIndex = keyIndex + 1;
+  }
+  return cachedFilenameChunkIds;
+}
+
+ExceptionNode fallbackException(CoercingContext context) {
+  return ExceptionNode { type: "Error", value: "Unknown error", stack: optionalSyntheticStack(context), synthetic: true, cause: null, errors: null, level: undef() };
+}
+
+ExceptionNode applyCoercers(JsValue input, CoercingContext context) {
+  if (domMatch(input).truthy()) return domCoerce(input, context);
+  if (promiseMatch(input).truthy()) return promiseCoerce(input, context);
+  if (errorEventMatch(input).truthy()) return errorEventCoerce(input, context);
+  if (errorMatch(input).truthy()) return errorCoerce(input, context);
+  if (eventMatch(input).truthy()) return eventCoerce(input, context);
+  if (objectMatch(input).truthy()) return objectCoerce(input, context);
+  if (stringMatch(input).truthy()) return stringCoerce(input, context);
+  if (primitiveMatch(input).truthy()) return primitiveCoerce(input, context);
+  return fallbackException(context);
+}
+
+JsValue getAggregateErrors(JsValue input) {
+  try {
+    if (isErrorValue(input)) {
+      JsValue prototype = JS.invoke(Object, "getPrototypeOf", input);
+      for (number depth = 0; prototype.truthy() && depth < 100; depth = depth + 1) {
+        JsValue descriptor = JS.invoke(Object, "getOwnPropertyDescriptor", prototype, "constructor");
+        JsValue constructorValue = if (isNullish(descriptor)) { undef() } else { descriptor["value"] };
+        if (JS.typeOf(constructorValue) == "function" && JS.strictEqual(constructorValue["name"], "AggregateError")) {
+          JsValue errors = input["errors"];
+          return if (isArr(errors)) { errors } else { undef() };
+        }
+        prototype = JS.invoke(Object, "getPrototypeOf", prototype);
+      }
+    }
+  } catch {}
+  return undef();
+}
+
+shape CoercingState {
+  data number count;
+  data number memberInspections;
+  data bool hasAggregate;
+  data JsValue seen;
+  data JsValue wrappers;
+  data JsValue skipped;
+}
+
+CoercingContext createCoercingContext(JsValue hint, CoercingState state, number depth, number wrapperDepth, JsValue input = JS.undefined()) {
+  // Preserve inspection of enumerable hint properties before reading the synthetic error.
+  // The SDK supplies object literals; inputs and synthetic errors remain dynamic.
+  copyObj(hint);
+  JsValue syntheticException = if (depth == 0) { hint["syntheticException"] } else { undef() };
+  return CoercingContext { syntheticException: syntheticException, hint: hint, input: input, state: state, depth: depth, wrapperDepth: wrapperDepth };
+}
+
+ExceptionNode applyException(CoercingContext context, JsValue input) {
+  CoercingState state = context.state;
+  JS.invoke(state.wrappers, "push", context.input);
+  try {
+    ExceptionNode? exception = coerceGraph(input, context.hint, state, context.depth, context.wrapperDepth + 1);
+    if (exception == null) throw state.skipped;
+    return exception;
+  } finally { JS.invoke(state.wrappers, "pop"); }
+}
+
+ExceptionNode? nextException(CoercingContext context, JsValue input) {
+  return coerceGraph(input, context.hint, context.state, context.depth + 1, 0);
+}
+
+ExceptionNode? coerceGraph(JsValue input, JsValue hint, CoercingState state, number depth, number wrapperDepth) {
+  CoercingContext context = createCoercingContext(hint, state, depth, wrapperDepth, input);
+  if (wrapperDepth > 4 || (wrapperDepth > 0 && !JS.strictEqual(JS.invoke(state.wrappers, "indexOf", input), -1))) {
+    return fallbackException(context);
+  }
+  bool reference = (JS.typeOf(input) == "object" && !JS.strictEqual(input, null)) || JS.typeOf(input) == "function";
+  if ((wrapperDepth == 0 && state.count >= 50) || (reference && JS.invoke(state.seen, "has", input).truthy())) return null;
+  if (reference) JS.invoke(state.seen, "add", input);
+  if (wrapperDepth == 0) state.count = state.count + 1;
+  JsValue errors = getAggregateErrors(input);
+  if (errors.truthy()) state.hasAggregate = true;
+  ExceptionNode? result = null;
+  try {
+    result = applyCoercers(input, context);
+  } catch (JsValue error) {
+    if (JS.strictEqual(error, state.skipped)) {
+      if (wrapperDepth == 0) state.count = state.count - 1;
+      return null;
+    }
+    if (!state.hasAggregate) throw error;
+    result = fallbackException(context);
+  }
+  // Both successful paths construct a node; this guard also narrows the local type.
+  if (result == null) return null;
+  if (!errors.truthy() || state.count >= 50) return result;
+  JsValue length = undef();
+  try { length = errors["length"]; } catch { return result; }
+  if (!JS.invoke(Number, "isInteger", length).truthy() || JS.lessThan(length, 0) || JS.greaterThan(length, 4294967295.0)) return result;
+  ExceptionNode[] children = [];
+  for (number index = 0; state.count < 50 && state.memberInspections < 1000 && JS.lessThan(index, length); index = index + 1) {
+    state.memberInspections = state.memberInspections + 1;
+    ExceptionNode? child = null;
+    try { child = nextException(context, errors[index]); }
+    catch {
+      state.count = state.count + 1;
+      child = fallbackException(createCoercingContext(hint, state, depth + 1, 0));
+    }
+    if (child != null) children.push(child);
+  }
+  result.errors = children;
+  return result;
+}
+
+void parseStacktrace(ExceptionNode error, JsValue stackParser, JsValue skipFirstLines, JsValue chunkIdMap) {
+  ExceptionNode? cause = error.cause;
+  if (cause != null) parseStacktrace(cause, stackParser, skipFirstLines, chunkIdMap);
+  JsValue stack = undef();
+  if (!isNullish(error.stack) && !JS.strictEqual(error.stack, "")) {
+    try {
+      stack = stackParser(error.stack, if (error.synthetic) { skipFirstLines } else { 0 });
+      func(JsValue)->JsValue apply = (JsValue frame) => {
+        if (frame["filename"].truthy() && chunkIdMap.truthy()) frame["chunk_id"] = chunkIdMap[frame["filename"]];
+        return frame;
+      };
+      stack = JS.invoke(stack, "map", apply);
+    } catch { stack = undef(); }
+  }
+  error.stack = stack;
+  ExceptionNode[]? children = error.errors;
+  if (children != null) {
+    for (ExceptionNode child of children) parseStacktrace(child, stackParser, skipFirstLines, chunkIdMap);
+  }
+}
+
+void appendException(JsValue list, ExceptionNode exception, JsValue mechanism, JsValue parentId, JsValue source) {
+  number id = len(list);
+  JsValue entryMechanism = JS.object();
+  if (isUndef(parentId)) {
+    JsValue kind = mechanism["type"];
+    entryMechanism["type"] = if (JS.typeOf(kind) == "string" && len(kind) > 0) { kind } else { "generic" };
+    if (JS.typeOf(mechanism["handled"]) == "boolean") entryMechanism["handled"] = mechanism["handled"];
+    else if (isUndef(mechanism["handled"])) entryMechanism["handled"] = true;
+    entryMechanism["synthetic"] = if (JS.typeOf(mechanism["synthetic"]) == "boolean") { mechanism["synthetic"] } else { exception.synthetic };
+    entryMechanism["exception_id"] = id;
+  } else {
+    entryMechanism = object { type: "chained", source: source, synthetic: exception.synthetic, exception_id: id, parent_id: parentId };
+  }
+  JsValue current = object { type: exception.type, value: exception.value, mechanism: entryMechanism };
+  if (exception.stack.truthy()) current["stacktrace"] = object { type: "raw", frames: exception.stack };
+  JS.invoke(list, "push", current);
+  ExceptionNode? cause = exception.cause;
+  if (cause != null) appendException(list, cause, mechanism, id, "cause");
+  ExceptionNode[]? children = exception.errors;
+  if (children != null) {
+    for (ExceptionNode child of children) appendException(list, child, mechanism, id, "member");
+  }
+}
+
+JsValue buildFromUnknown(JsValue stackParser, JsValue input, JsValue hint) {
+  if (isUndef(hint)) hint = JS.object();
+  JsValue providedMechanism = if (hint.truthy()) { hint["mechanism"] } else { undef() };
+  JsValue mechanism = if (providedMechanism.truthy()) { providedMechanism } else { object { handled: true, type: "generic" } };
+  CoercingState state = CoercingState { count: 0, memberInspections: 0, hasAggregate: false, seen: JS.construct(Set), wrappers: JS.array(), skipped: JS.object() };
+  CoercingContext context = createCoercingContext(hint, state, 0, 0);
+  ExceptionNode? coerced = coerceGraph(input, hint, state, 0, 0);
+  ExceptionNode exception = coerced ?? fallbackException(context);
+  JsValue chunkIdMap = getFilenameToChunkIdMap(stackParser);
+  JsValue skipFirstLines = if (isNullish(hint["skipFirstLines"])) { 1 } else { hint["skipFirstLines"] };
+  parseStacktrace(exception, stackParser, skipFirstLines, chunkIdMap);
+  JsValue list = JS.array();
+  appendException(list, exception, mechanism, undef(), undef());
+  return object { "$exception_list": list, "$exception_level": "error" };
+}
+
+export JsValue buildErrorPropertiesBuilder() {
+  JsValue stackParser = createDefaultStackParser();
+  func(JsValue, JsValue)->JsValue build = (JsValue input, JsValue hint) => buildFromUnknown(stackParser, input, hint);
+  return object { buildFromUnknown: build };
+}

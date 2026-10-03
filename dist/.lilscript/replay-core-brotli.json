@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "source_sha256": "55c008b36bcfcb8121400b9caba39c7a33c1d7211d340bf2399c578d702f4f08",
+  "source_sha256": "7ef8a274814dfdc50fa9ede18e84483da2e61d4187ebbf7fe38d803508543725",
   "inputs": {
     "root": 0,
     "entries": [
@@ -21,27 +21,48 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core.lil",
-        "bytes": 16408,
-        "sha256": "c1cae66ff5da8d32aba83374d83b2007d86bf3d9a265800efee34cd160832a44",
+        "bytes": 16360,
+        "sha256": "197a9446a121d437871d63aa13aeee727d671ca214b040252e3076b047113c12",
         "dependencies": [
           2,
-          3
+          3,
+          5
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
+        "bytes": 4472,
+        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "dependencies": [
+          3,
+          4
         ],
         "dynamic_dependencies": []
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4387,
-        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "bytes": 4312,
+        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
         "dependencies": [],
         "dynamic_dependencies": []
       },
       {
-        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-utils.lil",
-        "bytes": 20961,
-        "sha256": "f8d81beab00cb6c0e5e52245bb4eb64957677a24cdb14bd464f078a4d1e4023d",
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/string.lil",
+        "bytes": 1443,
+        "sha256": "76ac527162d2349feb35c3a92b83df58835f8a4a0ed0ca4dc64d8b7693c3f70c",
         "dependencies": [
-          2
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-utils.lil",
+        "bytes": 20985,
+        "sha256": "05151b7234a5fd33b10d3fa5f163b9ed79dd47a7679da8810cf6a21f5370f105",
+        "dependencies": [
+          2,
+          3
         ],
         "dynamic_dependencies": []
       }
@@ -61,8 +82,8 @@
           "closure": [
             "replay-core.esm.js"
           ],
-          "row": 3361,
-          "raw_row": 8616
+          "row": 3428,
+          "raw_row": 8766
         }
       ],
       "files": [
@@ -76,22 +97,24 @@
           "modules": [
             "replay-core-entry.lil",
             "replay-core.lil",
+            "types.lil",
             "host.lil",
+            "string.lil",
             "autocapture-utils.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8616,
-          "codec_bytes": 3361,
-          "sha256": "de346927aa769a0c5e25ffc8e282fa4508bb0b320034884f4d25ccb446da17ef"
+          "bytes": 8766,
+          "codec_bytes": 3428,
+          "sha256": "3949a938a4f8a74141a71cce3ca5711a322f1db0595eaf5a0c75abc5a8afe564"
         }
       ],
       "side_effects": [
         "replay-core.esm.js"
       ],
-      "codec_total": 3361,
-      "rows_total": 3361,
+      "codec_total": 3428,
+      "rows_total": 3428,
       "setters": 0,
       "output": "primary",
       "codec": "brotli",
@@ -152,8 +175,8 @@
           "closure": [
             "replay-core.cjs"
           ],
-          "row": 3535,
-          "raw_row": 9977
+          "row": 3545,
+          "raw_row": 10100
         }
       ],
       "files": [
@@ -166,22 +189,23 @@
           ],
           "modules": [
             "replay-core.lil",
+            "types.lil",
             "host.lil",
             "autocapture-utils.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 9977,
-          "codec_bytes": 3535,
-          "sha256": "f2a8d87b45d76237aa15808107d18646be1d7b84a6291786cc12baffbb2aac59"
+          "bytes": 10100,
+          "codec_bytes": 3545,
+          "sha256": "b5546bd4fb35c5d376401d8f1f4a28ac91392f4ec764d3d88585f79b267cb7a1"
         }
       ],
       "side_effects": [
         "replay-core.cjs"
       ],
-      "codec_total": 3535,
-      "rows_total": 3535,
+      "codec_total": 3545,
+      "rows_total": 3545,
       "setters": 0,
       "output": "cjs",
       "codec": "brotli",

@@ -4,6 +4,7 @@ const kb=n=>(n/1024).toFixed(1)+' KiB'
 const seconds=n=>n.toFixed(n<1?3:2)+' s'
 const escape=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))
 const delta=n=>`<span class="${n>0?'positive':n<0?'negative':''}">${Math.abs(n).toFixed(2)}% ${n>0?'smaller':n<0?'larger':'same'}</span>`
+const compactDelta=n=>`<span class="${n>0?'positive':n<0?'negative':''}">${n>0?'−':n<0?'+':''}${Math.abs(n).toFixed(2)}%</span>`
 const artifactUrl=file=>file.startsWith('artifacts/sdk/')?'./sdk/'+file.slice('artifacts/sdk/'.length):file.startsWith('artifacts/tree-shaking/')?'./tree-shaking/'+file.slice('artifacts/tree-shaking/'.length):file.startsWith('dist/')?'./utilities/'+file.slice(5):'./utility-originals/'+file.slice('artifacts/utilities/'.length)
 let surface='standard',sdk,utilities,performance,validation,pkg,treeShaking
 async function json(path){const response=await fetch(path);if(!response.ok)throw Error(`Could not load ${path}`);return response.json()}
@@ -18,7 +19,7 @@ function drawSizes(){
 function drawPerformance(){
   const objective=$('#runtime-objective').value
   const row=performance.rows.find(row=>row.surface===surface&&row.objective===objective)
-  const labels={importMs:'Module parse + evaluation',initMs:'Synchronous initialization',capture1000Ms:'Prepare + queue 1,000 events'}
+  const labels={importMs:'Module parse + evaluation',initMs:'Synchronous initialization',capture1000Ms:'Prepare + queue 1,000 events',exception100Ms:'Prepare + queue 100 exceptions'}
   $('#performance').innerHTML=Object.entries(row.metrics).map(([key,m])=>`<article class="perf"><h3>${labels[key]}</h3><strong>${m.candidateMedianMs.toFixed(2)} ms</strong><p>Original ${m.originalMedianMs.toFixed(2)} ms · medians</p><p class="verdict-small">${escape(m.verdict)}</p><p>Paired improvement ${m.pairedImprovementPercent.toFixed(1)}%<br>95% interval: ${m.confidence95Percent.map(x=>x.toFixed(1)+'%').join(' to ')}</p></article>`).join('')
   $('#runtime-method').textContent=`${performance.samples} measured pairs and ${performance.warmupPairs} warmup pairs per build. Original/candidate order alternates; every sample uses a fresh browser context. Chromium ${performance.browser}. Positive paired improvement means faster. Recording, uploads and ingestion are outside these timings.`
 }
@@ -33,14 +34,20 @@ function drawTreeShaking(){
 async function initialize(){
   [sdk,utilities,performance,validation,pkg,treeShaking]=await Promise.all(['sdk','utilities','performance','validation','package','tree-shaking'].map(name=>json('./evidence/'+name+'.json')))
   $('#pin').textContent='posthog-js '+sdk.upstream.version+' · checked '+sdk.generatedAt.slice(0,10)
-  const headlines=sdk.surfaces.map(s=>({surface:s,...s.objectives.find(o=>o.objective==='brotli')}))
-  const gains=headlines.filter(row=>row.savingsPercent>0).length
-  $('#verdict').textContent=gains===2?'Both complete SDK builds are smaller in this Brotli comparison. Review the scope, runtime measurements and compatibility evidence below.':gains===0?'Both complete SDK candidates are larger than the best minified original in this Brotli comparison. Standalone utility savings and named-import sizes are measured separately below.':'The Brotli result depends on SDK scope: one candidate is smaller and one is not. Review each scope and objective below; standalone utility savings are measured separately.'
-  $('#headline').innerHTML=headlines.map(row=>`<article class="metric"><h3>${escape(row.surface.label)} · Brotli-11</h3><span class="large">${kb(row.artifact.brotli11)}</span><span class="delta">${delta(row.savingsPercent)}</span><p>Minified original ${kb(row.baseline.brotli11)} · ${escape(row.baseline.lane)}<br>Whole SDK scope shown below; no extrapolation from utility results.</p></article>`).join('')
-  const performanceSummary=['standard','full'].map(id=>{const row=performance.rows.find(row=>row.surface===id&&row.objective==='brotli');return `${id==='standard'?'Standard':'Full'}: capture processing ${row.metrics.capture1000Ms.verdict}; initialization ${row.metrics.initMs.verdict}.`}).join(' ')
-  const workloadNames={importMs:'module import',initMs:'initialization',capture1000Ms:'event preparation'}
+  const all=sdk.surfaces.flatMap(row=>row.objectives)
+  const gains=all.filter(row=>row.savingsPercent>0).length
+  const publishedGains=all.filter(row=>row.publishedSavingsPercent>0).length
+  $('#verdict').textContent=`${publishedGains===6?'All six':publishedGains+' of six'} builds are smaller than the exact published PostHog package. Gains include bundling and minification. Against the original source with the same optimizations, ${gains===6?'all six':gains+' of six'} builds are smaller by the margins shown above.`
+  $('#headline').innerHTML=sdk.surfaces.map(row=>`<article class="metric"><h3>${escape(row.label)} · exact npm comparison</h3><div class="table-scroll"><table><thead><tr><th>Format</th><th>Original</th><th>Candidate</th><th>Change</th></tr></thead><tbody>${row.objectives.map(item=>`<tr><td>${item.objective==='brotli'?'Brotli-11':item.objective==='gzip'?'gzip-9':'Raw'}</td><td>${kb(item.publishedOriginal[item.metric])}</td><td>${kb(item.artifact[item.metric])}</td><td>${compactDelta(item.publishedSavingsPercent)}</td></tr>`).join('')}</tbody></table></div><p>Each row uses its own compilation objective. ${row.id==='standard'?'Initial client; optional extension downloads are additional.':'Includes replay and the upstream full/no-external feature set.'}</p><p>Stronger original controls: ${row.objectives.map(item=>`${item.objective} ${delta(item.savingsPercent)}`).join(' · ')}.</p></article>`).join('')
+  const performanceSummary=['standard','full'].map(id=>{
+    const m=performance.rows.find(row=>row.surface===id&&row.objective==='brotli').metrics.exception100Ms
+    const result=m.verdict==='no clear difference'?m.verdict:`${Math.abs(m.pairedImprovementPercent).toFixed(1)}% ${m.pairedImprovementPercent>0?'faster':'slower'}`
+    return `${id==='standard'?'Standard':'Full'}: ${result}.`
+  }).join(' ')
+  const otherWorkloadsUnclear=performance.rows.every(row=>['importMs','initMs','capture1000Ms'].every(key=>row.metrics[key].verdict==='no clear difference'))
+  const workloadNames={importMs:'module import',initMs:'initialization',capture1000Ms:'event preparation',exception100Ms:'exception preparation'}
   const slower=performance.rows.flatMap(row=>Object.entries(row.metrics).filter(([,metric])=>metric.verdict==='slower in this workload').map(([name])=>`${row.surface} / ${row.objective} / ${workloadNames[name]}`))
-  $('#hero-runtime').textContent='Runtime, Brotli builds — '+performanceSummary+(slower.length?' Slower paired results in this run: '+slower.join('; ')+'.':'')
+  $('#hero-runtime').textContent='100-exception workload, Brotli builds — '+performanceSummary+' Paired estimates against the optimized original; intervals below.'+(otherWorkloadsUnclear?' Module import, initialization and ordinary event capture show no clear difference.':'')+(slower.length?' Slower paired results in this run: '+slower.join('; ')+'.':'')
   $('#download').href='./downloads/'+pkg.tarball
   $('#install').textContent=`# Download the preview tarball, then install under the existing name:\nnpm install posthog-js@file:./${pkg.tarball}\n\n# Experimental; not published to the npm registry.`
   $('#test-count').textContent=`${validation.upstreamTestsPerObjective} selected upstream tests × 3 objectives`

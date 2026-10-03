@@ -9,44 +9,55 @@ import {
 } from "./host.lil";
 import { includes } from "./string.lil";
 
-export func(JsValue)->bool isNumber = (JsValue x) => {
-  return objectTag(x) == "[object Number]" && JS.strictEqual(x, x);
+// Match upstream's module-time captures. Sharing this module also prevents
+// the SDK and the error/OTLP ports from retaining parallel type helpers.
+extern JsValue Object;
+extern JsValue Array;
+extern JsValue Error;
+extern JsValue Event;
+extern JsValue FormData;
+extern JsValue File;
+JsValue nativeIsArray = Array["isArray"];
+JsValue tagOf = Object["prototype"]["toString"];
+export JsValue hasOwnProperty = Object["prototype"]["hasOwnProperty"];
+export JsValue isArray = if (nativeIsArray.truthy()) { nativeIsArray } else {
+  JS.method1((JsValue self, JsValue value) => { return JS.strictEqual(JS.call(tagOf, value), "[object Array]"); })
 };
+export bool isArrayValue(JsValue value) { return isArray(value).truthy(); }
 
-export bool isStringValue(JsValue x) {
-  return objectTag(x) == "[object String]";
-}
-
-export bool isObjectValue(JsValue x) {
-  return JS.strictEqual(x, asObject(x)) && !isArr(x);
-}
-
-export func(JsValue)->bool isEmptyObject = (JsValue x) => {
-  if (!isObjectValue(x)) {
-    return false;
+export func(JsValue)->bool isFunction = (JsValue value) => JS.typeOf(value) == "function";
+export func(JsValue)->bool isNativeFunction = (JsValue value) => isFunction(value) && JS.invoke(JS.invoke(value, "toString"), "indexOf", "[native code]") != -1;
+export func(JsValue)->bool isObject = (JsValue value) => JS.strictEqual(value, asObject(value)) && !isArray(value).truthy();
+export func(JsValue)->bool isString = (JsValue value) => JS.strictEqual(JS.call(tagOf, value), "[object String]");
+export func(JsValue)->bool isNumber = (JsValue value) => JS.strictEqual(JS.call(tagOf, value), "[object Number]") && JS.strictEqual(value, value);
+export func(JsValue)->bool isBoolean = (JsValue value) => JS.strictEqual(JS.call(tagOf, value), "[object Boolean]");
+export func(JsValue)->bool isUndefined = (JsValue value) => JS.isUndefined(value);
+export func(JsValue)->bool isNull = (JsValue value) => JS.strictEqual(value, null);
+export func(JsValue)->bool isNullish = (JsValue value) => JS.isNullish(value);
+export func(JsValue)->bool isFormData = (JsValue value) => value instanceof FormData;
+export func(JsValue)->bool isFile = (JsValue value) => value instanceof File;
+export func(JsValue)->bool isPlainError = (JsValue value) => value instanceof Error;
+export func(JsValue)->bool isEmptyObject = (JsValue value) => {
+  if (!isObject(value)) return false;
+  for (string key in value) {
+    if (JS.call(hasOwnProperty, value, key).truthy()) return false;
   }
-  return len(objectKeys(x)) == 0;
+  return true;
 };
-
-export func(JsValue)->bool isEmptyString = (JsValue x) => {
-  if (!isStringValue(x)) {
-    return false;
-  }
-  return JS.invoke(x, "trim").length == 0.0;
-};
-
-export func(JsValue)->bool isPositiveNumber = (JsValue value) => {
-  number n = JS.assume(value);
-  return isNumber(value) && n > 0.0;
-};
-
-export bool isPrimitive(JsValue value) {
-  return !isObj(value);
+export func(JsValue)->bool isEmptyString = (JsValue value) => isString(value) && JS.invoke(value, "trim").length == 0.0;
+export func(JsValue)->bool isPositiveNumber = (JsValue value) => isNumber(value) && JS.greaterThan(value, 0);
+export bool isPrimitive(JsValue value) { return JS.strictEqual(value, null) || JS.typeOf(value) != "object"; }
+export bool isBuiltin(JsValue candidate, string className) { return objectTag(candidate) == "[object " + className + "]"; }
+export bool isInstanceOf(JsValue candidate, JsValue base) {
+  try { return candidate instanceof base; } catch { return false; }
 }
-
-export bool isBuiltin(JsValue candidate, string className) {
-  return objectTag(candidate) == "[object " + className + "]";
+export bool isError(JsValue value) {
+  string tag = objectTag(value);
+  return tag == "[object Error]" || tag == "[object Exception]" || tag == "[object DOMException]" || tag == "[object DOMError]" || tag == "[object WebAssembly.Exception]" || isInstanceOf(value, Error);
 }
+export bool isErrorEvent(JsValue value) { return isBuiltin(value, "ErrorEvent"); }
+export bool isEvent(JsValue value) { return JS.typeOf(Event) != "undefined" && isInstanceOf(value, Event); }
+export bool isPlainObject(JsValue value) { return isBuiltin(value, "Object"); }
 
 export string[] knownUnsafeEditableEvent = [
   "$snapshot",

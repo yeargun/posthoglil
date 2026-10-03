@@ -1,7 +1,7 @@
+import {isArrayValue as isArr} from "./types.lil";
 import {
   asObject,
   hasKey,
-  isArr,
   isBool,
   isFiniteNum,
   isNullish,
@@ -117,7 +117,7 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, EncodingState state, int d
       if (isUndef(bigIntConstructor)) {
         return stringAny(explicitString(value));
       }
-      string decimal = toStr(JS.invoke(JS.call(bigIntConstructor, undef(), value), "toString"));
+      string decimal = toStr(JS.invoke(bigIntConstructor(value), "toString"));
       if (numeric >= int64RangeLimit || numeric < -int64RangeLimit) {
         logDebug(logger, "Attribute " + decimal + " is outside the int64 range; encoding it as a string");
         return stringAny(decimal);
@@ -143,13 +143,13 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, EncodingState state, int d
     if (depth >= maxDepth) {
       return stringAny(truncatedValue);
     }
-    if (instanceOfValue(value, Date)) {
+    if (value instanceof Date) {
       JsValue time = JS.invoke(value, "getTime");
       JsValue iso = undef();
       if (JS.invoke(Number, "isFinite", time).truthy()) {
         iso = JS.invoke(value, "toISOString");
       } else {
-        iso = JS.call(String, undef(), value);
+        iso = String(value);
       }
       if (JS.typeOf(iso) == "string") {
         return stringAny(sanitizeString(toStr(iso)));
@@ -360,7 +360,7 @@ export JsValue[] toOtlpResourceKeyValueList(JsValue attributes, JsValue logger =
   return [...toOtlpKeyValueList(user, logger), ...toOtlpKeyValueList(sdk, logger)];
 }
 
-JsValue resourceAttributesFor(JsValue config, string sdkName, string sdkVersion) {
+export JsValue buildOtlpResourceAttributes(JsValue config, string sdkName, string sdkVersion) {
   JsValue out = assignUserAttributes(JS.object(), config["resourceAttributes"]);
   out["service.name"] = JS.or(config["serviceName"], "unknown_service");
   if (config["environment"].truthy()) out["deployment.environment"] = config["environment"];
@@ -371,7 +371,7 @@ JsValue resourceAttributesFor(JsValue config, string sdkName, string sdkVersion)
 }
 
 export JsValue buildResourceAttributes(JsValue config, string sdkName, string sdkVersion) {
-  return resourceAttributesFor(config, sdkName, sdkVersion);
+  return buildOtlpResourceAttributes(config, sdkName, sdkVersion);
 }
 
 export JsValue buildOtlpLogsPayload(JsValue logRecords, JsValue resourceAttributes, string scopeName, string scopeVersion) {
@@ -412,7 +412,7 @@ export int bucketIndexFor(number value, JsValue bounds) {
 }
 
 export JsValue buildMetricsResourceAttributes(JsValue config, string scopeName, string scopeVersion) {
-  return resourceAttributesFor(config, scopeName, scopeVersion);
+  return buildOtlpResourceAttributes(config, scopeName, scopeVersion);
 }
 
 export JsValue buildOtlpMetricsPayload(JsValue metrics, JsValue resourceAttributes, string scopeName, string scopeVersion) {

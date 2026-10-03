@@ -143,7 +143,7 @@ export string objectTag(JsValue value) {
 }
 
 export JsValue asObject(JsValue value) {
-  return JS.call(Object, JS.undefined(), value);
+  return Object(value);
 }
 
 export bool isInteger(number value) {
@@ -155,12 +155,12 @@ export bool isFiniteNum(number value) {
 }
 
 export number parseIntHex(string value) {
-  return JS.number(JS.call(parseInt, JS.undefined(), value, 16));
+  return JS.number(parseInt(value, 16));
 }
 
 export string decodeUri(string value) {
   try {
-    return JS.string(JS.call(decodeURIComponent, JS.undefined(), value));
+    return JS.string(decodeURIComponent(value));
   } catch {
     return value;
   }

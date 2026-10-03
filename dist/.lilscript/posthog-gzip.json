@@ -13,8 +13,8 @@
           "closure": [
             "posthog.gzip.js"
           ],
-          "row": 5666,
-          "raw_row": 15790
+          "row": 5719,
+          "raw_row": 16072
         }
       ],
       "files": [
@@ -45,16 +45,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 15790,
-          "codec_bytes": 5666,
-          "sha256": "964c2673a3783683b1c90a7c4384435ff54d39d53df31689ed8e29272a65c30a"
+          "bytes": 16072,
+          "codec_bytes": 5719,
+          "sha256": "32dabd9a5c02c1d2a991de7e3396e4643942ae587c79932ab11c3c64623171ad"
         }
       ],
       "side_effects": [
         "posthog.gzip.js"
       ],
-      "codec_total": 5666,
-      "rows_total": 5666,
+      "codec_total": 5719,
+      "rows_total": 5719,
       "setters": 0,
       "output": "primary",
       "codec": "gzip",
@@ -105,7 +105,7 @@
       ]
     }
   ],
-  "source_sha256": "f9de781a3b18498145a6589a91344486ae5d87d1fc1e063651e9c5b2b8e7a31b",
+  "source_sha256": "2ae3c8e39dc83633ff802f6e2b9670ef054cd902480c48add122af5b33dc0d97",
   "inputs": {
     "root": 0,
     "entries": [
@@ -147,8 +147,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4387,
-        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "bytes": 4312,
+        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
         "dependencies": [],
         "dynamic_dependencies": []
       },
@@ -200,8 +200,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/bot.lil",
-        "bytes": 2052,
-        "sha256": "8b8bdfa997070b99d24d5fbb842c516d45fdbff202d2ece0951bfd5bc9da8645",
+        "bytes": 2086,
+        "sha256": "de01d746cbc0182bcc6dc2f017efda1ee8e4b870c3470b0c7fc69bb124f7e06f",
         "dependencies": [
           2
         ],
@@ -218,8 +218,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/number.lil",
-        "bytes": 2085,
-        "sha256": "dc92ae3e329fbc9a52dbade5a19bfb656cac02005985e1c95e7bc85a9b698e5c",
+        "bytes": 2060,
+        "sha256": "a31bc352fbfded21bd52bfd0010ed749759d4e1524c2a8405b1384df25803661",
         "dependencies": [
           2,
           11
@@ -228,8 +228,8 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
-        "bytes": 2084,
-        "sha256": "c52d392647c6421313931c7c621f3a1af7342c7724ef8d93ea1035c545d82163",
+        "bytes": 4472,
+        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
         "dependencies": [
           2,
           9

@@ -13,8 +13,8 @@
           "closure": [
             "replay-core.gzip.js"
           ],
-          "row": 3686,
-          "raw_row": 8567
+          "row": 3708,
+          "raw_row": 8717
         }
       ],
       "files": [
@@ -28,22 +28,24 @@
           "modules": [
             "replay-core-entry.lil",
             "replay-core.lil",
+            "types.lil",
             "host.lil",
+            "string.lil",
             "autocapture-utils.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8567,
-          "codec_bytes": 3686,
-          "sha256": "3e896cdcc22df454fd6a059c7137648cbc36e137555490924b2fce6957d15fc1"
+          "bytes": 8717,
+          "codec_bytes": 3708,
+          "sha256": "49c9a40922f03744cd4d4dede0eb36c610c8204b6eec0372904d04d41ec6744a"
         }
       ],
       "side_effects": [
         "replay-core.gzip.js"
       ],
-      "codec_total": 3686,
-      "rows_total": 3686,
+      "codec_total": 3708,
+      "rows_total": 3708,
       "setters": 0,
       "output": "primary",
       "codec": "gzip",
@@ -94,7 +96,7 @@
       ]
     }
   ],
-  "source_sha256": "55c008b36bcfcb8121400b9caba39c7a33c1d7211d340bf2399c578d702f4f08",
+  "source_sha256": "7ef8a274814dfdc50fa9ede18e84483da2e61d4187ebbf7fe38d803508543725",
   "inputs": {
     "root": 0,
     "entries": [
@@ -115,27 +117,48 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core.lil",
-        "bytes": 16408,
-        "sha256": "c1cae66ff5da8d32aba83374d83b2007d86bf3d9a265800efee34cd160832a44",
+        "bytes": 16360,
+        "sha256": "197a9446a121d437871d63aa13aeee727d671ca214b040252e3076b047113c12",
         "dependencies": [
           2,
-          3
+          3,
+          5
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
+        "bytes": 4472,
+        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "dependencies": [
+          3,
+          4
         ],
         "dynamic_dependencies": []
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4387,
-        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "bytes": 4312,
+        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
         "dependencies": [],
         "dynamic_dependencies": []
       },
       {
-        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-utils.lil",
-        "bytes": 20961,
-        "sha256": "f8d81beab00cb6c0e5e52245bb4eb64957677a24cdb14bd464f078a4d1e4023d",
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/string.lil",
+        "bytes": 1443,
+        "sha256": "76ac527162d2349feb35c3a92b83df58835f8a4a0ed0ca4dc64d8b7693c3f70c",
         "dependencies": [
-          2
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-utils.lil",
+        "bytes": 20985,
+        "sha256": "05151b7234a5fd33b10d3fa5f163b9ed79dd47a7679da8810cf6a21f5370f105",
+        "dependencies": [
+          2,
+          3
         ],
         "dynamic_dependencies": []
       }

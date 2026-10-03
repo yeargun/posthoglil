@@ -12,8 +12,8 @@
           "closure": [
             "posthog.raw.js"
           ],
-          "row": 15346,
-          "raw_row": 15346
+          "row": 15623,
+          "raw_row": 15623
         }
       ],
       "files": [
@@ -44,16 +44,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 15346,
-          "codec_bytes": 15346,
-          "sha256": "df19ded1caed4eb198f6cb1ae2249e6c8fc9d6f0db2c5d54c8bac387d03b6637"
+          "bytes": 15623,
+          "codec_bytes": 15623,
+          "sha256": "34e56d448c3e020c9a1d3777680472b33ac8c754e2467e1d23a0cde0760f09e3"
         }
       ],
       "side_effects": [
         "posthog.raw.js"
       ],
-      "codec_total": 15346,
-      "rows_total": 15346,
+      "codec_total": 15623,
+      "rows_total": 15623,
       "setters": 0,
       "output": "posthog-raw/primary",
       "codec": "raw",
@@ -114,8 +114,8 @@
           "closure": [
             "posthog.gzip.js"
           ],
-          "row": 5666,
-          "raw_row": 15790
+          "row": 5719,
+          "raw_row": 16072
         }
       ],
       "files": [
@@ -146,16 +146,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 15790,
-          "codec_bytes": 5666,
-          "sha256": "964c2673a3783683b1c90a7c4384435ff54d39d53df31689ed8e29272a65c30a"
+          "bytes": 16072,
+          "codec_bytes": 5719,
+          "sha256": "32dabd9a5c02c1d2a991de7e3396e4643942ae587c79932ab11c3c64623171ad"
         }
       ],
       "side_effects": [
         "posthog.gzip.js"
       ],
-      "codec_total": 5666,
-      "rows_total": 5666,
+      "codec_total": 5719,
+      "rows_total": 5719,
       "setters": 0,
       "output": "posthog-gzip/primary",
       "codec": "gzip",
@@ -216,8 +216,8 @@
           "closure": [
             "posthog.esm.js"
           ],
-          "row": 5105,
-          "raw_row": 15881
+          "row": 5195,
+          "raw_row": 16007
         }
       ],
       "files": [
@@ -249,16 +249,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 15881,
-          "codec_bytes": 5105,
-          "sha256": "d222ffddb3d79e0010b254b944bc3b6e7b5bd9b2bb357e0ea44809b6f3642f81"
+          "bytes": 16007,
+          "codec_bytes": 5195,
+          "sha256": "99d17676f3024329a590fe5e39dd5812839f14eafbb47d9058f343e7c8d0a047"
         }
       ],
       "side_effects": [
         "posthog.esm.js"
       ],
-      "codec_total": 5105,
-      "rows_total": 5105,
+      "codec_total": 5195,
+      "rows_total": 5195,
       "setters": 0,
       "output": "posthog-brotli/primary",
       "codec": "brotli",
@@ -319,8 +319,8 @@
           "closure": [
             "posthog.umd.js"
           ],
-          "row": 5128,
-          "raw_row": 14791
+          "row": 5173,
+          "raw_row": 14951
         }
       ],
       "files": [
@@ -351,16 +351,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 14791,
-          "codec_bytes": 5128,
-          "sha256": "04e689bdc1c258e3fbb9cb6dbb9fb1fbdcd336aa47c9fa30878eecefeab72b78"
+          "bytes": 14951,
+          "codec_bytes": 5173,
+          "sha256": "5afddb0569e4382fa65c6872a99a376e9c66a064ad52f5abc17c6ffd1cdb7b70"
         }
       ],
       "side_effects": [
         "posthog.umd.js"
       ],
-      "codec_total": 5128,
-      "rows_total": 5128,
+      "codec_total": 5173,
+      "rows_total": 5173,
       "setters": 0,
       "output": "posthog-brotli/browser",
       "codec": "brotli",
@@ -421,8 +421,8 @@
           "closure": [
             "posthog.cjs"
           ],
-          "row": 5660,
-          "raw_row": 20478
+          "row": 5700,
+          "raw_row": 20635
         }
       ],
       "files": [
@@ -453,16 +453,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 20478,
-          "codec_bytes": 5660,
-          "sha256": "8c8511a8b18b514fd6b7b8b0ee2c5b69b3349ab935d1c76701697ca4aca82a6c"
+          "bytes": 20635,
+          "codec_bytes": 5700,
+          "sha256": "643150b65726e2e08563976304d7b97bde471f5ef920cab85698e5022665f916"
         }
       ],
       "side_effects": [
         "posthog.cjs"
       ],
-      "codec_total": 5660,
-      "rows_total": 5660,
+      "codec_total": 5700,
+      "rows_total": 5700,
       "setters": 0,
       "output": "posthog-brotli/cjs",
       "codec": "brotli",
@@ -523,8 +523,8 @@
           "closure": [
             "surveys.raw.js"
           ],
-          "row": 7545,
-          "raw_row": 7545
+          "row": 7677,
+          "raw_row": 7677
         }
       ],
       "files": [
@@ -538,21 +538,23 @@
           "modules": [
             "surveys-entry.lil",
             "surveys.lil",
-            "host.lil"
+            "types.lil",
+            "host.lil",
+            "string.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 7545,
-          "codec_bytes": 7545,
-          "sha256": "dc2b9caa9bf85a9052a2eaf681039929c12d6677d2a0f52eaa8f99d8a234a69c"
+          "bytes": 7677,
+          "codec_bytes": 7677,
+          "sha256": "6f369bc4ab8479c8e4b2085da2cb781b61af4cd2dc8dd62c37e760d7c98f37a5"
         }
       ],
       "side_effects": [
         "surveys.raw.js"
       ],
-      "codec_total": 7545,
-      "rows_total": 7545,
+      "codec_total": 7677,
+      "rows_total": 7677,
       "setters": 0,
       "output": "surveys-raw/primary",
       "codec": "raw",
@@ -613,8 +615,8 @@
           "closure": [
             "surveys.gzip.js"
           ],
-          "row": 2673,
-          "raw_row": 7821
+          "row": 2734,
+          "raw_row": 7966
         }
       ],
       "files": [
@@ -628,21 +630,23 @@
           "modules": [
             "surveys-entry.lil",
             "surveys.lil",
-            "host.lil"
+            "types.lil",
+            "host.lil",
+            "string.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 7821,
-          "codec_bytes": 2673,
-          "sha256": "9a0851fc96dd16f8789019c0cbdcfddeef9d74c95d2a2be418b4f0aab79f619f"
+          "bytes": 7966,
+          "codec_bytes": 2734,
+          "sha256": "ab932b8ab2f3e9233e0bbe603eb88a46153dfea74945e1da5bfdf05b8c5a67cd"
         }
       ],
       "side_effects": [
         "surveys.gzip.js"
       ],
-      "codec_total": 2673,
-      "rows_total": 2673,
+      "codec_total": 2734,
+      "rows_total": 2734,
       "setters": 0,
       "output": "surveys-gzip/primary",
       "codec": "gzip",
@@ -703,8 +707,8 @@
           "closure": [
             "surveys.esm.js"
           ],
-          "row": 2353,
-          "raw_row": 7861
+          "row": 2411,
+          "raw_row": 7941
         }
       ],
       "files": [
@@ -718,21 +722,23 @@
           "modules": [
             "surveys-entry.lil",
             "surveys.lil",
-            "host.lil"
+            "types.lil",
+            "host.lil",
+            "string.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 7861,
-          "codec_bytes": 2353,
-          "sha256": "231ff3e53fed0423a7de40ccf27b8363cb4a4596eb1215fe0356dcaab560ca8a"
+          "bytes": 7941,
+          "codec_bytes": 2411,
+          "sha256": "16144925b49b7b5f8e72d0dfc6c0e4287efcfd8b1908ca3259e78503fbd8bd73"
         }
       ],
       "side_effects": [
         "surveys.esm.js"
       ],
-      "codec_total": 2353,
-      "rows_total": 2353,
+      "codec_total": 2411,
+      "rows_total": 2411,
       "setters": 0,
       "output": "surveys-brotli/primary",
       "codec": "brotli",
@@ -793,8 +799,8 @@
           "closure": [
             "surveys.cjs"
           ],
-          "row": 2589,
-          "raw_row": 9989
+          "row": 2659,
+          "raw_row": 10110
         }
       ],
       "files": [
@@ -807,21 +813,22 @@
           ],
           "modules": [
             "surveys.lil",
+            "types.lil",
             "host.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 9989,
-          "codec_bytes": 2589,
-          "sha256": "c628375cfad241d0302441466d888477eb9bb85592e62a838a397185adaeee07"
+          "bytes": 10110,
+          "codec_bytes": 2659,
+          "sha256": "d7efebbfd385217a1d9c5406877b2914fef661bd515d27c5871a2cac555dad94"
         }
       ],
       "side_effects": [
         "surveys.cjs"
       ],
-      "codec_total": 2589,
-      "rows_total": 2589,
+      "codec_total": 2659,
+      "rows_total": 2659,
       "setters": 0,
       "output": "surveys-brotli/cjs",
       "codec": "brotli",
@@ -882,8 +889,8 @@
           "closure": [
             "error-tracking.raw.js"
           ],
-          "row": 17892,
-          "raw_row": 17892
+          "row": 17954,
+          "raw_row": 17954
         }
       ],
       "files": [
@@ -899,6 +906,8 @@
             "error-coercer-api.lil",
             "host.lil",
             "error-host.lil",
+            "types.lil",
+            "string.lil",
             "error-coercers.lil",
             "error-core.lil",
             "error-parsers.lil"
@@ -906,16 +915,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 17892,
-          "codec_bytes": 17892,
-          "sha256": "fa5fd3e6fd0c2c9eb0522b7bd2ac3a5d2c8651eb6b49d6784f573c790cc40e52"
+          "bytes": 17954,
+          "codec_bytes": 17954,
+          "sha256": "16a863b4f9c4b1ff84c3fa40cf2c7987aa1a35f6be1509d33fe6e6aae856f5ad"
         }
       ],
       "side_effects": [
         "error-tracking.raw.js"
       ],
-      "codec_total": 17892,
-      "rows_total": 17892,
+      "codec_total": 17954,
+      "rows_total": 17954,
       "setters": 0,
       "output": "error-tracking-raw/primary",
       "codec": "raw",
@@ -976,8 +985,8 @@
           "closure": [
             "error-tracking.gzip.js"
           ],
-          "row": 6846,
-          "raw_row": 18524
+          "row": 6834,
+          "raw_row": 18550
         }
       ],
       "files": [
@@ -993,6 +1002,8 @@
             "error-coercer-api.lil",
             "host.lil",
             "error-host.lil",
+            "types.lil",
+            "string.lil",
             "error-coercers.lil",
             "error-core.lil",
             "error-parsers.lil"
@@ -1000,16 +1011,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 18524,
-          "codec_bytes": 6846,
-          "sha256": "e5c1f8559b21b6bd4e77c3d0746bf7757bcdef933fd855e670ca456b7709466c"
+          "bytes": 18550,
+          "codec_bytes": 6834,
+          "sha256": "bab756e888a315d2e0750d48c216c905f8a141b16513bb39518c9a2422c9e35d"
         }
       ],
       "side_effects": [
         "error-tracking.gzip.js"
       ],
-      "codec_total": 6846,
-      "rows_total": 6846,
+      "codec_total": 6834,
+      "rows_total": 6834,
       "setters": 0,
       "output": "error-tracking-gzip/primary",
       "codec": "gzip",
@@ -1070,8 +1081,8 @@
           "closure": [
             "error-tracking.esm.js"
           ],
-          "row": 6249,
-          "raw_row": 18369
+          "row": 6236,
+          "raw_row": 18414
         }
       ],
       "files": [
@@ -1087,6 +1098,8 @@
             "error-coercer-api.lil",
             "host.lil",
             "error-host.lil",
+            "types.lil",
+            "string.lil",
             "error-coercers.lil",
             "error-core.lil",
             "error-parsers.lil"
@@ -1094,16 +1107,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 18369,
-          "codec_bytes": 6249,
-          "sha256": "2ff4b0a9c62ccadc7d00e48c71983b5c331a50dd91b7eaf4626f14cf0cd52a2b"
+          "bytes": 18414,
+          "codec_bytes": 6236,
+          "sha256": "37f656ad783f7b70914d15d001114ec2a2914f9767c5884ac67de661f9f1117c"
         }
       ],
       "side_effects": [
         "error-tracking.esm.js"
       ],
-      "codec_total": 6249,
-      "rows_total": 6249,
+      "codec_total": 6236,
+      "rows_total": 6236,
       "setters": 0,
       "output": "error-tracking-brotli/primary",
       "codec": "brotli",
@@ -1164,8 +1177,8 @@
           "closure": [
             "error-tracking.cjs"
           ],
-          "row": 6439,
-          "raw_row": 19940
+          "row": 6474,
+          "raw_row": 20294
         }
       ],
       "files": [
@@ -1180,6 +1193,7 @@
             "error-coercer-api.lil",
             "host.lil",
             "error-host.lil",
+            "types.lil",
             "error-coercers.lil",
             "error-core.lil",
             "error-parsers.lil"
@@ -1187,16 +1201,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 19940,
-          "codec_bytes": 6439,
-          "sha256": "4b7cef7470e133985ce3eb3c10137c226c1258df84769549f411ed1a4a96b26b"
+          "bytes": 20294,
+          "codec_bytes": 6474,
+          "sha256": "3fb06858254ddebdeea30b852c56514ccf24ee9409ac2731b7e02b2505672fa7"
         }
       ],
       "side_effects": [
         "error-tracking.cjs"
       ],
-      "codec_total": 6439,
-      "rows_total": 6439,
+      "codec_total": 6474,
+      "rows_total": 6474,
       "setters": 0,
       "output": "error-tracking-brotli/cjs",
       "codec": "brotli",
@@ -1257,8 +1271,8 @@
           "closure": [
             "otlp.raw.js"
           ],
-          "row": 6331,
-          "raw_row": 6331
+          "row": 6359,
+          "raw_row": 6359
         }
       ],
       "files": [
@@ -1272,25 +1286,25 @@
           "modules": [
             "otlp-entry.lil",
             "otlp.lil",
-            "host.lil",
-            "json.lil",
             "types.lil",
+            "host.lil",
             "string.lil",
+            "json.lil",
             "error-host.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6331,
-          "codec_bytes": 6331,
-          "sha256": "50ae1d650089a69cb0e2d5cfa3223063b428945d0c02ce6aba671bc803f9efa6"
+          "bytes": 6359,
+          "codec_bytes": 6359,
+          "sha256": "df0e3d547305f8c62a4bc5e7b136ae89de8d454037abd1f5b2045a1113a17aa4"
         }
       ],
       "side_effects": [
         "otlp.raw.js"
       ],
-      "codec_total": 6331,
-      "rows_total": 6331,
+      "codec_total": 6359,
+      "rows_total": 6359,
       "setters": 0,
       "output": "otlp-raw/primary",
       "codec": "raw",
@@ -1351,8 +1365,8 @@
           "closure": [
             "otlp.gzip.js"
           ],
-          "row": 2599,
-          "raw_row": 6856
+          "row": 2596,
+          "raw_row": 6894
         }
       ],
       "files": [
@@ -1366,25 +1380,25 @@
           "modules": [
             "otlp-entry.lil",
             "otlp.lil",
-            "host.lil",
-            "json.lil",
             "types.lil",
+            "host.lil",
             "string.lil",
+            "json.lil",
             "error-host.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6856,
-          "codec_bytes": 2599,
-          "sha256": "8456d82bd5fc35337081f1333d80cb40d9a7f0074530d0fd4f3b3d070e22663f"
+          "bytes": 6894,
+          "codec_bytes": 2596,
+          "sha256": "afb9b9581a79edcc7358073f81727febd4c6ea34ab63f8505d27ef09b5d4074f"
         }
       ],
       "side_effects": [
         "otlp.gzip.js"
       ],
-      "codec_total": 2599,
-      "rows_total": 2599,
+      "codec_total": 2596,
+      "rows_total": 2596,
       "setters": 0,
       "output": "otlp-gzip/primary",
       "codec": "gzip",
@@ -1445,8 +1459,8 @@
           "closure": [
             "otlp.esm.js"
           ],
-          "row": 2377,
-          "raw_row": 6714
+          "row": 2378,
+          "raw_row": 6711
         }
       ],
       "files": [
@@ -1460,25 +1474,25 @@
           "modules": [
             "otlp-entry.lil",
             "otlp.lil",
-            "host.lil",
-            "json.lil",
             "types.lil",
+            "host.lil",
             "string.lil",
+            "json.lil",
             "error-host.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 6714,
-          "codec_bytes": 2377,
-          "sha256": "ced6aa4c3441811ae2f234b1a442f7590221a37a97cba949f5f6c1a9d57039bb"
+          "bytes": 6711,
+          "codec_bytes": 2378,
+          "sha256": "d9886c5ac939dac3b689207b2d655782aba8a0be99c99c99433452e304d4914c"
         }
       ],
       "side_effects": [
         "otlp.esm.js"
       ],
-      "codec_total": 2377,
-      "rows_total": 2377,
+      "codec_total": 2378,
+      "rows_total": 2378,
       "setters": 0,
       "output": "otlp-brotli/primary",
       "codec": "brotli",
@@ -1539,8 +1553,8 @@
           "closure": [
             "otlp.cjs"
           ],
-          "row": 2544,
-          "raw_row": 7710
+          "row": 2533,
+          "raw_row": 7801
         }
       ],
       "files": [
@@ -1553,6 +1567,7 @@
           ],
           "modules": [
             "otlp.lil",
+            "types.lil",
             "host.lil",
             "json.lil",
             "error-host.lil"
@@ -1560,16 +1575,16 @@
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 7710,
-          "codec_bytes": 2544,
-          "sha256": "d177e3508b15ffb5e6c47c5dea503ee08473f8c04fbd52ef2547e1b107ac66dc"
+          "bytes": 7801,
+          "codec_bytes": 2533,
+          "sha256": "7eb9d5d8fd0279f88f0c84ec4a23f6608dfe219a734296b66bf8cd561ff0cb8c"
         }
       ],
       "side_effects": [
         "otlp.cjs"
       ],
-      "codec_total": 2544,
-      "rows_total": 2544,
+      "codec_total": 2533,
+      "rows_total": 2533,
       "setters": 0,
       "output": "otlp-brotli/cjs",
       "codec": "brotli",
@@ -1630,8 +1645,8 @@
           "closure": [
             "autocapture.raw.js"
           ],
-          "row": 8877,
-          "raw_row": 8877
+          "row": 9018,
+          "raw_row": 9018
         }
       ],
       "files": [
@@ -1645,21 +1660,23 @@
           "modules": [
             "autocapture-entry.lil",
             "autocapture-utils.lil",
-            "host.lil"
+            "types.lil",
+            "host.lil",
+            "string.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8877,
-          "codec_bytes": 8877,
-          "sha256": "e407f6ab26142e537366ea2c18370802cdef7f5697b56e2bc5ecec8a35516569"
+          "bytes": 9018,
+          "codec_bytes": 9018,
+          "sha256": "dbd9b32e1f98760f78a8214400017a55074034ba943ecb8b1f2ed044cba822fc"
         }
       ],
       "side_effects": [
         "autocapture.raw.js"
       ],
-      "codec_total": 8877,
-      "rows_total": 8877,
+      "codec_total": 9018,
+      "rows_total": 9018,
       "setters": 0,
       "output": "autocapture-raw/primary",
       "codec": "raw",
@@ -1720,8 +1737,8 @@
           "closure": [
             "autocapture.gzip.js"
           ],
-          "row": 3448,
-          "raw_row": 9190
+          "row": 3506,
+          "raw_row": 9339
         }
       ],
       "files": [
@@ -1735,21 +1752,23 @@
           "modules": [
             "autocapture-entry.lil",
             "autocapture-utils.lil",
-            "host.lil"
+            "types.lil",
+            "host.lil",
+            "string.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 9190,
-          "codec_bytes": 3448,
-          "sha256": "b89baff9ec0182c44c8887cdc9beeb06decdcfc2d047cdffd18384e7c6fd2527"
+          "bytes": 9339,
+          "codec_bytes": 3506,
+          "sha256": "5f844fbb7544c4f2d4de7214aa92a8df30531ff4c92dc5cc4fbe426f0b931443"
         }
       ],
       "side_effects": [
         "autocapture.gzip.js"
       ],
-      "codec_total": 3448,
-      "rows_total": 3448,
+      "codec_total": 3506,
+      "rows_total": 3506,
       "setters": 0,
       "output": "autocapture-gzip/primary",
       "codec": "gzip",
@@ -1810,8 +1829,8 @@
           "closure": [
             "autocapture.esm.js"
           ],
-          "row": 3144,
-          "raw_row": 9199
+          "row": 3176,
+          "raw_row": 9472
         }
       ],
       "files": [
@@ -1825,21 +1844,23 @@
           "modules": [
             "autocapture-entry.lil",
             "autocapture-utils.lil",
-            "host.lil"
+            "types.lil",
+            "host.lil",
+            "string.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 9199,
-          "codec_bytes": 3144,
-          "sha256": "8f3ced3f8e61e66843d89c27bd0d696b7444980e650dfd33257bd75dd0cc5e0e"
+          "bytes": 9472,
+          "codec_bytes": 3176,
+          "sha256": "0b32f2768caec40da2779ad100a90c568fb52e43882893912977b1fb64eb590a"
         }
       ],
       "side_effects": [
         "autocapture.esm.js"
       ],
-      "codec_total": 3144,
-      "rows_total": 3144,
+      "codec_total": 3176,
+      "rows_total": 3176,
       "setters": 0,
       "output": "autocapture-brotli/primary",
       "codec": "brotli",
@@ -1900,8 +1921,8 @@
           "closure": [
             "autocapture.cjs"
           ],
-          "row": 3339,
-          "raw_row": 10783
+          "row": 3366,
+          "raw_row": 10544
         }
       ],
       "files": [
@@ -1914,21 +1935,22 @@
           ],
           "modules": [
             "autocapture-utils.lil",
+            "types.lil",
             "host.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 10783,
-          "codec_bytes": 3339,
-          "sha256": "28ea35b1e96838f8dd67651f29db949cdf5a65f3e658a31f46f0fc856978dbd8"
+          "bytes": 10544,
+          "codec_bytes": 3366,
+          "sha256": "7545390aa7e147880f19ced6ab81a5bf6a57972381125aa6568ff5e72e79fd98"
         }
       ],
       "side_effects": [
         "autocapture.cjs"
       ],
-      "codec_total": 3339,
-      "rows_total": 3339,
+      "codec_total": 3366,
+      "rows_total": 3366,
       "setters": 0,
       "output": "autocapture-brotli/cjs",
       "codec": "brotli",
@@ -1989,8 +2011,8 @@
           "closure": [
             "replay-core.raw.js"
           ],
-          "row": 8413,
-          "raw_row": 8413
+          "row": 8531,
+          "raw_row": 8531
         }
       ],
       "files": [
@@ -2004,22 +2026,24 @@
           "modules": [
             "replay-core-entry.lil",
             "replay-core.lil",
+            "types.lil",
             "host.lil",
+            "string.lil",
             "autocapture-utils.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8413,
-          "codec_bytes": 8413,
-          "sha256": "4042018fd9ad847bdbf9dd6bfbe2f08ad1536975f844bf6e34589b2b92229d17"
+          "bytes": 8531,
+          "codec_bytes": 8531,
+          "sha256": "54693e6a5dcdf1059a7361d9743ef99729bda29bd683d4519ba3d3d7abe51963"
         }
       ],
       "side_effects": [
         "replay-core.raw.js"
       ],
-      "codec_total": 8413,
-      "rows_total": 8413,
+      "codec_total": 8531,
+      "rows_total": 8531,
       "setters": 0,
       "output": "replay-core-raw/primary",
       "codec": "raw",
@@ -2080,8 +2104,8 @@
           "closure": [
             "replay-core.gzip.js"
           ],
-          "row": 3686,
-          "raw_row": 8567
+          "row": 3708,
+          "raw_row": 8717
         }
       ],
       "files": [
@@ -2095,22 +2119,24 @@
           "modules": [
             "replay-core-entry.lil",
             "replay-core.lil",
+            "types.lil",
             "host.lil",
+            "string.lil",
             "autocapture-utils.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8567,
-          "codec_bytes": 3686,
-          "sha256": "3e896cdcc22df454fd6a059c7137648cbc36e137555490924b2fce6957d15fc1"
+          "bytes": 8717,
+          "codec_bytes": 3708,
+          "sha256": "49c9a40922f03744cd4d4dede0eb36c610c8204b6eec0372904d04d41ec6744a"
         }
       ],
       "side_effects": [
         "replay-core.gzip.js"
       ],
-      "codec_total": 3686,
-      "rows_total": 3686,
+      "codec_total": 3708,
+      "rows_total": 3708,
       "setters": 0,
       "output": "replay-core-gzip/primary",
       "codec": "gzip",
@@ -2171,8 +2197,8 @@
           "closure": [
             "replay-core.esm.js"
           ],
-          "row": 3361,
-          "raw_row": 8616
+          "row": 3428,
+          "raw_row": 8766
         }
       ],
       "files": [
@@ -2186,22 +2212,24 @@
           "modules": [
             "replay-core-entry.lil",
             "replay-core.lil",
+            "types.lil",
             "host.lil",
+            "string.lil",
             "autocapture-utils.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 8616,
-          "codec_bytes": 3361,
-          "sha256": "de346927aa769a0c5e25ffc8e282fa4508bb0b320034884f4d25ccb446da17ef"
+          "bytes": 8766,
+          "codec_bytes": 3428,
+          "sha256": "3949a938a4f8a74141a71cce3ca5711a322f1db0595eaf5a0c75abc5a8afe564"
         }
       ],
       "side_effects": [
         "replay-core.esm.js"
       ],
-      "codec_total": 3361,
-      "rows_total": 3361,
+      "codec_total": 3428,
+      "rows_total": 3428,
       "setters": 0,
       "output": "replay-core-brotli/primary",
       "codec": "brotli",
@@ -2262,8 +2290,8 @@
           "closure": [
             "replay-core.cjs"
           ],
-          "row": 3535,
-          "raw_row": 9977
+          "row": 3545,
+          "raw_row": 10100
         }
       ],
       "files": [
@@ -2276,22 +2304,23 @@
           ],
           "modules": [
             "replay-core.lil",
+            "types.lil",
             "host.lil",
             "autocapture-utils.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 9977,
-          "codec_bytes": 3535,
-          "sha256": "f2a8d87b45d76237aa15808107d18646be1d7b84a6291786cc12baffbb2aac59"
+          "bytes": 10100,
+          "codec_bytes": 3545,
+          "sha256": "b5546bd4fb35c5d376401d8f1f4a28ac91392f4ec764d3d88585f79b267cb7a1"
         }
       ],
       "side_effects": [
         "replay-core.cjs"
       ],
-      "codec_total": 3535,
-      "rows_total": 3535,
+      "codec_total": 3545,
+      "rows_total": 3545,
       "setters": 0,
       "output": "replay-core-brotli/cjs",
       "codec": "brotli",
@@ -2344,5 +2373,5 @@
   ],
   "aliases": {},
   "providers": [],
-  "source_sha256": "a347bf32b58b1d56089e473d7cdf108b89057356fbf02142fb387a8ab56af13c"
+  "source_sha256": "722395dc4e9b40ce21de1045396c1150c439637cf67c5f8c379c0b448cae5efd"
 }

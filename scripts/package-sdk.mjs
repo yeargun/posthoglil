@@ -14,7 +14,7 @@ await rm(output,{recursive:true,force:true});await mkdir(output,{recursive:true}
 await cp(join(root,'node_modules/posthog-upstream'),output,{recursive:true})
 const manifest=JSON.parse(await readFile(join(output,'package.json'),'utf8'))
 manifest.name='@itslil/posthog-browser'
-manifest.version=upstreamVersion+'-lil.0'
+manifest.version=upstreamVersion+'-lil.1'
 manifest.description='Experimental PostHog browser SDK with qualified LilScript internals; upstream API and package layout.'
 manifest.repository={type:'git',url:'git+https://github.com/yeargun/posthoglil.git'}
 manifest.homepage='https://yeargun.github.io/posthoglil/'

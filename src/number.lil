@@ -67,7 +67,7 @@ export JsValue getRemoteConfigNumber(JsValue field, string key) {
     if (trimmed == "") {
       return undef();
     }
-    number parsed = toNum(JS.call(Number, JS.undefined(), trimmed));
+    number parsed = toNum(Number(trimmed));
     if (isFiniteNum(parsed)) {
       return parsed;
     }

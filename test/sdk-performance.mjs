@@ -23,6 +23,7 @@ const metadata={date:new Date().toISOString(),browser:browser.version(),node:pro
   importScope:'Import a fresh Blob URL: JavaScript parse, evaluate and module scheduling; source text transfer and Blob creation excluded. No network download is timed.',
   initScope:'Synchronous init with memory persistence, flags bootstrap, autocapture enabled, replay disabled. Full build includes recorder code but recording is not timed.',
   captureScope:'Synchronous preparation and queueing of 1,000 capture calls after 100 warmup calls. before_send returns each event unchanged. Rate limits raised; actual accepted count asserted. HTTP upload, ingestion and replay processing excluded.',
+  exceptionScope:'Synchronous preparation and queueing of 100 captureException calls after 20 warmups. Preconstructed fixtures: 50 simple errors, 25 errors with a cause and 25 two-member aggregates, all with fixed two-frame stacks. Error construction is excluded. Every sample asserts 100 accepted exception events. Upload and ingestion are excluded.',
   statistics:'Alternating original/candidate order, separate fresh browser contexts. Medians; paired bootstrap 95% interval for median relative improvement, 5,000 deterministic resamples. Positive means candidate faster. Exploratory microbenchmark, not a user-perceived latency or throughput guarantee.',rows:[]}
 const median=values=>{const sorted=[...values].sort((a,b)=>a-b);return (sorted[Math.floor((sorted.length-1)/2)]+sorted[Math.floor(sorted.length/2)])/2}
 let seed=0x73c81d
@@ -41,7 +42,7 @@ async function sample(file){
   const measured=await page.evaluate(async({code,origin})=>{
     const blob=URL.createObjectURL(new Blob([code],{type:'text/javascript'}))
     const start=performance.now();const sdk=await import(blob);const imported=performance.now()
-    let accepted=0
+    let accepted=0,acceptedExceptions=0
     const ph=sdk.default
     const options={api_host:origin,asset_host:origin,capture_pageview:false,capture_pageleave:false,autocapture:true,disable_session_recording:true,disable_surveys:true,disable_external_dependency_loading:true,advanced_disable_flags:true,advanced_disable_feature_flags:true,advanced_disable_feature_flags_on_first_load:true,persistence:'memory',request_batching:true,disable_compression:true,opt_out_useragent_filter:true,rate_limiting:{events_per_second:10000000,events_burst_limit:10000000},bootstrap:{distinctID:'performance-fixture',isIdentifiedID:true,featureFlags:{}},before_send:event=>{if(event.event==='bench')accepted++;return event}}
     const initStart=performance.now();ph.init('phc_performance_local_only',options);const initialized=performance.now()
@@ -49,13 +50,23 @@ async function sample(file){
     const captureStart=performance.now()
     for(let i=0;i<1000;i++)ph.capture('bench',{index:i,plan:'pro',nested:{ok:true,items:[1,2,3]},_public_property:'unchanged'})
     const captured=performance.now()
+    const exceptionStack='Error: benchmark\n    at checkout (https://example.test/app.js:10:5)\n    at main (https://example.test/app.js:20:3)'
+    const makeError=()=>Object.assign(new Error('benchmark'),{stack:exceptionStack})
+    const exceptions=Array.from({length:100},(_,i)=>i%4===0?Object.assign(new AggregateError([makeError(),makeError()],'benchmark'),{stack:exceptionStack}):i%4===1?Object.assign(makeError(),{cause:makeError()}):makeError())
+    ph.set_config({before_send:event=>{if(event.event==='$exception')acceptedExceptions++;return event}})
+    for(let i=0;i<20;i++)ph.captureException(exceptions[i])
+    acceptedExceptions=0
+    const exceptionStart=performance.now()
+    for(const error of exceptions)ph.captureException(error)
+    const exceptionsCaptured=performance.now()
     URL.revokeObjectURL(blob)
     ph.opt_out_capturing()
-    return {importMs:imported-start,initMs:initialized-initStart,capture1000Ms:captured-captureStart,accepted}
+    return {importMs:imported-start,initMs:initialized-initStart,capture1000Ms:captured-captureStart,exception100Ms:exceptionsCaptured-exceptionStart,accepted,acceptedExceptions}
   },{code,origin})
   await context.close()
   assert.equal(measured.accepted,1000,'Benchmark hit an opt-out/rate-limit/no-op path')
-  for(const key of ['importMs','initMs','capture1000Ms'])assert.ok(measured[key]>0,`${key} timer resolution too low`)
+  assert.equal(measured.acceptedExceptions,100,'Exception benchmark hit a suppression/no-op path')
+  for(const key of ['importMs','initMs','capture1000Ms','exception100Ms'])assert.ok(measured[key]>0,`${key} timer resolution too low`)
   return measured
 }
 try{
@@ -66,7 +77,7 @@ try{
       for(const label of i%2===0?['original','candidate']:['candidate','original'])pair[label]=await sample(label==='original'?objective.baseline.file:objective.artifact.file)
       if(i>=0)pairs.push(pair)
     }
-    const row={surface:surface.id,objective:objective.objective,original:objective.baseline.file,originalSha256:objective.baseline.sha256,candidate:objective.artifact.file,candidateSha256:objective.artifact.sha256,pairs,metrics:Object.fromEntries(['importMs','initMs','capture1000Ms'].map(key=>[key,summarize(pairs,key)]))}
+    const row={surface:surface.id,objective:objective.objective,original:objective.baseline.file,originalSha256:objective.baseline.sha256,candidate:objective.artifact.file,candidateSha256:objective.artifact.sha256,pairs,metrics:Object.fromEntries(['importMs','initMs','capture1000Ms','exception100Ms'].map(key=>[key,summarize(pairs,key)]))}
     metadata.rows.push(row)
     mkdirSync(join(root,'artifacts/sdk'),{recursive:true})
     writeFileSync(join(root,'artifacts/sdk/performance.json'),JSON.stringify(metadata,null,2)+'\n')

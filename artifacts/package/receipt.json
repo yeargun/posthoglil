@@ -1,6 +1,6 @@
 {
   "upstreamVersion": "1.435.8",
-  "packageVersion": "1.435.8-lil.0",
+  "packageVersion": "1.435.8-lil.1",
   "status": "experimental; not published to npm",
   "installAs": "posthog-js",
   "optimizedEntries": [
@@ -14,35 +14,35 @@
   "replacements": [
     {
       "file": "dist/module.js",
-      "sha256": "69a1fc4ef39e5a252212d2ac0eea7075d8bbfb3ffd9238af4f2a403b66dfad76",
+      "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
       "objective": "brotli"
     },
     {
       "file": "dist/module.mjs",
-      "sha256": "69a1fc4ef39e5a252212d2ac0eea7075d8bbfb3ffd9238af4f2a403b66dfad76",
+      "sha256": "b41dd12d2f7b232929c21bbcc441b543d02ee5fb619da4de8868e6464886feb9",
       "objective": "brotli"
     },
     {
       "file": "dist/main.js",
-      "sha256": "6ca80396e07359c368a68b36856a8e43a2ebabc8641bd0fa5f6298ae5d1f9480",
+      "sha256": "2363e2bd227cdda64badffde1b3b2beb5ab7a6e46c4ac1b257cd078eb972221d",
       "objective": "brotli",
       "formatAdapter": "esbuild CJS"
     },
     {
       "file": "dist/module.full.no-external.js",
-      "sha256": "588f1636a170e24505674ab89c461675844ad8a7a8110bca40efc92fe22c8c1d",
+      "sha256": "555a6ec04e7c9a79c3a0fdf5ca6acad5edd23575ce2edc4fad3854ed3260d184",
       "objective": "brotli"
     },
     {
       "file": "dist/module.full.no-external.cjs",
-      "sha256": "dc2078d9f4865559c5ee95eece33c0deb85373150d796d9bab52412aa322ff23",
+      "sha256": "177681040d6da5c3b65df8c021ec7073319ef750fa742dac7e1f2f35220dec05",
       "objective": "brotli",
       "formatAdapter": "esbuild CJS"
     }
   ],
-  "tarball": "itslil-posthog-browser-1.435.8-lil.0.tgz",
-  "integrity": "sha512-Pv4Ec/tPSpEaMPGYoUUXfdA4cp+WA5aBKSkQWKteAtIdAt6YsND1b2MOIKE7iUUI0XydE27S58mH3UQOsHRwdw==",
-  "shasum": "280eedbf01ad32d1966ae48e3666564945f1be8a",
-  "size": 14837196,
-  "unpackedSize": 52334389
+  "tarball": "itslil-posthog-browser-1.435.8-lil.1.tgz",
+  "integrity": "sha512-Rv2aQYv3J3VG3tSANH5zV4RpS4uT4ZaZ9t5surOhp+cjbxljexKyG3ipK039tDsGUV70URo+WOAwc9Uz4iisgA==",
+  "shasum": "09e083e4d83678baeaff0793a69d740082e9a913",
+  "size": 15199776,
+  "unpackedSize": 52141922
 }

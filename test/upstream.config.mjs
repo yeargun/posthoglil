@@ -56,6 +56,9 @@ export default defineConfig({
     include:[
       'vendor/posthog-js/packages/core/src/__tests__/featureFlagUtils.spec.ts',
       'vendor/posthog-js/packages/core/src/utils/number-utils.spec.ts',
+      'vendor/posthog-js/packages/core/src/utils/type-utils.spec.ts',
+      'vendor/posthog-js/packages/core/src/utils/string-utils.spec.ts',
+      'vendor/posthog-js/packages/core/src/utils/otlp-resource.spec.ts',
       'vendor/posthog-js/packages/core/src/error-tracking/**/*.spec.ts',
       'vendor/posthog-js/packages/core/src/utils/otlp-any-value.spec.ts',
       'vendor/posthog-js/packages/core/src/logs/logs-utils.spec.ts',

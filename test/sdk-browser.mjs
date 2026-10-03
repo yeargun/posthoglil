@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import {createServer} from 'node:http'
+import {createHash} from 'node:crypto'
 import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs'
 import {join,resolve,extname} from 'node:path'
 import {gunzipSync,inflateSync} from 'node:zlib'
@@ -81,7 +82,7 @@ function decodeReplay(value){
 
 function stable(value){
   if(Array.isArray(value))return value.map(stable)
-  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!['uuid','timestamp','sent_at','offset','$insert_id','$session_id','$window_id','$device_id','$time','$session_duration','$time_since_last_event','$event_sequence','$session_entry_timestamp','$session_start_timestamp','$session_start_time','$sdk_debug_extensions_init_time_ms'].includes(key)).map(([key,val])=>[key,stable(val)]))
+  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!['uuid','timestamp','sent_at','offset','$insert_id','$session_id','$window_id','$device_id','$time','$session_duration','$time_since_last_event','$event_sequence','$session_entry_timestamp','$session_start_timestamp','$session_start_time','$sdk_debug_extensions_init_time_ms','$sdk_debug_replay_internal_buffer_length'].includes(key)).map(([key,val])=>[key,stable(val)]))
   if(typeof value==='string')return value.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,'<uuid>')
   return value
 }
@@ -95,14 +96,17 @@ async function journey(label,file,surface){
   await page.clock.setFixedTime(new Date('2026-10-03T00:00:00Z'))
   await page.goto(origin+'/app')
   const result=await page.evaluate(async({file,origin,surface,publicMethods})=>{
+    globalThis._posthogReleaseId='release-fixture'
+    globalThis._posthogChunkIds={'Error: chunk\n    at checkout (https://example.test/app.js:10:5)':'chunk-fixture'}
     const sdk=await import(origin+'/artifact/'+file)
     const ph=sdk.default
     globalThis.sdkUnderTest=ph
     const loaded=[];const seen=[]
+    globalThis.observedSDKEvents=seen
     ph.init('phc_local_parity_only',{
       api_host:origin,ui_host:origin,asset_host:origin,
       capture_pageview:false,capture_pageleave:false,autocapture:true,
-      disable_session_recording:surface!=='full',disable_surveys:true,
+      disable_session_recording:surface!=='full',disable_surveys:surface!=='full',advanced_enable_surveys:surface==='full',
       capture_performance:false,disable_compression:true,
       opt_out_useragent_filter:true,
       persistence:'localStorage',request_batching:false,
@@ -122,23 +126,57 @@ async function journey(label,file,surface){
     const feature={enabled:ph.isFeatureEnabled('enabled'),disabled:ph.isFeatureEnabled('disabled'),variant:ph.getFeatureFlag('variant'),payload:ph.getFeatureFlagPayload('variant')}
     const identity={id:ph.get_distinct_id(),groups:ph.getGroups(),first:ph.get_property('first')}
     const beforeOut=seen.length;ph.opt_out_capturing();ph.capture('must not send');const consent={out:ph.has_opted_out_capturing(),blocked:seen.length===beforeOut};ph.opt_in_capturing({captureEventName:false});consent.in=ph.has_opted_in_capturing()
-    ph.set_config({before_send:event=>event.event==='drop me'?null:(seen.push({event:event.event,properties:{...event.properties}}),event)})
+    ph.set_config({before_send:event=>event.event==='drop me'||event.properties?._parity_probe?null:(seen.push({event:event.event,properties:{...event.properties}}),event)})
     ph.capture('drop me');ph.capture('after consent')
+    // Exercise observable getters after the final minifier, not just in the
+    // compiler's linker input. The probe is dropped before HTTP transmission.
+    const getterReads=[]
+    const getterProbe={name:'Fixture',message:'Getter semantics',stack:'Error: getter\n    at checkout (https://example.test/app.js:10:5)'}
+    Object.defineProperty(getterProbe,'level',{get(){getterReads.push('level');return 'fatal'}})
+    ph.captureException(getterProbe,{_parity_probe:true})
     const exports=Object.keys(sdk).sort()
     const methods=[...new Set(publicMethods)].sort().map(name=>({name,type:typeof ph[name],arity:ph[name]?.length}))
     if(methods.some(method=>method.type!=='function'))throw Error('A declared public method is missing: '+JSON.stringify(methods.filter(method=>method.type!=='function')))
     const api={sameSingleton:sdk.posthog===ph,instance:ph instanceof sdk.PostHog,exports,methods,version:ph.version??ph.config?.lib_version}
-    return {api,loaded,feature,identity,consent,captureOrder:seen.map(event=>event.event),inputUnchanged:JSON.stringify(custom)===before}
+    let vitals
+    if(surface==='full') {
+      const flavors=globalThis.__PosthogExtensions__?.postHogWebVitalsCallbacksByFlavor
+      const names=['web-vitals','web-vitals-soft-navs','web-vitals-with-attribution','web-vitals-with-attribution-soft-navs']
+      vitals=await Promise.all(names.map(name=>new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(Error('Missing FCP callback: '+name)),5000)
+        const callbacks=flavors?.[name]
+        if(!callbacks||['onCLS','onFCP','onINP','onLCP'].some(key=>typeof callbacks[key]!=='function'))throw Error('Missing Web Vitals flavor: '+name)
+        callbacks.onFCP(metric=>{
+          clearTimeout(timer)
+          resolve({name,metric:metric.name,valid:typeof metric.value==='number'&&Number.isFinite(metric.value)&&metric.value>=0,attributed:!!metric.attribution})
+        })
+      })))
+    }
+    return {api,loaded,feature,identity,consent,vitals,getterReads,captureOrder:seen.map(event=>event.event),inputUnchanged:JSON.stringify(custom)===before}
   },{file,origin,surface,publicMethods})
   await page.click('#buy')
   await page.click('#private')
   await page.fill('#password','STILL_PRIVATE')
+  // Commit the change before survey autofocus, whose effect timing varies.
+  await page.locator('#password').blur()
   await page.evaluate(()=>{
     document.querySelector('#change').textContent='Updated DOM captured by replay'
     const err=new Error('fixture error');err.stack='Error: fixture error\n    at checkout (https://example.test/app.js:10:5)'
+    globalThis.sdkUnderTest.addExceptionStep('checkout breadcrumb',{cart:3,nested:{kept:true}})
     globalThis.sdkUnderTest.captureException(err)
     globalThis.sdkUnderTest.capture('browser journey complete')
   })
+  if(surface==='full') {
+    await page.evaluate(()=>{
+      const target=document.createElement('div');target.id='survey-fixture';document.body.appendChild(target)
+      globalThis.sdkUnderTest.renderSurvey({id:'survey-fixture',name:'Delivery fixture',type:'popover',questions:[{id:'answer',type:'open',question:'How was checkout?'}],conditions:{},start_date:'2026-01-01T00:00:00Z',end_date:null,appearance:{showThankYouMessage:false}},'#survey-fixture')
+    })
+    // The UI announces visibility in an effect. Wait for that lifecycle event
+    // before input so its token debit cannot race the first form interaction.
+    await page.waitForFunction(()=>globalThis.observedSDKEvents.some(event=>event.event==='survey shown'))
+    await page.locator('#survey-fixture textarea').fill('Checkout worked')
+    await page.locator('#survey-fixture [aria-label="Submit survey"]').click()
+  }
   {
     await page.evaluate(()=>{globalThis.sdkUnderTest.set_config({disable_session_recording:false});globalThis.sdkUnderTest.startSessionRecording(true)})
     await page.waitForFunction(()=>globalThis.sdkUnderTest.sessionRecordingStarted(),{timeout:15000})
@@ -157,8 +195,23 @@ async function journey(label,file,surface){
   assert.equal(result.identity.id,'person-123');assert.equal(result.identity.first,'one')
   assert.deepEqual(result.feature,{enabled:true,disabled:false,variant:'blue',payload:{color:'blue'}})
   assert.deepEqual(result.consent,{out:true,blocked:true,in:true})
+  if(surface==='full') {
+    assert.equal(result.vitals.length,4)
+    assert.ok(result.vitals.every(row=>row.metric==='FCP'&&row.valid))
+    assert.ok(result.vitals.every(row=>row.attributed===row.name.includes('with-attribution')))
+  }
   for(const name of ['checkout','identified checkout','after consent','$autocapture','$exception','browser journey complete'])assert.ok(events.some(event=>event.event===name),`${label}: missing ${name}; got ${events.map(event=>event.event)}`)
   assert.ok(!events.some(event=>['must not send','drop me'].includes(event.event)))
+  const exception=events.find(event=>event.event==='$exception')
+  assert.equal(exception.properties.$release_id,'release-fixture')
+  assert.deepEqual(exception.properties.$exception_steps,[{$message:'checkout breadcrumb',$timestamp:'2026-10-03T00:00:00.000Z',cart:3,nested:{kept:true}}])
+  assert.ok(exception.properties.$exception_list.some(error=>error.stacktrace?.frames.some(frame=>frame.chunk_id==='chunk-fixture')),'Injected chunk ID was not attached')
+  if(surface==='full') {
+    const survey=events.find(event=>event.event==='survey sent')
+    assert.ok(survey,'Survey response did not reach the collector')
+    assert.equal(survey.properties.$survey_id,'survey-fixture')
+    assert.ok(Object.entries(survey.properties).some(([key,value])=>key.startsWith('$survey_response')&&value==='Checkout worked'),'Survey response changed')
+  }
   assert.ok(!JSON.stringify(requests).includes('NEVER_CAPTURE_THIS_SECRET'))
   assert.ok(!JSON.stringify(requests).includes('STILL_PRIVATE'))
   const clicks=events.filter(event=>event.event==='$autocapture')
@@ -173,9 +226,15 @@ async function journey(label,file,surface){
     assert.ok(!JSON.stringify(snapshots).includes('NEVER_CAPTURE_THIS_SECRET'),'Password leaked inside compressed replay data')
     assert.ok(!JSON.stringify(snapshots).includes('STILL_PRIVATE'),'Updated password leaked inside compressed replay data')
   }
+  // Observer callbacks can queue different numbers of recorder events before a
+  // click; validate the counter but compare the actual DOM snapshots separately.
+  for(const event of events) {
+    const count=event.properties?.$sdk_debug_replay_internal_buffer_length
+    if(count!==undefined)assert.ok(Number.isInteger(count)&&count>=0)
+  }
   // Concurrent HTTP requests may arrive in either order; capture callback order
   // is compared independently above. Keep every event and user property.
-  const comparable=events.filter(event=>['checkout','identified checkout','after consent','$autocapture','$exception','browser journey complete'].includes(event.event)).map(stable).sort((a,b)=>a.event.localeCompare(b.event))
+  const comparable=events.filter(event=>['checkout','identified checkout','after consent','$autocapture','$exception','browser journey complete','survey sent'].includes(event.event)).map(stable).sort((a,b)=>a.event.localeCompare(b.event))
   writeFileSync(join(root,`reports/full-sdk/${surface}-${label}-events.json`),JSON.stringify(comparable,null,2)+'\n')
   // Identity survives a fresh page + SDK instance, then reset clears it.
   await page.goto(origin+'/app')
@@ -195,7 +254,7 @@ async function journey(label,file,surface){
   if(surface==='full')assert.ok(!requests.some(request=>request.asset==='published recorder'),'Full SDK unexpectedly fetched a recorder')
   else assert.ok(requests.some(request=>request.asset==='published recorder'),'Standard SDK did not exercise the lazy recorder ABI')
   await context.close()
-  return {label,surface,file,ok:true,result,persistence,events:comparable,eventNames:events.map(event=>event.event),requests:requests.map(({path,method})=>({path,method})),errors}
+  return {label,surface,file,sha256:createHash('sha256').update(readFileSync(join(root,file))).digest('hex'),ok:true,result,persistence,events:comparable,eventNames:events.map(event=>event.event),requests:requests.map(({path,method})=>({path,method})),errors}
 }
 
 try{
@@ -203,12 +262,15 @@ try{
   for(const surface of ['standard','full']){
     if(selected&&selected!==surface)continue
     const row=benchmark.surfaces.find(row=>row.id===surface)
+    const published=await journey('published',row.originals.find(item=>item.lane==='published').file,surface)
     for(const objective of row.objectives){
       const baseline=await journey('original-'+objective.objective,objective.baseline.file,surface)
       const candidate=await journey('lilscript-'+objective.objective,objective.artifact.file,surface)
       assert.deepEqual(candidate.result,baseline.result,`${surface}/${objective.objective}: public API state changed`)
       assert.deepEqual(candidate.events,baseline.events,`${surface}/${objective.objective}: captured event properties changed`)
-      output.push({surface,objective:objective.objective,upstreamVersion,baseline,candidate,ok:true})
+      assert.deepEqual(candidate.result,published.result,`${surface}/${objective.objective}: published SDK API state changed`)
+      assert.deepEqual(candidate.events,published.events,`${surface}/${objective.objective}: published SDK event properties changed`)
+      output.push({surface,objective:objective.objective,upstreamVersion,published,baseline,candidate,ok:true})
       console.log(surface,objective.objective,'browser journey passed',candidate.eventNames)
     }
   }

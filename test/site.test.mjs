@@ -15,6 +15,8 @@ test('all public comparisons refer to the current upstream pin and verified arti
     for(const row of [...surface.originals,...surface.objectives.map(row=>row.artifact)])assert.equal(sha(join(site,row.file.replace('artifacts/',''))),row.sha256,row.file)
     for(const row of surface.objectives){
       assert.equal(row.savingsPercent,(1-row.artifact[row.metric]/row.baseline[row.metric])*100)
+      assert.equal(row.publishedOriginal.lane,'published')
+      assert.equal(row.publishedSavingsPercent,(1-row.artifact[row.metric]/row.publishedOriginal[row.metric])*100)
       assert.equal(row.baseline[row.metric],Math.min(...surface.originals.map(artifact=>artifact[row.metric])))
       assert.equal(row.artifact[row.metric],Math.min(...row.candidates.map(artifact=>artifact[row.metric])))
       assert.ok(row.totalBuildSeconds>0&&row.originalBuildSeconds>0)
@@ -31,7 +33,7 @@ test('runtime samples and validation cover every downloadable SDK objective',()=
     assert.equal(runtime.candidateSha256,row.artifact.sha256)
     assert.equal(runtime.originalSha256,row.baseline.sha256)
     assert.equal(runtime.pairs.length,performance.samples)
-    for(const pair of runtime.pairs)assert.equal(pair.candidate.accepted,1000)
+    for(const pair of runtime.pairs){assert.equal(pair.candidate.accepted,1000);assert.equal(pair.candidate.acceptedExceptions,100);assert.equal(pair.original.acceptedExceptions,100)}
   }
 })
 test('utility downloads are their separately targeted compiler outputs',()=>{
@@ -63,5 +65,6 @@ test('page leads with full-SDK scope and never projects utility results onto it'
   assert.match(html,/Utility-level percentages are never presented as whole-SDK savings/)
   assert.match(html,/Published npm build time is unknown/)
   assert.doesNotMatch(html+'\n'+app,/previous release|previous version|since the previous|1\.418\.(10|11)/i)
-  assert.match(app,/larger than the best minified original in this Brotli comparison/)
+  assert.match(app,/Against the original source with the same optimizations/)
+  assert.match(app,/exact npm comparison/)
 })

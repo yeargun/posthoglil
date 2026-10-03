@@ -1,20 +1,13 @@
 {
   "status": "experimental",
-  "selection": "All qualified replacements, including regressions. No selective headline or feature removal.",
+  "selection": "Qualified SDK integration. Modules that increase delivered SDK bytes retain the pinned upstream implementation; their standalone LilScript utilities are built and tested separately.",
   "modules": [
     "flags",
     "numbers",
     "strings",
     "types",
     "bots",
-    "autocapture",
-    "replay-config",
-    "replay-utils",
-    "surveys",
     "error-tracking",
-    "otlp-values",
-    "otlp-logs",
-    "otlp-metrics",
-    "otlp-config"
+    "error-default-pipeline"
   ]
 }

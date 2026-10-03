@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "source_sha256": "43ac4c61da89e49408686c3cca7387a06339b02e239e0449811947dc8abbcd59",
+  "source_sha256": "ba6b69cac3d6ee5a0e227a9f08b1b0838628fee110c2c80cd835fd7dd840ceb9",
   "inputs": {
     "root": 0,
     "entries": [
@@ -21,18 +21,38 @@
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/surveys.lil",
-        "bytes": 18164,
-        "sha256": "6f467b0c11d7bea747c737e2410c0e31198c2fa2b231ae52e5fceceb32b82ac0",
+        "bytes": 18116,
+        "sha256": "e9dd2def217d53bc8270400e873b3ec0dc4d1d04059de724903480431c53cbe9",
         "dependencies": [
-          2
+          2,
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
+        "bytes": 4472,
+        "sha256": "a0caba773725b8bac5eb0e51ee6c535fa505a24ccbf8a1d8b14d6b80e380e72c",
+        "dependencies": [
+          3,
+          4
         ],
         "dynamic_dependencies": []
       },
       {
         "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
-        "bytes": 4387,
-        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "bytes": 4312,
+        "sha256": "f2238baa4861cdc5605268da94a374e72db617cad495aec770576de5707bff44",
         "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/string.lil",
+        "bytes": 1443,
+        "sha256": "76ac527162d2349feb35c3a92b83df58835f8a4a0ed0ca4dc64d8b7693c3f70c",
+        "dependencies": [
+          3
+        ],
         "dynamic_dependencies": []
       }
     ],
@@ -51,8 +71,8 @@
           "closure": [
             "surveys.esm.js"
           ],
-          "row": 2353,
-          "raw_row": 7861
+          "row": 2411,
+          "raw_row": 7941
         }
       ],
       "files": [
@@ -66,21 +86,23 @@
           "modules": [
             "surveys-entry.lil",
             "surveys.lil",
-            "host.lil"
+            "types.lil",
+            "host.lil",
+            "string.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 7861,
-          "codec_bytes": 2353,
-          "sha256": "231ff3e53fed0423a7de40ccf27b8363cb4a4596eb1215fe0356dcaab560ca8a"
+          "bytes": 7941,
+          "codec_bytes": 2411,
+          "sha256": "16144925b49b7b5f8e72d0dfc6c0e4287efcfd8b1908ca3259e78503fbd8bd73"
         }
       ],
       "side_effects": [
         "surveys.esm.js"
       ],
-      "codec_total": 2353,
-      "rows_total": 2353,
+      "codec_total": 2411,
+      "rows_total": 2411,
       "setters": 0,
       "output": "primary",
       "codec": "brotli",
@@ -141,8 +163,8 @@
           "closure": [
             "surveys.cjs"
           ],
-          "row": 2589,
-          "raw_row": 9989
+          "row": 2659,
+          "raw_row": 10110
         }
       ],
       "files": [
@@ -155,21 +177,22 @@
           ],
           "modules": [
             "surveys.lil",
+            "types.lil",
             "host.lil"
           ],
           "anchored": true,
           "imports": [],
           "dynamic_imports": [],
-          "bytes": 9989,
-          "codec_bytes": 2589,
-          "sha256": "c628375cfad241d0302441466d888477eb9bb85592e62a838a397185adaeee07"
+          "bytes": 10110,
+          "codec_bytes": 2659,
+          "sha256": "d7efebbfd385217a1d9c5406877b2914fef661bd515d27c5871a2cac555dad94"
         }
       ],
       "side_effects": [
         "surveys.cjs"
       ],
-      "codec_total": 2589,
-      "rows_total": 2589,
+      "codec_total": 2659,
+      "rows_total": 2659,
       "setters": 0,
       "output": "cjs",
       "codec": "brotli",

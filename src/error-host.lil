@@ -18,72 +18,23 @@ extern JsValue String;
 extern JsValue Object;
 extern JsValue JSON;
 
-export bool isStringValue(JsValue value) {
-  return objectTag(value) == "[object String]";
-}
-
-export bool isNumberValue(JsValue value) {
-  return objectTag(value) == "[object Number]" && JS.strictEqual(value, value);
-}
-
-export bool isBooleanValue(JsValue value) {
-  return objectTag(value) == "[object Boolean]";
-}
-
-export bool isObjectValue(JsValue value) {
-  return JS.strictEqual(value, asObject(value)) && !isArr(value);
-}
-
-export bool isEmptyStringValue(JsValue value) {
-  return isStringValue(value) && toStr(value).trim().length == 0;
-}
-
-export bool isPrimitiveValue(JsValue value) {
-  return JS.strictEqual(value, null) || JS.typeOf(value) != "object";
-}
-
-export bool isBuiltinValue(JsValue candidate, string className) {
-  return objectTag(candidate) == "[object " + className + "]";
-}
-
-bool instanceOfCtor(JsValue candidate, JsValue ctor) {
-  try {
-    JsValue hasInstance = JS.invoke(Reflect, "get", ctor, Symbol["hasInstance"]);
-    return JS.call(hasInstance, ctor, candidate).truthy();
-  } catch {
-    return false;
-  }
-}
-
-export bool instanceOfValue(JsValue candidate, JsValue ctor) {
-  return instanceOfCtor(candidate, ctor);
-}
-
-export bool isErrorValue(JsValue candidate) {
-  string tag = objectTag(candidate);
-  if (
-    tag == "[object Error]" ||
-    tag == "[object Exception]" ||
-    tag == "[object DOMException]" ||
-    tag == "[object DOMError]" ||
-    tag == "[object WebAssembly.Exception]"
-  ) {
-    return true;
-  }
-  return instanceOfCtor(candidate, Error);
-}
-
-export bool isErrorEventValue(JsValue value) {
-  return isBuiltinValue(value, "ErrorEvent");
-}
-
-export bool isEventValue(JsValue value) {
-  JsValue eventCtor = globalThis["Event"];
-  return !isUndef(eventCtor) && instanceOfCtor(value, eventCtor);
-}
+import {
+  isString as isStringValue,
+  isNumber as isNumberValue,
+  isBoolean as isBooleanValue,
+  isObject as isObjectValue,
+  isEmptyString as isEmptyStringValue,
+  isPrimitive as isPrimitiveValue,
+  isBuiltin as isBuiltinValue,
+  isInstanceOf as instanceOfValue,
+  isError as isErrorValue,
+  isErrorEvent as isErrorEventValue,
+  isEvent as isEventValue
+} from "./types.lil";
+export { isStringValue, isNumberValue, isBooleanValue, isObjectValue, isEmptyStringValue, isPrimitiveValue, isBuiltinValue, instanceOfValue, isErrorValue, isErrorEventValue, isEventValue };
 
 export string explicitString(JsValue value) {
-  return toStr(JS.call(String, undef(), value));
+  return toStr(String(value));
 }
 
 export JsValue getPrototypeOf(JsValue value) {
@@ -104,7 +55,7 @@ export string safeJsonStringify(JsValue value) {
     if (kind == "function" || kind == "symbol") {
       return undef();
     }
-    if (instanceOfCtor(replacementValue, Error)) {
+    if (replacementValue instanceof Error) {
       JsValue serializedError = object { "name": replacementValue["name"], "message": replacementValue["message"], "stack": replacementValue["stack"] };
       return serializedError;
     }

@@ -17,10 +17,15 @@ const surface=process.argv.find(x=>x.startsWith('--surface='))?.split('=')[1]
 const plan=surface?JSON.parse(readFileSync(join(root,`reports/full-sdk/plan-${surface}.json`),'utf8')):null
 const selected=replacements.filter(row=>(!ids||ids.includes(row.id))&&(!plan||plan.modules.includes(row.id))).map(row=>({...row,exports:row.exports.filter(name=>!plan||plan.exports.includes(`${row.id.replaceAll('-','_')}_${name}`))})).filter(row=>row.exports.length)
 const builds=combined||plan?[{id:surface??'combined',exports:[],lil:null,entrySource:selected.map(row=>{
-  const names=row.exports.map(name=>`${name} as ${row.id.replaceAll('-','_')}_${name}`).join(', ')
+  const key=name=>`${row.id.replaceAll('-','_')}_${name}`
+  const factories=plan?row.sdkFactories??{}:{}
+  const imports=row.exports.map(name=>{
+    const factory=factories[name]
+    return `import {${factory?.export??name} as ${key(name)}} from "../../src/${factory?.lil??row.lil}";`
+  }).join('\n')
   const exported=row.exports.map(name=>`${row.id.replaceAll('-','_')}_${name}`).join(', ')
-  const constructors=(row.constructors??[]).filter(name=>row.exports.includes(name)).map(name=>`export constructor ${row.id.replaceAll('-','_')}_${name};`).join('\n')
-  return `import {${names}} from "../../src/${row.lil}";\nexport {${exported}};\n${constructors}`
+  const constructors=(row.constructors??[]).filter(name=>row.exports.includes(name)&&!factories[name]).map(name=>`export constructor ${row.id.replaceAll('-','_')}_${name};`).join('\n')
+  return `${imports}\nexport {${exported}};\n${constructors}`
 }).join('\n')}]:selected
 for (const objective of objectives) {
   if (!['raw','gzip','brotli'].includes(objective)) throw Error('Unknown objective')
@@ -33,7 +38,9 @@ for (const objective of objectives) {
     const names=row.exports.join(', ')
     writeFileSync(entry,row.entrySource??`import { ${names} } from "../../src/${row.lil}";\nexport { ${names} };\n${(row.constructors??[]).map(name=>`export constructor ${name};`).join("\n")}\n`)
     const config=join(root,'configs/sdk',objective+'.toml')
-    const configText=`[policy]\nversion = 3\n[javascript]\npriority = "size-first"\nassume_pristine_builtins = false\n# These exports are private linker boundaries; SDK and utility-package API names are preserved separately.\nkeep_published_function_names = false\n[effort]\nlevel = ${dev?8:13}\n[objective]\ncodecs = "${objective}"\n[mangle]\nidentifiers = true\nproperties = true\npool_strings = true\n`
+    // These are linker inputs. Final SDK minification runs after linking, and
+    // the measured effort sweep found no delivery gain from tiers 13–16.
+    const configText=`[policy]\nversion = 3\n[javascript]\npriority = "size-first"\nassume_pristine_builtins = false\n# Private linker boundaries; public API names are preserved separately.\nkeep_published_function_names = false\n[effort]\nlevel = 8\n[objective]\ncodecs = "${objective}"\n[mangle]\nidentifiers = true\nproperties = true\npool_strings = true\n`
     writeFileSync(config,configText)
     const output=join(directory,row.id+'.mjs')
     const receipt=join(evidence,'build.json')

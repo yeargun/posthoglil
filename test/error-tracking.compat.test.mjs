@@ -56,6 +56,40 @@ function restoreGlobal(name, descriptor) {
 }
 
 describe("@posthog/core/error-tracking compatibility", () => {
+  it("invokes custom parsers directly without reading a callable's call property", () => {
+    function exercise(api) {
+      const receivers = []
+      function lineParser(line, platform) {
+        receivers.push(this)
+        return { filename: line, function: "fixture", platform }
+      }
+      Object.defineProperty(lineParser, "call", { get() { throw Error("unexpected call lookup") } })
+      const frames = api.createStackParser("custom", lineParser)("frame.js")
+      return { frames, receivers }
+    }
+    assert.deepEqual(exercise(lil), exercise(official))
+  })
+  it("preserves parser arity, arrow-function behavior and numeric skip boundaries", () => {
+    for (const name of ["chrome", "gecko", "node", "opera10", "opera11", "winjs"].map(prefix => prefix + "StackLineParser")) {
+      assert.equal(lil[name].length, official[name].length)
+      assert.equal(lil[name].name, official[name].name)
+      assert.throws(() => new lil[name]("fixture", "web:javascript"), TypeError)
+      assert.throws(() => new official[name]("fixture", "web:javascript"), TypeError)
+    }
+    const stack = "Error: fixture\n    at main (https://example.test/main.js:2:3)"
+    for (const factory of ["createDefaultStackParser", "createStackParser"]) {
+      const args = factory === "createStackParser" ? ["web:javascript"] : []
+      const expected = official[factory](...args), actual = lil[factory](...args)
+      assert.equal(actual.length, expected.length)
+      assert.throws(() => new actual(stack), TypeError)
+      for (const skip of [undefined, 0, 1, NaN, Infinity, -1, .5]) {
+        let expectedError, expectedResult
+        try { expectedResult = expected(stack, skip) } catch (error) { expectedError = error }
+        if (expectedError) assert.throws(() => actual(stack, skip), expectedError.constructor)
+        else assert.deepEqual(actual(stack, skip), expectedResult)
+      }
+    }
+  })
   it("exports the complete pinned runtime surface and matching class shapes", () => {
     assert.deepEqual(Object.keys(lil).sort(), Object.keys(official).sort())
     assert.deepEqual(lil.DEFAULT_EXCEPTION_STEPS_CONFIG, official.DEFAULT_EXCEPTION_STEPS_CONFIG)
@@ -230,8 +264,33 @@ describe("@posthog/core/error-tracking compatibility", () => {
       { max_bytes: Number.NaN },
       { max_bytes: Number.POSITIVE_INFINITY },
       { max_bytes: 0 },
+      { max_bytes: new Number(Infinity) },
+      { max_bytes: new Number(NaN) },
     ]
     for (const config of configs) sameCall("resolveExceptionStepsConfig", [config])
+    const inspectConfig = library => {
+      const reads = []
+      const result = library.resolveExceptionStepsConfig({
+        get enabled() { reads.push("enabled"); return false },
+        get max_bytes() { reads.push("max_bytes"); return 128 },
+      })
+      return { result, reads }
+    }
+    assert.deepEqual(inspectConfig(lil), inspectConfig(official))
+    const inspectNumber = library => {
+      const reads = []
+      const value = new Number(128)
+      value.valueOf = () => { reads.push("valueOf"); return 128 }
+      return { result: library.resolveExceptionStepsConfig({ max_bytes: value }), reads }
+    }
+    assert.deepEqual(inspectNumber(lil), inspectNumber(official))
+    for (const library of [lil, official]) {
+      const saved = library.DEFAULT_EXCEPTION_STEPS_CONFIG.max_bytes
+      try {
+        library.DEFAULT_EXCEPTION_STEPS_CONFIG.max_bytes = "128"
+        assert.equal(library.resolveExceptionStepsConfig({}).max_bytes, "128")
+      } finally { library.DEFAULT_EXCEPTION_STEPS_CONFIG.max_bytes = saved }
+    }
 
     const properties = {
       $message: "reserved",

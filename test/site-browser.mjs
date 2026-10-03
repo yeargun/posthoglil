@@ -28,6 +28,8 @@ try{
     await page.goto(origin,{waitUntil:'networkidle'})
     await page.waitForSelector('#sdk-sizes tr')
     assert.equal(await page.locator('#headline .metric').count(),2)
+    assert.equal(await page.locator('#headline tbody tr').count(),6)
+    assert.match(await page.textContent('#verdict'),/same optimizations/)
     assert.doesNotMatch(await page.textContent('#verdict'),/Loading|could not load/)
     assert.equal(await page.locator('#sdk-sizes tr').count(),3)
     assert.match(await page.textContent('#scope'),/Standard SDK/)
@@ -36,7 +38,7 @@ try{
     assert.equal(await page.getAttribute('[data-surface="full"]','aria-pressed'),'true')
     for(const objective of ['raw','gzip','brotli']){
       await page.selectOption('#runtime-objective',objective)
-      assert.equal(await page.locator('#performance .perf').count(),3)
+      assert.equal(await page.locator('#performance .perf').count(),4)
     }
     for(const id of ['posthog','surveys','error-tracking','otlp','autocapture','replay-core']){
       await page.selectOption('#utility-select',id)
@@ -64,6 +66,7 @@ try{
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'no page-wide horizontal overflow')
     await page.click('[data-surface="standard"]')
     await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}))
+    await page.screenshot({path:join(reports,name+'-hero.png')})
     await page.screenshot({path:join(reports,name+'.png'),fullPage:true})
     console.log(name+': controls, comparisons, demo events/exceptions, local-only traffic, download and layout passed')
     await page.close()

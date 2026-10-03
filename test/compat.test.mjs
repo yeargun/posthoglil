@@ -215,6 +215,20 @@ describe("router, rate limit, queue", () => {
 })
 
 describe("bot detection", () => {
+  it("preserves concat spreading and getter order before a default match", () => {
+    function run(api, ua, spread) {
+      const effects=[], custom=["needle"]
+      Object.defineProperty(custom, "0", {get(){effects.push("read");return "needle"}})
+      if (!spread) {
+        custom[Symbol.isConcatSpreadable]=false
+        custom.toLowerCase=()=>{effects.push("lower");return "needle"}
+      }
+      return {value:api.isBlockedUA(ua,custom),effects}
+    }
+    for(const ua of ["Googlebot", "a needle", "a human"])for(const spread of [true,false]) {
+      assert.deepEqual(run(lil,ua,spread),run(official,ua,spread))
+    }
+  })
   it("matches the default blocked UA list and lookups", () => {
     assert.deepEqual(lil.DEFAULT_BLOCKED_UA_STRS, official.DEFAULT_BLOCKED_UA_STRS)
     const bots = [

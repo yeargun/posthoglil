@@ -3,10 +3,10 @@ version = 3
 [javascript]
 priority = "size-first"
 assume_pristine_builtins = false
-# These exports are private linker boundaries; SDK and utility-package API names are preserved separately.
+# Private linker boundaries; public API names are preserved separately.
 keep_published_function_names = false
 [effort]
-level = 13
+level = 8
 [objective]
 codecs = "raw"
 [mangle]

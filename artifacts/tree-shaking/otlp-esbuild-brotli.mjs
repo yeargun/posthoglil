@@ -1,1 +1,1 @@
-var t=e=>String(e)+"";var r=function(e){return t(e)+"000000"};export{r as msToUnixNano};
+var t;var n=e=>String(e)+"";var i=function(e){return n(e)+"000000"};var r=Array.isArray,l=Object.prototype.toString,u=r||(t=function(e){return l.call(e)==="[object Array]"},t);export{i as msToUnixNano};

@@ -81,19 +81,14 @@ export string[] DEFAULT_BLOCKED_UA_STRS = [
 ];
 
 
-export bool isBlockedUA(JsValue ua, JsValue customBlockedUserAgents = JS.undefined()) {
+export bool isBlockedUA(JsValue ua, JsValue customBlockedUserAgents = JS.array()) {
   if (!ua.truthy()) {
     return false;
   }
-  string uaLower = toStr(ua).toLowerCase();
-  // Upstream's DEFAULT.concat(custom).some(...) without copying the default list on every call.
-  func(string)->bool blocks = (string blocked) => uaLower.includes(blocked.toLowerCase());
-  if (DEFAULT_BLOCKED_UA_STRS.some(blocks)) {
-    return true;
-  }
-  if (!isArr(customBlockedUserAgents)) {
-    return false;
-  }
-  string[] custom = JS.assume(customBlockedUserAgents);
-  return custom.some(blocks);
+  JsValue uaLower = JS.invoke(ua, "toLowerCase");
+  // Concat performs observable spread/getter work before the first match.
+  // Keep that contract, including custom arrays with Symbol.isConcatSpreadable.
+  JsValue blocked = JS.invoke(DEFAULT_BLOCKED_UA_STRS, "concat", customBlockedUserAgents);
+  func(JsValue)->bool blocks = (JsValue value) => !JS.strictEqual(JS.invoke(uaLower, "indexOf", JS.invoke(value, "toLowerCase")), -1);
+  return JS.invoke(blocked, "some", blocks).truthy();
 }

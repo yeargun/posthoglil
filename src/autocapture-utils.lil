@@ -1,6 +1,6 @@
+import {isArrayValue as isArr} from "./types.lil";
 import {
   hasKey,
-  isArr,
   isBool,
   isFn,
   isNullish,
@@ -527,7 +527,7 @@ string escapeQuotes(string input) {
 }
 
 string explicitString(JsValue value) {
-  return JS.string(JS.call(String, undef(), value));
+  return JS.string(String(value));
 }
 
 JsValue extractAttrClass(JsValue element) {

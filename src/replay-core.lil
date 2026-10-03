@@ -1,7 +1,7 @@
+import {isArrayValue as isArr} from "./types.lil";
 import {
   copyObj,
   hasOwnValue,
-  isArr,
   isBool,
   isFn,
   isNullish,
@@ -60,7 +60,7 @@ JsValue initialMaskFallbackRequests = JS.construct(WeakSet);
 Regex dataUri = new Regex("data:([\\w/\\-.]+);(\\w+),([^)\"]*)", "gim");
 
 string explicitString(JsValue value) {
-  return JS.string(JS.call(String, undef(), value));
+  return JS.string(String(value));
 }
 
 int byteLength(string value) {
@@ -136,7 +136,7 @@ JsValue convertToUrl(string url) {
 }
 
 JsValue removePosthogRequest(JsValue data, string apiHost, JsValue endpointCheck) {
-  if (isFn(endpointCheck) && JS.call(endpointCheck, undef(), data["name"]).truthy()) return undef();
+  if (isFn(endpointCheck) && endpointCheck(data["name"]).truthy()) return undef();
   JsValue url = convertToUrl(toStr(data["name"]));
   string replaceValue = apiHost;
   if (apiHost.indexOf("http") == 0) {
@@ -166,7 +166,7 @@ JsValue enforcePayload(JsValue payload, JsValue headers, int limit, string descr
   JsValue rawLength = undef();
   if (!isNullish(headers)) rawLength = headers["content-length"];
   if (rawLength.truthy()) {
-    if (isStr(rawLength)) contentLength = JS.number(JS.call(parseInt, undef(), rawLength));
+    if (isStr(rawLength)) contentLength = JS.number(parseInt(rawLength));
     else contentLength = JS.number(rawLength);
   } else {
     contentLength = byteLength(toStr(payload));
@@ -251,7 +251,7 @@ export JsValue buildNetworkRequestOptions(JsValue instanceConfig, JsValue remote
     func(JsValue, JsValue)->JsValue deprecatedAdapter = (JsValue ignored, JsValue data) => {
       JsValue argument = JS.object();
       argument["url"] = data["name"];
-      JsValue cleanedUrl = JS.call(session["maskNetworkRequestFn"], session, argument);
+      JsValue cleanedUrl = session["maskNetworkRequestFn"](argument);
       if (isNullish(cleanedUrl) && data["isInitial"].truthy()) return cleanedUrl;
       JsValue copied = copyObj(data);
       copied["name"] = undef();
@@ -267,7 +267,7 @@ export JsValue buildNetworkRequestOptions(JsValue instanceConfig, JsValue remote
       if (isUndef(cleaned)) return undef();
       JsValue required = undef();
       if (cleaned["isInitial"].truthy()) required = requiredInitialRequest(cleaned);
-      JsValue masked = JS.call(session["maskCapturedNetworkRequestFn"], session, cleaned);
+      JsValue masked = session["maskCapturedNetworkRequestFn"](cleaned);
       if (isNullish(masked) && !isUndef(required)) {
         JS.invoke(initialMaskFallbackRequests, "add", required);
         return required;

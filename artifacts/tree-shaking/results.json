@@ -11,12 +11,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/posthog-esbuild-raw.mjs",
-        "sha256": "72d7d1b2b76a120b2b21cbcd3ebeffe9bd21416fcc37673679a63baacedc6a26",
+        "sha256": "804726fd608b60b03f988e9a0a3cad006181bb15e3fc8865cf236c97d6a45e65",
         "source": "dist/posthog.raw.js",
-        "sourceSha256": "df19ded1caed4eb198f6cb1ae2249e6c8fc9d6f0db2c5d54c8bac387d03b6637",
-        "raw": 1176,
-        "gzip9": 604,
-        "brotli11": 504
+        "sourceSha256": "34e56d448c3e020c9a1d3777680472b33ac8c754e2467e1d23a0cde0760f09e3",
+        "raw": 1253,
+        "gzip9": 634,
+        "brotli11": 536
       },
       "baseline": {
         "file": "artifacts/tree-shaking/posthog-esbuild-original-terser-mangle.mjs",
@@ -60,7 +60,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 48.91398783666377
+      "savingsPercent": 45.56907037358818
     },
     {
       "id": "posthog",
@@ -70,12 +70,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/posthog-esbuild-gzip.mjs",
-        "sha256": "4516122f9bd854fedaa8ef8359542451aa8f92e84196dbe441096735fcf26efd",
+        "sha256": "28bfe2b48b762248cdd5ca2c43bb579f95f0bb46ca4d04c552cab5ade8ba0a52",
         "source": "dist/posthog.gzip.js",
-        "sourceSha256": "964c2673a3783683b1c90a7c4384435ff54d39d53df31689ed8e29272a65c30a",
-        "raw": 1164,
-        "gzip9": 589,
-        "brotli11": 494
+        "sourceSha256": "32dabd9a5c02c1d2a991de7e3396e4643942ae587c79932ab11c3c64623171ad",
+        "raw": 1241,
+        "gzip9": 621,
+        "brotli11": 531
       },
       "baseline": {
         "file": "artifacts/tree-shaking/posthog-esbuild-original-terser-mangle.mjs",
@@ -119,7 +119,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 40.444893832153696
+      "savingsPercent": 37.2093023255814
     },
     {
       "id": "posthog",
@@ -129,12 +129,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/posthog-esbuild-brotli.mjs",
-        "sha256": "87878d9b1c1b2ea92bcbb319fc6acc50bc7c9b6e9b68a0b682e07a9c7b28a003",
+        "sha256": "3d337cd0609c3da4c33c2ca546e28322b82673dc6e67055a7311c554f45cb0d2",
         "source": "dist/posthog.esm.js",
-        "sourceSha256": "d222ffddb3d79e0010b254b944bc3b6e7b5bd9b2bb357e0ea44809b6f3642f81",
-        "raw": 1164,
-        "gzip9": 589,
-        "brotli11": 495
+        "sourceSha256": "99d17676f3024329a590fe5e39dd5812839f14eafbb47d9058f343e7c8d0a047",
+        "raw": 1241,
+        "gzip9": 622,
+        "brotli11": 531
       },
       "baseline": {
         "file": "artifacts/tree-shaking/posthog-esbuild-original-terser-mangle.mjs",
@@ -178,7 +178,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 42.708333333333336
+      "savingsPercent": 38.541666666666664
     },
     {
       "id": "posthog",
@@ -188,12 +188,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/posthog-rolldown-raw.mjs",
-        "sha256": "24aeb2eb2920d12fc16cb03a534070521c92463c30b1ae8ffea920214d8e3302",
+        "sha256": "b7ee3b197ad3328bd0df7a570359cac6716a63f70a9302a75c5a60c97c79185c",
         "source": "dist/posthog.raw.js",
-        "sourceSha256": "df19ded1caed4eb198f6cb1ae2249e6c8fc9d6f0db2c5d54c8bac387d03b6637",
-        "raw": 472,
-        "gzip9": 294,
-        "brotli11": 240
+        "sourceSha256": "34e56d448c3e020c9a1d3777680472b33ac8c754e2467e1d23a0cde0760f09e3",
+        "raw": 485,
+        "gzip9": 302,
+        "brotli11": 248
       },
       "baseline": {
         "file": "artifacts/tree-shaking/posthog-rolldown-original-terser-mangle.mjs",
@@ -237,7 +237,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 67.33564013840831
+      "savingsPercent": 66.43598615916954
     },
     {
       "id": "posthog",
@@ -247,12 +247,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/posthog-rolldown-gzip.mjs",
-        "sha256": "24aeb2eb2920d12fc16cb03a534070521c92463c30b1ae8ffea920214d8e3302",
+        "sha256": "b7ee3b197ad3328bd0df7a570359cac6716a63f70a9302a75c5a60c97c79185c",
         "source": "dist/posthog.gzip.js",
-        "sourceSha256": "964c2673a3783683b1c90a7c4384435ff54d39d53df31689ed8e29272a65c30a",
-        "raw": 472,
-        "gzip9": 294,
-        "brotli11": 240
+        "sourceSha256": "32dabd9a5c02c1d2a991de7e3396e4643942ae587c79932ab11c3c64623171ad",
+        "raw": 485,
+        "gzip9": 302,
+        "brotli11": 248
       },
       "baseline": {
         "file": "artifacts/tree-shaking/posthog-rolldown-original-terser-mangle.mjs",
@@ -296,7 +296,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 56.57311669128509
+      "savingsPercent": 55.391432791728214
     },
     {
       "id": "posthog",
@@ -306,12 +306,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/posthog-rolldown-brotli.mjs",
-        "sha256": "24aeb2eb2920d12fc16cb03a534070521c92463c30b1ae8ffea920214d8e3302",
+        "sha256": "b7ee3b197ad3328bd0df7a570359cac6716a63f70a9302a75c5a60c97c79185c",
         "source": "dist/posthog.esm.js",
-        "sourceSha256": "d222ffddb3d79e0010b254b944bc3b6e7b5bd9b2bb357e0ea44809b6f3642f81",
-        "raw": 472,
-        "gzip9": 294,
-        "brotli11": 240
+        "sourceSha256": "99d17676f3024329a590fe5e39dd5812839f14eafbb47d9058f343e7c8d0a047",
+        "raw": 485,
+        "gzip9": 302,
+        "brotli11": 248
       },
       "baseline": {
         "file": "artifacts/tree-shaking/posthog-rolldown-original-terser-mangle.mjs",
@@ -355,7 +355,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 60.19900497512438
+      "savingsPercent": 58.872305140961856
     },
     {
       "id": "error-tracking",
@@ -365,12 +365,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/error-tracking-esbuild-raw.mjs",
-        "sha256": "11a32a4604666b543af8dc9739f8424624ef60aa6d489511a2cf8b7c13e2006d",
+        "sha256": "363f41c38f2a9d610eadf18602d0b21138448c087d2e889673adc74e6491b5b5",
         "source": "dist/error-tracking.raw.js",
-        "sourceSha256": "fa5fd3e6fd0c2c9eb0522b7bd2ac3a5d2c8651eb6b49d6784f573c790cc40e52",
-        "raw": 241,
-        "gzip9": 209,
-        "brotli11": 172
+        "sourceSha256": "16a863b4f9c4b1ff84c3fa40cf2c7987aa1a35f6be1509d33fe6e6aae856f5ad",
+        "raw": 351,
+        "gzip9": 274,
+        "brotli11": 234
       },
       "baseline": {
         "file": "artifacts/tree-shaking/error-tracking-esbuild-original-terser-mangle.mjs",
@@ -387,7 +387,7 @@
           "file": "artifacts/tree-shaking/error-tracking-esbuild-original-oxc-mangle.mjs",
           "sha256": "c16b224d9ff0a0ec89d8c5361275b9db4f4c0c6a7ef02afebc86ff04ca35d5f4",
           "source": "artifacts/utilities/error-tracking/original-oxc-mangle.mjs",
-          "sourceSha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
+          "sourceSha256": "b6e45a25b601655f98ef7efba53ec9debed31efa545f16c042e5a1a8fac11444",
           "raw": 1654,
           "gzip9": 830,
           "brotli11": 743,
@@ -414,7 +414,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 84.08190224570674
+      "savingsPercent": 76.81638044914135
     },
     {
       "id": "error-tracking",
@@ -424,12 +424,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/error-tracking-esbuild-gzip.mjs",
-        "sha256": "41a21c84363f80b1cd1b3e57749f71152a0afa1d42bef0c95994cd06126afe2b",
+        "sha256": "0031b5d2132d94b47def277be9967a2cb58dd679b2b1776dccb42d92427cc37d",
         "source": "dist/error-tracking.gzip.js",
-        "sourceSha256": "e5c1f8559b21b6bd4e77c3d0746bf7757bcdef933fd855e670ca456b7709466c",
-        "raw": 227,
-        "gzip9": 198,
-        "brotli11": 161
+        "sourceSha256": "bab756e888a315d2e0750d48c216c905f8a141b16513bb39518c9a2422c9e35d",
+        "raw": 341,
+        "gzip9": 266,
+        "brotli11": 224
       },
       "baseline": {
         "file": "artifacts/tree-shaking/error-tracking-esbuild-original-terser-mangle.mjs",
@@ -446,7 +446,7 @@
           "file": "artifacts/tree-shaking/error-tracking-esbuild-original-oxc-mangle.mjs",
           "sha256": "c16b224d9ff0a0ec89d8c5361275b9db4f4c0c6a7ef02afebc86ff04ca35d5f4",
           "source": "artifacts/utilities/error-tracking/original-oxc-mangle.mjs",
-          "sourceSha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
+          "sourceSha256": "b6e45a25b601655f98ef7efba53ec9debed31efa545f16c042e5a1a8fac11444",
           "raw": 1654,
           "gzip9": 830,
           "brotli11": 743,
@@ -473,7 +473,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 71.0948905109489
+      "savingsPercent": 61.16788321167883
     },
     {
       "id": "error-tracking",
@@ -483,12 +483,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/error-tracking-esbuild-brotli.mjs",
-        "sha256": "41a21c84363f80b1cd1b3e57749f71152a0afa1d42bef0c95994cd06126afe2b",
+        "sha256": "0031b5d2132d94b47def277be9967a2cb58dd679b2b1776dccb42d92427cc37d",
         "source": "dist/error-tracking.esm.js",
-        "sourceSha256": "2ff4b0a9c62ccadc7d00e48c71983b5c331a50dd91b7eaf4626f14cf0cd52a2b",
-        "raw": 227,
-        "gzip9": 198,
-        "brotli11": 161
+        "sourceSha256": "37f656ad783f7b70914d15d001114ec2a2914f9767c5884ac67de661f9f1117c",
+        "raw": 341,
+        "gzip9": 266,
+        "brotli11": 224
       },
       "baseline": {
         "file": "artifacts/tree-shaking/error-tracking-esbuild-original-terser-mangle.mjs",
@@ -505,7 +505,7 @@
           "file": "artifacts/tree-shaking/error-tracking-esbuild-original-oxc-mangle.mjs",
           "sha256": "c16b224d9ff0a0ec89d8c5361275b9db4f4c0c6a7ef02afebc86ff04ca35d5f4",
           "source": "artifacts/utilities/error-tracking/original-oxc-mangle.mjs",
-          "sourceSha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
+          "sourceSha256": "b6e45a25b601655f98ef7efba53ec9debed31efa545f16c042e5a1a8fac11444",
           "raw": 1654,
           "gzip9": 830,
           "brotli11": 743,
@@ -532,7 +532,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 73.12186978297161
+      "savingsPercent": 62.60434056761268
     },
     {
       "id": "error-tracking",
@@ -542,12 +542,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/error-tracking-rolldown-raw.mjs",
-        "sha256": "fae22ead9f34d2a6b8b8294fa5c84f118212dc04b2c9253029dd8ccf70c60340",
+        "sha256": "9a37f378481bf1288b391d20027241b58be9ccd04fb442758f32b8fc89d5f0ba",
         "source": "dist/error-tracking.raw.js",
-        "sourceSha256": "fa5fd3e6fd0c2c9eb0522b7bd2ac3a5d2c8651eb6b49d6784f573c790cc40e52",
-        "raw": 236,
-        "gzip9": 202,
-        "brotli11": 168
+        "sourceSha256": "16a863b4f9c4b1ff84c3fa40cf2c7987aa1a35f6be1509d33fe6e6aae856f5ad",
+        "raw": 250,
+        "gzip9": 214,
+        "brotli11": 178
       },
       "baseline": {
         "file": "artifacts/tree-shaking/error-tracking-rolldown-original-terser-mangle.mjs",
@@ -564,7 +564,7 @@
           "file": "artifacts/tree-shaking/error-tracking-rolldown-original-oxc-mangle.mjs",
           "sha256": "aacf1dcfc0ca506e5ba62e6d5491ae301057edfbc0b3d9692ea8f428cbb49454",
           "source": "artifacts/utilities/error-tracking/original-oxc-mangle.mjs",
-          "sourceSha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
+          "sourceSha256": "b6e45a25b601655f98ef7efba53ec9debed31efa545f16c042e5a1a8fac11444",
           "raw": 1648,
           "gzip9": 821,
           "brotli11": 732,
@@ -591,7 +591,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 82.06686930091185
+      "savingsPercent": 81.0030395136778
     },
     {
       "id": "error-tracking",
@@ -601,12 +601,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/error-tracking-rolldown-gzip.mjs",
-        "sha256": "04469334572481bc4cf6ac8ef330532809a29970be2ffc5b783839e662dc5666",
+        "sha256": "e5d332a3188cc51736413c0aade9adde6beb7d978251d69cef327851e78d3910",
         "source": "dist/error-tracking.gzip.js",
-        "sourceSha256": "e5c1f8559b21b6bd4e77c3d0746bf7757bcdef933fd855e670ca456b7709466c",
-        "raw": 226,
-        "gzip9": 195,
-        "brotli11": 160
+        "sourceSha256": "bab756e888a315d2e0750d48c216c905f8a141b16513bb39518c9a2422c9e35d",
+        "raw": 240,
+        "gzip9": 206,
+        "brotli11": 167
       },
       "baseline": {
         "file": "artifacts/tree-shaking/error-tracking-rolldown-original-terser-mangle.mjs",
@@ -623,7 +623,7 @@
           "file": "artifacts/tree-shaking/error-tracking-rolldown-original-oxc-mangle.mjs",
           "sha256": "aacf1dcfc0ca506e5ba62e6d5491ae301057edfbc0b3d9692ea8f428cbb49454",
           "source": "artifacts/utilities/error-tracking/original-oxc-mangle.mjs",
-          "sourceSha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
+          "sourceSha256": "b6e45a25b601655f98ef7efba53ec9debed31efa545f16c042e5a1a8fac11444",
           "raw": 1648,
           "gzip9": 821,
           "brotli11": 732,
@@ -650,7 +650,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 69.81424148606811
+      "savingsPercent": 68.11145510835914
     },
     {
       "id": "error-tracking",
@@ -660,12 +660,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/error-tracking-rolldown-brotli.mjs",
-        "sha256": "04469334572481bc4cf6ac8ef330532809a29970be2ffc5b783839e662dc5666",
+        "sha256": "e5d332a3188cc51736413c0aade9adde6beb7d978251d69cef327851e78d3910",
         "source": "dist/error-tracking.esm.js",
-        "sourceSha256": "2ff4b0a9c62ccadc7d00e48c71983b5c331a50dd91b7eaf4626f14cf0cd52a2b",
-        "raw": 226,
-        "gzip9": 195,
-        "brotli11": 160
+        "sourceSha256": "37f656ad783f7b70914d15d001114ec2a2914f9767c5884ac67de661f9f1117c",
+        "raw": 240,
+        "gzip9": 206,
+        "brotli11": 167
       },
       "baseline": {
         "file": "artifacts/tree-shaking/error-tracking-rolldown-original-terser-mangle.mjs",
@@ -682,7 +682,7 @@
           "file": "artifacts/tree-shaking/error-tracking-rolldown-original-oxc-mangle.mjs",
           "sha256": "aacf1dcfc0ca506e5ba62e6d5491ae301057edfbc0b3d9692ea8f428cbb49454",
           "source": "artifacts/utilities/error-tracking/original-oxc-mangle.mjs",
-          "sourceSha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
+          "sourceSha256": "b6e45a25b601655f98ef7efba53ec9debed31efa545f16c042e5a1a8fac11444",
           "raw": 1648,
           "gzip9": 821,
           "brotli11": 732,
@@ -709,7 +709,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 71.9298245614035
+      "savingsPercent": 70.7017543859649
     },
     {
       "id": "otlp",
@@ -719,12 +719,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/otlp-esbuild-raw.mjs",
-        "sha256": "882c17efea387b190d54e008db2a5f64c7a20d93e3932c16c8b933c57d25953e",
+        "sha256": "2c8e4c3127037e95bb1ce985e44208a14afe0093904ffa2e0798cb30a80cc789",
         "source": "dist/otlp.raw.js",
-        "sourceSha256": "50ae1d650089a69cb0e2d5cfa3223063b428945d0c02ce6aba671bc803f9efa6",
-        "raw": 89,
-        "gzip9": 100,
-        "brotli11": 90
+        "sourceSha256": "df0e3d547305f8c62a4bc5e7b136ae89de8d454037abd1f5b2045a1113a17aa4",
+        "raw": 203,
+        "gzip9": 165,
+        "brotli11": 135
       },
       "baseline": {
         "file": "artifacts/tree-shaking/otlp-esbuild-original-terser-mangle.mjs",
@@ -768,7 +768,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 94.08637873754154
+      "savingsPercent": 86.51162790697674
     },
     {
       "id": "otlp",
@@ -778,12 +778,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/otlp-esbuild-gzip.mjs",
-        "sha256": "882c17efea387b190d54e008db2a5f64c7a20d93e3932c16c8b933c57d25953e",
+        "sha256": "2c8e4c3127037e95bb1ce985e44208a14afe0093904ffa2e0798cb30a80cc789",
         "source": "dist/otlp.gzip.js",
-        "sourceSha256": "8456d82bd5fc35337081f1333d80cb40d9a7f0074530d0fd4f3b3d070e22663f",
-        "raw": 89,
-        "gzip9": 100,
-        "brotli11": 90
+        "sourceSha256": "afb9b9581a79edcc7358073f81727febd4c6ea34ab63f8505d27ef09b5d4074f",
+        "raw": 203,
+        "gzip9": 165,
+        "brotli11": 135
       },
       "baseline": {
         "file": "artifacts/tree-shaking/otlp-esbuild-original-terser-mangle.mjs",
@@ -827,7 +827,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 85.05231689088191
+      "savingsPercent": 75.33632286995515
     },
     {
       "id": "otlp",
@@ -837,12 +837,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/otlp-esbuild-brotli.mjs",
-        "sha256": "882c17efea387b190d54e008db2a5f64c7a20d93e3932c16c8b933c57d25953e",
+        "sha256": "ed87a26abf4e9c241460a4f70ccbf7fa85b56b132ddda51bcd5daf98a477206f",
         "source": "dist/otlp.esm.js",
-        "sourceSha256": "ced6aa4c3441811ae2f234b1a442f7590221a37a97cba949f5f6c1a9d57039bb",
-        "raw": 89,
-        "gzip9": 100,
-        "brotli11": 90
+        "sourceSha256": "d9886c5ac939dac3b689207b2d655782aba8a0be99c99c99433452e304d4914c",
+        "raw": 203,
+        "gzip9": 165,
+        "brotli11": 152
       },
       "baseline": {
         "file": "artifacts/tree-shaking/otlp-esbuild-original-terser-mangle.mjs",
@@ -886,7 +886,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 84.77157360406092
+      "savingsPercent": 74.2808798646362
     },
     {
       "id": "otlp",
@@ -896,12 +896,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/otlp-rolldown-raw.mjs",
-        "sha256": "4c970598d71e304835d467162520153f0048b459b6e1d87e128ed3dbec9374e9",
+        "sha256": "73a40c00716f126d197734ac44d821bddafc995778a3699050fa58d41c2dbd9b",
         "source": "dist/otlp.raw.js",
-        "sourceSha256": "50ae1d650089a69cb0e2d5cfa3223063b428945d0c02ce6aba671bc803f9efa6",
-        "raw": 84,
-        "gzip9": 99,
-        "brotli11": 80
+        "sourceSha256": "df0e3d547305f8c62a4bc5e7b136ae89de8d454037abd1f5b2045a1113a17aa4",
+        "raw": 98,
+        "gzip9": 108,
+        "brotli11": 91
       },
       "baseline": {
         "file": "artifacts/tree-shaking/otlp-rolldown-original-terser-mangle.mjs",
@@ -945,7 +945,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 93.47319347319348
+      "savingsPercent": 92.38539238539238
     },
     {
       "id": "otlp",
@@ -955,12 +955,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/otlp-rolldown-gzip.mjs",
-        "sha256": "4c970598d71e304835d467162520153f0048b459b6e1d87e128ed3dbec9374e9",
+        "sha256": "73a40c00716f126d197734ac44d821bddafc995778a3699050fa58d41c2dbd9b",
         "source": "dist/otlp.gzip.js",
-        "sourceSha256": "8456d82bd5fc35337081f1333d80cb40d9a7f0074530d0fd4f3b3d070e22663f",
-        "raw": 84,
-        "gzip9": 99,
-        "brotli11": 80
+        "sourceSha256": "afb9b9581a79edcc7358073f81727febd4c6ea34ab63f8505d27ef09b5d4074f",
+        "raw": 98,
+        "gzip9": 108,
+        "brotli11": 91
       },
       "baseline": {
         "file": "artifacts/tree-shaking/otlp-rolldown-original-terser-mangle.mjs",
@@ -1004,7 +1004,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 83.77049180327869
+      "savingsPercent": 82.29508196721311
     },
     {
       "id": "otlp",
@@ -1014,12 +1014,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/otlp-rolldown-brotli.mjs",
-        "sha256": "4c970598d71e304835d467162520153f0048b459b6e1d87e128ed3dbec9374e9",
+        "sha256": "73a40c00716f126d197734ac44d821bddafc995778a3699050fa58d41c2dbd9b",
         "source": "dist/otlp.esm.js",
-        "sourceSha256": "ced6aa4c3441811ae2f234b1a442f7590221a37a97cba949f5f6c1a9d57039bb",
-        "raw": 84,
-        "gzip9": 99,
-        "brotli11": 80
+        "sourceSha256": "d9886c5ac939dac3b689207b2d655782aba8a0be99c99c99433452e304d4914c",
+        "raw": 98,
+        "gzip9": 108,
+        "brotli11": 91
       },
       "baseline": {
         "file": "artifacts/tree-shaking/otlp-rolldown-original-terser-mangle.mjs",
@@ -1063,7 +1063,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 85.42805100182149
+      "savingsPercent": 83.42440801457195
     },
     {
       "id": "replay-core",
@@ -1073,12 +1073,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/replay-core-esbuild-raw.mjs",
-        "sha256": "b845532866aa883d6ca2501c53e15d3ee69fe10218515104a2acda54a442a702",
+        "sha256": "60f06ba545e5c6f74c8ecf636db51c5d209e30cdeb6ba4026a30927d2aebcf15",
         "source": "dist/replay-core.raw.js",
-        "sourceSha256": "4042018fd9ad847bdbf9dd6bfbe2f08ad1536975f844bf6e34589b2b92229d17",
-        "raw": 141,
-        "gzip9": 138,
-        "brotli11": 114
+        "sourceSha256": "54693e6a5dcdf1059a7361d9743ef99729bda29bd683d4519ba3d3d7abe51963",
+        "raw": 255,
+        "gzip9": 207,
+        "brotli11": 188
       },
       "baseline": {
         "file": "artifacts/tree-shaking/replay-core-esbuild-original-terser-mangle.mjs",
@@ -1122,7 +1122,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 94.30992736077482
+      "savingsPercent": 89.70944309927361
     },
     {
       "id": "replay-core",
@@ -1132,12 +1132,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/replay-core-esbuild-gzip.mjs",
-        "sha256": "b845532866aa883d6ca2501c53e15d3ee69fe10218515104a2acda54a442a702",
+        "sha256": "90d3d91031e71d8ad2b5c446385e02527b7afccc4a9ec82fc755bfaeaa1bd127",
         "source": "dist/replay-core.gzip.js",
-        "sourceSha256": "3e896cdcc22df454fd6a059c7137648cbc36e137555490924b2fce6957d15fc1",
-        "raw": 141,
-        "gzip9": 138,
-        "brotli11": 114
+        "sourceSha256": "49c9a40922f03744cd4d4dede0eb36c610c8204b6eec0372904d04d41ec6744a",
+        "raw": 255,
+        "gzip9": 205,
+        "brotli11": 166
       },
       "baseline": {
         "file": "artifacts/tree-shaking/replay-core-esbuild-original-terser-mangle.mjs",
@@ -1181,7 +1181,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 87.90534618755478
+      "savingsPercent": 82.0333041191937
     },
     {
       "id": "replay-core",
@@ -1191,12 +1191,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/replay-core-esbuild-brotli.mjs",
-        "sha256": "b845532866aa883d6ca2501c53e15d3ee69fe10218515104a2acda54a442a702",
+        "sha256": "4b172ad933aae85928656fddf5c040fcec407bff717646a0f66e11f962a74ea6",
         "source": "dist/replay-core.esm.js",
-        "sourceSha256": "de346927aa769a0c5e25ffc8e282fa4508bb0b320034884f4d25ccb446da17ef",
-        "raw": 141,
-        "gzip9": 138,
-        "brotli11": 114
+        "sourceSha256": "3949a938a4f8a74141a71cce3ca5711a322f1db0595eaf5a0c75abc5a8afe564",
+        "raw": 255,
+        "gzip9": 206,
+        "brotli11": 188
       },
       "baseline": {
         "file": "artifacts/tree-shaking/replay-core-esbuild-original-terser-mangle.mjs",
@@ -1240,7 +1240,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 88.8125613346418
+      "savingsPercent": 81.5505397448479
     },
     {
       "id": "replay-core",
@@ -1250,12 +1250,12 @@
       "metric": "raw",
       "artifact": {
         "file": "artifacts/tree-shaking/replay-core-rolldown-raw.mjs",
-        "sha256": "7d27634a00e6407eaa9dfc7356ca9dfc69d2dc7fe376b6dd78daacaa795ad2e6",
+        "sha256": "cdbe8c921703136d6f1d21deaf7e56ce06a22667d3dbffd14d2524f6d1bbd30d",
         "source": "dist/replay-core.raw.js",
-        "sourceSha256": "4042018fd9ad847bdbf9dd6bfbe2f08ad1536975f844bf6e34589b2b92229d17",
-        "raw": 140,
-        "gzip9": 135,
-        "brotli11": 113
+        "sourceSha256": "54693e6a5dcdf1059a7361d9743ef99729bda29bd683d4519ba3d3d7abe51963",
+        "raw": 154,
+        "gzip9": 142,
+        "brotli11": 121
       },
       "baseline": {
         "file": "artifacts/tree-shaking/replay-core-rolldown-original-terser-mangle.mjs",
@@ -1299,7 +1299,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 92.64319495533368
+      "savingsPercent": 91.90751445086705
     },
     {
       "id": "replay-core",
@@ -1309,12 +1309,12 @@
       "metric": "gzip9",
       "artifact": {
         "file": "artifacts/tree-shaking/replay-core-rolldown-gzip.mjs",
-        "sha256": "7d27634a00e6407eaa9dfc7356ca9dfc69d2dc7fe376b6dd78daacaa795ad2e6",
+        "sha256": "cdbe8c921703136d6f1d21deaf7e56ce06a22667d3dbffd14d2524f6d1bbd30d",
         "source": "dist/replay-core.gzip.js",
-        "sourceSha256": "3e896cdcc22df454fd6a059c7137648cbc36e137555490924b2fce6957d15fc1",
-        "raw": 140,
-        "gzip9": 135,
-        "brotli11": 113
+        "sourceSha256": "49c9a40922f03744cd4d4dede0eb36c610c8204b6eec0372904d04d41ec6744a",
+        "raw": 154,
+        "gzip9": 142,
+        "brotli11": 121
       },
       "baseline": {
         "file": "artifacts/tree-shaking/replay-core-rolldown-original-terser-mangle.mjs",
@@ -1358,7 +1358,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 85.34201954397393
+      "savingsPercent": 84.58197611292073
     },
     {
       "id": "replay-core",
@@ -1368,12 +1368,12 @@
       "metric": "brotli11",
       "artifact": {
         "file": "artifacts/tree-shaking/replay-core-rolldown-brotli.mjs",
-        "sha256": "7d27634a00e6407eaa9dfc7356ca9dfc69d2dc7fe376b6dd78daacaa795ad2e6",
+        "sha256": "cdbe8c921703136d6f1d21deaf7e56ce06a22667d3dbffd14d2524f6d1bbd30d",
         "source": "dist/replay-core.esm.js",
-        "sourceSha256": "de346927aa769a0c5e25ffc8e282fa4508bb0b320034884f4d25ccb446da17ef",
-        "raw": 140,
-        "gzip9": 135,
-        "brotli11": 113
+        "sourceSha256": "3949a938a4f8a74141a71cce3ca5711a322f1db0595eaf5a0c75abc5a8afe564",
+        "raw": 154,
+        "gzip9": 142,
+        "brotli11": 121
       },
       "baseline": {
         "file": "artifacts/tree-shaking/replay-core-rolldown-original-terser-mangle.mjs",
@@ -1417,7 +1417,7 @@
           "lane": "esbuild-esnext"
         }
       ],
-      "savingsPercent": 86.01485148514851
+      "savingsPercent": 85.02475247524752
     }
   ]
 }

@@ -1,7 +1,7 @@
+import {isArrayValue as isArr} from "./types.lil";
 import {
   copyObj,
   hasKey,
-  isArr,
   isFiniteNum,
   isNullish,
   isUndef,
@@ -29,16 +29,17 @@ extern JsValue Object;
 extern JsValue Map;
 extern JsValue Set;
 extern JsValue Number;
+extern number Infinity;
 
 export JsValue EXCEPTION_STEP_INTERNAL_FIELDS = object { MESSAGE: "$message", TIMESTAMP: "$timestamp" };
 export JsValue DEFAULT_EXCEPTION_STEPS_CONFIG = object { enabled: true, max_bytes: 32768 };
 
-number normalizePositiveInteger(JsValue input, number fallback) {
-  if (!isNumberValue(input) || !isFiniteNum(toNum(input))) {
+JsValue normalizePositiveInteger(JsValue input, JsValue fallback) {
+  if (!isNumberValue(input) || JS.strictEqual(input, Infinity) || JS.strictEqual(input, -Infinity)) {
     return fallback;
   }
-  number normalized = JS.number(JS.invoke(Math, "floor", input));
-  if (normalized < 0.0) {
+  JsValue normalized = JS.invoke(Math, "floor", input);
+  if (JS.lessThan(normalized, 0)) {
     return fallback;
   }
   return normalized;
@@ -49,14 +50,15 @@ export JsValue resolveExceptionStepsConfig(JsValue config = JS.undefined()) {
     return copyObj(DEFAULT_EXCEPTION_STEPS_CONFIG);
   }
   JsValue out = JS.object();
-  if (isNullish(config["enabled"])) {
+  JsValue enabled = config["enabled"];
+  if (isNullish(enabled)) {
     out["enabled"] = DEFAULT_EXCEPTION_STEPS_CONFIG["enabled"];
   } else {
-    out["enabled"] = config["enabled"];
+    out["enabled"] = enabled;
   }
   out["max_bytes"] = normalizePositiveInteger(
     config["max_bytes"],
-    JS.number(DEFAULT_EXCEPTION_STEPS_CONFIG["max_bytes"])
+    DEFAULT_EXCEPTION_STEPS_CONFIG["max_bytes"]
   );
   return out;
 }
@@ -118,7 +120,7 @@ export number getUtf8ByteLength(string value) {
     JsValue encoder = JS.construct(textEncoder);
     return len(JS.invoke(encoder, "encode", value));
   }
-  string encoded = toStr(JS.call(encodeURIComponent, undef(), value));
+  string encoded = toStr(encodeURIComponent(value));
   int byteLength = 0;
   int i = 0;
   while (i < encoded.length) {
@@ -206,6 +208,45 @@ export class ExceptionStepsBuffer {
 }
 export constructor ExceptionStepsBuffer;
 
+// The complete SDK owns this buffer and never exports its constructor. Keep
+// mutable state in the closure; the standalone public class above still has
+// its original prototype, subclassing and receiver behavior.
+export JsValue createSdkExceptionStepsBuffer(JsValue input = JS.undefined()) {
+  JsValue config = resolveExceptionStepsConfig(input);
+  JsValue entries = JS.array();
+  number totalBytes = 0;
+  func()->void trim = () => {
+    while (totalBytes > JS.number(config["max_bytes"]) && len(entries) > 0) {
+      JsValue evicted = JS.invoke(entries, "shift");
+      if (evicted.truthy()) totalBytes = totalBytes - JS.number(evicted["bytes"]);
+    }
+  };
+  return object {
+    setConfig: (JsValue next) => {
+      config = resolveExceptionStepsConfig(next);
+      trim();
+    },
+    add: (JsValue step) => {
+      SerializedStep? serialized = normalizeAndSerializeStep(step);
+      if (serialized != null) {
+        number bytes = getUtf8ByteLength(serialized.json);
+        if (!(bytes > JS.number(config["max_bytes"]))) {
+          JS.invoke(entries, "push", object { step: serialized.step, bytes: bytes });
+          totalBytes = totalBytes + bytes;
+          trim();
+        }
+      }
+    },
+    getAttachable: () => {
+      return JS.invoke(entries, "map", (JsValue entry) => { return entry["step"]; });
+    },
+    clear: () => {
+      entries = JS.array();
+      totalBytes = 0;
+    }
+  };
+}
+
 JsValue cacheConstructor(JsValue self, JsValue maxSize) {
   self["_maxSize"] = maxSize;
   self["_cache"] = JS.construct(Map);
@@ -271,7 +312,7 @@ JsValue getFilenameToChunkIdMap(JsValue stackParser) {
     if (result.truthy()) {
       cachedFilenameChunkIds[result[0]] = result[1];
     } else {
-      JsValue parsedStack = JS.call(stackParser, undef(), stackKey);
+      JsValue parsedStack = stackParser(stackKey);
       int frameIndex = len(parsedStack) - 1;
       while (frameIndex >= 0) {
         JsValue stackFrame = parsedStack[frameIndex];
@@ -362,7 +403,7 @@ JsValue coerceGraph(JsValue builder, JsValue input, JsValue mechanism, JsValue h
   JsValue forward = context["apply"];
   func(JsValue, JsValue)->JsValue apply = (JsValue ignored, JsValue nextInput) => {
     JS.invoke(state.wrappers, "push", input);
-    try { return JS.call(forward, undef(), nextInput); }
+    try { return forward(nextInput); }
     finally { JS.invoke(state.wrappers, "pop"); }
   };
   context["apply"] = JS.method1(apply);
@@ -436,7 +477,7 @@ JsValue builderParseStacktrace(JsValue self, JsValue error, JsValue context) {
   JsValue stack = undef();
   if (!isNullish(error["stack"]) && !JS.strictEqual(error["stack"], "")) {
     try {
-      stack = JS.call(self["stackParser"], self, error["stack"], if (error["synthetic"].truthy()) { context["skipFirstLines"] } else { 0 });
+      stack = self["stackParser"](error["stack"], if (error["synthetic"].truthy()) { context["skipFirstLines"] } else { 0 });
       stack = JS.invoke(self, "applyChunkIds", stack, context["chunkIdMap"]);
     } catch { stack = undef(); }
   }
@@ -516,7 +557,8 @@ async JsValue builderApplyModifiersAsync(JsValue self, JsValue frames) {
   JsValue newFrames = frames;
   int i = 0;
   while (i < len(self["modifiers"])) {
-    JsValue result = JS.call(self["modifiers"][i], undef(), newFrames);
+    JsValue modifier = self["modifiers"][i];
+    JsValue result = modifier(newFrames);
     newFrames = await Task.resolve(result);
     i = i + 1;
   }

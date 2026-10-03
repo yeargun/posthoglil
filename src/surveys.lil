@@ -1,7 +1,7 @@
+import {isArrayValue as isArr} from "./types.lil";
 import {
   copyObj,
   hasKey,
-  isArr,
   isNullish,
   isObj,
   isStr,
@@ -191,12 +191,12 @@ export JsValue propertyComparisons = object {
   icontains: (string[] targets, string[] values) => values.map(lowerCase).some((string value) => targets.map(lowerCase).some((string target) => value.includes(target))),
   not_icontains: (string[] targets, string[] values) => values.map(lowerCase).every((string value) => targets.map(lowerCase).every((string target) => !value.includes(target))),
   gt: (string[] targets, string[] values) => values.some((string value) => {
-    number parsed = JS.number(JS.call(parseFloat, undef(), value));
-    return parsed == parsed && targets.some((string target) => parsed > JS.number(JS.call(parseFloat, undef(), target)));
+    number parsed = JS.number(parseFloat(value));
+    return parsed == parsed && targets.some((string target) => parsed > JS.number(parseFloat(target)));
   }),
   lt: (string[] targets, string[] values) => values.some((string value) => {
-    number parsed = JS.number(JS.call(parseFloat, undef(), value));
-    return parsed == parsed && targets.some((string target) => parsed < JS.number(JS.call(parseFloat, undef(), target)));
+    number parsed = JS.number(parseFloat(value));
+    return parsed == parsed && targets.some((string target) => parsed < JS.number(parseFloat(target)));
   })
 };
 
@@ -210,7 +210,7 @@ export bool matchPropertyFilters(JsValue propertyFilters, JsValue eventPropertie
     JsValue compare = propertyComparisons[filter["operator"]];
     if (!compare.truthy()) return false;
     JsValue[] targets = JS.assume(filter["values"]);
-    return JS.call(compare, undef(), targets.map((JsValue item) => toStr(item)), [toStr(value)]).truthy();
+    return compare(targets.map((JsValue item) => toStr(item)), [toStr(value)]).truthy();
   });
 }
 
