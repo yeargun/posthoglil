@@ -22,6 +22,10 @@ behaviour cost, and a minimal reproduction. Generic fixes only (no port-specific
 | F15 | `= undefined` parameter defaults print a `length`-preserving wrapper plus `p==null&&(p=void 0)` per parameter | bytes per function | open |
 | F16 | Typed loops print `a.length\|0`; `.get(i)` prints `i<(a.length\|0)?a[i]:null`; inlined multi-return functions become IIFEs; after an inline a rest call prints `f((t=[x],a),...t)` | bytes | open |
 | F17 | Language gaps met by the port: no `?.()`, no computed keys in `object {}`, no `string.substring`, typed `split` takes only a string separator, typed-array stores need `int`, no bitwise operators on `JsValue`, `match`/`object` cannot be parameter names, no `else if` inside expression-`if`, extern contracts are program-wide | workarounds in source | open |
+| F18 | A struct-array field on a published class is refused: `Unsupported … "public field requires a value storage adapter"` | ports keep such state as `JsValue` arrays | open |
+| F19 | Optional fields of a private class held by a published class get public-ABI treatment: `Object.defineProperty`/`delete` helpers on every write, unmangled names, a key-cleaning constructor | runtime on hot paths (`PostHogMetrics.count`) and bytes; workaround: non-optional fields with sentinels | open |
+| F20 | Constructing a private class with an `init` inside a published method prints `(c={step:null,bytes:0},((a,b,c)=>{a.step=b;a.bytes=c})(c,a,b),c)` instead of `{step:a,bytes:b}` | bytes and an extra call; workaround: `shape` literals | open |
+| F21 | More language gaps: `?.` needs a nullable typed receiver (not `JsValue`), no `f?.()`, no `**`, `match`/`record`/`func` reserved, typed `splice` takes exactly 2 arguments, typed arrays have no `sort`, typed `Map` cannot be iterated, typed `slice` needs `int` bounds, narrowing does not carry past `continue`, `Math`/`console`/`setTimeout`/`Infinity` need `extern JsValue` declarations | workarounds in source | open |
 
 ## Reproductions
 
