@@ -1,0 +1,92 @@
+// packages/browser/src/request-dispatch.ts
+// Internal dispatch shared by PostHog and RetryQueue: applies the instance's transport, header,
+// compression and beacon settings to the request options and hands them to the transport.
+// Without `onResponse` the caller's options object is updated in place, as upstream does.
+import { isUndefined } from "../core/utils/type-utils.lil";
+import { spreadInto } from "../lil/spread.lil";
+import { request, SUPPORTS_REQUEST } from "./request.lil";
+import extern { userAgent } from "@upstream/browser-common/utils/globals";
+extern JsValue userAgent;
+extern JsValue Object;
+
+// IE<10 does not support cross-origin XHR's but script tags with defer won't block
+// window.onload; ENQUEUE_REQUESTS should only be true for Opera<12
+bool ENQUEUE_REQUESTS = !SUPPORTS_REQUEST &&
+  (if (userAgent == null) { undefined } else { userAgent.indexOf("MSIE") }) === -1 &&
+  (if (userAgent == null) { undefined } else { userAgent.indexOf("Mozilla") }) === -1;
+
+export void enableRequestSending() {
+  ENQUEUE_REQUESTS = false;
+}
+
+// `options.callback?.(response)`: called through the options object
+void callBack(JsValue options, JsValue response) {
+  if (options.callback != null) {
+    options.callback(response);
+  }
+}
+
+export void sendRequest(JsValue instance, JsValue options, JsValue onResponse) {
+  if (onResponse.truthy()) {
+    // Drop callbacks and DOM-ready deferral retain a one-argument completion. A deferred request
+    // is drained through a fresh RetryQueue attempt, which owns the eventual Retry-After delay.
+    options = Object.assign(object {}, options);
+    options.callback = (JsValue response) => onResponse(response);
+  }
+  if (!instance.__loaded.truthy()) {
+    if (options.fireCallbackOnDrop.truthy()) {
+      callBack(options, object { statusCode: 0 });
+    }
+    return;
+  }
+
+  if (ENQUEUE_REQUESTS) {
+    instance.__request_queue.push(options);
+    return;
+  }
+
+  if (instance.rateLimiter.isServerRateLimited(options.batchKey).truthy()) {
+    if (options.fireCallbackOnDrop.truthy()) {
+      callBack(options, object { statusCode: 429 });
+    }
+    return;
+  }
+
+  options.transport = options.transport || instance.config.api_transport;
+  JsValue headers = spreadInto(object {}, instance.config.request_headers);
+  options.headers = spreadInto(headers, options.headers);
+  if (options.compression === "best-available") {
+    options.compression = instance.compression ?? options.compressionFallback;
+  } else {
+    options.compression = options.compression;
+  }
+  JsValue disableBeacon = if (isUndefined(instance.config.disable_beacon)) {
+    instance.config.__preview_disable_beacon
+  } else {
+    instance.config.disable_beacon
+  };
+  if (disableBeacon.truthy()) {
+    options.disableTransport = ["sendBeacon"];
+  }
+
+  // Specially useful if you're doing SSR with NextJS. Users must be careful when tweaking `cache`
+  // because they might get out-of-date feature flags
+  options.fetchOptions = options.fetchOptions || instance.config.fetch_options;
+
+  request(options, (JsValue response, JsValue retryAfterMs) => {
+    instance.rateLimiter.checkForLimiting(response);
+
+    if (response.statusCode >= 400) {
+      JsValue config = instance.config;
+      if (config.on_request_error != null) {
+        config.on_request_error(response);
+      }
+    }
+
+    if (onResponse.truthy()) {
+      onResponse(response, retryAfterMs);
+    } else {
+      callBack(options, response);
+    }
+  });
+}

@@ -1,0 +1,221 @@
+// packages/browser/src/retry-queue.ts
+// Retries failed requests with jittered exponential backoff (honouring Retry-After), pauses while
+// the browser is offline, and hands pending retries to sendBeacon on unload.
+// The queue keeps `_instance` (reserved in upstream's npm build), the `length` getter and the
+// public methods; queued retries are a private class, the private methods module functions.
+import { isPositiveNumber, isUndefined } from "../core/utils/type-utils.lil";
+import { sendRequest } from "./request-dispatch.lil";
+import { extendURLParams } from "./request.lil";
+import extern { logger } from "@upstream/browser-common/utils/logger";
+import extern { window } from "@upstream/browser-common/utils/globals";
+import extern { addEventListener } from "@upstream/browser-common/utils/general-utils";
+extern JsValue logger;
+extern JsValue window;
+extern JsValue addEventListener(JsValue element, string event, JsValue callback);
+extern JsValue Object;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue navigator;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+float thirtyMinutes = 30.0 * 60.0 * 1000.0;
+float DEFAULT_MAX_RETRIES = 10;
+// NOTE: posthog-logs.ts mirrors this budget with its own `MAX_CONSECUTIVE_STATUS_ZERO_FAILURES`.
+float STATUS_CODE_ZERO_MAX_RETRIES = 3;
+
+// A jittered exponential backoff delay in milliseconds: 6 seconds doubled with each retry up to
+// 30 minutes, each with +/- 50% jitter (6 seconds up to 45 minutes).
+export float pickNextRetryDelay(float retriesPerformedSoFar) {
+  float rawBackoffTime = 3000.0 * (Math.pow(2, retriesPerformedSoFar) as float);
+  float minBackoff = rawBackoffTime / 2.0;
+  float cappedBackoffTime = thirtyMinutes.min(rawBackoffTime);
+  float jitterFraction = (Math.random() as float) - 0.5; // between -0.5 and 0.5
+  float jitter = jitterFraction * (cappedBackoffTime - minBackoff);
+  return (cappedBackoffTime + jitter).ceil();
+}
+
+class RetryQueueElement {
+  float retryAt;
+  JsValue requestOptions;
+
+  init(float retryAt, JsValue requestOptions) {
+    this.retryAt = retryAt;
+    this.requestOptions = requestOptions;
+  }
+}
+
+// `{ retriesPerformedSoFar, ...options }`
+JsValue withRetries(JsValue retriesPerformedSoFar, JsValue options) {
+  JsValue requestOptions = object { retriesPerformedSoFar: retriesPerformedSoFar };
+  return Object.assign(requestOptions, options);
+}
+
+export class RetryQueue {
+  JsValue _instance;
+  bool _isPolling = false;
+  JsValue _poller = undefined;
+  float _pollIntervalMs = 3000;
+  RetryQueueElement[] _queue = [];
+  bool _areWeOnline = true;
+  JsValue _onlineListener = undefined;
+  JsValue _offlineListener = undefined;
+
+  init(JsValue _instance) {
+    this._instance = _instance;
+    this._queue = [];
+    this._areWeOnline = true;
+    this.resume();
+  }
+
+  void resume() {
+    if (window !== undefined && JS.in("onLine", window.navigator)) {
+      this._areWeOnline = window.navigator.onLine.truthy();
+      if (this._onlineListener.truthy()) {
+        return;
+      }
+      RetryQueue self = this;
+      this._onlineListener = () => {
+        self._areWeOnline = true;
+        flush(self);
+      };
+      this._offlineListener = () => {
+        self._areWeOnline = false;
+      };
+      addEventListener(window, "online", this._onlineListener);
+      addEventListener(window, "offline", this._offlineListener);
+    }
+  }
+
+  void retriableRequest(JsValue request, JsValue transportOverride) {
+    // `{ retriesPerformedSoFar, ...options }`
+    JsValue retriesPerformedSoFar = request.retriesPerformedSoFar;
+    JsValue options = Object.assign(object {}, request);
+    JS.delete(options, "retriesPerformedSoFar");
+    if (isPositiveNumber(retriesPerformedSoFar)) {
+      options.url = extendURLParams(options.url as string, object { retry_count: retriesPerformedSoFar });
+    }
+
+    JsValue sentOptions = options;
+    if (transportOverride.truthy()) {
+      sentOptions = Object.assign(object {}, options);
+      sentOptions.transport = transportOverride;
+    }
+    RetryQueue self = this;
+    sendRequest(this._instance, sentOptions, (JsValue response, JsValue retryAfterMs) => {
+      if (response.statusCode !== 200 && (response.statusCode < 400 || response.statusCode >= 500)) {
+        float maxRetries = if (response.statusCode === 0) { STATUS_CODE_ZERO_MAX_RETRIES } else { DEFAULT_MAX_RETRIES };
+        JsValue performed = retriesPerformedSoFar ?? 0;
+        if (performed < maxRetries) {
+          enqueue(self, withRetries(retriesPerformedSoFar, options), retryAfterMs);
+          return;
+        }
+        if (response.statusCode === 0) {
+          logger.warn(`Request failed before receiving an HTTP response; this can happen due to network issues, CORS, browser blocking, or ad blockers. Stopped retrying after ${performed} retries.`);
+        }
+      }
+      if (options.callback != null) {
+        options.callback(response);
+      }
+    });
+  }
+
+  void unload() {
+    if (this._poller.truthy()) {
+      clearTimeout(this._poller);
+      this._poller = undefined;
+    }
+    this._isPolling = false;
+
+    if (window !== undefined) {
+      if (this._onlineListener.truthy()) {
+        window.removeEventListener("online", this._onlineListener);
+        this._onlineListener = undefined;
+      }
+      if (this._offlineListener.truthy()) {
+        window.removeEventListener("offline", this._offlineListener);
+        this._offlineListener = undefined;
+      }
+    }
+
+    for (int i = 0; i < this._queue.length; i++) {
+      try {
+        // we've had send beacon in place for at least 2 years
+        JsValue beaconOptions = Object.assign(object {}, this._queue[i].requestOptions);
+        beaconOptions.transport = "sendBeacon";
+        this._instance._send_request(beaconOptions);
+      } catch (JsValue e) {
+        // sendBeacon retries automatically and loses `this` after the first retry
+        logger.error(e);
+      }
+    }
+    this._queue = [];
+  }
+}
+export constructor RetryQueue;
+
+float lengthOf(RetryQueue self) {
+  return self._queue.length;
+}
+
+// Prototype getter, as upstream's class declares it.
+Object.defineProperty((RetryQueue as JsValue).prototype, "length", object {
+  get: (this JsValue receiver) => lengthOf(receiver as RetryQueue),
+  configurable: true
+});
+
+void enqueue(RetryQueue self, JsValue requestOptions, JsValue retryAfterMs) {
+  JsValue retriesPerformedSoFar = requestOptions.retriesPerformedSoFar || 0;
+  requestOptions.retriesPerformedSoFar = retriesPerformedSoFar + 1;
+
+  JsValue msToNextRetry = Math.max(pickNextRetryDelay(retriesPerformedSoFar as float), retryAfterMs ?? 0);
+  float retryAt = (Date.now() + msToNextRetry) as float;
+
+  self._queue.push(new RetryQueueElement(retryAt, requestOptions));
+
+  string logMessage = `Enqueued failed request for retry in ${msToNextRetry}`;
+  if (!navigator.onLine.truthy()) {
+    logMessage += " (Browser is offline)";
+  }
+  logger.warn(logMessage);
+
+  if (!self._isPolling) {
+    self._isPolling = true;
+    poll(self);
+  }
+}
+
+void poll(RetryQueue self) {
+  if (self._poller.truthy()) {
+    clearTimeout(self._poller);
+  }
+  if (self._queue.length == 0) {
+    self._isPolling = false;
+    self._poller = undefined;
+    return;
+  }
+  self._poller = setTimeout(() => {
+    if (self._areWeOnline && self._queue.length > 0) {
+      flush(self);
+    }
+    poll(self);
+  }, self._pollIntervalMs);
+}
+
+void flush(RetryQueue self) {
+  JsValue now = Date.now();
+  RetryQueueElement[] notToFlush = [];
+  RetryQueueElement[] toFlush = self._queue.filter((RetryQueueElement item) => {
+    if (item.retryAt < now) {
+      return true;
+    }
+    notToFlush.push(item);
+    return false;
+  });
+
+  self._queue = notToFlush;
+
+  for (int i = 0; i < toFlush.length; i++) {
+    (self as JsValue).retriableRequest(toFlush[i].requestOptions);
+  }
+}
