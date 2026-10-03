@@ -1,0 +1,52 @@
+// packages/core/src/error-tracking/parsers/base.ts — frames are plain objects (they go into
+// `$exception_list` and to stack-frame modifiers), built with upstream's keys and order.
+import { isUndefined } from "../../utils/type-utils.lil";
+
+export string UNKNOWN_FUNCTION = "?";
+
+// Chromium reports a script with no URL at all (extension-injected, pasted, evaluated from a
+// string) as a bare `<anonymous>:line:col` frame, which can never be symbolicated.
+string ANONYMOUS_FILENAME = "<anonymous>";
+
+// A leading `scheme:` of two characters or more (so a Windows drive letter is not one).
+Regex URL_SCHEME = new Regex("^([a-z][a-z0-9.+-]+):", "i");
+
+// The schemes an app is served over; anything else names code the container put into the page.
+string[] APP_URL_SCHEMES = [
+  "http",
+  "https",
+  "file",
+  "blob",
+  "app",
+  "capacitor",
+  "ionic",
+  "webpack",
+  "webpack-internal",
+  "ng"
+];
+
+// Is this filename a script the app itself loaded? A filename with no scheme is one.
+bool isAppFilename(JsValue filename) {
+  if (!filename.truthy() || filename === ANONYMOUS_FILENAME) {
+    return false;
+  }
+  JsValue scheme = JS.regexExec(URL_SCHEME, filename);
+  return !scheme.truthy() || APP_URL_SCHEMES.includes(scheme[1].toLowerCase() as string);
+}
+
+export JsValue createFrame(JsValue platform, JsValue filename, JsValue functionName, JsValue lineno, JsValue colno) {
+  JsValue frame = object {
+    platform: platform,
+    filename: filename,
+    "function": if (functionName === "<anonymous>") { UNKNOWN_FUNCTION } else { functionName },
+    // A frame the app did not load is kept as context but does not count as in_app.
+    in_app: isAppFilename(filename)
+  };
+  if (!isUndefined(lineno)) {
+    frame.lineno = lineno;
+  }
+  if (!isUndefined(colno)) {
+    frame.colno = colno;
+  }
+  return frame;
+}

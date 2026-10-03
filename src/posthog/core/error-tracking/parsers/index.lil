@@ -1,0 +1,245 @@
+// packages/core/src/error-tracking/parsers/index.ts — the stack parser (forked from TraceKit via
+// Sentry). Frames are plain objects (JsValue: line parsers may be foreign); the repeated-cycle
+// bookkeeping is a private typed class.
+import { UNKNOWN_FUNCTION } from "./base.lil";
+import { chromeStackLineParser } from "./chrome.lil";
+import { geckoStackLineParser } from "./gecko.lil";
+import extern { winjsStackLineParser } from "@upstream/core/error-tracking/parsers/winjs";
+import extern { opera10StackLineParser, opera11StackLineParser } from "@upstream/core/error-tracking/parsers/opera";
+import extern { nodeStackLineParser } from "@upstream/core/error-tracking/parsers/node";
+extern JsValue winjsStackLineParser;
+extern JsValue opera10StackLineParser;
+extern JsValue opera11StackLineParser;
+extern JsValue nodeStackLineParser;
+extern JsValue Object;
+extern JsValue Array;
+
+export { chromeStackLineParser };
+export { winjsStackLineParser };
+export { geckoStackLineParser };
+export { opera10StackLineParser, opera11StackLineParser };
+export { nodeStackLineParser };
+
+Regex WEBPACK_ERROR_REGEXP = new Regex("\\(error: (.*)\\)");
+float STACKTRACE_FRAME_LIMIT = 50.0;
+
+// A recursion would spend the whole frame limit on one repeating cycle; the parser keeps a single
+// copy of an exact cycle instead, making room for outer frames.
+int MAX_REPEATED_CYCLE_LENGTH = 10;
+// How many lines to read, now that a recursion no longer stops the parser at the frame limit.
+float STACKTRACE_LINE_LIMIT = 1000.0;
+
+// The column tells apart functions a minified bundle puts on one line under the same short name.
+bool isSameFrame(JsValue a, JsValue b) {
+  return a.filename === b.filename &&
+    a["function"] === b["function"] &&
+    a.module === b.module &&
+    a.lineno === b.lineno &&
+    a.colno === b.colno;
+}
+
+class RepeatedCycle {
+  int start;
+  int length;
+
+  init(int start, int length) {
+    this.start = start;
+    this.length = length;
+  }
+}
+
+// Removes the cycle that ends at the last frame when the frames before it are the same cycle, and
+// reports where the kept copy sits. Runs after every frame is added.
+RepeatedCycle? collapseRepeatedCycle(JsValue[] frames) {
+  for (int length = 1; length <= MAX_REPEATED_CYCLE_LENGTH; length += 1) {
+    int start = frames.length - 2 * length;
+    if (start < 0) {
+      return null;
+    }
+    bool isCycle = true;
+    for (int offset = 0; offset < length; offset += 1) {
+      if (!isSameFrame(frames[start + offset], frames[start + length + offset])) {
+        isCycle = false;
+        break;
+      }
+    }
+    if (isCycle) {
+      // Keep the outer copy of the matching frames.
+      for (int offset = 0; offset < length; offset += 1) {
+        frames[start + offset] = frames[start + length + offset];
+      }
+      frames.splice(start + length, frames.length - (start + length));
+      return new RepeatedCycle(start, length);
+    }
+  }
+  return null;
+}
+
+// Removes the partial copy left next to the kept one, at the end the stack was cut at.
+void trimPartialCycle(JsValue[] frames, RepeatedCycle cycle) {
+  int copyEnd = cycle.start + cycle.length;
+  int partialLength = partialCycleLength(frames, cycle);
+  if (partialLength != 0) {
+    frames.splice(if (copyEnd + partialLength == frames.length) { copyEnd } else { cycle.start }, partialLength);
+  }
+}
+
+// Counts an exact partial copy left over at the innermost end.
+int innermostPartialCycleLength(JsValue[] frames, RepeatedCycle cycle) {
+  int partialStart = cycle.start;
+  while (partialStart > 0 && isSameFrame(frames[partialStart - 1], frames[partialStart - 1 + cycle.length])) {
+    partialStart -= 1;
+  }
+  return cycle.start - partialStart;
+}
+
+// How much of the cycle is left over next to the copy that was kept.
+int partialCycleLength(JsValue[] frames, RepeatedCycle cycle) {
+  int copyEnd = cycle.start + cycle.length;
+  int partialEnd = copyEnd;
+  while (partialEnd < frames.length && isSameFrame(frames[partialEnd], frames[partialEnd - cycle.length])) {
+    partialEnd += 1;
+  }
+  return partialEnd - copyEnd;
+}
+
+// The frame limit counts the frames that survive dropping the leftover copies.
+int survivingFrameCount(JsValue[] frames, RepeatedCycle[] cycles) {
+  int count = frames.length;
+  if (cycles.length > 0) {
+    count -= innermostPartialCycleLength(frames, cycles[0]);
+  }
+  for (RepeatedCycle cycle of cycles) {
+    count -= partialCycleLength(frames, cycle);
+  }
+  return count;
+}
+
+// When the trace is one copy of the cycle, always keep the same rotation of it.
+void canonicalizeCycleRotation(JsValue[] frames) {
+  string[] keys = frames.map((JsValue frame) => `${frame["function"]}|${frame.filename}|${frame.lineno}|${frame.colno}|${frame.module}`);
+  int first = 0;
+  for (int i = 1; i < keys.length; i += 1) {
+    if (isSmallerRotation(keys, i, first)) {
+      first = i;
+    }
+  }
+  JsValue[] head = frames.splice(0, first);
+  for (JsValue frame of head) {
+    frames.push(frame);
+  }
+}
+
+// Reads both rotations from their first frame on; the whole copy decides.
+bool isSmallerRotation(string[] keys, int candidate, int best) {
+  for (int offset = 0; offset < keys.length; offset += 1) {
+    string left = keys[(candidate + offset) % keys.length];
+    string right = keys[(best + offset) % keys.length];
+    if (left != right) {
+      return left < right;
+    }
+  }
+  return false;
+}
+
+export JsValue reverseAndStripFrames(JsValue stack) {
+  if (!stack["length"].truthy()) {
+    return [];
+  }
+  JsValue localStack = Array.from(stack);
+  localStack.reverse();
+  return localStack.slice(0, STACKTRACE_FRAME_LIMIT).map((JsValue frame) => {
+    JsValue stripped = Object.assign(object {}, frame);
+    stripped.filename = frame.filename || getLastStackFrame(localStack).filename;
+    stripped["function"] = frame["function"] || UNKNOWN_FUNCTION;
+    return stripped;
+  });
+}
+
+JsValue getLastStackFrame(JsValue arr) {
+  return arr[arr.length - 1.0] || object {};
+}
+
+export JsValue createDefaultStackParser() {
+  return createStackParser("web:javascript", chromeStackLineParser, geckoStackLineParser);
+}
+
+// A copy of the records sorted by start, descending (a stable insertion sort, as `sort` is).
+RepeatedCycle[] sortedByStartDescending(RepeatedCycle[] cycles) {
+  RepeatedCycle[] sorted = [];
+  for (RepeatedCycle cycle of cycles) {
+    sorted.push(cycle);
+    int index = sorted.length - 1;
+    while (index > 0 && sorted[index - 1].start < cycle.start) {
+      sorted[index] = sorted[index - 1];
+      index -= 1;
+    }
+    sorted[index] = cycle;
+  }
+  return sorted;
+}
+
+export JsValue createStackParser(JsValue platform, JsValue... parsers) {
+  return (string stack, float skipFirstLines = 0.0) => {
+    JsValue[] frames = [];
+    JsValue lines = stack.split("\n");
+    float endLine = (lines.length).min(skipFirstLines + STACKTRACE_LINE_LIMIT);
+    // A stack can hold more than one repeated section; each keeps its own record.
+    RepeatedCycle[] repeatedCycles = [];
+    for (float i = skipFirstLines; i < endLine; i += 1.0) {
+      string line = lines[i] as string;
+      // Ignore lines over 1kb: the backtracking regular expressions would hang on huge strings.
+      if (line.length > 1024) {
+        continue;
+      }
+      // Remove webpack (error: *) wrappers so the trailing parenthesis is not parsed as the URL.
+      string cleanedLine = if (WEBPACK_ERROR_REGEXP.test(line)) { line.replace(WEBPACK_ERROR_REGEXP, "$1") } else { line };
+      // Skip Error: lines, including DOMException pseudo-frames.
+      if (JS.stringMatch(cleanedLine, new Regex("\\S*Error: ")).truthy()) {
+        continue;
+      }
+      for (JsValue parser of parsers) {
+        JsValue frame = parser(cleanedLine, platform);
+        if (frame.truthy()) {
+          frames.push(frame);
+          RepeatedCycle? cycle = collapseRepeatedCycle(frames);
+          if (cycle != null) {
+            // A collapse replaces the suffix starting at cycle.start: discard records overlapping it.
+            for (int r = repeatedCycles.length - 1; r >= 0; r -= 1) {
+              RepeatedCycle previous = repeatedCycles[r];
+              if (previous.start + previous.length <= cycle.start) {
+                break;
+              }
+              repeatedCycles.pop();
+            }
+            repeatedCycles.push(cycle);
+          }
+          break;
+        }
+      }
+      if (survivingFrameCount(frames, repeatedCycles) >= STACKTRACE_FRAME_LIMIT) {
+        break;
+      }
+    }
+
+    // Trimming a section moves the frames after it, so work from the section furthest from the
+    // innermost frame.
+    RepeatedCycle[] sections = sortedByStartDescending(repeatedCycles);
+    // The innermost end goes first.
+    if (sections.length > 0) {
+      RepeatedCycle innermostSection = sections[sections.length - 1];
+      int trimmed = innermostPartialCycleLength(frames, innermostSection);
+      frames.splice(innermostSection.start - trimmed, trimmed);
+      for (RepeatedCycle cycle of sections) {
+        cycle.start -= trimmed;
+      }
+    }
+    for (RepeatedCycle cycle of sections) {
+      trimPartialCycle(frames, cycle);
+    }
+    if (repeatedCycles.some((RepeatedCycle cycle) => cycle.start == 0 && frames.length == cycle.length)) {
+      canonicalizeCycleRotation(frames);
+    }
+    return reverseAndStripFrames(frames);
+  };
+}

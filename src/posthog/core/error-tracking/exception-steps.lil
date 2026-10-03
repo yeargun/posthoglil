@@ -1,0 +1,176 @@
+// packages/core/src/error-tracking/exception-steps.ts — the exported constant objects stay plain
+// mutable objects read at run time, as upstream reads them. `ExceptionStepsBuffer` lives in a
+// private field of the exceptions extension; its entries are a private typed class.
+import { isNumber, isObject, isString } from "../utils/type-utils.lil";
+import { safeJsonStringify } from "../utils/string-utils.lil";
+extern JsValue Object;
+extern JsValue JSON;
+extern JsValue TextEncoder;
+extern JsValue Infinity;
+
+export JsValue EXCEPTION_STEP_INTERNAL_FIELDS = object {
+  MESSAGE: "$message",
+  TIMESTAMP: "$timestamp"
+};
+
+Set<string> RESERVED_EXCEPTION_STEP_KEYS = reservedKeys();
+
+Set<string> reservedKeys() {
+  Set<string> keys = new Set<string>();
+  keys.add(EXCEPTION_STEP_INTERNAL_FIELDS.MESSAGE as string);
+  keys.add(EXCEPTION_STEP_INTERNAL_FIELDS.TIMESTAMP as string);
+  return keys;
+}
+
+export JsValue DEFAULT_EXCEPTION_STEPS_CONFIG = object {
+  enabled: true,
+  max_bytes: 32768 // ~32KB
+};
+
+export JsValue resolveExceptionStepsConfig(JsValue config) {
+  if (!config.truthy()) {
+    return Object.assign(object {}, DEFAULT_EXCEPTION_STEPS_CONFIG);
+  }
+  return object {
+    enabled: config.enabled ?? DEFAULT_EXCEPTION_STEPS_CONFIG.enabled,
+    max_bytes: normalizePositiveInteger(config.max_bytes, DEFAULT_EXCEPTION_STEPS_CONFIG.max_bytes)
+  };
+}
+
+export JsValue stripReservedExceptionStepFields(JsValue properties) {
+  if (!properties.truthy()) {
+    return object { sanitizedProperties: object {}, droppedKeys: [] };
+  }
+  JsValue droppedKeys = [];
+  JsValue sanitizedProperties = object {};
+  JsValue keys = Object.keys(properties);
+  for (int i = 0; i < keys.length; i += 1) {
+    JsValue key = keys[i];
+    if (RESERVED_EXCEPTION_STEP_KEYS.has(key as string)) {
+      droppedKeys.push(key);
+    } else {
+      sanitizedProperties[key] = properties[key];
+    }
+  }
+  return object { sanitizedProperties: sanitizedProperties, droppedKeys: droppedKeys };
+}
+
+shape StepEntry {
+  data JsValue step;
+  data float bytes;
+}
+
+export class ExceptionStepsBuffer {
+  StepEntry[] entries = [];
+  float totalBytes = 0.0;
+  float maxBytes = 0.0;
+
+  init(JsValue config) {
+    this.maxBytes = resolveExceptionStepsConfig(config).max_bytes as float;
+  }
+
+  void setConfig(JsValue config) {
+    this.maxBytes = resolveExceptionStepsConfig(config).max_bytes as float;
+    trimToMaxBytes(this);
+  }
+
+  void add(JsValue step) {
+    SerializedStep? serialized = normalizeAndSerializeStep(step);
+    if (serialized == null) {
+      return;
+    }
+    float bytes = getUtf8ByteLength(serialized.json);
+    if (bytes > this.maxBytes) {
+      return;
+    }
+    this.entries.push(StepEntry{step: serialized.step, bytes: bytes});
+    this.totalBytes += bytes;
+    trimToMaxBytes(this);
+  }
+
+  JsValue[] getAttachable() {
+    return this.entries.map((StepEntry entry) => entry.step);
+  }
+
+  void clear() {
+    this.entries = [];
+    this.totalBytes = 0.0;
+  }
+
+  float size() {
+    return this.entries.length;
+  }
+}
+export constructor ExceptionStepsBuffer;
+
+void trimToMaxBytes(ExceptionStepsBuffer self) {
+  while (self.totalBytes > self.maxBytes && self.entries.length > 0) {
+    StepEntry evicted = self.entries[0];
+    self.entries.splice(0, 1);
+    self.totalBytes -= evicted.bytes;
+  }
+}
+
+JsValue normalizePositiveInteger(JsValue input, JsValue fallback) {
+  if (!isNumber(input) || input === Infinity || input === -Infinity) {
+    return fallback;
+  }
+  float normalized = (input as float).floor();
+  if (normalized < 0.0) {
+    return fallback;
+  }
+  return normalized;
+}
+
+class SerializedStep {
+  JsValue step;
+  string json;
+
+  init(JsValue step, string json) {
+    this.step = step;
+    this.json = json;
+  }
+}
+
+SerializedStep? normalizeAndSerializeStep(JsValue step) {
+  string json = "";
+  try {
+    json = safeJsonStringify(step);
+  } catch (JsValue error) {
+    return null;
+  }
+  try {
+    JsValue parsed = JSON.parse(json);
+    if (!isObject(parsed)) {
+      return null;
+    }
+    JsValue message = parsed[EXCEPTION_STEP_INTERNAL_FIELDS.MESSAGE];
+    JsValue timestamp = parsed[EXCEPTION_STEP_INTERNAL_FIELDS.TIMESTAMP];
+    if (!isString(message) || message.trim()["length"] === 0) {
+      return null;
+    }
+    if (!isString(timestamp) && !isNumber(timestamp)) {
+      return null;
+    }
+    return new SerializedStep(parsed, json);
+  } catch (JsValue error) {
+    return null;
+  }
+}
+
+export float getUtf8ByteLength(string value) {
+  if (JS.typeOf(TextEncoder) != "undefined") {
+    return JS.construct(TextEncoder).encode(value)["length"] as float;
+  }
+  string encoded = JS.encodeURIComponent(value);
+  float byteLength = 0.0;
+  for (int i = 0; i < encoded.length; i += 1) {
+    if (encoded[i] == "%") {
+      byteLength += 1.0;
+      i += 2;
+    } else {
+      byteLength += 1.0;
+    }
+  }
+  return byteLength;
+}

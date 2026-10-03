@@ -1,0 +1,312 @@
+// packages/core/src/error-tracking/error-properties-builder.ts
+// The builder lives in a private field of the SDK; it keeps upstream's fields (`coercers`,
+// `stackParser`, `modifiers`) and public methods, and its TypeScript-private methods are module
+// functions. Coercers, contexts and exception records are JS objects that coercers (possibly
+// foreign) read and write, so they stay JsValue. One `buildCoercingContext` call's shared state
+// (upstream's closure variables) is a private class, so its two recursive closures are functions.
+import { isArray, isError } from "../utils/type-utils.lil";
+import { getFilenameToChunkIdMap } from "./chunk-ids.lil";
+extern JsValue Object;
+extern JsValue Number;
+
+float MAX_EXCEPTIONS = 50.0;
+float MAX_AGGREGATE_MEMBER_INSPECTIONS = 1000.0;
+float MAX_ERROR_PROTOTYPE_DEPTH = 100.0;
+// Forwarding wrappers do not represent tree edges or consume exception slots.
+float MAX_WRAPPER_RECURSION = 4.0;
+
+shape ParsingContext {
+  data JsValue chunkIdMap;
+  data JsValue skipFirstLines;
+}
+
+export class ErrorPropertiesBuilder {
+  JsValue coercers;
+  JsValue stackParser;
+  JsValue modifiers;
+
+  init(JsValue coercers, JsValue stackParser, JsValue modifiers = []) {
+    this.coercers = coercers;
+    this.stackParser = stackParser;
+    this.modifiers = modifiers;
+  }
+
+  JsValue buildFromUnknown(JsValue input, JsValue hintArgument) {
+    JsValue hint = if (hintArgument === undefined) { object {} } else { hintArgument };
+    JsValue providedMechanism = hint && hint.mechanism;
+    JsValue mechanism = providedMechanism || object { handled: true, type: "generic" };
+    JsValue coercingContext = this.buildCoercingContext(mechanism, hint, 0.0);
+    JsValue exceptionWithCause = coercingContext.apply(input);
+    ParsingContext parsingContext = ParsingContext{
+      chunkIdMap: getFilenameToChunkIdMap(this.stackParser),
+      skipFirstLines: hint.skipFirstLines ?? 1
+    };
+    JsValue exceptionWithStack = parseStacktrace(this, exceptionWithCause, parsingContext);
+    JsValue[] exceptionList = [];
+    appendException(exceptionList, mechanism, exceptionWithStack, -1.0, undefined);
+    return object {
+      $exception_list: exceptionList,
+      $exception_level: "error"
+    };
+  }
+
+  async JsValue modifyFrames(JsValue exceptionList) {
+    for (float i = 0.0; i < exceptionList.length; i += 1.0) {
+      JsValue exc = exceptionList[i];
+      if (exc.stacktrace.truthy() && exc.stacktrace.frames.truthy() && isArray(exc.stacktrace.frames)) {
+        exc.stacktrace.frames = await applyModifiers(this, exc.stacktrace.frames);
+      }
+    }
+    return exceptionList;
+  }
+
+  JsValue buildCoercingContext(JsValue mechanism, JsValue hint, float depth = 0.0) {
+    CoercionRun run = new CoercionRun(this, mechanism, hint);
+    JsValue context = createContext(run, depth, 0.0);
+    JsValue result = Object.assign(object {}, context);
+    result.apply = (JsValue input) => coerceInput(run, input, depth, 0.0) ?? coerceFallback(context);
+    return result;
+  }
+}
+export constructor ErrorPropertiesBuilder;
+
+JsValue coerceFallback(JsValue ctx) {
+  JsValue syntheticException = ctx.syntheticException;
+  return object {
+    type: "Error",
+    value: "Unknown error",
+    stack: if (syntheticException == null) { undefined } else { syntheticException.stack },
+    synthetic: true
+  };
+}
+
+JsValue parseStacktrace(ErrorPropertiesBuilder self, JsValue err, ParsingContext ctx) {
+  JsValue cause = undefined;
+  if (err.cause != null) {
+    cause = parseStacktrace(self, err.cause, ctx);
+  }
+  JsValue stack = undefined;
+  if (err.stack != "" && err.stack != null) {
+    try {
+      stack = applyChunkIds(self.stackParser(err.stack, if (err.synthetic.truthy()) { ctx.skipFirstLines } else { 0 as JsValue }), ctx.chunkIdMap);
+    } catch (JsValue error) {
+      // A malformed stack must not discard this exception or its relatives.
+    }
+  }
+  JsValue parsed = Object.assign(object {}, err);
+  parsed.cause = cause;
+  parsed.stack = stack;
+  JsValue errors = err.errors;
+  parsed.errors = if (errors == null) { undefined } else { errors.map((JsValue child) => parseStacktrace(self, child, ctx)) };
+  return parsed;
+}
+
+JsValue applyChunkIds(JsValue frames, JsValue chunkIdMap) {
+  return frames.map((JsValue frame) => {
+    if (frame.filename.truthy() && chunkIdMap.truthy()) {
+      frame.chunk_id = chunkIdMap[frame.filename];
+    }
+    return frame;
+  });
+}
+
+JsValue applyCoercers(ErrorPropertiesBuilder self, JsValue input, JsValue ctx) {
+  JsValue coercers = self.coercers;
+  for (float i = 0.0; i < coercers.length; i += 1.0) {
+    JsValue adapter = coercers[i];
+    if (adapter.match(input).truthy()) {
+      return adapter.coerce(input, ctx);
+    }
+  }
+  return coerceFallback(ctx);
+}
+
+async JsValue applyModifiers(ErrorPropertiesBuilder self, JsValue frames) {
+  JsValue newFrames = frames;
+  JsValue modifiers = self.modifiers;
+  for (float i = 0.0; i < modifiers.length; i += 1.0) {
+    JsValue modifier = modifiers[i];
+    Task<JsValue> modified = JS.assume(modifier(newFrames));
+    newFrames = await modified;
+  }
+  return newFrames;
+}
+
+// One `$exception_list` entry per exception, depth first: the cause, then aggregate members.
+// The root has no parent (`parentId < 0`).
+void appendException(JsValue[] exceptionList, JsValue mechanism, JsValue exception, float parentId, JsValue source) {
+  float exceptionId = exceptionList.length;
+  JsValue entryMechanism = undefined;
+  if (parentId < 0.0) {
+    entryMechanism = object {
+      type: if (mechanism.type is string && mechanism.type["length"] > 0) { mechanism.type } else { "generic" }
+    };
+    if (mechanism.handled is bool) {
+      entryMechanism.handled = mechanism.handled;
+    } else if (mechanism.handled === undefined) {
+      entryMechanism.handled = true;
+    }
+    entryMechanism.synthetic = if (mechanism.synthetic is bool) { mechanism.synthetic } else { exception.synthetic };
+    entryMechanism.exception_id = exceptionId;
+  } else {
+    entryMechanism = object {
+      type: "chained",
+      source: source,
+      synthetic: exception.synthetic,
+      exception_id: exceptionId,
+      parent_id: parentId
+    };
+  }
+  JsValue currentException = object {
+    type: exception.type,
+    value: exception.value,
+    mechanism: entryMechanism
+  };
+  if (exception.stack.truthy()) {
+    currentException.stacktrace = object { type: "raw", frames: exception.stack };
+  }
+  exceptionList.push(currentException);
+  if (exception.cause.truthy()) {
+    appendException(exceptionList, mechanism, exception.cause, exceptionId, "cause");
+  }
+  JsValue children = exception.errors ?? [];
+  for (float i = 0.0; i < children.length; i += 1.0) {
+    appendException(exceptionList, mechanism, children[i], exceptionId, "member");
+  }
+}
+
+JsValue getAggregateErrors(JsValue input) {
+  try {
+    if (isError(input)) {
+      // AggregateError shares Error's toString tag; instanceof misses other realms.
+      JsValue prototype = Object.getPrototypeOf(input);
+      for (float depth = 0.0; prototype.truthy() && depth < MAX_ERROR_PROTOTYPE_DEPTH; depth += 1.0) {
+        JsValue descriptor = Object.getOwnPropertyDescriptor(prototype, "constructor");
+        JsValue constructor = if (descriptor == null) { undefined } else { descriptor.value };
+        if (JS.typeOf(constructor) == "function" && constructor.name === "AggregateError") {
+          JsValue errors = input.errors;
+          return if (isArray(errors)) { errors } else { undefined };
+        }
+        prototype = Object.getPrototypeOf(prototype);
+      }
+    }
+  } catch (JsValue error) {
+    // Malformed prototypes or accessors must not discard the root exception.
+  }
+  return undefined;
+}
+
+class CoercionRun {
+  ErrorPropertiesBuilder builder;
+  JsValue mechanism;
+  JsValue hint;
+  float count = 0.0;
+  float memberInspections = 0.0;
+  bool hasAggregate = false;
+  Set<JsValue> seen = new Set<JsValue>();
+  JsValue[] wrappers = [];
+  JsValue skipped = object {};
+
+  init(ErrorPropertiesBuilder builder, JsValue mechanism, JsValue hint) {
+    this.builder = builder;
+    this.mechanism = mechanism;
+    this.hint = hint;
+  }
+}
+
+JsValue coerceInput(CoercionRun run, JsValue input, float depth, float wrapperDepth) {
+  JsValue ctx = createContext(run, depth, wrapperDepth);
+  JsValue forward = ctx.apply;
+  ctx.apply = (JsValue nextInput) => {
+    run.wrappers.push(input);
+    try {
+      return forward(nextInput);
+    } finally {
+      run.wrappers.pop();
+    }
+  };
+  if (wrapperDepth > MAX_WRAPPER_RECURSION || (wrapperDepth > 0.0 && run.wrappers.indexOf(input) != -1)) {
+    return coerceFallback(ctx);
+  }
+  string kind = JS.typeOf(input);
+  bool isReference = (kind == "object" && input !== null) || kind == "function";
+  if ((wrapperDepth == 0.0 && run.count >= MAX_EXCEPTIONS) || (isReference && run.seen.has(input))) {
+    return undefined;
+  }
+  if (isReference) {
+    run.seen.add(input);
+  }
+  if (wrapperDepth == 0.0) {
+    run.count += 1.0;
+  }
+  JsValue errors = getAggregateErrors(input);
+  run.hasAggregate = run.hasAggregate || errors.truthy();
+  JsValue exception = undefined;
+  try {
+    exception = applyCoercers(run.builder, input, ctx);
+    if (!exception.truthy()) {
+      throw run.skipped;
+    }
+  } catch (JsValue error) {
+    if (error === run.skipped) {
+      if (wrapperDepth == 0.0) {
+        run.count -= 1.0;
+      }
+      return undefined;
+    }
+    if (!run.hasAggregate) {
+      throw error;
+    }
+    exception = coerceFallback(ctx);
+  }
+  if (!errors.truthy() || run.count >= MAX_EXCEPTIONS) {
+    return exception;
+  }
+  // Snapshot a finite array length; a separate inspection budget bounds duplicate and cyclic members.
+  JsValue length = undefined;
+  try {
+    length = errors["length"];
+  } catch (JsValue error) {
+    return exception;
+  }
+  if (!Number.isInteger(length).truthy() || length < 0 || length > 4294967295.0) {
+    return exception;
+  }
+  JsValue[] children = [];
+  for (
+    float index = 0.0;
+    run.count < MAX_EXCEPTIONS && run.memberInspections < MAX_AGGREGATE_MEMBER_INSPECTIONS && index < length;
+    index += 1.0
+  ) {
+    run.memberInspections += 1.0;
+    JsValue child = undefined;
+    try {
+      child = ctx.next(errors[index]);
+    } catch (JsValue error) {
+      run.count += 1.0;
+      child = coerceFallback(createContext(run, depth + 1.0, 0.0));
+    }
+    if (child.truthy()) {
+      children.push(child);
+    }
+  }
+  JsValue result = Object.assign(object {}, exception);
+  result.errors = children;
+  return result;
+}
+
+JsValue createContext(CoercionRun run, float depth, float wrapperDepth) {
+  JsValue context = Object.assign(object {}, run.hint);
+  // Capture-boundary metadata and replacement stacks belong only to the root.
+  context.syntheticException = if (depth == 0.0) { run.hint.syntheticException } else { undefined };
+  context.mechanism = if (depth == 0.0) { run.mechanism } else { object {} };
+  context.apply = (JsValue input) => {
+    JsValue exception = coerceInput(run, input, depth, wrapperDepth + 1.0);
+    if (!exception.truthy()) {
+      throw run.skipped;
+    }
+    return exception;
+  };
+  context.next = (JsValue input) => coerceInput(run, input, depth + 1.0, 0.0);
+  return context;
+}

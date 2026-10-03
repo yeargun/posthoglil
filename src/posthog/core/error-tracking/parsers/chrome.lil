@@ -1,0 +1,42 @@
+// packages/core/src/error-tracking/parsers/chrome.ts — Chromium based browsers: Chrome, Brave, new
+// Opera, new Edge. Match arrays stay JsValue (their groups can be undefined).
+import { createFrame, UNKNOWN_FUNCTION } from "./base.lil";
+import { extractSafariExtensionDetails } from "./safari.lil";
+extern JsValue Number;
+
+// Frames with no function name (top level of a module), e.g. "at http://localhost:5000//script.js:1:126".
+Regex chromeRegexNoFnName = new Regex("^\\s*at (\\S+?)(?::(\\d+))(?::(\\d+))\\s*$", "i");
+
+// Frames that have a function name.
+Regex chromeRegex = new Regex("^\\s*at (?:(.+?\\)(?: \\[.+\\])?|.*?) ?\\((?:address at )?)?(?:async )?((?:<anonymous>|[-a-z]+:|.*bundle|\\/)?.*?)(?::(\\d+))?(?::(\\d+))?\\)?\\s*$", "i");
+
+Regex chromeEvalRegex = new Regex("\\((\\S*)(?::(\\d+))(?::(\\d+))\\)");
+
+export JsValue chromeStackLineParser(string line, JsValue platform) {
+  JsValue noFnParts = JS.regexExec(chromeRegexNoFnName, line);
+  if (noFnParts.truthy()) {
+    return createFrame(platform, noFnParts[1], UNKNOWN_FUNCTION, Number(noFnParts[2]), Number(noFnParts[3]));
+  }
+  JsValue parts = JS.regexExec(chromeRegex, line);
+  if (parts.truthy()) {
+    JsValue url = parts[2];
+    if (url.truthy() && url.indexOf("eval") === 0) {
+      JsValue subMatch = JS.regexExec(chromeEvalRegex, parts[2]);
+      if (subMatch.truthy()) {
+        // throw out eval line/column and use top-most line/column number
+        parts[2] = subMatch[1];
+        parts[3] = subMatch[2];
+        parts[4] = subMatch[3];
+      }
+    }
+    string[] details = extractSafariExtensionDetails((parts[1] || UNKNOWN_FUNCTION) as string, parts[2] as string);
+    return createFrame(
+      platform,
+      details[1],
+      details[0],
+      if (parts[3].truthy()) { Number(parts[3]) } else { undefined },
+      if (parts[4].truthy()) { Number(parts[4]) } else { undefined }
+    );
+  }
+  return undefined;
+}

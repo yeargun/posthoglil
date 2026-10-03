@@ -1,0 +1,31 @@
+// packages/core/src/error-tracking/coercers/utils.ts
+extern JsValue Object;
+
+export JsValue truncate(JsValue str, float max = 0.0) {
+  JsValue text = str;
+  if (!(str is string) || max == 0.0) {
+    return str;
+  }
+  return if (str.length <= max) { str } else { `${text.slice(0, max)}...` };
+}
+
+// The sorted, truncated key list used in messages, e.g. `Non-error exception captured with keys:
+// foo, bar, baz`.
+export string extractExceptionKeysForMessage(JsValue err, float maxLength = 40.0) {
+  JsValue keys = Object.keys(err);
+  keys.sort();
+  if (!keys["length"].truthy()) {
+    return "[object has no keys]";
+  }
+  for (float i = keys.length; i > 0.0; i -= 1.0) {
+    JsValue serialized = keys.slice(0, i).join(", ");
+    if (serialized.length > maxLength) {
+      continue;
+    }
+    if (i == keys.length) {
+      return serialized as string;
+    }
+    return if (serialized.length <= maxLength) { serialized as string } else { `${serialized.slice(0, maxLength)}...` };
+  }
+  return "";
+}
