@@ -11,7 +11,7 @@ const sdk=JSON.parse(readFileSync(join(root,'artifacts/sdk/results.json'),'utf8'
 const directory=join(root,'artifacts/package-runtime');mkdirSync(directory,{recursive:true})
 const hash=file=>createHash('sha256').update(readFileSync(file)).digest('hex')
 const result={schema:1,upstreamVersion:sdk.upstream.version,compilerObjective:'gzip',
-  method:'One fixed ESM runtime per entry, measured in all three codecs. Starting from the gzip-targeted SDK, another Terser/Oxc pass reaches stable compression, followed by sharing property names at least 16 characters long used at least 8 times. The identical delivery pass is applied to the matched unchanged-source control. No decoder, eval, feature removal or side-effect override.',rows:[]}
+  method:'One fixed ESM runtime per entry, measured in all three codecs. Starting from the gzip-targeted SDK, an additional Terser/Oxc pass is followed by sharing string values at least 12 characters long used at least 3 times. Named property accesses stay intact. The identical delivery pass is applied to the matched unchanged-source control. No decoder, eval, feature removal or side-effect override.',rows:[]}
 for(const surface of sdk.surfaces) {
   const input=surface.objectives.find(row=>row.objective==='gzip')
   const row={surface:surface.id,compilerObjective:'gzip',publishedOriginal:input.publishedOriginal}

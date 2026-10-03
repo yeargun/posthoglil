@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "date": "2026-10-03T13:17:13.585Z",
+  "date": "2026-10-03T14:05:52.077Z",
   "upstreamVersion": "1.435.8",
-  "packageIntegrity": "sha512-jiCxvTPLJAEOdLn8LUJNfURN2GFiUlQ7H47W3gDrBdvlO9KttJVU9W3kjVYQ74bj8E7pOThD3PI0AghzvYBEEA==",
+  "packageIntegrity": "sha512-C2m5cfjh3xlNMF2QN6JAdSg1VMT+tVzhPnvzAOxDPRByghqqhEMBdJSSjw/dfuFRxngO8gBK5jP7wp5zXds7oA==",
   "defaultObjective": "package",
   "method": "Identical application source, real npm installs under posthog-js, default tree shaking, production minification and ES2020 target. One default package artifact is measured with all three codecs; no side-effect overrides. Builds run sequentially. Split assets are compressed separately and summed.",
   "buildTimeScope": "One warm-machine application build per row; installed dependencies, no output writes or transport compression in timing. Not SDK compilation time.",
@@ -12,7 +12,7 @@
       "optimized": true,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 59.65527199999997,
+        "buildMs": 65.36684300000024,
         "files": [
           {
             "file": "artifacts/sdk-consumers/standard/esbuild/original/consumer.js",
@@ -30,27 +30,27 @@
         }
       },
       "candidate": {
-        "buildMs": 47.36687299999994,
+        "buildMs": 41.35209000000032,
         "files": [
           {
             "file": "artifacts/sdk-consumers/standard/esbuild/candidate/consumer.js",
-            "sha256": "8986557c688ccdcac276150b1c8e262b2549cb42a4304a1efb19849e9e6b9bdd",
+            "sha256": "90b56ce78d210062ee60a8ca1e04957494bd1ea33a76d9fbb06fb31eac734793",
             "entry": true,
-            "raw": 290425,
-            "gzip9": 98639,
-            "brotli11": 84226
+            "raw": 292463,
+            "gzip9": 98663,
+            "brotli11": 84337
           }
         ],
         "total": {
-          "raw": 290425,
-          "gzip9": 98639,
-          "brotli11": 84226
+          "raw": 292463,
+          "gzip9": 98663,
+          "brotli11": 84337
         }
       },
       "savingsPercent": {
-        "raw": 7.06518956557356,
-        "gzip9": 3.4134638922888594,
-        "brotli11": 3.0492086330935253
+        "raw": 6.413037913114716,
+        "gzip9": 3.389963280293762,
+        "brotli11": 2.9214388489208654
       }
     },
     {
@@ -58,7 +58,7 @@
       "optimized": true,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 80.29924500000016,
+        "buildMs": 89.85880899999984,
         "files": [
           {
             "file": "artifacts/sdk-consumers/standard/rolldown/original/consumer.js",
@@ -76,27 +76,27 @@
         }
       },
       "candidate": {
-        "buildMs": 56.853274000000056,
+        "buildMs": 58.1032409999998,
         "files": [
           {
             "file": "artifacts/sdk-consumers/standard/rolldown/candidate/consumer.js",
-            "sha256": "4f0a2717da328e5ced90f61933f4bba97804deccf797fbdab347234ef34cb30e",
+            "sha256": "1708caf33840313c85700a787b411bae0ac85919e26fd6d1bb2fe3de2465853e",
             "entry": true,
-            "raw": 289927,
-            "gzip9": 95790,
-            "brotli11": 81497
+            "raw": 292144,
+            "gzip9": 95792,
+            "brotli11": 81541
           }
         ],
         "total": {
-          "raw": 289927,
-          "gzip9": 95790,
-          "brotli11": 81497
+          "raw": 292144,
+          "gzip9": 95792,
+          "brotli11": 81541
         }
       },
       "savingsPercent": {
-        "raw": 1.1402423014890695,
-        "gzip9": 0.11157804727989218,
-        "brotli11": 0.3167963207593272
+        "raw": 0.3842862062733765,
+        "gzip9": 0.1094924763026972,
+        "brotli11": 0.26297764078477837
       }
     },
     {
@@ -104,7 +104,7 @@
       "optimized": true,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 48.925052999999934,
+        "buildMs": 43.45466099999976,
         "files": [
           {
             "file": "artifacts/sdk-consumers/constructor/esbuild/original/consumer.js",
@@ -122,27 +122,27 @@
         }
       },
       "candidate": {
-        "buildMs": 45.78134500000033,
+        "buildMs": 63.006062000000384,
         "files": [
           {
             "file": "artifacts/sdk-consumers/constructor/esbuild/candidate/consumer.js",
-            "sha256": "b1813b1adbba4197d7f8e9b8d2ad43359e14aec61a4ea7e8fc7f96061af30133",
+            "sha256": "5d547169ee0e8cdd83dde89f0060e9987102da9681fb83d393226da90c6d0fd4",
             "entry": true,
-            "raw": 290404,
-            "gzip9": 98633,
-            "brotli11": 84348
+            "raw": 292442,
+            "gzip9": 98660,
+            "brotli11": 84422
           }
         ],
         "total": {
-          "raw": 290404,
-          "gzip9": 98633,
-          "brotli11": 84348
+          "raw": 292442,
+          "gzip9": 98660,
+          "brotli11": 84422
         }
       },
       "savingsPercent": {
-        "raw": 7.065664372141844,
-        "gzip9": 3.410826902738062,
-        "brotli11": 2.9891773149159806
+        "raw": 6.413468892707764,
+        "gzip9": 3.3843863841121813,
+        "brotli11": 2.904067995445503
       }
     },
     {
@@ -150,7 +150,7 @@
       "optimized": true,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 72.1749520000003,
+        "buildMs": 72.64862799999992,
         "files": [
           {
             "file": "artifacts/sdk-consumers/constructor/rolldown/original/consumer.js",
@@ -168,27 +168,27 @@
         }
       },
       "candidate": {
-        "buildMs": 56.20312400000057,
+        "buildMs": 56.973213000000214,
         "files": [
           {
             "file": "artifacts/sdk-consumers/constructor/rolldown/candidate/consumer.js",
-            "sha256": "08c8b79d9dc0da1d6fa969d727ad78f8ff3f830f3a5e0b46e67edad6a27cdcf4",
+            "sha256": "3c99170d40a71029e0b7acdf11d4937bed5098c19be8c5db5ed954660e46894b",
             "entry": true,
-            "raw": 289907,
-            "gzip9": 95787,
-            "brotli11": 81568
+            "raw": 292124,
+            "gzip9": 95790,
+            "brotli11": 81571
           }
         ],
         "total": {
-          "raw": 289907,
-          "gzip9": 95787,
-          "brotli11": 81568
+          "raw": 292124,
+          "gzip9": 95790,
+          "brotli11": 81571
         }
       },
       "savingsPercent": {
-        "raw": 1.1403200671097458,
-        "gzip9": 0.11158153794814663,
-        "brotli11": 0.16034467986144607
+        "raw": 0.38431241496192925,
+        "gzip9": 0.10845308361315809,
+        "brotli11": 0.15667266429210125
       }
     },
     {
@@ -196,7 +196,7 @@
       "optimized": true,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 94.03341100000034,
+        "buildMs": 98.5570889999999,
         "files": [
           {
             "file": "artifacts/sdk-consumers/full/esbuild/original/consumer.js",
@@ -214,27 +214,27 @@
         }
       },
       "candidate": {
-        "buildMs": 86.04881999999907,
+        "buildMs": 81.3345649999992,
         "files": [
           {
             "file": "artifacts/sdk-consumers/full/esbuild/candidate/consumer.js",
-            "sha256": "7a3612725f0d6847caec22fc44f33474f4e37e4283cd3e71f95148e4c87ab57e",
+            "sha256": "a701b47f7c041fc90ef450fd352072ae60b3d89466889f3973ae80d859c963f7",
             "entry": true,
-            "raw": 596789,
-            "gzip9": 198322,
-            "brotli11": 167445
+            "raw": 602093,
+            "gzip9": 198351,
+            "brotli11": 167831
           }
         ],
         "total": {
-          "raw": 596789,
-          "gzip9": 198322,
-          "brotli11": 167445
+          "raw": 602093,
+          "gzip9": 198351,
+          "brotli11": 167831
         }
       },
       "savingsPercent": {
-        "raw": 15.852530533629993,
-        "gzip9": 7.4451055886127655,
-        "brotli11": 6.288301498200699
+        "raw": 15.104664574221182,
+        "gzip9": 7.431571578578932,
+        "brotli11": 6.072274052641302
       }
     },
     {
@@ -242,7 +242,7 @@
       "optimized": true,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 152.31686399999853,
+        "buildMs": 175.41348199999993,
         "files": [
           {
             "file": "artifacts/sdk-consumers/full/rolldown/original/consumer.js",
@@ -260,27 +260,27 @@
         }
       },
       "candidate": {
-        "buildMs": 108.4184750000004,
+        "buildMs": 143.28661100000136,
         "files": [
           {
             "file": "artifacts/sdk-consumers/full/rolldown/candidate/consumer.js",
-            "sha256": "b67b58fcbb4dc29e787286356e1b091e222d877c6e09200925eb123ad91ee823",
+            "sha256": "f6afa0bd9e1642a6c35be64ce140c28c54da811a0da70adb02b20a0bf4613e98",
             "entry": true,
-            "raw": 595191,
-            "gzip9": 191469,
-            "brotli11": 161294
+            "raw": 600908,
+            "gzip9": 191386,
+            "brotli11": 161163
           }
         ],
         "total": {
-          "raw": 595191,
-          "gzip9": 191469,
-          "brotli11": 161294
+          "raw": 600908,
+          "gzip9": 191386,
+          "brotli11": 161163
         }
       },
       "savingsPercent": {
-        "raw": 12.181335300627072,
-        "gzip9": 4.749373184224137,
-        "brotli11": 3.932768304377088
+        "raw": 11.33780892659535,
+        "gzip9": 4.790663429776732,
+        "brotli11": 4.010792331012469
       }
     },
     {
@@ -288,7 +288,7 @@
       "optimized": true,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 52.067755000000034,
+        "buildMs": 47.3851080000004,
         "files": [
           {
             "file": "artifacts/sdk-consumers/side-effect/esbuild/original/consumer.js",
@@ -306,27 +306,27 @@
         }
       },
       "candidate": {
-        "buildMs": 46.79149099999995,
+        "buildMs": 42.40133900000001,
         "files": [
           {
             "file": "artifacts/sdk-consumers/side-effect/esbuild/candidate/consumer.js",
-            "sha256": "3b22117e9dc80edc71eaaefe4ee15a5ee4158567a46fccb7c03138e313caa704",
+            "sha256": "e22db80569d883cf00af5f0e27abd8fc0f82de5f9a0a11fbaecea753cc2901fc",
             "entry": true,
-            "raw": 290415,
-            "gzip9": 98642,
-            "brotli11": 84286
+            "raw": 292453,
+            "gzip9": 98663,
+            "brotli11": 84376
           }
         ],
         "total": {
-          "raw": 290415,
-          "gzip9": 98642,
-          "brotli11": 84286
+          "raw": 292453,
+          "gzip9": 98663,
+          "brotli11": 84376
         }
       },
       "savingsPercent": {
-        "raw": 7.0654156559806,
-        "gzip9": 3.4067429813652406,
-        "brotli11": 2.9957762202350136
+        "raw": 6.413243134268177,
+        "gzip9": 3.3861791404314445,
+        "brotli11": 2.8921957900309603
       }
     },
     {
@@ -334,7 +334,7 @@
       "optimized": true,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 75.91919899999994,
+        "buildMs": 76.58671499999946,
         "files": [
           {
             "file": "artifacts/sdk-consumers/side-effect/rolldown/original/consumer.js",
@@ -352,27 +352,27 @@
         }
       },
       "candidate": {
-        "buildMs": 56.529727000001,
+        "buildMs": 58.04029400000036,
         "files": [
           {
             "file": "artifacts/sdk-consumers/side-effect/rolldown/candidate/consumer.js",
-            "sha256": "4bb746f12e7f0456110d72c0799a8c87a112a227892b3cc1b648614f8b8d3390",
+            "sha256": "486f9c48faa830aa4bd21f38f3da5d5798d68d958db645f6768bcfe9d4334101",
             "entry": true,
-            "raw": 289918,
-            "gzip9": 95792,
-            "brotli11": 81500
+            "raw": 292135,
+            "gzip9": 95795,
+            "brotli11": 81516
           }
         ],
         "total": {
-          "raw": 289918,
-          "gzip9": 95792,
-          "brotli11": 81500
+          "raw": 292135,
+          "gzip9": 95795,
+          "brotli11": 81516
         }
       },
       "savingsPercent": {
-        "raw": 1.1402772947057604,
-        "gzip9": 0.11157572028905882,
-        "brotli11": 0.214263850627483
+        "raw": 0.3842979997408458,
+        "gzip9": 0.10844742906599425,
+        "brotli11": 0.1946740128558333
       }
     },
     {
@@ -380,7 +380,7 @@
       "optimized": true,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 51.90976999999839,
+        "buildMs": 52.113688999999795,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-hook/esbuild/original/consumer.js",
@@ -398,27 +398,27 @@
         }
       },
       "candidate": {
-        "buildMs": 48.84620899999936,
+        "buildMs": 46.57687299999998,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-hook/esbuild/candidate/consumer.js",
-            "sha256": "70857c6880543da0fc8c26d06a361683c146037ca892bd0058c6417efd2e52f4",
+            "sha256": "12e3299d8a61ebf61a866ddd9a1b7ac2b70554a07abe746a9265cb94cc6341f9",
             "entry": true,
-            "raw": 301806,
-            "gzip9": 102655,
-            "brotli11": 87878
+            "raw": 303843,
+            "gzip9": 102707,
+            "brotli11": 87866
           }
         ],
         "total": {
-          "raw": 301806,
-          "gzip9": 102655,
-          "brotli11": 87878
+          "raw": 303843,
+          "gzip9": 102707,
+          "brotli11": 87866
         }
       },
       "savingsPercent": {
-        "raw": 6.816925760686665,
-        "gzip9": 3.3280283268511845,
-        "brotli11": 2.776917289905745
+        "raw": 6.187998826744057,
+        "gzip9": 3.27905903624669,
+        "brotli11": 2.790193388502904
       }
     },
     {
@@ -426,7 +426,7 @@
       "optimized": true,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 75.59480199999962,
+        "buildMs": 76.50726600000053,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-hook/rolldown/original/consumer.js",
@@ -444,27 +444,27 @@
         }
       },
       "candidate": {
-        "buildMs": 61.07289900000069,
+        "buildMs": 61.71039000000019,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-hook/rolldown/candidate/consumer.js",
-            "sha256": "95b8f20f0962ce795b8d7b9d072316514460c25ef5511a697a35b5572242e235",
+            "sha256": "817aa6ea9627f924cf0336a823961a34e9cd775e7111fc70f4aa9f58533c66bd",
             "entry": true,
-            "raw": 295412,
-            "gzip9": 97804,
-            "brotli11": 83142
+            "raw": 297639,
+            "gzip9": 97848,
+            "brotli11": 83383
           }
         ],
         "total": {
-          "raw": 295412,
-          "gzip9": 97804,
-          "brotli11": 83142
+          "raw": 297639,
+          "gzip9": 97848,
+          "brotli11": 83383
         }
       },
       "savingsPercent": {
-        "raw": 1.1341996847400115,
-        "gzip9": 0.20101835695554016,
-        "brotli11": 0.30457096263609706
+        "raw": 0.3888875873909403,
+        "gzip9": 0.1561208559096361,
+        "brotli11": 0.015588277615230517
       }
     },
     {
@@ -472,7 +472,7 @@
       "optimized": true,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 65.21242699999857,
+        "buildMs": 50.534585999997944,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-all/esbuild/original/consumer.js",
@@ -490,27 +490,27 @@
         }
       },
       "candidate": {
-        "buildMs": 43.8100689999992,
+        "buildMs": 48.67311400000108,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-all/esbuild/candidate/consumer.js",
-            "sha256": "7d852bcda9e659dc39da06f070181edf5dc3901c3c7e81be93dceb7c142845eb",
+            "sha256": "2da8801418a00eb2ec3ab39c8fc97399a3c5fde24353ebb417328a018a134d5a",
             "entry": true,
-            "raw": 309809,
-            "gzip9": 105043,
-            "brotli11": 89827
+            "raw": 311845,
+            "gzip9": 105077,
+            "brotli11": 89808
           }
         ],
         "total": {
-          "raw": 309809,
-          "gzip9": 105043,
-          "brotli11": 89827
+          "raw": 311845,
+          "gzip9": 105077,
+          "brotli11": 89808
         }
       },
       "savingsPercent": {
-        "raw": 6.652826698082793,
-        "gzip9": 3.2066935119744233,
-        "brotli11": 2.6191689342280666
+        "raw": 6.039368584074801,
+        "gzip9": 3.1753637477769714,
+        "brotli11": 2.63976670316447
       }
     },
     {
@@ -518,7 +518,7 @@
       "optimized": true,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 77.12284699999873,
+        "buildMs": 76.15153199999986,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-all/rolldown/original/consumer.js",
@@ -536,27 +536,27 @@
         }
       },
       "candidate": {
-        "buildMs": 68.91949199999726,
+        "buildMs": 79.93852999999945,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-all/rolldown/candidate/consumer.js",
-            "sha256": "889b2e742d0eff9f58d9b752f3497a04bed7c61668bb8d6abdc5794316763bad",
+            "sha256": "440975ff47333779eb0dc7670c5a8ccd7c4979791b7853d7677d834da25104fd",
             "entry": true,
-            "raw": 305475,
-            "gzip9": 100948,
-            "brotli11": 85887
+            "raw": 307716,
+            "gzip9": 100989,
+            "brotli11": 85978
           }
         ],
         "total": {
-          "raw": 305475,
-          "gzip9": 100948,
-          "brotli11": 85887
+          "raw": 307716,
+          "gzip9": 100989,
+          "brotli11": 85978
         }
       },
       "savingsPercent": {
-        "raw": 1.0994881358236896,
-        "gzip9": 0.19378312109468165,
-        "brotli11": 0.12675008139912958
+        "raw": 0.37394251969268266,
+        "gzip9": 0.1532468559677258,
+        "brotli11": 0.020931206102614563
       }
     },
     {
@@ -564,7 +564,7 @@
       "optimized": false,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 6.728246999999101,
+        "buildMs": 7.005205000001297,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-slim/esbuild/original/consumer.js",
@@ -582,7 +582,7 @@
         }
       },
       "candidate": {
-        "buildMs": 5.404704000000493,
+        "buildMs": 5.847391999999672,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-slim/esbuild/candidate/consumer.js",
@@ -610,7 +610,7 @@
       "optimized": false,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 4.851510999997117,
+        "buildMs": 5.083802000001015,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-slim/rolldown/original/consumer.js",
@@ -628,7 +628,7 @@
         }
       },
       "candidate": {
-        "buildMs": 4.5727180000030785,
+        "buildMs": 4.646544999999605,
         "files": [
           {
             "file": "artifacts/sdk-consumers/react-slim/rolldown/candidate/consumer.js",
@@ -656,7 +656,7 @@
       "optimized": false,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 50.493546000001515,
+        "buildMs": 52.00322199999937,
         "files": [
           {
             "file": "artifacts/sdk-consumers/no-external/esbuild/original/consumer.js",
@@ -674,7 +674,7 @@
         }
       },
       "candidate": {
-        "buildMs": 51.38215299999865,
+        "buildMs": 45.716528000000835,
         "files": [
           {
             "file": "artifacts/sdk-consumers/no-external/esbuild/candidate/consumer.js",
@@ -702,7 +702,7 @@
       "optimized": false,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 71.90780799999993,
+        "buildMs": 73.38948099999834,
         "files": [
           {
             "file": "artifacts/sdk-consumers/no-external/rolldown/original/consumer.js",
@@ -720,7 +720,7 @@
         }
       },
       "candidate": {
-        "buildMs": 71.19375699999728,
+        "buildMs": 73.83089400000244,
         "files": [
           {
             "file": "artifacts/sdk-consumers/no-external/rolldown/candidate/consumer.js",
@@ -748,7 +748,7 @@
       "optimized": true,
       "bundler": "esbuild",
       "original": {
-        "buildMs": 47.016223999999056,
+        "buildMs": 54.33668800000305,
         "files": [
           {
             "file": "artifacts/sdk-consumers/lazy/esbuild/original/consumer.js",
@@ -774,35 +774,35 @@
         }
       },
       "candidate": {
-        "buildMs": 43.93058600000222,
+        "buildMs": 47.23955500000011,
         "files": [
           {
             "file": "artifacts/sdk-consumers/lazy/esbuild/candidate/consumer.js",
-            "sha256": "af3af76515f05d1c223c2d12de296b6cc3a38102bf328762860150935154085d",
+            "sha256": "2a99861b43e5c77c7607832b962efd42a19c2b152a340375b9a0572e76335802",
             "entry": true,
             "raw": 60,
             "gzip9": 78,
             "brotli11": 64
           },
           {
-            "file": "artifacts/sdk-consumers/lazy/esbuild/candidate/module-UWPG44EL.js",
-            "sha256": "206c675c45999be2410466d315b69d64722ebe3c935f6e60616f589bee881e19",
+            "file": "artifacts/sdk-consumers/lazy/esbuild/candidate/module-7XMMOGQL.js",
+            "sha256": "b58c63be85eed112cdcd2b4cc8fb81dbb75e229feb199a8597672ba64e536728",
             "entry": false,
-            "raw": 291737,
-            "gzip9": 99283,
-            "brotli11": 84791
+            "raw": 293775,
+            "gzip9": 99299,
+            "brotli11": 84859
           }
         ],
         "total": {
-          "raw": 291797,
-          "gzip9": 99361,
-          "brotli11": 84855
+          "raw": 293835,
+          "gzip9": 99377,
+          "brotli11": 84923
         }
       },
       "savingsPercent": {
-        "raw": 7.034306541436742,
-        "gzip9": 3.4186123369427834,
-        "brotli11": 3.0494492939079576
+        "raw": 6.385005543590461,
+        "gzip9": 3.4030599350687196,
+        "brotli11": 2.9717563182669937
       }
     },
     {
@@ -810,7 +810,7 @@
       "optimized": true,
       "bundler": "rolldown",
       "original": {
-        "buildMs": 73.5348750000012,
+        "buildMs": 76.94716300000073,
         "files": [
           {
             "file": "artifacts/sdk-consumers/lazy/rolldown/original/consumer.js",
@@ -836,35 +836,35 @@
         }
       },
       "candidate": {
-        "buildMs": 61.192534999998315,
+        "buildMs": 57.9797359999975,
         "files": [
           {
             "file": "artifacts/sdk-consumers/lazy/rolldown/candidate/consumer.js",
-            "sha256": "cd19355021579a7bcf9e626312ca1a3d7c6159ba56305a9dd53af88972ac4442",
+            "sha256": "4d05794457647f1747e0ab83c33797b40ede8ebfda7eda195fb94bb55e4643ce",
             "entry": true,
             "raw": 60,
             "gzip9": 78,
-            "brotli11": 64
+            "brotli11": 62
           },
           {
-            "file": "artifacts/sdk-consumers/lazy/rolldown/candidate/chunk-DViSKj60.js",
-            "sha256": "e7a96769fec25c08e1f38b29172760ec8920548fb9bbfff2345c2560eecd98b8",
+            "file": "artifacts/sdk-consumers/lazy/rolldown/candidate/chunk-jpRVhuWr.js",
+            "sha256": "1a4bebbbff55dfd6c7b28c73d094756e5de4a21c0d4e238a190be6f8319f2ea7",
             "entry": false,
-            "raw": 291273,
-            "gzip9": 96420,
-            "brotli11": 82072
+            "raw": 293490,
+            "gzip9": 96414,
+            "brotli11": 82092
           }
         ],
         "total": {
-          "raw": 291333,
-          "gzip9": 96498,
-          "brotli11": 82136
+          "raw": 293550,
+          "gzip9": 96492,
+          "brotli11": 82154
         }
       },
       "savingsPercent": {
-        "raw": 1.1348018338723453,
-        "gzip9": 0.14487054781763264,
-        "brotli11": 0.2416955122365949
+        "raw": 0.3824526515472826,
+        "gzip9": 0.15107928558124595,
+        "brotli11": 0.219833606607156
       }
     }
   ]

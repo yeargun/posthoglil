@@ -56,9 +56,9 @@ export async function optimizeSdkDelivery(output,{surface,objective}) {
   const receipt={literalPool:{bindings:0,references:0}}
   if(objective==='raw'||objective==='package') {
     // A distributable package has one runtime, regardless of the web server's
-    // codec. Limit pooling to frequent long property names so compression does
-    // not pay for a large dictionary. Keys and their lookup behavior are intact.
-    const options=objective==='package'?{stringLiterals:false,minLength:16,minUses:8}:{}
+    // codec. Share long repeated values while keeping named property accesses
+    // intact, so the package does not introduce computed member lookups.
+    const options=objective==='package'?{propertyAccesses:false,minLength:12,minUses:3}:{}
     const pooled=poolLiterals(code,options)
     receipt.literalPool={bindings:pooled.bindings,references:pooled.references}
     if(pooled.map&&map)map=composeMaps(pooled.map,map)

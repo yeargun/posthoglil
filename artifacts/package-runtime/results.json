@@ -2,7 +2,7 @@
   "schema": 1,
   "upstreamVersion": "1.435.8",
   "compilerObjective": "gzip",
-  "method": "One fixed ESM runtime per entry, measured in all three codecs. Starting from the gzip-targeted SDK, another Terser/Oxc pass reaches stable compression, followed by sharing property names at least 16 characters long used at least 8 times. The identical delivery pass is applied to the matched unchanged-source control. No decoder, eval, feature removal or side-effect override.",
+  "method": "One fixed ESM runtime per entry, measured in all three codecs. Starting from the gzip-targeted SDK, an additional Terser/Oxc pass is followed by sharing string values at least 12 characters long used at least 3 times. Named property accesses stay intact. The identical delivery pass is applied to the matched unchanged-source control. No decoder, eval, feature removal or side-effect override.",
   "rows": [
     {
       "surface": "standard",
@@ -24,48 +24,48 @@
       },
       "candidate": {
         "file": "artifacts/package-runtime/standard-candidate.mjs",
-        "sha256": "8ad3da4ee019163b2547cbedb960fb27233ca75b78ee3156b7ce84dac31959d7",
+        "sha256": "265ab8d02efd6cb8567ccc12c29a404b7d5578bf1a47a703b9205f745cc29c43",
         "sourceMap": {
           "file": "artifacts/package-runtime/standard-candidate.mjs.map",
-          "sha256": "b45f302d2f22ac1571e7ae8a3d2f668a0786328997f8ddd219cae38aa23b65a3"
+          "sha256": "c7bcfdd03a14b5a1e20674c2ddf68984e58665d10569e8a3bda2e8f24f9b5bcc"
         },
         "source": "artifacts/sdk/standard/gzip.mjs",
         "sourceSha256": "630955a5074bb184ff2229fafbbc17087348daeac344f56bbf742bfc0a3cf6c8",
         "delivery": {
           "literalPool": {
-            "bindings": 13,
-            "references": 231
+            "bindings": 32,
+            "references": 135
           }
         },
-        "deliverySeconds": 3.559364785,
-        "raw": 291898,
-        "gzip9": 96414,
-        "brotli11": 81975
+        "deliverySeconds": 4.164609318999999,
+        "raw": 294123,
+        "gzip9": 96499,
+        "brotli11": 82096
       },
       "original": {
         "file": "artifacts/package-runtime/standard-original.mjs",
-        "sha256": "6efd7e4f8f141b6f130afca40872c2c1a9354af1e61f94b102750a3a7756e295",
+        "sha256": "789c1854a30577ac4d70c67f93cb129cd20324264c78eb8e54d6b9a4f731eeba",
         "sourceMap": {
           "file": "artifacts/package-runtime/standard-original.mjs.map",
-          "sha256": "9c82092aa95066616e4a47bf37caf4b5f8663e437ae4a831103d8534243effd8"
+          "sha256": "d63ef4e5a6e5d81b5310882825705eb16d34249056c4f29184d3a9a1a7f8ae75"
         },
         "source": "artifacts/sdk/standard/original-terser-oxc.mjs",
         "sourceSha256": "10ab9e2548e45cfd58768816fd0c32fa680641e4c0d91c000e6acadc656de20c",
         "delivery": {
           "literalPool": {
-            "bindings": 14,
-            "references": 239
+            "bindings": 32,
+            "references": 135
           }
         },
-        "deliverySeconds": 2.847762253,
-        "raw": 292961,
-        "gzip9": 96536,
-        "brotli11": 82124
+        "deliverySeconds": 2.9433950139999996,
+        "raw": 295556,
+        "gzip9": 96600,
+        "brotli11": 82235
       },
       "savingsPercent": {
-        "raw": 9.480852541778951,
-        "gzip9": 4.478173856183243,
-        "brotli11": 3.866450886574724
+        "raw": 8.790868016038655,
+        "gzip9": 4.393960409772724,
+        "brotli11": 3.724552021765648
       }
     },
     {
@@ -88,48 +88,48 @@
       },
       "candidate": {
         "file": "artifacts/package-runtime/full-candidate.mjs",
-        "sha256": "86013b10b6b193706c9a7393938376277cdeeeea30aa1bc0245e7b7b3669f315",
+        "sha256": "6db273cf15fb7c08dcf8bc92412fe8a14c19bb05028043db4aabd2380ba44a85",
         "sourceMap": {
           "file": "artifacts/package-runtime/full-candidate.mjs.map",
-          "sha256": "9c8619a962b0efb36f4522ea23041f23af64d07ee639dd7de2d3769c0e293c1e"
+          "sha256": "61ec03b0bc5805197f6e7f1da5a4139ee0fdad2527057865131bd94ee2117ff6"
         },
         "source": "artifacts/sdk/full/gzip.mjs",
         "sourceSha256": "39d313acd01fd504435fb7289dd7063e9218dca4dfe1b6eacc7f6274f660f087",
         "delivery": {
           "literalPool": {
-            "bindings": 38,
-            "references": 620
+            "bindings": 70,
+            "references": 353
           }
         },
-        "deliverySeconds": 5.586472787999999,
-        "raw": 596718,
-        "gzip9": 191916,
-        "brotli11": 161259
+        "deliverySeconds": 5.552601505,
+        "raw": 602853,
+        "gzip9": 191799,
+        "brotli11": 161275
       },
       "original": {
         "file": "artifacts/package-runtime/full-original.mjs",
-        "sha256": "70cb4adf92b0c5f621f5e854ce7b87901800ab3365b9b15038b23c373b3eb077",
+        "sha256": "c18c838cebfa4c8035f617cb5f98ff366bf63c5ff296dfa1575295bf056b12f9",
         "sourceMap": {
           "file": "artifacts/package-runtime/full-original.mjs.map",
-          "sha256": "5bcc19666d55d50c1b7d087db3d10c7c6a53598162da1b0cad479bddadebfccd"
+          "sha256": "1b197aa718c0b9d54fe2fa51b95c79d892c18a664d041b7f8e6e567e514cbd52"
         },
         "source": "artifacts/sdk/full/original-oxc-private.mjs",
         "sourceSha256": "79aca506530f8f11d5e29cc8caf35befce030c9bec296b32c4373c7e0a860a1f",
         "delivery": {
           "literalPool": {
-            "bindings": 39,
-            "references": 628
+            "bindings": 70,
+            "references": 353
           }
         },
-        "deliverySeconds": 5.170730764,
-        "raw": 598347,
-        "gzip9": 192195,
-        "brotli11": 161403
+        "deliverySeconds": 5.242393522000002,
+        "raw": 604583,
+        "gzip9": 192273,
+        "brotli11": 161538
       },
       "savingsPercent": {
-        "raw": 17.698950269156455,
-        "gzip9": 8.269842938944072,
-        "brotli11": 6.850778943963398
+        "raw": 16.85279355845102,
+        "gzip9": 8.325765469510271,
+        "brotli11": 6.841536746399878
       }
     }
   ]

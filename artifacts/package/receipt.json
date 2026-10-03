@@ -16,40 +16,40 @@
   "replacements": [
     {
       "file": "dist/module.js",
-      "sha256": "8ad3da4ee019163b2547cbedb960fb27233ca75b78ee3156b7ce84dac31959d7",
+      "sha256": "265ab8d02efd6cb8567ccc12c29a404b7d5578bf1a47a703b9205f745cc29c43",
       "objective": "package",
       "sourceObjective": "gzip"
     },
     {
       "file": "dist/module.mjs",
-      "sha256": "8ad3da4ee019163b2547cbedb960fb27233ca75b78ee3156b7ce84dac31959d7",
+      "sha256": "265ab8d02efd6cb8567ccc12c29a404b7d5578bf1a47a703b9205f745cc29c43",
       "objective": "package",
       "sourceObjective": "gzip"
     },
     {
       "file": "dist/main.js",
-      "sha256": "d2f11a4752e434142f98db82a597ce26c64653c620924a33cd5cb386da1c21a4",
+      "sha256": "eaed4744da3bf26d0bc3893860755e341fa3461a153067d3c4d53f843d50e240",
       "objective": "package",
       "sourceObjective": "gzip",
       "formatAdapter": "esbuild CJS"
     },
     {
       "file": "dist/module.full.no-external.js",
-      "sha256": "86013b10b6b193706c9a7393938376277cdeeeea30aa1bc0245e7b7b3669f315",
+      "sha256": "6db273cf15fb7c08dcf8bc92412fe8a14c19bb05028043db4aabd2380ba44a85",
       "objective": "package",
       "sourceObjective": "gzip"
     },
     {
       "file": "dist/module.full.no-external.cjs",
-      "sha256": "3e29c20b6d953f98b3afe61041c630f126994f915befecf93e35f060100a13a9",
+      "sha256": "325ce2e596af3f135515a8a03ca233a0798f55ae07a02666ce96e32a11c0d4b0",
       "objective": "package",
       "sourceObjective": "gzip",
       "formatAdapter": "esbuild CJS"
     }
   ],
   "tarball": "itslil-posthog-browser-1.435.8-lil.1.tgz",
-  "integrity": "sha512-jiCxvTPLJAEOdLn8LUJNfURN2GFiUlQ7H47W3gDrBdvlO9KttJVU9W3kjVYQ74bj8E7pOThD3PI0AghzvYBEEA==",
-  "shasum": "b44e833ac0d3c4f7852fb9084844f2e84cfa7b3c",
-  "size": 10148591,
-  "unpackedSize": 34243541
+  "integrity": "sha512-C2m5cfjh3xlNMF2QN6JAdSg1VMT+tVzhPnvzAOxDPRByghqqhEMBdJSSjw/dfuFRxngO8gBK5jP7wp5zXds7oA==",
+  "shasum": "cd8b3286ea70970743fae5a8eadc43762890d259",
+  "size": 10151080,
+  "unpackedSize": 34278667
 }

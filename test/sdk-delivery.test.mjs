@@ -40,12 +40,14 @@ test('pooling recognizes cooked template literals and preserves tagged raw text'
   assert.equal(result.references,2)
   assert.deepEqual((await load(result.code)).read(),(await load(source)).read())
 })
-test('package pooling preserves public method names, receiver and proxy keys',async()=>{
+test('package pooling shares values while retaining named member access and receiver behavior',async()=>{
   const name='longPublicMethodNameForPackage'
   const calls=Array.from({length:8},()=>`value.${name}()`).join(',')
-  const source=`const keys=[];const value=new Proxy({${name}(){return this===value}},{get(target,key,receiver){keys.push(key);return Reflect.get(target,key,receiver)}});export const result=[${calls},value.${name}.name,keys]`
+  const source=`const keys=[];const value=new Proxy({${name}(){return this===value}},{get(target,key,receiver){keys.push(key);return Reflect.get(target,key,receiver)}});export const result=[${calls},value.${name}.name,keys,"repeated protocol value","repeated protocol value","repeated protocol value"]`
   const {output,receipt}=await optimizeSdkDelivery(source,{surface:'standard',objective:'package'})
   assert.equal(receipt.literalPool.bindings,1)
+  assert.equal(receipt.literalPool.references,3)
+  assert.ok(output.includes('.'+name),'Named property access must remain named')
   assert.deepEqual((await load(output)).result,(await load(source)).result)
 })
 test('private mangling preserves quoted protocol fields and public payloads',async()=>{

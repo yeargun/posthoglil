@@ -33,10 +33,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Reproduce and validate the packed SDK and application bundles
         run: npm run test:all
-      - name: Measure compiler objectives sequentially
-        run: npm run measure:runtime
-        env:
-          POSTHOGLIL_BENCH_SAMPLES: '30'
+      - name: Refresh compiler-objective timings if their inputs changed
+        run: node scripts/measure-runtime-if-needed.mjs
       - name: Measure the installed package sequentially
         run: npm run measure:consumer-runtime
         env:
@@ -47,5 +45,5 @@ jobs:
           path: |
             artifacts/sdk/performance.json
             artifacts/sdk-consumers/performance.json
-            reports/full-sdk/*validation.json
+            reports/full-sdk/*.json
           if-no-files-found: error

@@ -1,6 +1,9 @@
 import {writeFileSync,mkdirSync,readFileSync,existsSync} from 'node:fs'
 import {join} from 'node:path'
 import {bundleSdk,root,upstreamVersion,upstreamCommit,replacements} from './sdk-source.mjs'
+import {checkUpstreamPin} from './check-upstream-pin.mjs'
+
+checkUpstreamPin()
 
 mkdirSync(join(root,'reports/full-sdk'),{recursive:true})
 const config=join(root,'configs/sdk/modules.json')

@@ -5,6 +5,9 @@ import {spawnSync} from 'node:child_process'
 import {transform} from 'esbuild'
 import {composeMaps,withoutMapComment,withMapComment} from './source-maps.mjs'
 import {root,upstreamVersion} from './sdk-source.mjs'
+import {checkUpstreamPin} from './check-upstream-pin.mjs'
+
+checkUpstreamPin()
 
 // Preserve the published package layout and exact canonical declarations.
 // The tarball installs under the posthog-js dependency key, keeping existing

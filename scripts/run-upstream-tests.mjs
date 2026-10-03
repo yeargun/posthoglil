@@ -3,6 +3,8 @@ import {mkdirSync,readFileSync,writeFileSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import {join} from 'node:path'
 import {root} from './sdk-source.mjs'
+import {checkUpstreamPin} from './check-upstream-pin.mjs'
+checkUpstreamPin()
 mkdirSync(join(root,'reports/full-sdk'),{recursive:true})
 const inputs=[]
 for(const objective of ['original','raw','gzip','brotli']){
