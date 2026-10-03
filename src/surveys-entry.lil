@@ -1,4 +1,12 @@
 import {
+  recordSurveyAnswer,
+  buildSurveyResponseEventProperties,
+  isValidRegex,
+  isMatchingRegex,
+  propertyComparisons,
+  matchPropertyFilters,
+  shuffle,
+  getDisplayOrderChoices,
   SURVEY_LANGUAGE_PROPERTY,
   applySurveyTranslation,
   buildSurveyResponseProperties,
@@ -23,6 +31,14 @@ import {
 } from "./surveys.lil";
 
 export {
+  recordSurveyAnswer,
+  buildSurveyResponseEventProperties,
+  isValidRegex,
+  isMatchingRegex,
+  propertyComparisons,
+  matchPropertyFilters,
+  shuffle,
+  getDisplayOrderChoices,
   SURVEY_LANGUAGE_PROPERTY,
   applySurveyTranslation,
   buildSurveyResponseProperties,

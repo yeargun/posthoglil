@@ -49,3 +49,6 @@ export function isAngularStyleAttr(attributeName: string): boolean
 export function getDirectAndNestedSpanText(element: Element): string
 export function getNestedSpanText(element: Element): string
 export function getElementsChainString(elements: AutocaptureElementProperties[]): string
+
+export const DEFAULT_AUTOCAPTURE_IGNORE_LIST: string[]
+export function elementMatchesCSSSelector(element: Element, selector: string): boolean

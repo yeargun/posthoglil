@@ -1,0 +1,48 @@
+{
+  "upstreamVersion": "1.435.8",
+  "packageVersion": "1.435.8-lil.0",
+  "status": "experimental; not published to npm",
+  "installAs": "posthog-js",
+  "optimizedEntries": [
+    "posthog-js",
+    "posthog-js/full/no-external"
+  ],
+  "otherEntries": "Exact upstream runtime artifacts; no size claim for these entries.",
+  "defaultObjective": "brotli",
+  "sourceMaps": "Rebuilt maps with embedded upstream TypeScript and generated LilScript JavaScript for every replaced ESM/CJS entry. LilScript source-level mapping is not supplied.",
+  "declarations": "Exact upstream dist/module.d.ts; shared by the entrypoint manifests.",
+  "replacements": [
+    {
+      "file": "dist/module.js",
+      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "objective": "brotli"
+    },
+    {
+      "file": "dist/module.mjs",
+      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "objective": "brotli"
+    },
+    {
+      "file": "dist/main.js",
+      "sha256": "317d46d4f479657e7108c3ed9532aca39f5e99034bc518505665421d54f51aed",
+      "objective": "brotli",
+      "formatAdapter": "esbuild CJS"
+    },
+    {
+      "file": "dist/module.full.no-external.js",
+      "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+      "objective": "brotli"
+    },
+    {
+      "file": "dist/module.full.no-external.cjs",
+      "sha256": "00306ead41922abb810a1caa91b1ea9cb6f0924adb0699c2f4df44e7a776d968",
+      "objective": "brotli",
+      "formatAdapter": "esbuild CJS"
+    }
+  ],
+  "tarball": "itslil-posthog-browser-1.435.8-lil.0.tgz",
+  "integrity": "sha512-uWlg/CmBCZof8iESNIo9Lgx1y9W7P1kZb5FQqxfAIMeVdfzydsbPIHQrYu/WNc00s8xW2dGiIADM6BVYlRZxdw==",
+  "shasum": "27a07580f98a089c994c29c1436619d5b16d61ea",
+  "size": 14848422,
+  "unpackedSize": 52373213
+}

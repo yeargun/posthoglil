@@ -15,6 +15,7 @@ import {
   undef
 } from "./host.lil";
 import {
+  isErrorValue,
   isNumberValue,
   isObjectValue,
   isStringValue,
@@ -26,6 +27,8 @@ extern JsValue globalThis;
 extern JsValue encodeURIComponent;
 extern JsValue Object;
 extern JsValue Map;
+extern JsValue Set;
+extern JsValue Number;
 
 JsValue makeInternalFields() {
   JsValue fields = JS.object();
@@ -144,49 +147,6 @@ export number getUtf8ByteLength(string value) {
   return byteLength;
 }
 
-JsValue runtimeConstructor(JsValue constructorValue, string name, int arity) {
-  JsValue nameDescriptor = JS.object();
-  nameDescriptor["value"] = name;
-  nameDescriptor["configurable"] = true;
-  JS.invoke(Object, "defineProperty", constructorValue, "name", nameDescriptor);
-  JsValue lengthDescriptor = JS.object();
-  lengthDescriptor["value"] = arity;
-  lengthDescriptor["configurable"] = true;
-  JS.invoke(Object, "defineProperty", constructorValue, "length", lengthDescriptor);
-  JsValue prototypeDescriptor = JS.object();
-  prototypeDescriptor["writable"] = false;
-  JS.invoke(Object, "defineProperty", constructorValue, "prototype", prototypeDescriptor);
-  return constructorValue;
-}
-
-void setFunctionLength(JsValue functionValue, int arity) {
-  JsValue descriptor = JS.object();
-  descriptor["value"] = arity;
-  descriptor["configurable"] = true;
-  JS.invoke(Object, "defineProperty", functionValue, "length", descriptor);
-}
-
-void runtimeMethod(JsValue constructorValue, string name, JsValue method) {
-  JsValue nameDescriptor = JS.object();
-  nameDescriptor["value"] = name;
-  nameDescriptor["configurable"] = true;
-  JS.invoke(Object, "defineProperty", method, "name", nameDescriptor);
-  JsValue descriptor = JS.object();
-  descriptor["value"] = method;
-  descriptor["writable"] = true;
-  descriptor["configurable"] = true;
-  JS.invoke(Object, "defineProperty", constructorValue["prototype"], name, descriptor);
-}
-
-void requireNew(JsValue self, JsValue constructorValue, string name) {
-  if (
-    isNullish(self) ||
-    !JS.invoke(constructorValue["prototype"], "isPrototypeOf", self).truthy()
-  ) {
-    throw typeError("Class constructor " + name + " cannot be invoked without 'new'");
-  }
-}
-
 JsValue stepsConstructor(JsValue self, JsValue args) {
   self["_entries"] = JS.array();
   self["_totalBytes"] = 0;
@@ -251,23 +211,16 @@ JsValue stepsSize(JsValue self) {
   return len(self["_entries"]);
 }
 
-JsValue createExceptionStepsBuffer() {
-  JsValue constructorValue = undef();
-  func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
-    requireNew(self, constructorValue, "ExceptionStepsBuffer");
-    return stepsConstructor(self, args);
-  };
-  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ExceptionStepsBuffer", 1);
-  runtimeMethod(constructorValue, "setConfig", JS.method1(stepsSetConfig));
-  runtimeMethod(constructorValue, "add", JS.method1(stepsAdd));
-  runtimeMethod(constructorValue, "getAttachable", JS.method0(stepsGetAttachable));
-  runtimeMethod(constructorValue, "clear", JS.method0(stepsClear));
-  runtimeMethod(constructorValue, "size", JS.method0(stepsSize));
-  runtimeMethod(constructorValue, "_trimToMaxBytes", JS.method0(stepsTrim));
-  return constructorValue;
+export class ExceptionStepsBuffer {
+  init(JsValue config) { stepsConstructor(this, JS.array(config)); }
+  JsValue setConfig(JsValue a0) { return stepsSetConfig(this, a0); }
+  JsValue add(JsValue a0) { return stepsAdd(this, a0); }
+  JsValue getAttachable() { return stepsGetAttachable(this); }
+  JsValue clear() { return stepsClear(this); }
+  JsValue size() { return stepsSize(this); }
+  JsValue _trimToMaxBytes() { return stepsTrim(this); }
 }
-
-export JsValue ExceptionStepsBuffer = createExceptionStepsBuffer();
+export constructor ExceptionStepsBuffer;
 
 JsValue cacheConstructor(JsValue self, JsValue args) {
   self["_maxSize"] = args[0];
@@ -301,20 +254,13 @@ JsValue cacheReduce(JsValue self) {
   return undef();
 }
 
-JsValue createReduceableCache() {
-  JsValue constructorValue = undef();
-  func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
-    requireNew(self, constructorValue, "ReduceableCache");
-    return cacheConstructor(self, args);
-  };
-  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ReduceableCache", 1);
-  runtimeMethod(constructorValue, "get", JS.method1(cacheGet));
-  runtimeMethod(constructorValue, "set", JS.method2(cacheSet));
-  runtimeMethod(constructorValue, "reduce", JS.method0(cacheReduce));
-  return constructorValue;
+export class ReduceableCache {
+  init(JsValue maxSize) { cacheConstructor(this, JS.array(maxSize)); }
+  JsValue get(JsValue a0) { return cacheGet(this, a0); }
+  JsValue set(JsValue a0, JsValue a1) { return cacheSet(this, a0, a1); }
+  JsValue reduce() { return cacheReduce(this); }
 }
-
-export JsValue ReduceableCache = createReduceableCache();
+export constructor ReduceableCache;
 
 JsValue parsedStackResults = JS.undefined();
 JsValue lastKeysCount = JS.undefined();
@@ -393,114 +339,160 @@ JsValue builderApplyCoercers(JsValue self, JsValue input, JsValue context) {
   return JS.invoke(self, "coerceFallback", context);
 }
 
-JsValue coerceAtDepth(JsValue builder, JsValue input, JsValue mechanism, JsValue hint, int depth) {
-  if (depth <= 4) {
-    JsValue context = JS.invoke(builder, "buildCoercingContext", mechanism, hint, depth);
-    return JS.invoke(builder, "applyCoercers", input, context);
-  }
+JsValue builderGetAggregateErrors(JsValue self, JsValue input) {
+  try {
+    if (isErrorValue(input)) {
+      JsValue prototype = JS.invoke(Object, "getPrototypeOf", input);
+      for (int depth = 0; prototype.truthy() && depth < 100; depth = depth + 1) {
+        JsValue descriptor = JS.invoke(Object, "getOwnPropertyDescriptor", prototype, "constructor");
+        JsValue constructorValue = if (isNullish(descriptor)) { undef() } else { descriptor["value"] };
+        if (JS.typeOf(constructorValue) == "function" && JS.strictEqual(constructorValue["name"], "AggregateError")) {
+          JsValue errors = input["errors"];
+          return if (isArr(errors)) { errors } else { undef() };
+        }
+        prototype = JS.invoke(Object, "getPrototypeOf", prototype);
+      }
+    }
+  } catch {}
   return undef();
 }
 
-JsValue builderBuildCoercingContext(JsValue self, JsValue mechanism, JsValue hint, JsValue depthValue) {
-  int depth = 0;
-  if (!isUndef(depthValue)) {
-    depth = JS.number(depthValue).toInt();
-  }
+JsValue createCoercingContext(JsValue builder, JsValue mechanism, JsValue hint, JsValue state, int depth, int wrapperDepth) {
   JsValue context = copyObj(hint);
-  if (depth == 0) {
-    context["syntheticException"] = hint["syntheticException"];
-  } else {
-    context["syntheticException"] = undef();
-  }
-  context["mechanism"] = mechanism;
-  func(JsValue, JsValue)->JsValue applyCallback = (JsValue ignored, JsValue input) => {
-    return coerceAtDepth(self, input, mechanism, hint, depth);
+  context["syntheticException"] = if (depth == 0) { hint["syntheticException"] } else { undef() };
+  context["mechanism"] = if (depth == 0) { mechanism } else { JS.object() };
+  func(JsValue, JsValue)->JsValue apply = (JsValue ignored, JsValue input) => {
+    JsValue exception = coerceGraph(builder, input, mechanism, hint, state, depth, wrapperDepth + 1);
+    if (!exception.truthy()) throw state["skipped"];
+    return exception;
   };
-  func(JsValue, JsValue)->JsValue nextCallback = (JsValue ignored, JsValue input) => {
-    return coerceAtDepth(self, input, mechanism, hint, depth + 1);
-  };
-  context["apply"] = JS.method1(applyCallback);
-  context["next"] = JS.method1(nextCallback);
+  func(JsValue, JsValue)->JsValue next = (JsValue ignored, JsValue input) => coerceGraph(builder, input, mechanism, hint, state, depth + 1, 0);
+  context["apply"] = JS.method1(apply);
+  context["next"] = JS.method1(next);
   return context;
 }
 
+JsValue coerceGraph(JsValue builder, JsValue input, JsValue mechanism, JsValue hint, JsValue state, int depth, int wrapperDepth) {
+  JsValue context = createCoercingContext(builder, mechanism, hint, state, depth, wrapperDepth);
+  JsValue forward = context["apply"];
+  func(JsValue, JsValue)->JsValue apply = (JsValue ignored, JsValue nextInput) => {
+    JS.invoke(state["wrappers"], "push", input);
+    try { return JS.call(forward, undef(), nextInput); }
+    finally { JS.invoke(state["wrappers"], "pop"); }
+  };
+  context["apply"] = JS.method1(apply);
+  if (wrapperDepth > 4 || (wrapperDepth > 0 && !JS.strictEqual(JS.invoke(state["wrappers"], "indexOf", input), -1))) {
+    return JS.invoke(builder, "coerceFallback", context);
+  }
+  bool reference = (JS.typeOf(input) == "object" && !JS.strictEqual(input, null)) || JS.typeOf(input) == "function";
+  if ((wrapperDepth == 0 && JS.number(state["count"]) >= 50) || (reference && JS.invoke(state["seen"], "has", input).truthy())) return undef();
+  if (reference) JS.invoke(state["seen"], "add", input);
+  if (wrapperDepth == 0) state["count"] = JS.number(state["count"]) + 1;
+  JsValue errors = JS.invoke(builder, "getAggregateErrors", input);
+  if (errors.truthy()) state["hasAggregate"] = true;
+  JsValue exception = undef();
+  try {
+    exception = JS.invoke(builder, "applyCoercers", input, context);
+    if (!exception.truthy()) throw state["skipped"];
+  } catch (JsValue error) {
+    if (JS.strictEqual(error, state["skipped"])) {
+      if (wrapperDepth == 0) state["count"] = JS.number(state["count"]) - 1;
+      return undef();
+    }
+    if (!state["hasAggregate"].truthy()) throw error;
+    exception = JS.invoke(builder, "coerceFallback", context);
+  }
+  if (!errors.truthy() || JS.number(state["count"]) >= 50) return exception;
+  JsValue length = undef();
+  try { length = errors["length"]; } catch { return exception; }
+  if (!JS.invoke(Number, "isInteger", length).truthy() || JS.lessThan(length, 0) || JS.greaterThan(length, 4294967295.0)) return exception;
+  JsValue children = JS.array();
+  for (int index = 0; JS.number(state["count"]) < 50 && JS.number(state["memberInspections"]) < 1000 && JS.lessThan(index, length); index = index + 1) {
+    state["memberInspections"] = JS.number(state["memberInspections"]) + 1;
+    JsValue child = undef();
+    try { child = JS.invoke(context, "next", errors[index]); }
+    catch {
+      state["count"] = JS.number(state["count"]) + 1;
+      child = JS.invoke(builder, "coerceFallback", createCoercingContext(builder, mechanism, hint, state, depth + 1, 0));
+    }
+    if (child.truthy()) JS.invoke(children, "push", child);
+  }
+  JsValue result = copyObj(exception);
+  result["errors"] = children;
+  return result;
+}
+
+JsValue builderBuildCoercingContext(JsValue self, JsValue mechanism, JsValue hint, JsValue depthValue) {
+  int depth = if (isUndef(depthValue)) { 0 } else { JS.number(depthValue).toInt() };
+  JsValue state = object { count: 0, memberInspections: 0, hasAggregate: false, seen: JS.construct(Set), wrappers: JS.array(), skipped: JS.object() };
+  JsValue context = createCoercingContext(self, mechanism, hint, state, depth, 0);
+  JsValue result = copyObj(context);
+  func(JsValue, JsValue)->JsValue apply = (JsValue ignored, JsValue input) => {
+    JsValue exception = coerceGraph(self, input, mechanism, hint, state, depth, 0);
+    return if (isNullish(exception)) { JS.invoke(self, "coerceFallback", context) } else { exception };
+  };
+  result["apply"] = JS.method1(apply);
+  return result;
+}
+
 JsValue builderApplyChunkIds(JsValue self, JsValue frames, JsValue chunkIdMap) {
-  int i = 0;
-  while (i < len(frames)) {
-    JsValue frame = frames[i];
-    if (frame["filename"].truthy() && !isNullish(chunkIdMap)) {
+  func(JsValue)->JsValue apply = (JsValue frame) => {
+    if (frame["filename"].truthy() && chunkIdMap.truthy()) {
       frame["chunk_id"] = chunkIdMap[frame["filename"]];
     }
-    i = i + 1;
-  }
-  return frames;
+    return frame;
+  };
+  return JS.invoke(frames, "map", apply);
 }
 
 JsValue builderParseStacktrace(JsValue self, JsValue error, JsValue context) {
   JsValue cause = undef();
-  if (!isNullish(error["cause"])) {
-    cause = JS.invoke(self, "parseStacktrace", error["cause"], context);
-  }
+  if (!isNullish(error["cause"])) cause = JS.invoke(self, "parseStacktrace", error["cause"], context);
   JsValue stack = undef();
   if (!isNullish(error["stack"]) && !JS.strictEqual(error["stack"], "")) {
-    if (error["synthetic"].truthy()) {
-      stack = JS.call(
-        self["stackParser"],
-        undef(),
-        error["stack"],
-        context["skipFirstLines"]
-      );
-    } else {
-      stack = JS.call(self["stackParser"], undef(), error["stack"], 0);
-    }
-    stack = builderApplyChunkIds(self, stack, context["chunkIdMap"]);
+    try {
+      stack = JS.call(self["stackParser"], self, error["stack"], if (error["synthetic"].truthy()) { context["skipFirstLines"] } else { 0 });
+      stack = JS.invoke(self, "applyChunkIds", stack, context["chunkIdMap"]);
+    } catch { stack = undef(); }
   }
   JsValue out = copyObj(error);
   out["cause"] = cause;
   out["stack"] = stack;
+  out["errors"] = undef();
+  if (!isNullish(error["errors"])) {
+    func(JsValue)->JsValue child = (JsValue value) => JS.invoke(self, "parseStacktrace", value, context);
+    out["errors"] = JS.invoke(error["errors"], "map", child);
+  }
   return out;
 }
 
+void appendException(JsValue list, JsValue exception, JsValue mechanism, JsValue parentId, JsValue source) {
+  int id = len(list);
+  JsValue entryMechanism = JS.object();
+  if (isUndef(parentId)) {
+    JsValue kind = mechanism["type"];
+    entryMechanism["type"] = if (JS.typeOf(kind) == "string" && len(kind) > 0) { kind } else { "generic" };
+    if (JS.typeOf(mechanism["handled"]) == "boolean") entryMechanism["handled"] = mechanism["handled"];
+    else if (isUndef(mechanism["handled"])) entryMechanism["handled"] = true;
+    entryMechanism["synthetic"] = if (JS.typeOf(mechanism["synthetic"]) == "boolean") { mechanism["synthetic"] } else { exception["synthetic"] };
+    entryMechanism["exception_id"] = id;
+  } else {
+    entryMechanism = object { type: "chained", source: source, synthetic: exception["synthetic"], exception_id: id, parent_id: parentId };
+  }
+  JsValue current = object { type: exception["type"], value: exception["value"], mechanism: entryMechanism };
+  if (exception["stack"].truthy()) current["stacktrace"] = object { type: "raw", frames: exception["stack"] };
+  JS.invoke(list, "push", current);
+  if (exception["cause"].truthy()) appendException(list, exception["cause"], mechanism, id, "cause");
+  if (!isNullish(exception["errors"])) {
+    JsValue[] children = JS.assume(exception["errors"]);
+    for (JsValue child of children) appendException(list, child, mechanism, id, "member");
+  }
+}
+
 JsValue builderConvertList(JsValue self, JsValue exceptionWithStack, JsValue mechanism) {
-  JsValue currentException = JS.object();
-  currentException["type"] = exceptionWithStack["type"];
-  currentException["value"] = exceptionWithStack["value"];
-  JsValue outputMechanism = JS.object();
-  if (isNullish(mechanism["type"])) {
-    outputMechanism["type"] = "generic";
-  } else {
-    outputMechanism["type"] = mechanism["type"];
-  }
-  if (isNullish(mechanism["handled"])) {
-    outputMechanism["handled"] = true;
-  } else {
-    outputMechanism["handled"] = mechanism["handled"];
-  }
-  if (isNullish(exceptionWithStack["synthetic"])) {
-    outputMechanism["synthetic"] = false;
-  } else {
-    outputMechanism["synthetic"] = exceptionWithStack["synthetic"];
-  }
-  currentException["mechanism"] = outputMechanism;
-  if (exceptionWithStack["stack"].truthy()) {
-    JsValue stacktrace = JS.object();
-    stacktrace["type"] = "raw";
-    stacktrace["frames"] = exceptionWithStack["stack"];
-    currentException["stacktrace"] = stacktrace;
-  }
-  JsValue exceptionList = JS.array();
-  JS.invoke(exceptionList, "push", currentException);
-  if (!isNullish(exceptionWithStack["cause"])) {
-    JsValue causeMechanism = copyObj(mechanism);
-    causeMechanism["handled"] = true;
-    JsValue causes = JS.invoke(self, "convertToExceptionList", exceptionWithStack["cause"], causeMechanism);
-    int i = 0;
-    while (i < len(causes)) {
-      JS.invoke(exceptionList, "push", causes[i]);
-      i = i + 1;
-    }
-  }
-  return exceptionList;
+  JsValue result = JS.array();
+  appendException(result, exceptionWithStack, mechanism, undef(), undef());
+  return result;
 }
 
 JsValue builderBuildParsingContext(JsValue self, JsValue hint) {
@@ -587,31 +579,21 @@ JsValue builderConstructor(JsValue self, JsValue args) {
   return undef();
 }
 
-JsValue createErrorPropertiesBuilder() {
-  JsValue constructorValue = undef();
-  func(JsValue, JsValue)->JsValue constructorCallback = (JsValue self, JsValue args) => {
-    requireNew(self, constructorValue, "ErrorPropertiesBuilder");
-    return builderConstructor(self, args);
-  };
-  constructorValue = runtimeConstructor(JS.methodRest(constructorCallback), "ErrorPropertiesBuilder", 2);
-  JsValue buildMethod = JS.method2(builderBuildFromUnknown);
-  setFunctionLength(buildMethod, 1);
-  runtimeMethod(constructorValue, "buildFromUnknown", buildMethod);
-  runtimeMethod(constructorValue, "modifyFrames", JS.method1(builderModifyFrames));
-  runtimeMethod(constructorValue, "coerceFallback", JS.method1(fallbackException));
-  runtimeMethod(constructorValue, "parseStacktrace", JS.method2(builderParseStacktrace));
-  runtimeMethod(constructorValue, "applyChunkIds", JS.method2(builderApplyChunkIds));
-  runtimeMethod(constructorValue, "applyCoercers", JS.method2(builderApplyCoercers));
-  runtimeMethod(constructorValue, "applyModifiers", JS.method1(builderApplyModifiers));
-  runtimeMethod(constructorValue, "convertToExceptionList", JS.method2(builderConvertList));
-  runtimeMethod(constructorValue, "buildParsingContext", JS.method1(builderBuildParsingContext));
-  JsValue buildContextMethod = JS.method3(builderBuildCoercingContext);
-  setFunctionLength(buildContextMethod, 2);
-  runtimeMethod(constructorValue, "buildCoercingContext", buildContextMethod);
-  return constructorValue;
+export class ErrorPropertiesBuilder {
+  init(JsValue coercers, JsValue stackParser, JsValue modifiers = JS.array()) { builderConstructor(this, JS.array(coercers, stackParser, modifiers)); }
+  JsValue buildFromUnknown(JsValue input, JsValue hint = JS.object()) { return builderBuildFromUnknown(this, input, hint); }
+  JsValue buildCoercingContext(JsValue mechanism, JsValue hint, JsValue depth = 0) { return builderBuildCoercingContext(this, mechanism, hint, depth); }
+  JsValue modifyFrames(JsValue a0) { return builderModifyFrames(this, a0); }
+  JsValue coerceFallback(JsValue a0) { return fallbackException(this, a0); }
+  JsValue parseStacktrace(JsValue a0, JsValue a1) { return builderParseStacktrace(this, a0, a1); }
+  JsValue applyChunkIds(JsValue a0, JsValue a1) { return builderApplyChunkIds(this, a0, a1); }
+  JsValue applyCoercers(JsValue a0, JsValue a1) { return builderApplyCoercers(this, a0, a1); }
+  JsValue applyModifiers(JsValue a0) { return builderApplyModifiers(this, a0); }
+  JsValue convertToExceptionList(JsValue a0, JsValue a1) { return builderConvertList(this, a0, a1); }
+  JsValue buildParsingContext(JsValue a0) { return builderBuildParsingContext(this, a0); }
+  JsValue getAggregateErrors(JsValue a0) { return builderGetAggregateErrors(this, a0); }
 }
-
-export JsValue ErrorPropertiesBuilder = createErrorPropertiesBuilder();
+export constructor ErrorPropertiesBuilder;
 
 export JsValue getInjectedReleaseId() {
   JsValue injected = globalThis["_posthogReleaseId"];

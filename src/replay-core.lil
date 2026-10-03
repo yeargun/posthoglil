@@ -28,6 +28,7 @@ extern JsValue parseInt;
 extern JsValue JSON;
 extern JsValue Math;
 
+export int UNSTRINGIFIABLE_EVENT_SIZE = -1;
 export int MAX_PAYLOAD_SIZE_BYTES = 1000000;
 export int FULL_SNAPSHOT_EVENT_TYPE = 2;
 export int META_EVENT_TYPE = 4;
@@ -250,7 +251,7 @@ export JsValue buildNetworkRequestOptions(JsValue instanceConfig, JsValue remote
   int limit = effectivePayloadLimitBytes(config);
   string apiHost = toStr(instanceConfig["api_host"]);
 
-  if (isFn(session["maskNetworkRequestFn"])) {
+  if (isFn(session["maskNetworkRequestFn"]) && !isFn(session["maskCapturedNetworkRequestFn"])) {
     func(JsValue, JsValue)->JsValue deprecatedAdapter = (JsValue ignored, JsValue data) => {
       JsValue argument = JS.object();
       argument["url"] = data["name"];
@@ -313,9 +314,13 @@ export JsValue circularReferenceReplacer() {
 }
 
 export int estimateSize(JsValue value) {
-  JsValue serialized = JS.invoke(JSON, "stringify", value, circularReferenceReplacer());
-  if (!serialized.truthy()) return 0;
-  return byteLength(toStr(serialized));
+  try {
+    JsValue serialized = JS.invoke(JSON, "stringify", value, circularReferenceReplacer());
+    if (!serialized.truthy()) return 0;
+    return byteLength(toStr(serialized));
+  } catch {
+    return UNSTRINGIFIABLE_EVENT_SIZE;
+  }
 }
 
 export int estimateCompressedEventSize(JsValue value) {

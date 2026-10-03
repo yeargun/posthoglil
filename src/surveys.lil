@@ -13,6 +13,9 @@ import {
 } from "./host.lil";
 
 extern JsValue Object;
+extern JsValue RegExp;
+extern JsValue Math;
+extern JsValue parseFloat;
 
 export string SURVEY_LANGUAGE_PROPERTY = "$survey_language";
 
@@ -105,7 +108,16 @@ export JsValue getSurveyResponseValue(JsValue responses, JsValue questionId = JS
   return response;
 }
 
-export JsValue buildSurveyResponseProperties(JsValue responses = JS.undefined(), JsValue survey = JS.undefined()) {
+JsValue snapshotQuestion(JsValue question, JsValue snapshots) {
+  if (isNullish(snapshots)) return question["question"];
+  JsValue id = question["id"];
+  if (isNullish(id)) id = "";
+  JsValue text = snapshots[id];
+  if (isNullish(text)) return question["question"];
+  return text;
+}
+
+export JsValue buildSurveyResponseProperties(JsValue responses = JS.undefined(), JsValue survey = JS.undefined(), JsValue questionSnapshots = JS.undefined()) {
   if (isUndef(responses)) {
     responses = JS.object();
   }
@@ -124,13 +136,109 @@ export JsValue buildSurveyResponseProperties(JsValue responses = JS.undefined(),
   JsValue out = JS.object();
   out["$survey_questions"] = questions.map((JsValue question) => object {
     id: question["id"],
-    question: question["question"],
+    question: snapshotQuestion(question, questionSnapshots),
     response: getSurveyResponseValue(responses, question["id"])
   });
   objectAssign(out, responses);
   objectAssign(out, oldFormatResponses);
   return out;
 }
+
+export JsValue recordSurveyAnswer(JsValue state, string questionId, JsValue response, JsValue question = JS.undefined()) {
+  JsValue snapshots = state["questionSnapshots"];
+  if (isUndef(snapshots)) snapshots = JS.object();
+  JsValue responses = copyObj(state["responses"]);
+  responses[getSurveyResponseKey(questionId)] = response;
+  if (!isNullish(question) && question["id"].truthy()) {
+    snapshots = copyObj(snapshots);
+    snapshots[question["id"]] = question["question"];
+  }
+  return object { responses: responses, questionSnapshots: snapshots };
+}
+
+export JsValue buildSurveyResponseEventProperties(JsValue options) {
+  JsValue responses = options["responses"];
+  if (isUndef(responses)) responses = JS.object();
+  JsValue result = JS.object();
+  if (!isUndef(options["submissionId"])) result["$survey_submission_id"] = options["submissionId"];
+  if (JS.strictEqual(options["event"], "sent")) {
+    if (!isUndef(options["completed"])) result["$survey_completed"] = options["completed"];
+  } else {
+    result["$survey_partially_completed"] = surveyHasResponses(responses);
+  }
+  if (options["surveyLanguage"].truthy()) result[SURVEY_LANGUAGE_PROPERTY] = options["surveyLanguage"];
+  objectAssign(result, buildSurveyResponseProperties(responses, options["survey"], options["questionSnapshots"]));
+  return result;
+}
+
+export func(JsValue)->bool isValidRegex = (JsValue pattern) => {
+  try { JS.construct(RegExp, pattern); } catch { return false; }
+  return true;
+};
+
+export func(JsValue, JsValue)->bool isMatchingRegex = (JsValue value, JsValue pattern) => {
+  if (!isValidRegex(pattern)) return false;
+  try { return JS.invoke(JS.construct(RegExp, pattern), "test", value).truthy(); } catch { return false; }
+};
+
+string lowerCase(string value) { return value.toLowerCase(); }
+
+export JsValue propertyComparisons = object {
+  exact: (string[] targets, string[] values) => values.some((string value) => targets.some((string target) => value === target)),
+  is_not: (string[] targets, string[] values) => values.every((string value) => targets.every((string target) => value !== target)),
+  regex: (string[] targets, string[] values) => values.some((string value) => targets.some((string target) => isMatchingRegex(value, target))),
+  not_regex: (string[] targets, string[] values) => values.every((string value) => targets.every((string target) => !isMatchingRegex(value, target))),
+  icontains: (string[] targets, string[] values) => values.map(lowerCase).some((string value) => targets.map(lowerCase).some((string target) => value.includes(target))),
+  not_icontains: (string[] targets, string[] values) => values.map(lowerCase).every((string value) => targets.map(lowerCase).every((string target) => !value.includes(target))),
+  gt: (string[] targets, string[] values) => values.some((string value) => {
+    number parsed = JS.number(JS.call(parseFloat, undef(), value));
+    return parsed == parsed && targets.some((string target) => parsed > JS.number(JS.call(parseFloat, undef(), target)));
+  }),
+  lt: (string[] targets, string[] values) => values.some((string value) => {
+    number parsed = JS.number(JS.call(parseFloat, undef(), value));
+    return parsed == parsed && targets.some((string target) => parsed < JS.number(JS.call(parseFloat, undef(), target)));
+  })
+};
+
+export bool matchPropertyFilters(JsValue propertyFilters, JsValue eventProperties) {
+  if (!propertyFilters.truthy()) return true;
+  JsValue[] entries = JS.assume(JS.invoke(Object, "entries", propertyFilters));
+  return entries.every((JsValue entry) => {
+    JsValue value = if (isNullish(eventProperties)) { undef() } else { eventProperties[entry[0]] };
+    if (isNullish(value)) return false;
+    JsValue filter = entry[1];
+    JsValue compare = propertyComparisons[filter["operator"]];
+    if (!compare.truthy()) return false;
+    JsValue[] targets = JS.assume(filter["values"]);
+    return JS.call(compare, undef(), targets.map((JsValue item) => toStr(item)), [toStr(value)]).truthy();
+  });
+}
+
+export func(JsValue[])->JsValue[] shuffle = (JsValue[] array) => {
+  JsValue[] shuffled = [...array];
+  for (int index = shuffled.length - 1; index > 0; index = index - 1) {
+    int swapIndex = JS.number(JS.invoke(Math, "floor", JS.number(JS.invoke(Math, "random")) * (index + 1))).toInt();
+    JsValue temporary = shuffled[index];
+    shuffled[index] = shuffled[swapIndex];
+    shuffled[swapIndex] = temporary;
+  }
+  return shuffled;
+};
+
+export func(JsValue)->JsValue getDisplayOrderChoices = (JsValue question) => {
+  if (!question["shuffleOptions"].truthy()) return question["choices"];
+  JsValue[] original = JS.assume(question["choices"]);
+  JsValue[] choices = [...original];
+  JsValue openChoice = null;
+  if (question["hasOpenChoice"].truthy()) openChoice = present(JS.invoke(choices, "pop")) ?? null;
+  JsValue[] shuffled = shuffle(choices);
+  func(JsValue, int)->bool unchanged = (JsValue value, int index) => JS.strictEqual(value, shuffled[index]);
+  if (shuffled.length > 1 && JS.invoke(choices, "every", unchanged).truthy()) {
+    JS.invoke(shuffled, "reverse");
+  }
+  if (!JS.strictEqual(openChoice, null)) shuffled.push(openChoice);
+  return shuffled;
+};
 
 export bool surveyHasResponses(JsValue responses = JS.undefined()) {
   if (isUndef(responses)) {

@@ -101,6 +101,7 @@ export function getSurveyResponseValue(
 export function buildSurveyResponseProperties(
   responses: SurveyResponses | undefined,
   survey: { questions: Array<Pick<TranslatableSurveyQuestion, "id" | "question" | "originalQuestionIndex">> },
+  questionSnapshots?: Record<string, string>,
 ): Record<string, unknown>
 export function surveyHasResponses(responses?: SurveyResponses): boolean
 export function getSurveyInteractionProperty(survey: SurveyWithIteration, action: string): string
@@ -125,3 +126,15 @@ export function canSurveyActivateRepeatedly(survey: TranslatableSurvey): boolean
 export function isSurveyIterationBased(survey: TranslatableSurvey): boolean
 export function isSurveyKeyForSurvey(key: string, surveyId: string): boolean
 export function getSurveyIterationKey(survey: SurveyWithIteration): string
+
+export interface SurveyQuestionForResponses { id?: string; question: string; originalQuestionIndex?: number }
+export function recordSurveyAnswer(state: { responses: SurveyResponses; questionSnapshots?: Record<string, string> }, questionId: string, response: SurveyResponseValue, question?: SurveyQuestionForResponses): { responses: SurveyResponses; questionSnapshots: Record<string, string> }
+export function buildSurveyResponseEventProperties(options: { event: 'sent' | 'dismissed' | 'abandoned'; survey: { questions: SurveyQuestionForResponses[] }; responses?: SurveyResponses; submissionId?: string; completed?: boolean; surveyLanguage?: string | null; questionSnapshots?: Record<string, string> }): Record<string, unknown>
+export type PropertyOperator = 'exact' | 'is_not' | 'regex' | 'not_regex' | 'icontains' | 'not_icontains' | 'gt' | 'lt'
+export type PropertyFilters = Record<string, { operator: PropertyOperator; values: Array<string | number | boolean> }>
+export function isValidRegex(pattern: string): boolean
+export function isMatchingRegex(value: string, pattern: string): boolean
+export const propertyComparisons: Record<PropertyOperator, (targets: string[], values: string[]) => boolean>
+export function matchPropertyFilters(filters: PropertyFilters | undefined, properties: Record<string, unknown> | undefined): boolean
+export function shuffle<T>(array: readonly T[]): T[]
+export function getDisplayOrderChoices(question: { choices: string[]; hasOpenChoice?: boolean; shuffleOptions?: boolean }): string[]

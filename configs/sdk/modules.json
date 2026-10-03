@@ -1,0 +1,20 @@
+{
+  "status": "experimental",
+  "selection": "All qualified replacements, including regressions. No selective headline or feature removal.",
+  "modules": [
+    "flags",
+    "numbers",
+    "strings",
+    "types",
+    "bots",
+    "autocapture",
+    "replay-config",
+    "replay-utils",
+    "surveys",
+    "error-tracking",
+    "otlp-values",
+    "otlp-logs",
+    "otlp-metrics",
+    "otlp-config"
+  ]
+}

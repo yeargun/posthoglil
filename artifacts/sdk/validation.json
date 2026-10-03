@@ -1,0 +1,2944 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-10-03T01:52:15.045Z",
+  "upstreamVersion": "1.435.8",
+  "upstreamCommit": "c9d890a4028b186a5e1b327161ea197001c0c46b",
+  "ok": true,
+  "upstreamTestsPerObjective": 480,
+  "upstreamSuites": [
+    {
+      "objective": "original",
+      "total": 480,
+      "passed": 480,
+      "reportSha256": "ceedd5c5082b23cd24e24da34b406816d5b43f5281da3a17c742cd9954cede5b"
+    },
+    {
+      "objective": "raw",
+      "total": 480,
+      "passed": 480,
+      "reportSha256": "059106e9bc40922c77c9a99aa8cf44abc2f55833bee67ccdf52aadc1e9d7bf82"
+    },
+    {
+      "objective": "gzip",
+      "total": 480,
+      "passed": 480,
+      "reportSha256": "33bfe44045c6ef92bdbff54e3c97e2411c7a9a3d6e4f4d7b7d52872578c9088d"
+    },
+    {
+      "objective": "brotli",
+      "total": 480,
+      "passed": 480,
+      "reportSha256": "3434d02c7e4c19ea7f90ed32cf58e1a7216e3eabd557b41ebe93bbff472dc3dd"
+    }
+  ],
+  "utilityTests": 55,
+  "browser": "Chromium 139.0.7258.5",
+  "scope": "Selected upstream suites, targeted differential/ABI tests and browser journeys. This is not the entire PostHog test suite or a cross-browser certification.",
+  "coverage": [
+    "480 selected, unmodified upstream tests pass for each of raw, gzip and Brotli; the upstream baseline passes the same suites.",
+    "55 utility/API checks, including constructor reflection and host subclassing.",
+    "Six paired browser journeys: matching public exports/methods, loaded callbacks, flags, identify, groups, consent, capture hooks and event payloads.",
+    "Identity survives reload; reset and named-instance isolation are checked.",
+    "Autocapture and exceptions reach a local HTTP collector. Passwords and no-capture controls are excluded.",
+    "Real recorder full snapshots and DOM mutations are received and decoded; password checks also inspect compressed replay payloads.",
+    "Standard SDK works with the published lazy recorder. Full/no-external records without fetching a recorder script.",
+    "Batching and an HTTP 503 retry preserve event IDs and properties in the Brotli SDKs.",
+    "Packed tarball: CommonJS, React provider/hooks, SSR, strict TypeScript and byte-identical canonical upstream declarations and rebuilt ESM/CJS source maps."
+  ],
+  "artifacts": [
+    {
+      "surface": "standard",
+      "objective": "raw",
+      "file": "artifacts/sdk/standard/raw.mjs",
+      "raw": 326376,
+      "gzip9": 102390,
+      "brotli11": 86689,
+      "sha256": "bc3ea9fd47cb028c418cd5aa8507f7fdfcde21c463a3290da80c616f17a16e4b",
+      "lane": "terser",
+      "minifySeconds": 3.1150832839999993,
+      "sourceMap": {
+        "file": "artifacts/sdk/standard/standard-raw-terser.map",
+        "sha256": "48c6494bd3dbf25ef7d5eb8a3e1450a2f3558c8996fc8d9ff831fa01924e9fed",
+        "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+      }
+    },
+    {
+      "surface": "standard",
+      "objective": "gzip",
+      "file": "artifacts/sdk/standard/gzip.mjs",
+      "raw": 327676,
+      "gzip9": 102339,
+      "brotli11": 86461,
+      "sha256": "8846c924314b1040ac109044890f838bbb5920a21151c8676cf1bcdaede86a3b",
+      "lane": "terser",
+      "minifySeconds": 3.050452029,
+      "sourceMap": {
+        "file": "artifacts/sdk/standard/standard-gzip-terser.map",
+        "sha256": "ed56a72e8487bcf53113cd870445332cdc81a2e26f7501c992e7fccc45c73dcb",
+        "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+      }
+    },
+    {
+      "surface": "standard",
+      "objective": "brotli",
+      "file": "artifacts/sdk/standard/brotli.mjs",
+      "raw": 327510,
+      "gzip9": 102366,
+      "brotli11": 86472,
+      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "lane": "terser",
+      "minifySeconds": 2.9143176310000016,
+      "sourceMap": {
+        "file": "artifacts/sdk/standard/standard-brotli-terser.map",
+        "sha256": "4a9c6b17645bd96f4feca14beb6f961a4bbb7155f0ec21069cca426107cc1b12",
+        "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "raw",
+      "file": "artifacts/sdk/full/raw.mjs",
+      "raw": 709154,
+      "gzip9": 204584,
+      "brotli11": 171248,
+      "sha256": "4a8401c3550cfc5e084716df3e92c74393fd827213223c294eb06f579d75f93a",
+      "lane": "oxc",
+      "minifySeconds": 0.2501394170000058,
+      "sourceMap": {
+        "file": "artifacts/sdk/full/full-raw-oxc.map",
+        "sha256": "77673460fd921174e739f3a689e25c3467467baa6e078fb72b6d0c323516b037",
+        "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "gzip",
+      "file": "artifacts/sdk/full/gzip.mjs",
+      "raw": 710467,
+      "gzip9": 204346,
+      "brotli11": 170902,
+      "sha256": "d7a51394aafbe63e786acb88fa17ec2436c16a51b3a41f0c7ffc6a64c593fa3b",
+      "lane": "oxc",
+      "minifySeconds": 0.2638545999999988,
+      "sourceMap": {
+        "file": "artifacts/sdk/full/full-gzip-oxc.map",
+        "sha256": "a16fde3864aa29ce98e1d43a50d5d62ad02967d983d9676a8e10badda2f6781a",
+        "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "brotli",
+      "file": "artifacts/sdk/full/brotli.mjs",
+      "raw": 710460,
+      "gzip9": 204376,
+      "brotli11": 170998,
+      "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+      "lane": "oxc",
+      "minifySeconds": 0.2461923999999999,
+      "sourceMap": {
+        "file": "artifacts/sdk/full/full-brotli-oxc.map",
+        "sha256": "520078220270cac9318c6d1a030fcccd7efeae68e96100f55b7c4b4aebb0471b",
+        "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+      }
+    }
+  ],
+  "package": {
+    "ok": true,
+    "tarball": "itslil-posthog-browser-1.435.8-lil.0.tgz",
+    "integrity": "sha512-uWlg/CmBCZof8iESNIo9Lgx1y9W7P1kZb5FQqxfAIMeVdfzydsbPIHQrYu/WNc00s8xW2dGiIADM6BVYlRZxdw==",
+    "checks": [
+      "Installed packed tarball under unchanged posthog-js dependency key",
+      "CommonJS default/named export and constructor identity parity",
+      "Full/no-external CommonJS import",
+      "Canonical declaration SHA-256 matches upstream exactly",
+      "Packed runtime hashes match; ESM/CJS source maps trace upstream TypeScript and compiled LilScript JavaScript with embedded sources",
+      "Strict TypeScript React consumer; full client assignable to canonical PostHog type",
+      "Published subpath resolution retained",
+      "React SSR with PostHogProvider",
+      "Real browser React provider, feature-flag hook, singleton identity and capture callback"
+    ]
+  },
+  "transport": [
+    {
+      "surface": "standard",
+      "label": "original",
+      "sha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
+      "ok": true,
+      "batchSize": 2,
+      "statuses": [
+        503,
+        200
+      ],
+      "identifiersPreserved": true
+    },
+    {
+      "surface": "standard",
+      "label": "candidate",
+      "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "ok": true,
+      "batchSize": 2,
+      "statuses": [
+        503,
+        200
+      ],
+      "identifiersPreserved": true
+    },
+    {
+      "surface": "full",
+      "label": "original",
+      "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+      "ok": true,
+      "batchSize": 2,
+      "statuses": [
+        503,
+        200
+      ],
+      "identifiersPreserved": true
+    },
+    {
+      "surface": "full",
+      "label": "candidate",
+      "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+      "ok": true,
+      "batchSize": 2,
+      "statuses": [
+        503,
+        200
+      ],
+      "identifiersPreserved": true
+    }
+  ],
+  "journeys": [
+    {
+      "surface": "standard",
+      "objective": "raw",
+      "ok": true,
+      "originalFile": "artifacts/sdk/standard/published.mjs",
+      "candidateFile": "artifacts/sdk/standard/raw.mjs",
+      "publicMethods": [
+        {
+          "name": "_addCaptureHook",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "_calculate_event_properties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "_isIdentified",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "_overrideSDKInfo",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "_send_request",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "addExceptionStep",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "alias",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "calculateEventProperties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "canRenderSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "canRenderSurveyAsync",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "cancelPendingSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "capture",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "captureException",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureLog",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "captureTraceFeedback",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureTraceMetric",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "clearIdentity",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "clear_opt_in_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "createPersonProfile",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "debug",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "displaySurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getActiveMatchingSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getAllFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getEarlyAccessFeatures",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getExtension",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlag",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getFeatureFlagPayload",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlagResult",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getPageViewId",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getSessionProperty",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_distinct_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_explicit_consent_status",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_property",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_session_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_session_replay_url",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "group",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "has_opted_in_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "has_opted_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "identify",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "init",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "isFeatureEnabled",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "is_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "loadToolbar",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "on",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "onActiveMatchingSurveysChanged",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onFeatureFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSessionId",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSurveysLoaded",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_in_capturing",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "push",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "register_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register_once",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "reloadFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "renderSurvey",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "reset",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "resetPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "sentryIntegration",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "sessionRecordingStarted",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "setIdentity",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setInternalOrTestUser",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setPersonProperties",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "set_config",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "shutdown",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startExceptionAutocapture",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startSessionRecording",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "stopExceptionAutocapture",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "stopSessionRecording",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "toString",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "unregister",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unregister_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unsetPersonProperties",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "updateEarlyAccessFeatureEnrollment",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "updateFlags",
+          "type": "function",
+          "arity": 3
+        }
+      ],
+      "exports": [
+        "Compression",
+        "DEFAULT_PRODUCT_TOUR_APPEARANCE",
+        "DisplaySurveyType",
+        "PostHog",
+        "ProductTourEventName",
+        "ProductTourEventProperties",
+        "SurveyEventName",
+        "SurveyEventProperties",
+        "SurveyEventType",
+        "SurveyPosition",
+        "SurveyQuestionBranchingType",
+        "SurveyQuestionType",
+        "SurveySchedule",
+        "SurveyTabPosition",
+        "SurveyType",
+        "SurveyWidgetType",
+        "default",
+        "posthog",
+        "severityLevels"
+      ],
+      "events": [
+        "checkout",
+        "$feature_flag_called",
+        "$identify",
+        "$groupidentify",
+        "identified checkout",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "after consent",
+        "$autocapture",
+        "$exception",
+        "browser journey complete",
+        "$snapshot"
+      ],
+      "persistence": {
+        "retained": "person-123",
+        "reset": true,
+        "isolated": true
+      }
+    },
+    {
+      "surface": "standard",
+      "objective": "gzip",
+      "ok": true,
+      "originalFile": "artifacts/sdk/standard/published.mjs",
+      "candidateFile": "artifacts/sdk/standard/gzip.mjs",
+      "publicMethods": [
+        {
+          "name": "_addCaptureHook",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "_calculate_event_properties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "_isIdentified",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "_overrideSDKInfo",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "_send_request",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "addExceptionStep",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "alias",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "calculateEventProperties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "canRenderSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "canRenderSurveyAsync",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "cancelPendingSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "capture",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "captureException",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureLog",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "captureTraceFeedback",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureTraceMetric",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "clearIdentity",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "clear_opt_in_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "createPersonProfile",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "debug",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "displaySurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getActiveMatchingSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getAllFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getEarlyAccessFeatures",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getExtension",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlag",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getFeatureFlagPayload",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlagResult",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getPageViewId",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getSessionProperty",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_distinct_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_explicit_consent_status",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_property",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_session_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_session_replay_url",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "group",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "has_opted_in_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "has_opted_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "identify",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "init",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "isFeatureEnabled",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "is_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "loadToolbar",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "on",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "onActiveMatchingSurveysChanged",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onFeatureFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSessionId",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSurveysLoaded",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_in_capturing",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "push",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "register_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register_once",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "reloadFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "renderSurvey",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "reset",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "resetPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "sentryIntegration",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "sessionRecordingStarted",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "setIdentity",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setInternalOrTestUser",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setPersonProperties",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "set_config",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "shutdown",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startExceptionAutocapture",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startSessionRecording",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "stopExceptionAutocapture",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "stopSessionRecording",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "toString",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "unregister",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unregister_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unsetPersonProperties",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "updateEarlyAccessFeatureEnrollment",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "updateFlags",
+          "type": "function",
+          "arity": 3
+        }
+      ],
+      "exports": [
+        "Compression",
+        "DEFAULT_PRODUCT_TOUR_APPEARANCE",
+        "DisplaySurveyType",
+        "PostHog",
+        "ProductTourEventName",
+        "ProductTourEventProperties",
+        "SurveyEventName",
+        "SurveyEventProperties",
+        "SurveyEventType",
+        "SurveyPosition",
+        "SurveyQuestionBranchingType",
+        "SurveyQuestionType",
+        "SurveySchedule",
+        "SurveyTabPosition",
+        "SurveyType",
+        "SurveyWidgetType",
+        "default",
+        "posthog",
+        "severityLevels"
+      ],
+      "events": [
+        "$identify",
+        "checkout",
+        "$groupidentify",
+        "identified checkout",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "after consent",
+        "$autocapture",
+        "$exception",
+        "browser journey complete",
+        "$snapshot"
+      ],
+      "persistence": {
+        "retained": "person-123",
+        "reset": true,
+        "isolated": true
+      }
+    },
+    {
+      "surface": "standard",
+      "objective": "brotli",
+      "ok": true,
+      "originalFile": "artifacts/sdk/standard/original-terser.mjs",
+      "candidateFile": "artifacts/sdk/standard/brotli.mjs",
+      "publicMethods": [
+        {
+          "name": "_addCaptureHook",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "_calculate_event_properties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "_isIdentified",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "_overrideSDKInfo",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "_send_request",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "addExceptionStep",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "alias",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "calculateEventProperties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "canRenderSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "canRenderSurveyAsync",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "cancelPendingSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "capture",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "captureException",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureLog",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "captureTraceFeedback",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureTraceMetric",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "clearIdentity",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "clear_opt_in_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "createPersonProfile",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "debug",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "displaySurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getActiveMatchingSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getAllFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getEarlyAccessFeatures",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getExtension",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlag",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getFeatureFlagPayload",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlagResult",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getPageViewId",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getSessionProperty",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_distinct_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_explicit_consent_status",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_property",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_session_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_session_replay_url",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "group",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "has_opted_in_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "has_opted_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "identify",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "init",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "isFeatureEnabled",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "is_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "loadToolbar",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "on",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "onActiveMatchingSurveysChanged",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onFeatureFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSessionId",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSurveysLoaded",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_in_capturing",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "push",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "register_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register_once",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "reloadFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "renderSurvey",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "reset",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "resetPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "sentryIntegration",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "sessionRecordingStarted",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "setIdentity",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setInternalOrTestUser",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setPersonProperties",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "set_config",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "shutdown",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startExceptionAutocapture",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startSessionRecording",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "stopExceptionAutocapture",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "stopSessionRecording",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "toString",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "unregister",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unregister_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unsetPersonProperties",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "updateEarlyAccessFeatureEnrollment",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "updateFlags",
+          "type": "function",
+          "arity": 3
+        }
+      ],
+      "exports": [
+        "Compression",
+        "DEFAULT_PRODUCT_TOUR_APPEARANCE",
+        "DisplaySurveyType",
+        "PostHog",
+        "ProductTourEventName",
+        "ProductTourEventProperties",
+        "SurveyEventName",
+        "SurveyEventProperties",
+        "SurveyEventType",
+        "SurveyPosition",
+        "SurveyQuestionBranchingType",
+        "SurveyQuestionType",
+        "SurveySchedule",
+        "SurveyTabPosition",
+        "SurveyType",
+        "SurveyWidgetType",
+        "default",
+        "posthog",
+        "severityLevels"
+      ],
+      "events": [
+        "checkout",
+        "$identify",
+        "$groupidentify",
+        "identified checkout",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "after consent",
+        "$autocapture",
+        "$exception",
+        "browser journey complete",
+        "$snapshot"
+      ],
+      "persistence": {
+        "retained": "person-123",
+        "reset": true,
+        "isolated": true
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "raw",
+      "ok": true,
+      "originalFile": "artifacts/sdk/full/original-oxc.mjs",
+      "candidateFile": "artifacts/sdk/full/raw.mjs",
+      "publicMethods": [
+        {
+          "name": "_addCaptureHook",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "_calculate_event_properties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "_isIdentified",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "_overrideSDKInfo",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "_send_request",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "addExceptionStep",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "alias",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "calculateEventProperties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "canRenderSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "canRenderSurveyAsync",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "cancelPendingSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "capture",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "captureException",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureLog",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "captureTraceFeedback",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureTraceMetric",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "clearIdentity",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "clear_opt_in_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "createPersonProfile",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "debug",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "displaySurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getActiveMatchingSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getAllFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getEarlyAccessFeatures",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getExtension",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlag",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getFeatureFlagPayload",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlagResult",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getPageViewId",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getSessionProperty",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_distinct_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_explicit_consent_status",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_property",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_session_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_session_replay_url",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "group",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "has_opted_in_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "has_opted_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "identify",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "init",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "isFeatureEnabled",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "is_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "loadToolbar",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "on",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "onActiveMatchingSurveysChanged",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onFeatureFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSessionId",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSurveysLoaded",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_in_capturing",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "push",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "register_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register_once",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "reloadFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "renderSurvey",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "reset",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "resetPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "sentryIntegration",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "sessionRecordingStarted",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "setIdentity",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setInternalOrTestUser",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setPersonProperties",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "set_config",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "shutdown",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startExceptionAutocapture",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startSessionRecording",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "stopExceptionAutocapture",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "stopSessionRecording",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "toString",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "unregister",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unregister_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unsetPersonProperties",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "updateEarlyAccessFeatureEnrollment",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "updateFlags",
+          "type": "function",
+          "arity": 3
+        }
+      ],
+      "exports": [
+        "Compression",
+        "DEFAULT_PRODUCT_TOUR_APPEARANCE",
+        "DisplaySurveyType",
+        "PostHog",
+        "ProductTourEventName",
+        "ProductTourEventProperties",
+        "SurveyEventName",
+        "SurveyEventProperties",
+        "SurveyEventType",
+        "SurveyPosition",
+        "SurveyQuestionBranchingType",
+        "SurveyQuestionType",
+        "SurveySchedule",
+        "SurveyTabPosition",
+        "SurveyType",
+        "SurveyWidgetType",
+        "default",
+        "posthog",
+        "severityLevels"
+      ],
+      "events": [
+        "checkout",
+        "$feature_flag_called",
+        "$identify",
+        "$groupidentify",
+        "identified checkout",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "after consent",
+        "$autocapture",
+        "$exception",
+        "browser journey complete",
+        "$snapshot"
+      ],
+      "persistence": {
+        "retained": "person-123",
+        "reset": true,
+        "isolated": true
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "gzip",
+      "ok": true,
+      "originalFile": "artifacts/sdk/full/original-oxc.mjs",
+      "candidateFile": "artifacts/sdk/full/gzip.mjs",
+      "publicMethods": [
+        {
+          "name": "_addCaptureHook",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "_calculate_event_properties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "_isIdentified",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "_overrideSDKInfo",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "_send_request",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "addExceptionStep",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "alias",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "calculateEventProperties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "canRenderSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "canRenderSurveyAsync",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "cancelPendingSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "capture",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "captureException",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureLog",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "captureTraceFeedback",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureTraceMetric",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "clearIdentity",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "clear_opt_in_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "createPersonProfile",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "debug",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "displaySurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getActiveMatchingSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getAllFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getEarlyAccessFeatures",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getExtension",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlag",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getFeatureFlagPayload",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlagResult",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getPageViewId",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getSessionProperty",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_distinct_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_explicit_consent_status",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_property",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_session_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_session_replay_url",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "group",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "has_opted_in_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "has_opted_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "identify",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "init",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "isFeatureEnabled",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "is_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "loadToolbar",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "on",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "onActiveMatchingSurveysChanged",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onFeatureFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSessionId",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSurveysLoaded",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_in_capturing",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "push",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "register_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register_once",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "reloadFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "renderSurvey",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "reset",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "resetPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "sentryIntegration",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "sessionRecordingStarted",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "setIdentity",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setInternalOrTestUser",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setPersonProperties",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "set_config",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "shutdown",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startExceptionAutocapture",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startSessionRecording",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "stopExceptionAutocapture",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "stopSessionRecording",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "toString",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "unregister",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unregister_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unsetPersonProperties",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "updateEarlyAccessFeatureEnrollment",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "updateFlags",
+          "type": "function",
+          "arity": 3
+        }
+      ],
+      "exports": [
+        "Compression",
+        "DEFAULT_PRODUCT_TOUR_APPEARANCE",
+        "DisplaySurveyType",
+        "PostHog",
+        "ProductTourEventName",
+        "ProductTourEventProperties",
+        "SurveyEventName",
+        "SurveyEventProperties",
+        "SurveyEventType",
+        "SurveyPosition",
+        "SurveyQuestionBranchingType",
+        "SurveyQuestionType",
+        "SurveySchedule",
+        "SurveyTabPosition",
+        "SurveyType",
+        "SurveyWidgetType",
+        "default",
+        "posthog",
+        "severityLevels"
+      ],
+      "events": [
+        "$identify",
+        "checkout",
+        "$groupidentify",
+        "identified checkout",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "after consent",
+        "$autocapture",
+        "$exception",
+        "browser journey complete",
+        "$snapshot"
+      ],
+      "persistence": {
+        "retained": "person-123",
+        "reset": true,
+        "isolated": true
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "brotli",
+      "ok": true,
+      "originalFile": "artifacts/sdk/full/original-oxc.mjs",
+      "candidateFile": "artifacts/sdk/full/brotli.mjs",
+      "publicMethods": [
+        {
+          "name": "_addCaptureHook",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "_calculate_event_properties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "_isIdentified",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "_overrideSDKInfo",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "_send_request",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "addExceptionStep",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "alias",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "calculateEventProperties",
+          "type": "function",
+          "arity": 5
+        },
+        {
+          "name": "canRenderSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "canRenderSurveyAsync",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "cancelPendingSurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "capture",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "captureException",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureLog",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "captureTraceFeedback",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "captureTraceMetric",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "clearIdentity",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "clear_opt_in_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "createPersonProfile",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "debug",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "displaySurvey",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getActiveMatchingSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getAllFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getEarlyAccessFeatures",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getExtension",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlag",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getFeatureFlagPayload",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getFeatureFlagResult",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "getGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getPageViewId",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "getSessionProperty",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "getSurveys",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_distinct_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_explicit_consent_status",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_property",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "get_session_id",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "get_session_replay_url",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "group",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "has_opted_in_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "has_opted_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "identify",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "init",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "isFeatureEnabled",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "is_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "loadToolbar",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "on",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "onActiveMatchingSurveysChanged",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onFeatureFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSessionId",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "onSurveysLoaded",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_in_capturing",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "opt_out_capturing",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "push",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "register_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "register_once",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "reloadFeatureFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "renderSurvey",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "reset",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "resetGroups",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "resetPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "sentryIntegration",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "sessionRecordingStarted",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setGroupPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "setIdentity",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setInternalOrTestUser",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "setPersonProperties",
+          "type": "function",
+          "arity": 2
+        },
+        {
+          "name": "setPersonPropertiesForFlags",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "set_config",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "shutdown",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startExceptionAutocapture",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "startSessionRecording",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "stopExceptionAutocapture",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "stopSessionRecording",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "toString",
+          "type": "function",
+          "arity": 0
+        },
+        {
+          "name": "unregister",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unregister_for_session",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "unsetPersonProperties",
+          "type": "function",
+          "arity": 1
+        },
+        {
+          "name": "updateEarlyAccessFeatureEnrollment",
+          "type": "function",
+          "arity": 3
+        },
+        {
+          "name": "updateFlags",
+          "type": "function",
+          "arity": 3
+        }
+      ],
+      "exports": [
+        "Compression",
+        "DEFAULT_PRODUCT_TOUR_APPEARANCE",
+        "DisplaySurveyType",
+        "PostHog",
+        "ProductTourEventName",
+        "ProductTourEventProperties",
+        "SurveyEventName",
+        "SurveyEventProperties",
+        "SurveyEventType",
+        "SurveyPosition",
+        "SurveyQuestionBranchingType",
+        "SurveyQuestionType",
+        "SurveySchedule",
+        "SurveyTabPosition",
+        "SurveyType",
+        "SurveyWidgetType",
+        "default",
+        "posthog",
+        "severityLevels"
+      ],
+      "events": [
+        "$identify",
+        "checkout",
+        "$groupidentify",
+        "identified checkout",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "$feature_flag_called",
+        "after consent",
+        "$autocapture",
+        "$exception",
+        "browser journey complete",
+        "$snapshot"
+      ],
+      "persistence": {
+        "retained": "person-123",
+        "reset": true,
+        "isolated": true
+      }
+    }
+  ],
+  "performance": {
+    "samples": 15,
+    "warmupPairs": 2,
+    "rows": 6,
+    "source": "artifacts/sdk/performance.json"
+  }
+}

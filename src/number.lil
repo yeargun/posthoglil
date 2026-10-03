@@ -20,7 +20,7 @@ export number clampToRange(
       " must be a number. using max or fallback. max: " + toStr(max) + ", fallback: " + toStr(fallbackValue)
     );
     JsValue next = fallbackValue;
-    if (!next.truthy()) {
+    if (JS.isNullish(next)) {
       next = max;
     }
     return clampToRange(next, min, max, logger);

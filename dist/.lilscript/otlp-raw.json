@@ -1,0 +1,177 @@
+{
+  "version": 3,
+  "codec": "raw",
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "otlp.raw.js",
+          "dynamic": false,
+          "closure": [
+            "otlp.raw.js"
+          ],
+          "row": 6561,
+          "raw_row": 6561
+        }
+      ],
+      "files": [
+        {
+          "file": "otlp.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "otlp-entry.lil",
+            "otlp.lil",
+            "host.lil",
+            "json.lil",
+            "types.lil",
+            "string.lil",
+            "error-host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 6561,
+          "codec_bytes": 6561,
+          "sha256": "93e9bc213f75396067f905cdc1657245943a54fc976d13c0c77f4d597851736f"
+        }
+      ],
+      "side_effects": [
+        "otlp.raw.js"
+      ],
+      "codec_total": 6561,
+      "rows_total": 6561,
+      "setters": 0,
+      "output": "primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        137,
+        170,
+        124,
+        194,
+        125,
+        28,
+        187,
+        26,
+        4,
+        226,
+        86,
+        28,
+        109,
+        93,
+        139,
+        49,
+        55,
+        97,
+        147,
+        45,
+        7,
+        26,
+        94,
+        158,
+        70,
+        228,
+        46,
+        75,
+        74,
+        10,
+        59,
+        149
+      ]
+    }
+  ],
+  "source_sha256": "46130d01d9025f7c280a00ee6b242e425830d359af5cb11f3c44f31c69536e6c",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "index",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/otlp-entry.lil",
+        "bytes": 683,
+        "sha256": "016c5c8193200c2527e8125731cf8d9c2071497b4cec456acbefd0b116a5e71c",
+        "dependencies": [
+          1
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/otlp.lil",
+        "bytes": 16383,
+        "sha256": "fdfde8b37d5b4ef80a0147168f57e3dc756f48784ccd1104bdb6b032e5c7430c",
+        "dependencies": [
+          2,
+          3,
+          4,
+          6
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
+        "bytes": 4387,
+        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/json.lil",
+        "bytes": 641,
+        "sha256": "b5ab129e048a610968f28808f2a5def44f98591c1af421d2b7fa3f173963aaa2",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
+        "bytes": 2084,
+        "sha256": "c52d392647c6421313931c7c621f3a1af7342c7724ef8d93ea1035c545d82163",
+        "dependencies": [
+          2,
+          5
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/string.lil",
+        "bytes": 1443,
+        "sha256": "76ac527162d2349feb35c3a92b83df58835f8a4a0ed0ca4dc64d8b7693c3f70c",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/error-host.lil",
+        "bytes": 3627,
+        "sha256": "f2984842f93068a84cb935dd473dd306b5a43b069d733d76048c79f10208608b",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [],
+    "host_reserved": []
+  }
+}

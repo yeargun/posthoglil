@@ -1,0 +1,1537 @@
+{
+  "date": "2026-10-03T01:48:48.912Z",
+  "browser": "139.0.7258.5",
+  "node": "v20.19.0",
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "loadBefore": [
+    1.06,
+    2.18,
+    2.6
+  ],
+  "samples": 15,
+  "warmupPairs": 2,
+  "eventsPerSample": 1000,
+  "importScope": "Import a fresh Blob URL: JavaScript parse, evaluate and module scheduling; source text transfer and Blob creation excluded. No network download is timed.",
+  "initScope": "Synchronous init with memory persistence, flags bootstrap, autocapture enabled, replay disabled. Full build includes recorder code but recording is not timed.",
+  "captureScope": "Synchronous preparation and queueing of 1,000 capture calls after 100 warmup calls. before_send returns each event unchanged. Rate limits raised; actual accepted count asserted. HTTP upload, ingestion and replay processing excluded.",
+  "statistics": "Alternating original/candidate order, separate fresh browser contexts. Medians; paired bootstrap 95% interval for median relative improvement, 5,000 deterministic resamples. Positive means candidate faster. Exploratory microbenchmark, not a user-perceived latency or throughput guarantee.",
+  "rows": [
+    {
+      "surface": "standard",
+      "objective": "raw",
+      "original": "artifacts/sdk/standard/published.mjs",
+      "originalSha256": "68d9a1b30214f9d5eef925458dff55826c63bd628efefbb93fc86c0de60f6545",
+      "candidate": "artifacts/sdk/standard/raw.mjs",
+      "candidateSha256": "bc3ea9fd47cb028c418cd5aa8507f7fdfcde21c463a3290da80c616f17a16e4b",
+      "pairs": [
+        {
+          "original": {
+            "importMs": 21.5,
+            "initMs": 6,
+            "capture1000Ms": 253.70000000298023,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.69999999552965,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 254.20000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.899999998509884,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 262.40000000596046,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.099999994039536,
+            "initMs": 6,
+            "capture1000Ms": 270.6000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.5,
+            "initMs": 5.799999997019768,
+            "capture1000Ms": 262.30000000447035,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 22,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 250.19999999552965,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 21.399999998509884,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 265.8999999985099,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 257.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.19999999552965,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 258.30000000447035,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.80000000447035,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 262.79999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.69999999552965,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 257.1000000014901,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.5,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 257.8999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.900000005960464,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 267.6000000014901,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 22.100000001490116,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 262.90000000596046,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.200000002980232,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 251.79999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.5,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 262.1000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 23.899999998509884,
+            "initMs": 6.899999998509884,
+            "capture1000Ms": 274.79999999701977,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 22.700000002980232,
+            "initMs": 6,
+            "capture1000Ms": 255.60000000149012,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22,
+            "initMs": 6,
+            "capture1000Ms": 257.5,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 7.199999995529652,
+            "capture1000Ms": 255.80000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 22.100000001490116,
+            "initMs": 6.0999999940395355,
+            "capture1000Ms": 260.3999999985099,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 23.5,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 264.70000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.19999999552965,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 266.1000000014901,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 22.600000001490116,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 259.6000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 259.5,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 23,
+            "initMs": 6.4000000059604645,
+            "capture1000Ms": 262.8999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.600000001490116,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 259.80000000447035,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.5,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 256.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.899999998509884,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 266.5,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.599999994039536,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 259.20000000298023,
+            "accepted": 1000
+          }
+        }
+      ],
+      "metrics": {
+        "importMs": {
+          "originalMedianMs": 21.5,
+          "candidateMedianMs": 22.19999999552965,
+          "pairedImprovementPercent": -2.3255813953488413,
+          "confidence95Percent": [
+            -5.581395328044891,
+            0.9259259396594222
+          ],
+          "verdict": "no clear difference"
+        },
+        "initMs": {
+          "originalMedianMs": 6.100000001490116,
+          "candidateMedianMs": 6.199999995529652,
+          "pairedImprovementPercent": -1.6393441641820994,
+          "confidence95Percent": [
+            -1.666666691501928,
+            0
+          ],
+          "verdict": "no clear difference"
+        },
+        "capture1000Ms": {
+          "originalMedianMs": 259.6000000014901,
+          "candidateMedianMs": 259.80000000447035,
+          "pairedImprovementPercent": -0.19708316909503587,
+          "confidence95Percent": [
+            -1.6513056852899277,
+            3.030303028634329
+          ],
+          "verdict": "no clear difference"
+        }
+      }
+    },
+    {
+      "surface": "standard",
+      "objective": "gzip",
+      "original": "artifacts/sdk/standard/published.mjs",
+      "originalSha256": "68d9a1b30214f9d5eef925458dff55826c63bd628efefbb93fc86c0de60f6545",
+      "candidate": "artifacts/sdk/standard/gzip.mjs",
+      "candidateSha256": "8846c924314b1040ac109044890f838bbb5920a21151c8676cf1bcdaede86a3b",
+      "pairs": [
+        {
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 276.19999999552965,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.5,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 256.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.200000002980232,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 255.79999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.799999997019768,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 257.3999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.299999997019768,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 260.79999999701977,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.600000001490116,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 273.3999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 268.1000000014901,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 20.900000005960464,
+            "initMs": 5.899999998509884,
+            "capture1000Ms": 260.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 254.60000000149012,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 23,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 277.79999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 21.700000002980232,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 260.29999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.100000001490116,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 268.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.399999998509884,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 272.19999999552965,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 23,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 258.6000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 23.5,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 270.5,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 26.19999999552965,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 260.8999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 22.299999997019768,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 258.6000000014901,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.700000002980232,
+            "initMs": 6.0999999940395355,
+            "capture1000Ms": 258,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 21.5,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 268.3999999985099,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 24.600000001490116,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 254,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21,
+            "initMs": 6,
+            "capture1000Ms": 260.29999999701977,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 22.399999998509884,
+            "initMs": 6.4000000059604645,
+            "capture1000Ms": 287.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 263.20000000298023,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.299999997019768,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 265.59999999403954,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 5.899999998509884,
+            "capture1000Ms": 256.20000000298023,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.5,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 252.69999999552965,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 21.80000000447035,
+            "initMs": 6,
+            "capture1000Ms": 252.60000000149012,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.899999998509884,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 259,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 22.099999994039536,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 263.6000000014901,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.30000000447035,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 254.29999999701977,
+            "accepted": 1000
+          }
+        }
+      ],
+      "metrics": {
+        "importMs": {
+          "originalMedianMs": 21.600000001490116,
+          "candidateMedianMs": 21.80000000447035,
+          "pairedImprovementPercent": -1.4084507254099599,
+          "confidence95Percent": [
+            -5.263157864716872,
+            2.6905829332722897
+          ],
+          "verdict": "no clear difference"
+        },
+        "initMs": {
+          "originalMedianMs": 6.200000002980232,
+          "candidateMedianMs": 6.199999995529652,
+          "pairedImprovementPercent": -1.6129031288946383,
+          "confidence95Percent": [
+            -3.278688450504852,
+            1.6129033692359407
+          ],
+          "verdict": "no clear difference"
+        },
+        "capture1000Ms": {
+          "originalMedianMs": 260.29999999701977,
+          "candidateMedianMs": 260.29999999701977,
+          "pairedImprovementPercent": 0.6216006221831272,
+          "confidence95Percent": [
+            -3.6795707173418624,
+            2.471042470467133
+          ],
+          "verdict": "no clear difference"
+        }
+      }
+    },
+    {
+      "surface": "standard",
+      "objective": "brotli",
+      "original": "artifacts/sdk/standard/original-terser.mjs",
+      "originalSha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
+      "candidate": "artifacts/sdk/standard/brotli.mjs",
+      "candidateSha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+      "pairs": [
+        {
+          "original": {
+            "importMs": 22,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 256.19999999552965,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.5,
+            "initMs": 6,
+            "capture1000Ms": 259.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.5,
+            "initMs": 6,
+            "capture1000Ms": 254.79999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.100000001490116,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 260.1000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 261.30000000447035,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.700000002980232,
+            "initMs": 6.0999999940395355,
+            "capture1000Ms": 263.70000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 21.599999994039536,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 256.69999999552965,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 22.30000000447035,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 263.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.299999997019768,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 261.1000000014901,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 22.299999997019768,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 259.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 21.400000005960464,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 253,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.599999994039536,
+            "initMs": 6,
+            "capture1000Ms": 255.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 259.69999999552965,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 22.100000001490116,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 255.79999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 21.5,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 257.5,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 21.400000005960464,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 253.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.600000001490116,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 254.10000000149012,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.899999998509884,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 271.70000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.30000000447035,
+            "initMs": 6,
+            "capture1000Ms": 250.70000000298023,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 20.900000005960464,
+            "initMs": 6,
+            "capture1000Ms": 249.39999999850988,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 23.299999997019768,
+            "initMs": 7,
+            "capture1000Ms": 256.3999999985099,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 24,
+            "initMs": 8.299999997019768,
+            "capture1000Ms": 256.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.80000000447035,
+            "initMs": 7.299999997019768,
+            "capture1000Ms": 272.19999999552965,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 22.100000001490116,
+            "initMs": 6.600000001490116,
+            "capture1000Ms": 268.90000000596046,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 22.5,
+            "initMs": 5.899999998509884,
+            "capture1000Ms": 257.59999999403954,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.399999998509884,
+            "initMs": 6,
+            "capture1000Ms": 250.20000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 22.700000002980232,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 265,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 23.100000001490116,
+            "initMs": 6.5,
+            "capture1000Ms": 265.20000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 21.30000000447035,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 258.69999999552965,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 21.399999998509884,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 253.89999999850988,
+            "accepted": 1000
+          }
+        }
+      ],
+      "metrics": {
+        "importMs": {
+          "originalMedianMs": 21.600000001490116,
+          "candidateMedianMs": 21.899999998509884,
+          "pairedImprovementPercent": -0.46948353999318737,
+          "confidence95Percent": [
+            -3.0042918586685285,
+            0.9259258709919505
+          ],
+          "verdict": "no clear difference"
+        },
+        "initMs": {
+          "originalMedianMs": 6.100000001490116,
+          "candidateMedianMs": 6.199999995529652,
+          "pairedImprovementPercent": -1.1826317702912092e-7,
+          "confidence95Percent": [
+            -4.9180327368276044,
+            1.6129033692359407
+          ],
+          "verdict": "no clear difference"
+        },
+        "capture1000Ms": {
+          "originalMedianMs": 258.69999999552965,
+          "candidateMedianMs": 256.69999999552965,
+          "pairedImprovementPercent": 0.07541478242005795,
+          "confidence95Percent": [
+            -1.2099921971095995,
+            1.8554310000396979
+          ],
+          "verdict": "no clear difference"
+        }
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "raw",
+      "original": "artifacts/sdk/full/original-oxc.mjs",
+      "originalSha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+      "candidate": "artifacts/sdk/full/raw.mjs",
+      "candidateSha256": "4a8401c3550cfc5e084716df3e92c74393fd827213223c294eb06f579d75f93a",
+      "pairs": [
+        {
+          "original": {
+            "importMs": 35.5,
+            "initMs": 5.899999998509884,
+            "capture1000Ms": 254.5,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.400000005960464,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 256,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.899999998509884,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 253.79999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.70000000298023,
+            "initMs": 5.799999997019768,
+            "capture1000Ms": 249.70000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 36.20000000298023,
+            "initMs": 6.0999999940395355,
+            "capture1000Ms": 252.80000000447035,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.69999999552965,
+            "initMs": 6,
+            "capture1000Ms": 256.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.399999998509884,
+            "initMs": 7.100000001490116,
+            "capture1000Ms": 254.89999999850988,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 34.599999994039536,
+            "initMs": 6,
+            "capture1000Ms": 257.1000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.899999998509884,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 255.39999999850988,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.69999999552965,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 254.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 42.600000001490116,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 254.20000000298023,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.30000000447035,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 254.10000000149012,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 36.100000001490116,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 274,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 37.70000000298023,
+            "initMs": 6,
+            "capture1000Ms": 254.20000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 36.5,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 253.39999999850988,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 37,
+            "initMs": 6.5999999940395355,
+            "capture1000Ms": 254.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.70000000298023,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 260.20000000298023,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.5,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 263.20000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 36.70000000298023,
+            "initMs": 6.5,
+            "capture1000Ms": 255.60000000149012,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 36.099999994039536,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 254.90000000596046,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 36.30000000447035,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 277.19999999552965,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 41.29999999701977,
+            "initMs": 7.200000002980232,
+            "capture1000Ms": 268.1000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.80000000447035,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 255.10000000149012,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 34.79999999701977,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 251.70000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.69999999552965,
+            "initMs": 6,
+            "capture1000Ms": 252.10000000149012,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.600000001490116,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 250.89999999850988,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 36,
+            "initMs": 6.300000004470348,
+            "capture1000Ms": 249.69999999552965,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 36.70000000298023,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 278.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 252,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36.399999998509884,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 256.6000000014901,
+            "accepted": 1000
+          }
+        }
+      ],
+      "metrics": {
+        "importMs": {
+          "originalMedianMs": 35.70000000298023,
+          "candidateMedianMs": 35.899999998509884,
+          "pairedImprovementPercent": -0.5602240770671063,
+          "confidence95Percent": [
+            -3.9999999957425203,
+            0.5602240979370787
+          ],
+          "verdict": "no clear difference"
+        },
+        "initMs": {
+          "originalMedianMs": 6.100000001490116,
+          "candidateMedianMs": 6.300000004470348,
+          "pairedImprovementPercent": -1.201706512077294e-7,
+          "confidence95Percent": [
+            -6.557377023150357,
+            1.201706512077294e-7
+          ],
+          "verdict": "no clear difference"
+        },
+        "capture1000Ms": {
+          "originalMedianMs": 254.5,
+          "candidateMedianMs": 254.89999999850988,
+          "pairedImprovementPercent": -0.03935458539532366,
+          "confidence95Percent": [
+            -1.1529592620928675,
+            0.8556981730717506
+          ],
+          "verdict": "no clear difference"
+        }
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "gzip",
+      "original": "artifacts/sdk/full/original-oxc.mjs",
+      "originalSha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+      "candidate": "artifacts/sdk/full/gzip.mjs",
+      "candidateSha256": "d7a51394aafbe63e786acb88fa17ec2436c16a51b3a41f0c7ffc6a64c593fa3b",
+      "pairs": [
+        {
+          "original": {
+            "importMs": 35.29999999701977,
+            "initMs": 6.4000000059604645,
+            "capture1000Ms": 254.39999999850988,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36.70000000298023,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 263.70000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 36.20000000298023,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 257.6000000014901,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.600000001490116,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 254.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.19999999552965,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 253.79999999701977,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 39.19999999552965,
+            "initMs": 6.600000001490116,
+            "capture1000Ms": 259,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.899999998509884,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 249.89999999850988,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.29999999701977,
+            "initMs": 6,
+            "capture1000Ms": 262.8999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 37.29999999701977,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 255.80000000447035,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 37.099999994039536,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 274.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 36.30000000447035,
+            "initMs": 6,
+            "capture1000Ms": 256.6000000014901,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 37,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 258.3999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 36.5,
+            "initMs": 6,
+            "capture1000Ms": 253.60000000149012,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36.600000001490116,
+            "initMs": 6,
+            "capture1000Ms": 272.3999999985099,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.29999999701977,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 258.1000000014901,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.80000000447035,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 253,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.79999999701977,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 259.3999999985099,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36.20000000298023,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 250.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 36.100000001490116,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 261.6000000014901,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.400000005960464,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 260.70000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.30000000447035,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 262.1000000014901,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36.899999998509884,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 254.89999999850988,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 37.70000000298023,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 261.19999999552965,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 34.899999998509884,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 251,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 34.600000001490116,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 249,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.70000000298023,
+            "initMs": 6,
+            "capture1000Ms": 258.1000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 37.100000001490116,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 296.59999999403954,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 37.70000000298023,
+            "initMs": 6.5,
+            "capture1000Ms": 265.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35,
+            "initMs": 6,
+            "capture1000Ms": 254.89999999850988,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36.899999998509884,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 272.20000000298023,
+            "accepted": 1000
+          }
+        }
+      ],
+      "metrics": {
+        "importMs": {
+          "originalMedianMs": 35.400000005960464,
+          "candidateMedianMs": 36.600000001490116,
+          "pairedImprovementPercent": -1.6997167182458028,
+          "confidence95Percent": [
+            -4.532577886223543,
+            -0.2739726068222259
+          ],
+          "verdict": "slower in this workload"
+        },
+        "initMs": {
+          "originalMedianMs": 6.200000002980232,
+          "candidateMedianMs": 6.200000002980232,
+          "pairedImprovementPercent": 0,
+          "confidence95Percent": [
+            -1.6129032510035168,
+            3.1249999308784027
+          ],
+          "verdict": "no clear difference"
+        },
+        "capture1000Ms": {
+          "originalMedianMs": 254.89999999850988,
+          "candidateMedianMs": 259,
+          "pairedImprovementPercent": -2.0488573692046153,
+          "confidence95Percent": [
+            -6.786975286218699,
+            0.6965944260952539
+          ],
+          "verdict": "no clear difference"
+        }
+      }
+    },
+    {
+      "surface": "full",
+      "objective": "brotli",
+      "original": "artifacts/sdk/full/original-oxc.mjs",
+      "originalSha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+      "candidate": "artifacts/sdk/full/brotli.mjs",
+      "candidateSha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+      "pairs": [
+        {
+          "original": {
+            "importMs": 37.400000005960464,
+            "initMs": 7,
+            "capture1000Ms": 256.79999999701977,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36.100000001490116,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 251.10000000149012,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.5,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 269.19999999552965,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 36.400000005960464,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 260.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 36.5,
+            "initMs": 6,
+            "capture1000Ms": 257.29999999701977,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 36,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 253.89999999850988,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.899999998509884,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 271.79999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.70000000298023,
+            "initMs": 6.299999997019768,
+            "capture1000Ms": 255.40000000596046,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.5,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 270.1000000014901,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.5,
+            "initMs": 5.899999998509884,
+            "capture1000Ms": 249.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 36.5,
+            "initMs": 6.199999995529652,
+            "capture1000Ms": 253.70000000298023,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35.20000000298023,
+            "initMs": 6,
+            "capture1000Ms": 252.89999999850988,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.79999999701977,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 253,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.600000001490116,
+            "initMs": 6,
+            "capture1000Ms": 256.29999999701977,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.5,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 253.79999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 35,
+            "initMs": 6,
+            "capture1000Ms": 255.10000000149012,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 36.69999999552965,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 254.70000000298023,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.20000000298023,
+            "initMs": 6,
+            "capture1000Ms": 252.5,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.70000000298023,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 250.70000000298023,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 36.70000000298023,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 265.1000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 36.69999999552965,
+            "initMs": 6,
+            "capture1000Ms": 250.20000000298023,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 37,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 272.1000000014901,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 35.399999998509884,
+            "initMs": 5.9000000059604645,
+            "capture1000Ms": 257.09999999403954,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 34.900000005960464,
+            "initMs": 5.700000002980232,
+            "capture1000Ms": 248.30000000447035,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.80000000447035,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 253.30000000447035,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.600000001490116,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 250.89999999850988,
+            "accepted": 1000
+          }
+        },
+        {
+          "candidate": {
+            "importMs": 37,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 256.79999999701977,
+            "accepted": 1000
+          },
+          "original": {
+            "importMs": 37.100000001490116,
+            "initMs": 6.399999998509884,
+            "capture1000Ms": 253.20000000298023,
+            "accepted": 1000
+          }
+        },
+        {
+          "original": {
+            "importMs": 35.099999994039536,
+            "initMs": 6.100000001490116,
+            "capture1000Ms": 250.19999999552965,
+            "accepted": 1000
+          },
+          "candidate": {
+            "importMs": 35.899999998509884,
+            "initMs": 6.200000002980232,
+            "capture1000Ms": 268.59999999403954,
+            "accepted": 1000
+          }
+        }
+      ],
+      "metrics": {
+        "importMs": {
+          "originalMedianMs": 35.80000000447035,
+          "candidateMedianMs": 35.70000000298023,
+          "pairedImprovementPercent": 0.2695417829813973,
+          "confidence95Percent": [
+            -0.8174387043784481,
+            1.3698630136986356
+          ],
+          "verdict": "no clear difference"
+        },
+        "initMs": {
+          "originalMedianMs": 6.100000001490116,
+          "candidateMedianMs": 6.199999995529652,
+          "pairedImprovementPercent": 0,
+          "confidence95Percent": [
+            -1.666666691501928,
+            3.1249999308784027
+          ],
+          "verdict": "no clear difference"
+        },
+        "capture1000Ms": {
+          "originalMedianMs": 254.70000000298023,
+          "candidateMedianMs": 253.89999999850988,
+          "pairedImprovementPercent": -0.31633056721038777,
+          "confidence95Percent": [
+            -3.339731284272429,
+            1.3214146904583224
+          ],
+          "verdict": "no clear difference"
+        }
+      }
+    }
+  ],
+  "loadAfter": [
+    1.3,
+    1.98,
+    2.49
+  ]
+}

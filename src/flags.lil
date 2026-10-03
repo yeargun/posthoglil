@@ -33,6 +33,7 @@ export string[] MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES = [
   "epik",
   "qclid",
   "sccid",
+  "oppref",
   "irclid",
   "_kx"
 ];
@@ -75,14 +76,14 @@ JsValue orEmpty(JsValue value) {
   return value;
 }
 
-bool enabledFromValue(JsValue value) {
+export JsValue getEnabledFromValue(JsValue value) {
   if (isStr(value)) {
     return true;
   }
-  return value.truthy();
+  return value;
 }
 
-JsValue variantFromValue(JsValue value) {
+export JsValue getVariantFromValue(JsValue value) {
   if (isStr(value)) {
     return value;
   }
@@ -158,8 +159,8 @@ export func(JsValue)->JsValue normalizeFlagsResponse = (JsValue flagsResponse) =
     JsValue payload = featureFlagPayloads[key];
     details[key] = object {
       key: key,
-      enabled: enabledFromValue(value),
-      variant: variantFromValue(value),
+      enabled: getEnabledFromValue(value),
+      variant: getVariantFromValue(value),
       reason: undef(),
       metadata: object {
         id: undef(),
@@ -180,7 +181,7 @@ export func(JsValue, JsValue)->JsValue createFlagsResponseFromFlagsAndPayloads =
   JsValue payloads = orEmpty(featureFlagPayloads);
   JsValue enabled = empty();
   for (string key of keysOf(flags).concat(keysOf(payloads))) {
-    if (flags[key].truthy() || payloads[key].truthy()) {
+    if (!JS.isUndefined(flags[key]) || payloads[key].truthy()) {
       JsValue value = flags[key];
       enabled[key] = if (JS.isNullish(value)) { true } else { value };
     }
@@ -190,8 +191,8 @@ export func(JsValue, JsValue)->JsValue createFlagsResponseFromFlagsAndPayloads =
 
 export func(JsValue, JsValue)->JsValue updateFlagValue = (JsValue flag, JsValue value) => {
   JsValue next = copyObj(flag);
-  next["enabled"] = enabledFromValue(value);
-  next["variant"] = variantFromValue(value);
+  next["enabled"] = getEnabledFromValue(value);
+  next["variant"] = getVariantFromValue(value);
   return next;
 };
 
@@ -203,8 +204,8 @@ export func(JsValue)->JsValue flagDetailsToResults = (JsValue flagDetails) => {
     JsValue rawPayload = if (JS.isNullish(metadata)) { undef() } else { metadata["payload"] };
     return object {
       key: detail["key"],
-      enabled: enabledFromValue(value),
-      variant: variantFromValue(value),
+      enabled: getEnabledFromValue(value),
+      variant: getVariantFromValue(value),
       payload: if (isUndef(rawPayload)) { null } else { parsePayload(rawPayload) }
     };
   });

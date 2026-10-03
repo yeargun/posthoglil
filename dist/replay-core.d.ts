@@ -69,3 +69,5 @@ export function estimateCompressedEventSize(value: unknown): number
 export function ensureMaxMessageSize<T>(event: T): { event: T; size: number }
 export function truncateLargeConsoleLogs<T>(event: T): T
 export function splitBuffer<T>(buffer: SnapshotBuffer<T>, sizeLimit?: number): SnapshotBuffer<T>[]
+
+export const UNSTRINGIFIABLE_EVENT_SIZE: -1

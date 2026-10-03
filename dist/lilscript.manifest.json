@@ -1,0 +1,2348 @@
+{
+  "version": 5,
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "posthog.raw.js",
+          "dynamic": false,
+          "closure": [
+            "posthog.raw.js"
+          ],
+          "row": 16085,
+          "raw_row": 16085
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 16085,
+          "codec_bytes": 16085,
+          "sha256": "cc5c54aee170b1fe2a918d112902f94c95b89e3ad4189df3bc533c9e9e6a796f"
+        }
+      ],
+      "side_effects": [
+        "posthog.raw.js"
+      ],
+      "codec_total": 16085,
+      "rows_total": 16085,
+      "setters": 0,
+      "output": "posthog-raw/primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        94,
+        150,
+        8,
+        150,
+        143,
+        179,
+        17,
+        51,
+        209,
+        225,
+        213,
+        195,
+        25,
+        204,
+        72,
+        102,
+        184,
+        248,
+        225,
+        18,
+        235,
+        69,
+        172,
+        109,
+        221,
+        113,
+        173,
+        183,
+        210,
+        26,
+        230,
+        43
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "posthog.gzip.js",
+          "dynamic": false,
+          "closure": [
+            "posthog.gzip.js"
+          ],
+          "row": 6030,
+          "raw_row": 17047
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.gzip.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 17047,
+          "codec_bytes": 6030,
+          "sha256": "c11c8786888fec48bfccd25a2cd4b9295954e9554be05bd974dd63fd5eb77317"
+        }
+      ],
+      "side_effects": [
+        "posthog.gzip.js"
+      ],
+      "codec_total": 6030,
+      "rows_total": 6030,
+      "setters": 0,
+      "output": "posthog-gzip/primary",
+      "codec": "gzip",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        99,
+        87,
+        114,
+        238,
+        234,
+        106,
+        202,
+        34,
+        210,
+        130,
+        96,
+        66,
+        42,
+        236,
+        15,
+        154,
+        198,
+        97,
+        91,
+        135,
+        48,
+        233,
+        17,
+        239,
+        101,
+        196,
+        58,
+        83,
+        176,
+        92,
+        53,
+        195
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "browser",
+          "file": "posthog.esm.js",
+          "dynamic": false,
+          "closure": [
+            "posthog.esm.js"
+          ],
+          "row": 5466,
+          "raw_row": 16983
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "browser"
+          ],
+          "modules": [
+            "browser.lil",
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 16983,
+          "codec_bytes": 5466,
+          "sha256": "969e09739c077665710fde546a29de5fd26a8e0b4be377e1ff2e31b6365a1353"
+        }
+      ],
+      "side_effects": [
+        "posthog.esm.js"
+      ],
+      "codec_total": 5466,
+      "rows_total": 5466,
+      "setters": 0,
+      "output": "posthog-brotli/primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        175,
+        143,
+        94,
+        85,
+        76,
+        223,
+        53,
+        35,
+        178,
+        144,
+        196,
+        89,
+        139,
+        30,
+        228,
+        105,
+        94,
+        161,
+        49,
+        46,
+        39,
+        45,
+        18,
+        254,
+        226,
+        221,
+        202,
+        90,
+        238,
+        125,
+        74,
+        174
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "iife",
+      "entries": [
+        {
+          "name": "browser",
+          "file": "posthog.umd.js",
+          "dynamic": false,
+          "closure": [
+            "posthog.umd.js"
+          ],
+          "row": 5353,
+          "raw_row": 15829
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.umd.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "browser"
+          ],
+          "modules": [
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 15829,
+          "codec_bytes": 5353,
+          "sha256": "a411afa70f02f8ccdc67edc672e9623b9506eea372b77f841c6dd8f450e3bfd1"
+        }
+      ],
+      "side_effects": [
+        "posthog.umd.js"
+      ],
+      "codec_total": 5353,
+      "rows_total": 5353,
+      "setters": 0,
+      "output": "posthog-brotli/browser",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        17,
+        160,
+        96,
+        39,
+        243,
+        91,
+        220,
+        207,
+        52,
+        255,
+        190,
+        18,
+        142,
+        91,
+        253,
+        174,
+        24,
+        201,
+        50,
+        22,
+        159,
+        183,
+        197,
+        26,
+        95,
+        123,
+        147,
+        226,
+        189,
+        52,
+        56,
+        66
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "posthog.cjs",
+          "dynamic": false,
+          "closure": [
+            "posthog.cjs"
+          ],
+          "row": 5876,
+          "raw_row": 21485
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 21485,
+          "codec_bytes": 5876,
+          "sha256": "1d74978d8653926b48987b74a35ddf335b9cfc5d0ff81a92d41a9caa5e78e78b"
+        }
+      ],
+      "side_effects": [
+        "posthog.cjs"
+      ],
+      "codec_total": 5876,
+      "rows_total": 5876,
+      "setters": 0,
+      "output": "posthog-brotli/cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        171,
+        53,
+        235,
+        176,
+        142,
+        22,
+        243,
+        212,
+        70,
+        103,
+        36,
+        210,
+        188,
+        242,
+        169,
+        210,
+        144,
+        152,
+        76,
+        194,
+        233,
+        248,
+        203,
+        216,
+        203,
+        131,
+        56,
+        153,
+        193,
+        203,
+        219,
+        116
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "surveys.raw.js",
+          "dynamic": false,
+          "closure": [
+            "surveys.raw.js"
+          ],
+          "row": 7545,
+          "raw_row": 7545
+        }
+      ],
+      "files": [
+        {
+          "file": "surveys.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "surveys-entry.lil",
+            "surveys.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 7545,
+          "codec_bytes": 7545,
+          "sha256": "dc2b9caa9bf85a9052a2eaf681039929c12d6677d2a0f52eaa8f99d8a234a69c"
+        }
+      ],
+      "side_effects": [
+        "surveys.raw.js"
+      ],
+      "codec_total": 7545,
+      "rows_total": 7545,
+      "setters": 0,
+      "output": "surveys-raw/primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        163,
+        134,
+        236,
+        247,
+        37,
+        137,
+        152,
+        30,
+        179,
+        107,
+        156,
+        38,
+        65,
+        246,
+        117,
+        175,
+        238,
+        212,
+        228,
+        186,
+        139,
+        208,
+        206,
+        206,
+        214,
+        102,
+        34,
+        58,
+        196,
+        231,
+        134,
+        144
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "surveys.gzip.js",
+          "dynamic": false,
+          "closure": [
+            "surveys.gzip.js"
+          ],
+          "row": 2673,
+          "raw_row": 7821
+        }
+      ],
+      "files": [
+        {
+          "file": "surveys.gzip.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "surveys-entry.lil",
+            "surveys.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 7821,
+          "codec_bytes": 2673,
+          "sha256": "9a0851fc96dd16f8789019c0cbdcfddeef9d74c95d2a2be418b4f0aab79f619f"
+        }
+      ],
+      "side_effects": [
+        "surveys.gzip.js"
+      ],
+      "codec_total": 2673,
+      "rows_total": 2673,
+      "setters": 0,
+      "output": "surveys-gzip/primary",
+      "codec": "gzip",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        66,
+        244,
+        60,
+        38,
+        254,
+        98,
+        108,
+        227,
+        203,
+        228,
+        10,
+        70,
+        94,
+        188,
+        71,
+        173,
+        152,
+        223,
+        103,
+        33,
+        145,
+        46,
+        207,
+        144,
+        147,
+        141,
+        108,
+        133,
+        173,
+        164,
+        222,
+        22
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "surveys.esm.js",
+          "dynamic": false,
+          "closure": [
+            "surveys.esm.js"
+          ],
+          "row": 2353,
+          "raw_row": 7861
+        }
+      ],
+      "files": [
+        {
+          "file": "surveys.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "surveys-entry.lil",
+            "surveys.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 7861,
+          "codec_bytes": 2353,
+          "sha256": "231ff3e53fed0423a7de40ccf27b8363cb4a4596eb1215fe0356dcaab560ca8a"
+        }
+      ],
+      "side_effects": [
+        "surveys.esm.js"
+      ],
+      "codec_total": 2353,
+      "rows_total": 2353,
+      "setters": 0,
+      "output": "surveys-brotli/primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        99,
+        230,
+        4,
+        245,
+        85,
+        43,
+        134,
+        125,
+        35,
+        118,
+        85,
+        3,
+        62,
+        182,
+        86,
+        65,
+        16,
+        27,
+        158,
+        162,
+        139,
+        154,
+        173,
+        104,
+        80,
+        36,
+        198,
+        46,
+        135,
+        59,
+        115,
+        220
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "surveys.cjs",
+          "dynamic": false,
+          "closure": [
+            "surveys.cjs"
+          ],
+          "row": 2589,
+          "raw_row": 9989
+        }
+      ],
+      "files": [
+        {
+          "file": "surveys.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "surveys.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 9989,
+          "codec_bytes": 2589,
+          "sha256": "c628375cfad241d0302441466d888477eb9bb85592e62a838a397185adaeee07"
+        }
+      ],
+      "side_effects": [
+        "surveys.cjs"
+      ],
+      "codec_total": 2589,
+      "rows_total": 2589,
+      "setters": 0,
+      "output": "surveys-brotli/cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        226,
+        195,
+        176,
+        98,
+        140,
+        72,
+        238,
+        213,
+        9,
+        146,
+        122,
+        201,
+        40,
+        169,
+        94,
+        156,
+        26,
+        212,
+        80,
+        89,
+        116,
+        239,
+        34,
+        170,
+        204,
+        30,
+        39,
+        222,
+        107,
+        100,
+        235,
+        245
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "error-tracking.raw.js",
+          "dynamic": false,
+          "closure": [
+            "error-tracking.raw.js"
+          ],
+          "row": 18534,
+          "raw_row": 18534
+        }
+      ],
+      "files": [
+        {
+          "file": "error-tracking.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "error-tracking-entry.lil",
+            "error-coercer-api.lil",
+            "host.lil",
+            "error-host.lil",
+            "error-coercers.lil",
+            "error-core.lil",
+            "error-parsers.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 18534,
+          "codec_bytes": 18534,
+          "sha256": "ba104197a2a2486b017be57526fe5f4fb32a531179d958a11847a917e314ee51"
+        }
+      ],
+      "side_effects": [
+        "error-tracking.raw.js"
+      ],
+      "codec_total": 18534,
+      "rows_total": 18534,
+      "setters": 0,
+      "output": "error-tracking-raw/primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        214,
+        193,
+        252,
+        222,
+        229,
+        159,
+        180,
+        78,
+        189,
+        65,
+        115,
+        86,
+        135,
+        182,
+        138,
+        78,
+        169,
+        12,
+        239,
+        236,
+        123,
+        120,
+        97,
+        135,
+        26,
+        128,
+        191,
+        53,
+        46,
+        32,
+        138,
+        136
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "error-tracking.gzip.js",
+          "dynamic": false,
+          "closure": [
+            "error-tracking.gzip.js"
+          ],
+          "row": 7081,
+          "raw_row": 19180
+        }
+      ],
+      "files": [
+        {
+          "file": "error-tracking.gzip.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "error-tracking-entry.lil",
+            "error-coercer-api.lil",
+            "host.lil",
+            "error-host.lil",
+            "error-coercers.lil",
+            "error-core.lil",
+            "error-parsers.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 19180,
+          "codec_bytes": 7081,
+          "sha256": "91cbd9075e539119214fe101329e9154d5f433d3523c247b7159f1302025a42d"
+        }
+      ],
+      "side_effects": [
+        "error-tracking.gzip.js"
+      ],
+      "codec_total": 7081,
+      "rows_total": 7081,
+      "setters": 0,
+      "output": "error-tracking-gzip/primary",
+      "codec": "gzip",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        100,
+        133,
+        195,
+        205,
+        121,
+        183,
+        196,
+        84,
+        179,
+        29,
+        188,
+        189,
+        71,
+        208,
+        199,
+        134,
+        253,
+        63,
+        81,
+        165,
+        238,
+        223,
+        5,
+        28,
+        70,
+        62,
+        171,
+        173,
+        237,
+        160,
+        102,
+        72
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "error-tracking.esm.js",
+          "dynamic": false,
+          "closure": [
+            "error-tracking.esm.js"
+          ],
+          "row": 6460,
+          "raw_row": 19086
+        }
+      ],
+      "files": [
+        {
+          "file": "error-tracking.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "error-tracking-entry.lil",
+            "error-coercer-api.lil",
+            "host.lil",
+            "error-host.lil",
+            "error-coercers.lil",
+            "error-core.lil",
+            "error-parsers.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 19086,
+          "codec_bytes": 6460,
+          "sha256": "d1549172f45bed50535967911bd66430d073fd67c8a6cfc50544c91b8885e80d"
+        }
+      ],
+      "side_effects": [
+        "error-tracking.esm.js"
+      ],
+      "codec_total": 6460,
+      "rows_total": 6460,
+      "setters": 0,
+      "output": "error-tracking-brotli/primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        210,
+        24,
+        219,
+        134,
+        209,
+        234,
+        76,
+        171,
+        185,
+        194,
+        60,
+        59,
+        112,
+        204,
+        67,
+        206,
+        114,
+        71,
+        23,
+        103,
+        53,
+        32,
+        224,
+        192,
+        83,
+        21,
+        168,
+        189,
+        50,
+        177,
+        25,
+        211
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "error-tracking.cjs",
+          "dynamic": false,
+          "closure": [
+            "error-tracking.cjs"
+          ],
+          "row": 6598,
+          "raw_row": 20516
+        }
+      ],
+      "files": [
+        {
+          "file": "error-tracking.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "error-coercer-api.lil",
+            "host.lil",
+            "error-host.lil",
+            "error-coercers.lil",
+            "error-core.lil",
+            "error-parsers.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 20516,
+          "codec_bytes": 6598,
+          "sha256": "944895e947980c5d406d310263406e48fcf482983e224c3e1094e785da4a1b05"
+        }
+      ],
+      "side_effects": [
+        "error-tracking.cjs"
+      ],
+      "codec_total": 6598,
+      "rows_total": 6598,
+      "setters": 0,
+      "output": "error-tracking-brotli/cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        196,
+        19,
+        147,
+        132,
+        32,
+        229,
+        223,
+        50,
+        58,
+        158,
+        212,
+        212,
+        198,
+        150,
+        170,
+        58,
+        32,
+        183,
+        56,
+        153,
+        100,
+        170,
+        177,
+        128,
+        240,
+        124,
+        192,
+        164,
+        15,
+        16,
+        84,
+        136
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "otlp.raw.js",
+          "dynamic": false,
+          "closure": [
+            "otlp.raw.js"
+          ],
+          "row": 6561,
+          "raw_row": 6561
+        }
+      ],
+      "files": [
+        {
+          "file": "otlp.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "otlp-entry.lil",
+            "otlp.lil",
+            "host.lil",
+            "json.lil",
+            "types.lil",
+            "string.lil",
+            "error-host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 6561,
+          "codec_bytes": 6561,
+          "sha256": "93e9bc213f75396067f905cdc1657245943a54fc976d13c0c77f4d597851736f"
+        }
+      ],
+      "side_effects": [
+        "otlp.raw.js"
+      ],
+      "codec_total": 6561,
+      "rows_total": 6561,
+      "setters": 0,
+      "output": "otlp-raw/primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        137,
+        170,
+        124,
+        194,
+        125,
+        28,
+        187,
+        26,
+        4,
+        226,
+        86,
+        28,
+        109,
+        93,
+        139,
+        49,
+        55,
+        97,
+        147,
+        45,
+        7,
+        26,
+        94,
+        158,
+        70,
+        228,
+        46,
+        75,
+        74,
+        10,
+        59,
+        149
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "otlp.gzip.js",
+          "dynamic": false,
+          "closure": [
+            "otlp.gzip.js"
+          ],
+          "row": 2672,
+          "raw_row": 6925
+        }
+      ],
+      "files": [
+        {
+          "file": "otlp.gzip.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "otlp-entry.lil",
+            "otlp.lil",
+            "host.lil",
+            "json.lil",
+            "types.lil",
+            "string.lil",
+            "error-host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 6925,
+          "codec_bytes": 2672,
+          "sha256": "7019959b711af48538b814b1721bc7aa8d172d5376adb9d1b9d91c77c05e5045"
+        }
+      ],
+      "side_effects": [
+        "otlp.gzip.js"
+      ],
+      "codec_total": 2672,
+      "rows_total": 2672,
+      "setters": 0,
+      "output": "otlp-gzip/primary",
+      "codec": "gzip",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        187,
+        155,
+        70,
+        241,
+        242,
+        255,
+        196,
+        90,
+        26,
+        137,
+        133,
+        249,
+        50,
+        67,
+        197,
+        238,
+        18,
+        152,
+        34,
+        60,
+        36,
+        176,
+        22,
+        8,
+        211,
+        96,
+        82,
+        166,
+        111,
+        226,
+        182,
+        15
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "otlp.esm.js",
+          "dynamic": false,
+          "closure": [
+            "otlp.esm.js"
+          ],
+          "row": 2442,
+          "raw_row": 6912
+        }
+      ],
+      "files": [
+        {
+          "file": "otlp.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "otlp-entry.lil",
+            "otlp.lil",
+            "host.lil",
+            "json.lil",
+            "types.lil",
+            "string.lil",
+            "error-host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 6912,
+          "codec_bytes": 2442,
+          "sha256": "f5d47057da1fc202e4b9e1761d901054fa1d3d3df41d366eb6ccf869365600e9"
+        }
+      ],
+      "side_effects": [
+        "otlp.esm.js"
+      ],
+      "codec_total": 2442,
+      "rows_total": 2442,
+      "setters": 0,
+      "output": "otlp-brotli/primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        81,
+        42,
+        133,
+        236,
+        132,
+        180,
+        40,
+        123,
+        226,
+        30,
+        34,
+        83,
+        247,
+        202,
+        144,
+        193,
+        20,
+        104,
+        47,
+        99,
+        202,
+        27,
+        129,
+        64,
+        255,
+        219,
+        87,
+        252,
+        126,
+        65,
+        83,
+        72
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "otlp.cjs",
+          "dynamic": false,
+          "closure": [
+            "otlp.cjs"
+          ],
+          "row": 2596,
+          "raw_row": 8014
+        }
+      ],
+      "files": [
+        {
+          "file": "otlp.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "otlp.lil",
+            "host.lil",
+            "json.lil",
+            "error-host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8014,
+          "codec_bytes": 2596,
+          "sha256": "9ccfd6689d7b0333e951f3b0a9fdcd5114638d995b934fb68f31310b3d7d8130"
+        }
+      ],
+      "side_effects": [
+        "otlp.cjs"
+      ],
+      "codec_total": 2596,
+      "rows_total": 2596,
+      "setters": 0,
+      "output": "otlp-brotli/cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        190,
+        215,
+        3,
+        150,
+        212,
+        18,
+        15,
+        39,
+        228,
+        70,
+        226,
+        210,
+        201,
+        99,
+        191,
+        223,
+        236,
+        164,
+        91,
+        228,
+        187,
+        156,
+        65,
+        231,
+        16,
+        37,
+        223,
+        5,
+        246,
+        212,
+        24,
+        64
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "autocapture.raw.js",
+          "dynamic": false,
+          "closure": [
+            "autocapture.raw.js"
+          ],
+          "row": 8877,
+          "raw_row": 8877
+        }
+      ],
+      "files": [
+        {
+          "file": "autocapture.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "autocapture-entry.lil",
+            "autocapture-utils.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8877,
+          "codec_bytes": 8877,
+          "sha256": "e407f6ab26142e537366ea2c18370802cdef7f5697b56e2bc5ecec8a35516569"
+        }
+      ],
+      "side_effects": [
+        "autocapture.raw.js"
+      ],
+      "codec_total": 8877,
+      "rows_total": 8877,
+      "setters": 0,
+      "output": "autocapture-raw/primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        208,
+        62,
+        89,
+        170,
+        249,
+        229,
+        176,
+        213,
+        127,
+        176,
+        84,
+        68,
+        191,
+        141,
+        136,
+        43,
+        6,
+        74,
+        196,
+        154,
+        136,
+        76,
+        69,
+        168,
+        14,
+        103,
+        186,
+        6,
+        212,
+        102,
+        32,
+        241
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "autocapture.gzip.js",
+          "dynamic": false,
+          "closure": [
+            "autocapture.gzip.js"
+          ],
+          "row": 3448,
+          "raw_row": 9190
+        }
+      ],
+      "files": [
+        {
+          "file": "autocapture.gzip.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "autocapture-entry.lil",
+            "autocapture-utils.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 9190,
+          "codec_bytes": 3448,
+          "sha256": "b89baff9ec0182c44c8887cdc9beeb06decdcfc2d047cdffd18384e7c6fd2527"
+        }
+      ],
+      "side_effects": [
+        "autocapture.gzip.js"
+      ],
+      "codec_total": 3448,
+      "rows_total": 3448,
+      "setters": 0,
+      "output": "autocapture-gzip/primary",
+      "codec": "gzip",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        174,
+        252,
+        17,
+        126,
+        229,
+        201,
+        54,
+        213,
+        249,
+        192,
+        107,
+        8,
+        169,
+        82,
+        20,
+        184,
+        74,
+        62,
+        199,
+        73,
+        132,
+        108,
+        24,
+        249,
+        55,
+        68,
+        215,
+        234,
+        243,
+        255,
+        221,
+        235
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "autocapture.esm.js",
+          "dynamic": false,
+          "closure": [
+            "autocapture.esm.js"
+          ],
+          "row": 3144,
+          "raw_row": 9199
+        }
+      ],
+      "files": [
+        {
+          "file": "autocapture.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "autocapture-entry.lil",
+            "autocapture-utils.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 9199,
+          "codec_bytes": 3144,
+          "sha256": "8f3ced3f8e61e66843d89c27bd0d696b7444980e650dfd33257bd75dd0cc5e0e"
+        }
+      ],
+      "side_effects": [
+        "autocapture.esm.js"
+      ],
+      "codec_total": 3144,
+      "rows_total": 3144,
+      "setters": 0,
+      "output": "autocapture-brotli/primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        37,
+        197,
+        23,
+        221,
+        151,
+        246,
+        48,
+        143,
+        171,
+        138,
+        33,
+        202,
+        244,
+        129,
+        30,
+        167,
+        206,
+        53,
+        108,
+        17,
+        41,
+        39,
+        78,
+        247,
+        165,
+        56,
+        26,
+        91,
+        160,
+        124,
+        52,
+        39
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "autocapture.cjs",
+          "dynamic": false,
+          "closure": [
+            "autocapture.cjs"
+          ],
+          "row": 3339,
+          "raw_row": 10783
+        }
+      ],
+      "files": [
+        {
+          "file": "autocapture.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "autocapture-utils.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 10783,
+          "codec_bytes": 3339,
+          "sha256": "28ea35b1e96838f8dd67651f29db949cdf5a65f3e658a31f46f0fc856978dbd8"
+        }
+      ],
+      "side_effects": [
+        "autocapture.cjs"
+      ],
+      "codec_total": 3339,
+      "rows_total": 3339,
+      "setters": 0,
+      "output": "autocapture-brotli/cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        223,
+        144,
+        202,
+        204,
+        236,
+        171,
+        227,
+        210,
+        129,
+        249,
+        98,
+        174,
+        227,
+        39,
+        29,
+        204,
+        234,
+        100,
+        143,
+        251,
+        201,
+        108,
+        154,
+        201,
+        84,
+        24,
+        220,
+        142,
+        117,
+        40,
+        48,
+        147
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "replay-core.raw.js",
+          "dynamic": false,
+          "closure": [
+            "replay-core.raw.js"
+          ],
+          "row": 8442,
+          "raw_row": 8442
+        }
+      ],
+      "files": [
+        {
+          "file": "replay-core.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "replay-core-entry.lil",
+            "replay-core.lil",
+            "host.lil",
+            "autocapture-utils.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8442,
+          "codec_bytes": 8442,
+          "sha256": "8dc24e5dda28eb19a157af2089453eea10e138e763ddb70dbdf8ee019ac09ab3"
+        }
+      ],
+      "side_effects": [
+        "replay-core.raw.js"
+      ],
+      "codec_total": 8442,
+      "rows_total": 8442,
+      "setters": 0,
+      "output": "replay-core-raw/primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        166,
+        242,
+        197,
+        181,
+        88,
+        43,
+        238,
+        226,
+        115,
+        179,
+        124,
+        100,
+        238,
+        27,
+        21,
+        194,
+        100,
+        109,
+        143,
+        28,
+        201,
+        71,
+        215,
+        64,
+        51,
+        177,
+        208,
+        199,
+        85,
+        153,
+        94,
+        92
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "replay-core.gzip.js",
+          "dynamic": false,
+          "closure": [
+            "replay-core.gzip.js"
+          ],
+          "row": 3668,
+          "raw_row": 8595
+        }
+      ],
+      "files": [
+        {
+          "file": "replay-core.gzip.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "replay-core-entry.lil",
+            "replay-core.lil",
+            "host.lil",
+            "autocapture-utils.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8595,
+          "codec_bytes": 3668,
+          "sha256": "db905eae11d20a4bd818625d296e278f930a8174bd52517e4fd9afa94c7ecc11"
+        }
+      ],
+      "side_effects": [
+        "replay-core.gzip.js"
+      ],
+      "codec_total": 3668,
+      "rows_total": 3668,
+      "setters": 0,
+      "output": "replay-core-gzip/primary",
+      "codec": "gzip",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        210,
+        126,
+        31,
+        142,
+        82,
+        162,
+        54,
+        63,
+        101,
+        101,
+        224,
+        95,
+        27,
+        247,
+        213,
+        169,
+        33,
+        39,
+        253,
+        70,
+        64,
+        252,
+        82,
+        17,
+        128,
+        141,
+        153,
+        26,
+        23,
+        26,
+        150,
+        254
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "replay-core.esm.js",
+          "dynamic": false,
+          "closure": [
+            "replay-core.esm.js"
+          ],
+          "row": 3321,
+          "raw_row": 8598
+        }
+      ],
+      "files": [
+        {
+          "file": "replay-core.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "replay-core-entry.lil",
+            "replay-core.lil",
+            "host.lil",
+            "autocapture-utils.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8598,
+          "codec_bytes": 3321,
+          "sha256": "ad6e4aad9d4236b86a6edff955d4ddbba18a463e881ec09b567c08cd69499daf"
+        }
+      ],
+      "side_effects": [
+        "replay-core.esm.js"
+      ],
+      "codec_total": 3321,
+      "rows_total": 3321,
+      "setters": 0,
+      "output": "replay-core-brotli/primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        117,
+        188,
+        225,
+        154,
+        250,
+        50,
+        178,
+        101,
+        76,
+        143,
+        77,
+        2,
+        243,
+        253,
+        149,
+        139,
+        114,
+        185,
+        189,
+        215,
+        249,
+        21,
+        24,
+        123,
+        246,
+        200,
+        168,
+        217,
+        207,
+        123,
+        223,
+        251
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "replay-core.cjs",
+          "dynamic": false,
+          "closure": [
+            "replay-core.cjs"
+          ],
+          "row": 3496,
+          "raw_row": 9998
+        }
+      ],
+      "files": [
+        {
+          "file": "replay-core.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "replay-core.lil",
+            "host.lil",
+            "autocapture-utils.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 9998,
+          "codec_bytes": 3496,
+          "sha256": "a82e1717af591e00ffae508c74cebae22e6d8f543382574d8270f541954da349"
+        }
+      ],
+      "side_effects": [
+        "replay-core.cjs"
+      ],
+      "codec_total": 3496,
+      "rows_total": 3496,
+      "setters": 0,
+      "output": "replay-core-brotli/cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        34,
+        142,
+        185,
+        149,
+        246,
+        169,
+        230,
+        27,
+        56,
+        157,
+        108,
+        185,
+        161,
+        79,
+        87,
+        4,
+        177,
+        127,
+        231,
+        78,
+        243,
+        183,
+        134,
+        182,
+        165,
+        164,
+        33,
+        56,
+        144,
+        230,
+        82,
+        107
+      ]
+    }
+  ],
+  "aliases": {},
+  "providers": [],
+  "source_sha256": "3e76562beb04352fd855970f5ff98ffa4d38374a99dc463fe8a01fa8e1e0d27f"
+}

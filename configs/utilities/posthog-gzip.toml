@@ -1,0 +1,21 @@
+[policy]
+version = 3
+[javascript]
+priority = "size-first"
+assume_pristine_builtins = false
+keep_published_function_names = true
+[effort]
+level = 13
+[objective]
+codecs = "gzip"
+[mangle]
+identifiers = true
+properties = true
+pool_strings = true
+[delivery]
+mode = "single"
+directory = "."
+select = ["index"]
+entry_names = "posthog.gzip.js"
+[delivery.entries]
+index = "../../src/entry.lil"

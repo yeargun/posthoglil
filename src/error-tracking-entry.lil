@@ -59,3 +59,15 @@ export {
   stripReservedExceptionStepFields,
   winjsStackLineParser
 };
+
+export constructor DOMExceptionCoercer;
+export constructor ErrorCoercer;
+export constructor ErrorEventCoercer;
+export constructor ErrorPropertiesBuilder;
+export constructor EventCoercer;
+export constructor ExceptionStepsBuffer;
+export constructor ObjectCoercer;
+export constructor PrimitiveCoercer;
+export constructor PromiseRejectionEventCoercer;
+export constructor ReduceableCache;
+export constructor StringCoercer;

@@ -4,7 +4,7 @@ import { describe, it } from "node:test"
 
 const require = createRequire(import.meta.url)
 const surfaces = {
-  surveys: [
+  surveys: ["recordSurveyAnswer", "buildSurveyResponseEventProperties", "isValidRegex", "isMatchingRegex", "propertyComparisons", "matchPropertyFilters", "shuffle", "getDisplayOrderChoices",
     "SURVEY_LANGUAGE_PROPERTY",
     "applySurveyTranslation",
     "buildSurveyResponseProperties",
@@ -71,7 +71,7 @@ const surfaces = {
     "toOtlpAnyValue",
     "toOtlpKeyValueList",
   ],
-  autocapture: [
+  autocapture: ["DEFAULT_AUTOCAPTURE_IGNORE_LIST", "elementMatchesCSSSelector",
     "DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS",
     "MAX_DOM_ANCESTOR_DEPTH",
     "autocaptureCompatibleElements",
@@ -94,7 +94,7 @@ const surfaces = {
     "shouldSkipDeadClick",
     "splitClassString",
   ],
-  "replay-core": [
+  "replay-core": ["UNSTRINGIFIABLE_EVENT_SIZE",
     "CONSOLE_LOG_PLUGIN_NAME",
     "FULL_SNAPSHOT_EVENT_TYPE",
     "INCREMENTAL_SNAPSHOT_EVENT_TYPE",

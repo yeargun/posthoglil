@@ -1,0 +1,235 @@
+{
+  "version": 5,
+  "source_sha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "index",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core-entry.lil",
+        "bytes": 1098,
+        "sha256": "83e9df7dd8b8ff081401c4fae1e8053ec3fd8733d0b4aacf2e6f146db273dc82",
+        "dependencies": [
+          1
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core.lil",
+        "bytes": 16638,
+        "sha256": "f17e6a5dcc2c162b58b4e22f023c66f3962e28d7ee0b22c7927ae7fda81e0383",
+        "dependencies": [
+          2,
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
+        "bytes": 4387,
+        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-utils.lil",
+        "bytes": 20961,
+        "sha256": "f8d81beab00cb6c0e5e52245bb4eb64957677a24cdb14bd464f078a4d1e4023d",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [],
+    "host_reserved": []
+  },
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "replay-core.esm.js",
+          "dynamic": false,
+          "closure": [
+            "replay-core.esm.js"
+          ],
+          "row": 3321,
+          "raw_row": 8598
+        }
+      ],
+      "files": [
+        {
+          "file": "replay-core.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "replay-core-entry.lil",
+            "replay-core.lil",
+            "host.lil",
+            "autocapture-utils.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8598,
+          "codec_bytes": 3321,
+          "sha256": "ad6e4aad9d4236b86a6edff955d4ddbba18a463e881ec09b567c08cd69499daf"
+        }
+      ],
+      "side_effects": [
+        "replay-core.esm.js"
+      ],
+      "codec_total": 3321,
+      "rows_total": 3321,
+      "setters": 0,
+      "output": "primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        117,
+        188,
+        225,
+        154,
+        250,
+        50,
+        178,
+        101,
+        76,
+        143,
+        77,
+        2,
+        243,
+        253,
+        149,
+        139,
+        114,
+        185,
+        189,
+        215,
+        249,
+        21,
+        24,
+        123,
+        246,
+        200,
+        168,
+        217,
+        207,
+        123,
+        223,
+        251
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "replay-core.cjs",
+          "dynamic": false,
+          "closure": [
+            "replay-core.cjs"
+          ],
+          "row": 3496,
+          "raw_row": 9998
+        }
+      ],
+      "files": [
+        {
+          "file": "replay-core.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "replay-core.lil",
+            "host.lil",
+            "autocapture-utils.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 9998,
+          "codec_bytes": 3496,
+          "sha256": "a82e1717af591e00ffae508c74cebae22e6d8f543382574d8270f541954da349"
+        }
+      ],
+      "side_effects": [
+        "replay-core.cjs"
+      ],
+      "codec_total": 3496,
+      "rows_total": 3496,
+      "setters": 0,
+      "output": "cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        34,
+        142,
+        185,
+        149,
+        246,
+        169,
+        230,
+        27,
+        56,
+        157,
+        108,
+        185,
+        161,
+        79,
+        87,
+        4,
+        177,
+        127,
+        231,
+        78,
+        243,
+        183,
+        134,
+        182,
+        165,
+        164,
+        33,
+        56,
+        144,
+        230,
+        82,
+        107
+      ]
+    }
+  ]
+}

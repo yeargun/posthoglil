@@ -26,10 +26,10 @@ export async function compilerPath(root, explicit) {
   throw Error('LilScript compiler not found. Set LILSCRIPT_COMPILER to the pinned release executable.')
 }
 
-export async function buildPackage({root, profiles, assets = [], providerAssets = [], aliases = {}, compiler: explicit, sideEffects = true}) {
+export async function buildPackage({root, profiles, assets = [], providerAssets = [], aliases = {}, compiler: explicit, sideEffects = true, destination = "dist"}) {
   const compiler = await compilerPath(root, explicit)
   const scratch = join(root, '.tmp'), stage = join(scratch, `package-${process.pid}`)
-  const dist = join(root, 'dist'), previous = join(scratch, `package-previous-${process.pid}`)
+  const dist = inside(root, destination), previous = join(scratch, `package-previous-${process.pid}`)
   await mkdir(scratch, {recursive:true})
   await rm(stage, {recursive:true, force:true})
   await mkdir(stage, {recursive:true})
@@ -45,7 +45,7 @@ export async function buildPackage({root, profiles, assets = [], providerAssets 
       const target = profile.target ?? 'js-module'
       if (!['js-module','js'].includes(target)) throw Error(`Invalid package target: ${target}`)
       const config = resolve(root, profile.config), output = join(stage, '.lilscript', profile.name)
-      const args = [...(profile.entry ? [resolve(root, profile.entry)] : []), '--config', config, '--target', target, '--mode', mode, '--out-dir', output]
+      const args = [...(profile.entry ? [resolve(root, profile.entry)] : []), '--config', config, '--target', target, '--mode', mode, '--out-dir', output, '--jobs', '1', '--cache', 'off']
       const policy = spawnSync(compiler, [...args, '--print-policy'], {cwd:root, encoding:'utf8', maxBuffer:16 * 1024 * 1024})
       if (policy.status !== 0) throw Error(policy.stderr || `Could not resolve ${profile.name} policy`)
       const started = performance.now()

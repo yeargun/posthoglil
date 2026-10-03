@@ -18,6 +18,7 @@ import {
   undef
 } from "./host.lil";
 import { sanitizeString } from "./json.lil";
+import { isNumber } from "./types.lil";
 import {
   explicitString,
   instanceOfValue,
@@ -91,6 +92,16 @@ JsValue encodeAnyValue(JsValue value, JsValue logger, JsValue state, int depth) 
     JsValue out = JS.object();
     out["boolValue"] = value;
     return out;
+  }
+  if (JS.typeOf(value) == "bigint") {
+    string decimal = toStr(JS.invoke(value, "toString"));
+    // Both bounds are exact powers of two. JavaScript's mixed BigInt/Number
+    // relational comparison retains the integer value without coercing it.
+    if (JS.greaterThanOrEqual(value, int64RangeLimit) || JS.lessThan(value, -int64RangeLimit)) {
+      logDebug(logger, "Attribute " + decimal + " is outside the int64 range; encoding it as a string");
+      return stringAny(decimal);
+    }
+    return JS.object("intValue", decimal);
   }
   if (JS.typeOf(value) == "number") {
     number numeric = toNum(value);
@@ -205,6 +216,10 @@ JsValue[] encodeKeyValueList(JsValue attrs, JsValue logger, JsValue state, int d
   JsValue[] result = [];
   for (string key in attrs) {
     if (propertyEnumerable(attrs, key)) {
+      if (key == "") {
+        logDebug(logger, "Dropping an attribute with an empty key");
+        continue;
+      }
       if (result.length >= maxItems || JS.number(state["remainingNodes"]) <= 0.0) {
         logDebug(logger, "Attributes truncated: the value exceeds the OTLP encoder budget");
         break;
@@ -277,13 +292,15 @@ string encodeBody(JsValue body) {
   }
 }
 
-export JsValue buildOtlpLogRecord(JsValue options, JsValue sdkContext, JsValue logger = JS.undefined()) {
+export JsValue buildOtlpLogRecord(JsValue options, JsValue sdkContext, JsValue logger = JS.undefined(), JsValue occurredAtMs = JS.undefined()) {
   JsValue level = options["level"];
   if (!level.truthy()) {
     level = "info";
   }
   JsValue severity = severityFor(level);
-  string now = explicitString(nowMs()) + "000000";
+  JsValue timestamp = occurredAtMs;
+  if (!isNumber(timestamp)) timestamp = nowMs();
+  string now = explicitString(timestamp) + "000000";
   JsValue autoAttributes = JS.object();
   if (sdkContext["distinctId"].truthy()) autoAttributes["posthogDistinctId"] = sdkContext["distinctId"];
   if (sdkContext["sessionId"].truthy()) autoAttributes["sessionId"] = sdkContext["sessionId"];
@@ -329,8 +346,34 @@ export JsValue buildOtlpLogRecord(JsValue options, JsValue sdkContext, JsValue l
   return logRecord;
 }
 
+JsValue assignUserAttributes(JsValue target, JsValue source) {
+  if (!source.truthy()) return target;
+  string[] keys = [];
+  try { keys = keysOf(source); } catch { keys = []; }
+  for (string key of keys) {
+    JsValue value = undef();
+    try { value = source[key]; } catch { value = unserializableValue; }
+    defineData(target, key, value);
+  }
+  return target;
+}
+
+string[] sdkResourceKeys = ["service.name", "deployment.environment", "service.version", "telemetry.sdk.name", "telemetry.sdk.version"];
+
+export JsValue[] toOtlpResourceKeyValueList(JsValue attributes, JsValue logger = JS.undefined()) {
+  JsValue user = assignUserAttributes(JS.object(), attributes);
+  JsValue sdk = JS.object();
+  for (string key of sdkResourceKeys) {
+    if (JS.invoke(Object["prototype"]["hasOwnProperty"], "call", user, key).truthy()) {
+      sdk[key] = user[key];
+      JS.delete(user, key);
+    }
+  }
+  return [...toOtlpKeyValueList(user, logger), ...toOtlpKeyValueList(sdk, logger)];
+}
+
 JsValue resourceAttributesFor(JsValue config, string sdkName, string sdkVersion) {
-  JsValue out = spreadOwn(JS.object(), config["resourceAttributes"]);
+  JsValue out = assignUserAttributes(JS.object(), config["resourceAttributes"]);
   out["service.name"] = JS.or(config["serviceName"], "unknown_service");
   if (config["environment"].truthy()) out["deployment.environment"] = config["environment"];
   if (config["serviceVersion"].truthy()) out["service.version"] = config["serviceVersion"];
@@ -345,7 +388,7 @@ export JsValue buildResourceAttributes(JsValue config, string sdkName, string sd
 
 export JsValue buildOtlpLogsPayload(JsValue logRecords, JsValue resourceAttributes, string scopeName, string scopeVersion) {
   JsValue[] scopeLogs = [object { scope: object { name: scopeName, version: scopeVersion }, logRecords: logRecords }];
-  JsValue[] resourceLogs = [object { resource: object { attributes: toOtlpKeyValueList(resourceAttributes) }, scopeLogs: scopeLogs }];
+  JsValue[] resourceLogs = [object { resource: object { attributes: toOtlpResourceKeyValueList(resourceAttributes) }, scopeLogs: scopeLogs }];
   return object { resourceLogs: resourceLogs };
 }
 
@@ -386,7 +429,7 @@ export JsValue buildMetricsResourceAttributes(JsValue config, string scopeName, 
 
 export JsValue buildOtlpMetricsPayload(JsValue metrics, JsValue resourceAttributes, string scopeName, string scopeVersion) {
   JsValue[] scopeMetrics = [object { scope: object { name: scopeName, version: scopeVersion }, metrics: metrics }];
-  JsValue[] resourceMetrics = [object { resource: object { attributes: toOtlpKeyValueList(resourceAttributes) }, scopeMetrics: scopeMetrics }];
+  JsValue[] resourceMetrics = [object { resource: object { attributes: toOtlpResourceKeyValueList(resourceAttributes) }, scopeMetrics: scopeMetrics }];
   return object { resourceMetrics: resourceMetrics };
 }
 

@@ -1,11 +1,5 @@
 package=posthog-js
-version=1.418.10
-commit=9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb
+version=1.435.8
+commit=c9d890a4028b186a5e1b327161ea197001c0c46b
 source=https://github.com/PostHog/posthog-js
-modules=packages/core/src/vendor/uuidv7.ts
-  packages/core/src/featureFlagUtils.ts
-  packages/core/src/cookie.ts
-  packages/browser/src/utils/request-router.ts
-  packages/browser/src/rate-limiter.ts
-  packages/browser/src/request-queue.ts
-note=Extracted capture-kernel algorithms only. Not the published posthog-js IIFE.
+note=Core modules re-export pinned upstream source. Router, rate-limit and queue files remain extracted helper adapters, not the full SDK. Full SDK comparisons bundle upstream entrypoints directly.

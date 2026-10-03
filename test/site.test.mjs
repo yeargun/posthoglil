@@ -1,179 +1,57 @@
-import assert from "node:assert/strict"
-import { existsSync, readFileSync } from "node:fs"
-import { describe, it } from "node:test"
-import { dirname, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
-
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const site = resolve(root, "_site")
-
-describe("github pages artifact", () => {
-  it("ships the landing page, both kernels, and results", () => {
-    for (const path of [
-      "index.html",
-      "styles.css",
-      "app.js",
-      "results.json",
-      "posthog.js",
-      "posthog-official.js",
-      "surveys.js",
-      "error-tracking.js",
-      "otlp.js",
-      "autocapture.js",
-      "replay-core.js",
-      ".nojekyll",
-    ]) {
-      assert.equal(existsSync(resolve(site, path)), true, path)
+import assert from 'node:assert/strict'
+import {readFileSync,existsSync} from 'node:fs'
+import {join} from 'node:path'
+import {createHash} from 'node:crypto'
+import {test} from 'node:test'
+import {root,upstreamVersion} from '../scripts/sdk-source.mjs'
+const site=join(root,'_site')
+const json=file=>JSON.parse(readFileSync(join(site,file),'utf8'))
+const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex')
+const sdk=json('evidence/sdk.json')
+test('all public comparisons refer to the current upstream pin and verified artifact bytes',()=>{
+  assert.equal(sdk.upstream.version,upstreamVersion)
+  for(const surface of sdk.surfaces){
+    assert.deepEqual(surface.objectives.map(row=>row.objective),['raw','gzip','brotli'])
+    for(const row of [...surface.originals,...surface.objectives.map(row=>row.artifact)])assert.equal(sha(join(site,row.file.replace('artifacts/',''))),row.sha256,row.file)
+    for(const row of surface.objectives){
+      assert.equal(row.savingsPercent,(1-row.artifact[row.metric]/row.baseline[row.metric])*100)
+      assert.equal(row.baseline[row.metric],Math.min(...surface.originals.map(artifact=>artifact[row.metric])))
+      assert.equal(row.artifact[row.metric],Math.min(...row.candidates.map(artifact=>artifact[row.metric])))
+      assert.ok(row.totalBuildSeconds>0&&row.originalBuildSeconds>0)
+      assert.match(row.compiler.sha256,/^[a-f0-9]{64}$/)
+      assert.equal(sha(join(site,row.artifact.sourceMap.file.replace('artifacts/',''))),row.artifact.sourceMap.sha256)
     }
-  })
-
-  it("publishes independent exact-source pack measurements", () => {
-    const html = readFileSync(resolve(site, "index.html"), "utf8")
-    assert.match(html, /id="packs"/)
-    assert.match(html, /id="pack-tabs" role="tablist"/)
-    assert.match(html, /id="pack-panel" role="tabpanel"/)
-    assert.match(html, /id="body-pack-lanes"/)
-    assert.match(html, /untouched pinned git submodule/i)
-    assert.match(html, /No upstream TypeScript or JavaScript is edited/i)
-
-    const results = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
-    assert.equal(results.submoduleCommit, "9b2a1b18db64f9f6b331cbded543c5ead3ccf0cb")
-    assert.deepEqual(results.packs.map((pack) => pack.id), [
-      "autocapture",
-      "replay-core",
-      "surveys",
-      "error-tracking",
-      "otlp",
-    ])
-    for (const pack of results.packs) {
-      const baseline = pack.lanes.find((lane) => lane.baseline)
-      const primary = pack.lanes.find((lane) => lane.primary)
-      assert.equal(pack.exact, true)
-      assert.equal(typeof pack.exports, "number")
-      assert.equal(typeof pack.differentialGroups, "number")
-      assert.equal(typeof baseline.brotli11, "number")
-      assert.equal(typeof primary.brotli11, "number")
-      assert.equal(pack.ratios.brotli11, primary.brotli11 / baseline.brotli11)
-    }
-  })
-
-  it("switches module-specific benchmark receipts with accessible tabs", () => {
-    const html = readFileSync(resolve(site, "index.html"), "utf8")
-    const app = readFileSync(resolve(site, "app.js"), "utf8")
-    assert.match(html, /Pick a module/i)
-    assert.match(app, /role="tab"/)
-    assert.match(app, /aria-selected/)
-    assert.match(app, /ArrowLeft/)
-    assert.match(app, /ArrowRight/)
-    assert.match(app, /searchParams\.set\("pack"/)
-    assert.match(app, /pack\.lanes/)
-  })
-
-  it("exposes the published package name and fair minify lanes", () => {
-    const html = readFileSync(resolve(site, "index.html"), "utf8")
-    assert.match(html, /@itslil\/posthog-js/)
-    assert.match(html, /Oxc/)
-    assert.match(html, /Terser/)
-    assert.match(html, /esbuild/)
-    assert.match(html, /mangle/)
-    assert.match(html, /cost_model/)
-    assert.match(html, /extern_fields/)
-    assert.match(html, /[Cc]losed LilScript/)
-    assert.match(html, /Brotli-11/)
-    assert.match(html, /gzip-9/)
-    assert.match(html, /not the published/)
-    assert.match(html, /All three headline sizes measure the same files/)
-    assert.doesNotMatch(html, /the full SDK is smaller/)
-  })
-
-  it("separates direct compiler output from package metadata", () => {
-    const html = readFileSync(resolve(site, "index.html"), "utf8")
-    assert.match(html, /id="body-brotli"/)
-    assert.match(html, /id="body-gzip"/)
-    assert.match(html, /id="body-raw"/)
-    assert.match(html, /id="body-matched"/)
-    const results = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
-    const library = results.size.find((lane) => lane.id === "itslil")
-    const packaged = results.size.find((lane) => lane.id === "itslil-package")
-    const gzip = results.size.find((lane) => lane.id === "itslil-gzip")
-    const bytes = results.size.find((lane) => lane.id === "itslil-bytes")
-    // The closed-fields lane is retired: the compiler renames no property, so
-    // `extern_fields = false` has no effect and the page says so.
-    const closed = results.size.find((lane) => lane.id === "itslil-closed")
-    const oxc = results.size.find((lane) => lane.id === "kernel-oxc-mangle")
-    const terser = results.size.find((lane) => lane.id === "kernel-terser-mangle")
-    const esbuild = results.size.find((lane) => lane.id === "kernel-esbuild-esnext")
-    assert.equal(library.primary, true)
-    assert.equal(library.costModel, "brotli")
-    assert.equal(packaged.raw - library.raw, 91)
-    assert.equal(gzip.costModel, "gzip")
-    assert.equal(bytes.costModel, "raw")
-    assert.equal(typeof library.brotli11, "number")
-    assert.equal(typeof oxc.brotli11, "number")
-    assert.equal(typeof terser.brotli11, "number")
-    assert.equal(typeof esbuild.brotli11, "number")
-    assert.equal(closed, undefined)
-    assert.match(html, /closed LilScript lane[\s\S]*retired/)
-    assert.equal(results.hero.itslilBrotli, packaged.brotli11)
-    assert.equal(results.hero.packageBrotli, packaged.brotli11)
-    assert.equal(results.hero.itslilGzip, packaged.gzip9)
-    assert.equal(results.hero.itslilRaw, packaged.raw)
-    assert.equal(results.matched.brotli11, packaged.brotli11)
-    assert.equal(results.matched.gzip9, packaged.gzip9)
-    assert.equal(results.matched.raw, packaged.raw)
-  })
-
-  it("shows the compiler run and its compile time", () => {
-    const html = readFileSync(resolve(site, "index.html"), "utf8")
-    const app = readFileSync(resolve(site, "app.js"), "utf8")
-    assert.match(html, /id="compiler"/)
-    assert.match(html, /Compile time/)
-    assert.match(html, /id="hero-compile"/)
-    assert.match(html, /id="body-compile"/)
-    assert.match(app, /compileWallMs/)
-    const { compiler } = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
-    assert.equal(typeof compiler.revision, "string")
-    assert.match(compiler.binarySha256, /^[0-9a-f]{64}$/)
-    assert.ok(compiler.compileWallMs.length >= 3)
-    for (const ms of compiler.compileWallMs) assert.equal(Number.isFinite(ms), true)
-    assert.ok(compiler.invocations.length > 0)
-    for (const invocation of compiler.invocations) {
-      assert.equal(invocation.wallMs.length, compiler.compileWallMs.length)
-    }
-  })
-
-  it("labels every delivered file that the compiler did not write", () => {
-    const html = readFileSync(resolve(site, "index.html"), "utf8")
-    assert.match(html, /id="body-delivered"/)
-    assert.match(html, /not compiler-written/)
-    const { delivered } = JSON.parse(readFileSync(resolve(site, "results.json"), "utf8"))
-    const files = delivered.map((entry) => entry.file)
-    for (const file of ["dist/posthog.esm.js", "dist/posthog.cjs", "dist/posthog.umd.js"]) {
-      assert.ok(files.includes(file), file)
-    }
-    for (const entry of delivered) {
-      assert.equal(typeof entry.brotli11, "number")
-      if (!entry.file.endsWith(".esm.js")) {
-        assert.equal(entry.compilerWritten, false, entry.file)
-        assert.match(entry.writtenBy, /post-processed by esbuild.*not compiler-written/, entry.file)
-      }
-    }
-  })
-
-  it("races the official kernel, not published posthog-js", () => {
-    const official = readFileSync(resolve(site, "posthog-official.js"), "utf8")
-    assert.match(official, /export/)
-    assert.match(official, /uuidv7/)
-    assert.match(official, /normalizeFlagsResponse/)
-    assert.doesNotMatch(official, /class PostHog/)
-    assert.doesNotMatch(official, /autocapture/)
-    assert.doesNotMatch(official, /sessionrecording/i)
-  })
-
-  it("does not point the playground at the repo-root dist path", () => {
-    const app = readFileSync(resolve(site, "app.js"), "utf8")
-    assert.match(app, /from ["']\.\/posthog\.js["']/)
-    assert.doesNotMatch(app, /\/dist\/posthog/)
-    assert.match(app, /21\/21/)
-  })
+  }
+})
+test('runtime samples and validation cover every downloadable SDK objective',()=>{
+  const performance=json('evidence/performance.json'),validation=json('evidence/validation.json')
+  assert.equal(validation.ok,true);assert.equal(validation.journeys.length,6)
+  for(const surface of sdk.surfaces)for(const row of surface.objectives){
+    const runtime=performance.rows.find(x=>x.surface===surface.id&&x.objective===row.objective)
+    assert.equal(runtime.candidateSha256,row.artifact.sha256)
+    assert.equal(runtime.originalSha256,row.baseline.sha256)
+    assert.equal(runtime.pairs.length,performance.samples)
+    for(const pair of runtime.pairs)assert.equal(pair.candidate.accepted,1000)
+  }
+})
+test('utility downloads are their separately targeted compiler outputs',()=>{
+  for(const pack of json('evidence/utilities.json').rows)for(const row of pack.objectives){
+    assert.equal(sha(join(site,'utilities',row.artifact.file.slice(5))),row.artifact.sha256)
+    assert.equal(row.savingsPercent,(1-row.artifact[row.metric]/row.baseline[row.metric])*100)
+    assert.equal(sha(join(site,'utility-originals',row.baseline.file.slice('artifacts/utilities/'.length))),row.baseline.sha256)
+  }
+})
+test('the tested preview tarball and license notices are shipped',()=>{
+  const pkg=json('evidence/package.json'),file=join(site,'downloads',pkg.tarball)
+  assert.equal(pkg.integrity,json('evidence/validation.json').package.integrity)
+  assert.equal('sha512-'+createHash('sha512').update(readFileSync(file)).digest('base64'),pkg.integrity)
+  for(const name of ['LICENSE','NOTICE.md','licenses/rrweb-MIT-LICENSE','.nojekyll'])assert.ok(existsSync(join(site,name)))
+})
+test('page leads with full-SDK scope and never projects utility results onto it',()=>{
+  const html=readFileSync(join(site,'index.html'),'utf8'),app=readFileSync(join(site,'app.js'),'utf8')
+  assert.ok(html.indexOf('id="headline"')<html.indexOf('id="utilities"'))
+  assert.match(html,/Utility-level percentages are never presented as whole-SDK savings/)
+  assert.match(html,/Published npm build time is unknown/)
+  assert.doesNotMatch(html+'\n'+app,/previous release|previous version|since the previous|1\.418\.(10|11)/i)
+  assert.match(app,/larger than the best minified original today/)
 })

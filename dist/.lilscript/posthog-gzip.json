@@ -1,0 +1,268 @@
+{
+  "version": 3,
+  "codec": "gzip",
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "posthog.gzip.js",
+          "dynamic": false,
+          "closure": [
+            "posthog.gzip.js"
+          ],
+          "row": 6030,
+          "raw_row": 17047
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.gzip.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 17047,
+          "codec_bytes": 6030,
+          "sha256": "c11c8786888fec48bfccd25a2cd4b9295954e9554be05bd974dd63fd5eb77317"
+        }
+      ],
+      "side_effects": [
+        "posthog.gzip.js"
+      ],
+      "codec_total": 6030,
+      "rows_total": 6030,
+      "setters": 0,
+      "output": "primary",
+      "codec": "gzip",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        99,
+        87,
+        114,
+        238,
+        234,
+        106,
+        202,
+        34,
+        210,
+        130,
+        96,
+        66,
+        42,
+        236,
+        15,
+        154,
+        198,
+        97,
+        91,
+        135,
+        48,
+        233,
+        17,
+        239,
+        101,
+        196,
+        58,
+        83,
+        176,
+        92,
+        53,
+        195
+      ]
+    }
+  ],
+  "source_sha256": "b6656f479bf535f110b1daf0b69a972e31d3a77345a198aa53d5e86b10e30dd6",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "index",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/entry.lil",
+        "bytes": 6827,
+        "sha256": "50344ec8ce10be75f91e0ede30e4cd575d1aa3ff325b1f7ada17573b7bef317c",
+        "dependencies": [
+          1,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/uuid.lil",
+        "bytes": 5005,
+        "sha256": "3c5a6a9d03d30d992487be534fee8f739aff51067fa822887cbe013665f98f38",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
+        "bytes": 4387,
+        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/flags.lil",
+        "bytes": 6091,
+        "sha256": "122c836fab27a31b3835b2497dff4fb0f022eef465f9411be5ea2f6bbd1ea21b",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/cookie.lil",
+        "bytes": 3966,
+        "sha256": "d32c47a48300b4b80067bb32badff61b9dd40ceb423575413c04c1955accf3d6",
+        "dependencies": [
+          2,
+          1
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/router.lil",
+        "bytes": 2373,
+        "sha256": "11708e9565abe5faa89c9e05cd98e2385a294ea86e9b91e9a3a2eb833136a2ed",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/rate-limit.lil",
+        "bytes": 1140,
+        "sha256": "58f15adf94fbdea0bb5f10c5db854b2edce83752658a7e36ae9b597c90ba265a",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/queue.lil",
+        "bytes": 1471,
+        "sha256": "16c6001e0d941a1ef1718fecf301d43ad656f12629e8154aa8fecbd439b2b8e1",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/bot.lil",
+        "bytes": 2052,
+        "sha256": "8b8bdfa997070b99d24d5fbb842c516d45fdbff202d2ece0951bfd5bc9da8645",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/string.lil",
+        "bytes": 1443,
+        "sha256": "76ac527162d2349feb35c3a92b83df58835f8a4a0ed0ca4dc64d8b7693c3f70c",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/number.lil",
+        "bytes": 2085,
+        "sha256": "dc92ae3e329fbc9a52dbade5a19bfb656cac02005985e1c95e7bc85a9b698e5c",
+        "dependencies": [
+          2,
+          11
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
+        "bytes": 2084,
+        "sha256": "c52d392647c6421313931c7c621f3a1af7342c7724ef8d93ea1035c545d82163",
+        "dependencies": [
+          2,
+          9
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/json.lil",
+        "bytes": 641,
+        "sha256": "b5ab129e048a610968f28808f2a5def44f98591c1af421d2b7fa3f173963aaa2",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/url.lil",
+        "bytes": 365,
+        "sha256": "3d65dae6a88c5349223c9000807763c45a9e06ddaf9bb96f7c574841ae223af0",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/bucketed.lil",
+        "bytes": 1687,
+        "sha256": "4c76e5c1d2aab1273db73548bc10c6a427b4212814f933de2898b60f41083670",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [],
+    "host_reserved": []
+  }
+}

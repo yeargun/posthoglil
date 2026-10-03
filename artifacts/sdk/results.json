@@ -1,0 +1,923 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-10-03T01:44:36.995Z",
+  "upstream": {
+    "name": "posthog-js",
+    "version": "1.435.8",
+    "commit": "c9d890a4028b186a5e1b327161ea197001c0c46b"
+  },
+  "codec": "lilscript-codec: gzip level 9 (zlib 1.3.1), Brotli quality 11 / window 22 (Brotli 1.1.0)",
+  "scope": "Complete standard browser SDK and full/no-external browser SDK. Standard loads optional extensions separately; these requests are excluded from the initial JavaScript size.",
+  "method": "Sequential, uncached compilation. Identical source bundler and minifier lanes for each side. Each candidate is compiled for its named objective. Compare against the smallest minified original for that codec, including the exact npm artifact.",
+  "buildTimeScope": "One measured run per stage on this machine; dependencies already installed and filesystem caches warm. Compilation + source bundling + selected minifier. Search/other minifier lanes, dependency install, declaration generation, packaging and compression excluded. Source-map generation and composition are included. Published npm build time is unknown.",
+  "machine": {
+    "node": "v20.19.0",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "logicalCpus": 8,
+    "memoryBytes": 16706424832,
+    "platform": "linux",
+    "release": "7.0.0-1014-azure",
+    "load": [
+      1.6,
+      2.43,
+      2.72
+    ]
+  },
+  "tools": {
+    "esbuild": "0.28.1",
+    "terser": "5.50.0",
+    "vite": "8.2.1",
+    "rolldown": "1.2.5",
+    "lightningcss": "1.33.0",
+    "typescript": "5.8.3"
+  },
+  "dependencyLockSha256": "fdd8ecf325de5c03fed9c53af1042f2b6d7d5ce5f5ea42cf973ee2c35237ddce",
+  "enabledModules": [
+    "flags",
+    "numbers",
+    "strings",
+    "types",
+    "bots",
+    "autocapture",
+    "replay-config",
+    "replay-utils",
+    "surveys",
+    "error-tracking",
+    "otlp-values",
+    "otlp-logs",
+    "otlp-metrics",
+    "otlp-config"
+  ],
+  "propertyReserved": [
+    "$",
+    "_",
+    "_Departed",
+    "_POSTHOG_REMOTE_CONFIG",
+    "__POSTHOG_INSTRUMENTED__",
+    "__PosthogExtensions__",
+    "__Posthog__",
+    "__SV",
+    "__await",
+    "__context",
+    "__esModule",
+    "__ln",
+    "__ph_loaded",
+    "__posthog_debug",
+    "__posthog_wrapped__",
+    "__proto__",
+    "__publicField2",
+    "__rrweb_original__",
+    "__symbol__",
+    "_addCaptureHook",
+    "_args",
+    "_batchKey",
+    "_calculate_event_properties",
+    "_classCallCheck",
+    "_conversations",
+    "_conversationsManager",
+    "_createClass",
+    "_css",
+    "_cssText",
+    "_dom_loaded",
+    "_execute_array",
+    "_forceAllowLocalhostNetworkCapture",
+    "_handle_unload",
+    "_i",
+    "_init",
+    "_instance",
+    "_invoke",
+    "_isIdentified",
+    "_is_bot",
+    "_kx",
+    "_map",
+    "_mappings",
+    "_mirror",
+    "_noHeatmaps",
+    "_noTruncate",
+    "_onCapture",
+    "_onIdentityChanged",
+    "_onIdentityCleared",
+    "_onOptOut",
+    "_onclick",
+    "_oncontextmenu",
+    "_ondblclick",
+    "_onload",
+    "_onmousedown",
+    "_onmouseenter",
+    "_onmouseleave",
+    "_onmousemove",
+    "_onmouseout",
+    "_onmouseover",
+    "_opts",
+    "_originatedFromCaptureException",
+    "_overrideSDKInfo",
+    "_patchFetch",
+    "_patchXHR",
+    "_posthog",
+    "_processor",
+    "_root",
+    "_rrweb",
+    "_sb",
+    "_send_request",
+    "_sessionActivityTimestamp",
+    "_sessionStartTimestamp",
+    "_sessionTimeoutMs",
+    "_shouldDisableFlags",
+    "_surveyEventReceiver",
+    "_surveyManager",
+    "_unchangedStyles",
+    "_url",
+    "alias",
+    "calculateEventProperties",
+    "capture",
+    "captureException",
+    "getActiveMatchingSurveys",
+    "getSurveys",
+    "has_opted_out_capturing",
+    "identify",
+    "isFeatureEnabled",
+    "loadExternalDependency",
+    "onActiveMatchingSurveysChanged",
+    "onFeatureFlags",
+    "opt_in_capturing",
+    "opt_out_capturing",
+    "posthog",
+    "register",
+    "register_once",
+    "reset",
+    "set",
+    "set_config",
+    "set_once",
+    "surveys",
+    "unregister",
+    "version"
+  ],
+  "surfaces": [
+    {
+      "id": "standard",
+      "label": "Standard browser SDK",
+      "originals": [
+        {
+          "file": "artifacts/sdk/standard/published.mjs",
+          "raw": 322471,
+          "gzip9": 100934,
+          "brotli11": 85272,
+          "sha256": "68d9a1b30214f9d5eef925458dff55826c63bd628efefbb93fc86c0de60f6545",
+          "lane": "published",
+          "source": "node_modules/posthog-upstream/dist/module.mjs",
+          "seconds": null,
+          "sourceMap": {
+            "file": "artifacts/sdk/standard/module.mjs.map",
+            "sha256": "d11c47f053ff9b2566c7f4ca04ed742cf26740fd7ebf19328019178d224341bd",
+            "scope": "Exact published upstream map."
+          }
+        },
+        {
+          "file": "artifacts/sdk/standard/original-terser.mjs",
+          "raw": 324721,
+          "gzip9": 101165,
+          "brotli11": 85267,
+          "sha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
+          "lane": "terser",
+          "bundleSeconds": 0.099871038,
+          "minifySeconds": 3.684048917,
+          "sourceMap": {
+            "file": "artifacts/sdk/standard/standard-original-terser.map",
+            "sha256": "2ec539d33d0a44af8c3e0e82f272af811f7f4f8c3a10bc1cb8fe4abcb8c26d2c",
+            "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+          }
+        },
+        {
+          "file": "artifacts/sdk/standard/original-oxc.mjs",
+          "raw": 347619,
+          "gzip9": 102663,
+          "brotli11": 86864,
+          "sha256": "d827c4e460327ba6d1e367c7559158bffaacd05f55fea893b9f6e1240941b11e",
+          "lane": "oxc",
+          "bundleSeconds": 0.099871038,
+          "minifySeconds": 0.15138445599999978,
+          "sourceMap": {
+            "file": "artifacts/sdk/standard/standard-original-oxc.map",
+            "sha256": "8fac3ba800bafa6212033cb64026ef21c20a2d8f22a697b2f0247a015efd4d45",
+            "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+          }
+        },
+        {
+          "file": "artifacts/sdk/standard/original-esbuild.mjs",
+          "raw": 376207,
+          "gzip9": 110196,
+          "brotli11": 92776,
+          "sha256": "cf1a277528d0f9c1ebb9e207dcb6653621f3bfb77c8127c91ed9f30631e76ad3",
+          "lane": "esbuild",
+          "bundleSeconds": 0.099871038,
+          "minifySeconds": 0.13988626099999965,
+          "sourceMap": {
+            "file": "artifacts/sdk/standard/standard-original-esbuild.map",
+            "sha256": "ba605d31c5e477b05ce8b1f012a66f31e7f7ba20ded829d0105dbe2d148950d1",
+            "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+          }
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "artifacts/sdk/standard/raw.mjs",
+            "raw": 326376,
+            "gzip9": 102390,
+            "brotli11": 86689,
+            "sha256": "bc3ea9fd47cb028c418cd5aa8507f7fdfcde21c463a3290da80c616f17a16e4b",
+            "lane": "terser",
+            "minifySeconds": 3.1150832839999993,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/standard-raw-terser.map",
+              "sha256": "48c6494bd3dbf25ef7d5eb8a3e1450a2f3558c8996fc8d9ff831fa01924e9fed",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "baseline": {
+            "file": "artifacts/sdk/standard/published.mjs",
+            "raw": 322471,
+            "gzip9": 100934,
+            "brotli11": 85272,
+            "sha256": "68d9a1b30214f9d5eef925458dff55826c63bd628efefbb93fc86c0de60f6545",
+            "lane": "published",
+            "source": "node_modules/posthog-upstream/dist/module.mjs",
+            "seconds": null,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/module.mjs.map",
+              "sha256": "d11c47f053ff9b2566c7f4ca04ed742cf26740fd7ebf19328019178d224341bd",
+              "scope": "Exact published upstream map."
+            }
+          },
+          "matchedOriginal": {
+            "file": "artifacts/sdk/standard/original-terser.mjs",
+            "raw": 324721,
+            "gzip9": 101165,
+            "brotli11": 85267,
+            "sha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
+            "lane": "terser",
+            "bundleSeconds": 0.099871038,
+            "minifySeconds": 3.684048917,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/standard-original-terser.map",
+              "sha256": "2ec539d33d0a44af8c3e0e82f272af811f7f4f8c3a10bc1cb8fe4abcb8c26d2c",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "candidates": [
+            {
+              "file": "artifacts/sdk/standard/raw-terser.mjs",
+              "raw": 326376,
+              "gzip9": 102390,
+              "brotli11": 86689,
+              "sha256": "bc3ea9fd47cb028c418cd5aa8507f7fdfcde21c463a3290da80c616f17a16e4b",
+              "lane": "terser",
+              "minifySeconds": 3.1150832839999993,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-raw-terser.map",
+                "sha256": "48c6494bd3dbf25ef7d5eb8a3e1450a2f3558c8996fc8d9ff831fa01924e9fed",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/raw-oxc.mjs",
+              "raw": 350012,
+              "gzip9": 103829,
+              "brotli11": 88199,
+              "sha256": "27de11cdbc40564be5bb84701c9f7323d6b295ca4e2dc266097366b9374003ac",
+              "lane": "oxc",
+              "minifySeconds": 0.09874873999999909,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-raw-oxc.map",
+                "sha256": "0a307e52b3e26e576ac62583c05e64ced4b9e670686112ba65ca12179f9951ad",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/raw-esbuild.mjs",
+              "raw": 376761,
+              "gzip9": 111267,
+              "brotli11": 94149,
+              "sha256": "3f20719392d2b11620373422ccfa97b34682a25d0148cf5719daf02869b4a1f5",
+              "lane": "esbuild",
+              "minifySeconds": 0.12511389899999995,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-raw-esbuild.map",
+                "sha256": "b720aa05b2e4aa3b178dab71f5acdfb746247f579af9b384cc75dca7e2153a48",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            }
+          ],
+          "compiler": {
+            "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+            "sourceSha256": "7816733b767afc6148536b6fcad443b987be0e309192bc564773f2d2fb2a44ec",
+            "configSha256": "7a54f0afa95eb32670d628a142edf64b65da976608615b7aa5806a287cf175c2",
+            "entrySha256": "eb38e2aa13be148376dd61ac0bc94d46622e6f3a6e34c3ac073e684c38370d4f",
+            "outputSha256": "4f2dc9da0eb378f48ab1efc83bf5e01fe12c5c1922e3adb52329cd08b4a3ea31",
+            "seconds": 18.821436675999998
+          },
+          "bundleSeconds": 0.08110239599999931,
+          "totalBuildSeconds": 22.017622355999997,
+          "originalBuildSeconds": 3.783919955,
+          "savingsPercent": -1.2109616058498363,
+          "samePipelineSavingsPercent": -0.509668299863586
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "artifacts/sdk/standard/gzip.mjs",
+            "raw": 327676,
+            "gzip9": 102339,
+            "brotli11": 86461,
+            "sha256": "8846c924314b1040ac109044890f838bbb5920a21151c8676cf1bcdaede86a3b",
+            "lane": "terser",
+            "minifySeconds": 3.050452029,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/standard-gzip-terser.map",
+              "sha256": "ed56a72e8487bcf53113cd870445332cdc81a2e26f7501c992e7fccc45c73dcb",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "baseline": {
+            "file": "artifacts/sdk/standard/published.mjs",
+            "raw": 322471,
+            "gzip9": 100934,
+            "brotli11": 85272,
+            "sha256": "68d9a1b30214f9d5eef925458dff55826c63bd628efefbb93fc86c0de60f6545",
+            "lane": "published",
+            "source": "node_modules/posthog-upstream/dist/module.mjs",
+            "seconds": null,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/module.mjs.map",
+              "sha256": "d11c47f053ff9b2566c7f4ca04ed742cf26740fd7ebf19328019178d224341bd",
+              "scope": "Exact published upstream map."
+            }
+          },
+          "matchedOriginal": {
+            "file": "artifacts/sdk/standard/original-terser.mjs",
+            "raw": 324721,
+            "gzip9": 101165,
+            "brotli11": 85267,
+            "sha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
+            "lane": "terser",
+            "bundleSeconds": 0.099871038,
+            "minifySeconds": 3.684048917,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/standard-original-terser.map",
+              "sha256": "2ec539d33d0a44af8c3e0e82f272af811f7f4f8c3a10bc1cb8fe4abcb8c26d2c",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "candidates": [
+            {
+              "file": "artifacts/sdk/standard/gzip-terser.mjs",
+              "raw": 327676,
+              "gzip9": 102339,
+              "brotli11": 86461,
+              "sha256": "8846c924314b1040ac109044890f838bbb5920a21151c8676cf1bcdaede86a3b",
+              "lane": "terser",
+              "minifySeconds": 3.050452029,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-gzip-terser.map",
+                "sha256": "ed56a72e8487bcf53113cd870445332cdc81a2e26f7501c992e7fccc45c73dcb",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/gzip-oxc.mjs",
+              "raw": 351537,
+              "gzip9": 103731,
+              "brotli11": 88092,
+              "sha256": "9e5cf65d296e64b77e4277e4f730c0a059ad12b7448c8f339aa26ec2c5d9c471",
+              "lane": "oxc",
+              "minifySeconds": 0.1077497059999987,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-gzip-oxc.map",
+                "sha256": "c993d76139ae914c219421d872b5574cede87568772c6c37b6f4322431c4d9b1",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/gzip-esbuild.mjs",
+              "raw": 378513,
+              "gzip9": 111212,
+              "brotli11": 93958,
+              "sha256": "b87d5eddffc2e01ec40fbd06483b08680a4e49e583d4752bc339f3c78f3ea5bc",
+              "lane": "esbuild",
+              "minifySeconds": 0.12614893200000005,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-gzip-esbuild.map",
+                "sha256": "efb97f67824ed3a71f60af2d9c7693c08be2f2129e47f1193f111481a8194c6a",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            }
+          ],
+          "compiler": {
+            "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+            "sourceSha256": "7816733b767afc6148536b6fcad443b987be0e309192bc564773f2d2fb2a44ec",
+            "configSha256": "782b805df7470c3d21dae03155d16d89356f00847f3e99fcc6034012001be201",
+            "entrySha256": "eb38e2aa13be148376dd61ac0bc94d46622e6f3a6e34c3ac073e684c38370d4f",
+            "outputSha256": "3911913510801a0b366840ff1d1ea820cebb08d27fbc11b0d6658ddd39f88c2e",
+            "seconds": 16.309672976
+          },
+          "bundleSeconds": 0.06786856900000021,
+          "totalBuildSeconds": 19.427993574000002,
+          "originalBuildSeconds": 3.783919955,
+          "savingsPercent": -1.3919987318445681,
+          "samePipelineSavingsPercent": -1.1604804033015448
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "artifacts/sdk/standard/brotli.mjs",
+            "raw": 327510,
+            "gzip9": 102366,
+            "brotli11": 86472,
+            "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+            "lane": "terser",
+            "minifySeconds": 2.9143176310000016,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/standard-brotli-terser.map",
+              "sha256": "4a9c6b17645bd96f4feca14beb6f961a4bbb7155f0ec21069cca426107cc1b12",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "baseline": {
+            "file": "artifacts/sdk/standard/original-terser.mjs",
+            "raw": 324721,
+            "gzip9": 101165,
+            "brotli11": 85267,
+            "sha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
+            "lane": "terser",
+            "bundleSeconds": 0.099871038,
+            "minifySeconds": 3.684048917,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/standard-original-terser.map",
+              "sha256": "2ec539d33d0a44af8c3e0e82f272af811f7f4f8c3a10bc1cb8fe4abcb8c26d2c",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "matchedOriginal": {
+            "file": "artifacts/sdk/standard/original-terser.mjs",
+            "raw": 324721,
+            "gzip9": 101165,
+            "brotli11": 85267,
+            "sha256": "14fb120d16f72e493a488aa87ee556e88734ea5ed7d52afabb347bc5ddb8948c",
+            "lane": "terser",
+            "bundleSeconds": 0.099871038,
+            "minifySeconds": 3.684048917,
+            "sourceMap": {
+              "file": "artifacts/sdk/standard/standard-original-terser.map",
+              "sha256": "2ec539d33d0a44af8c3e0e82f272af811f7f4f8c3a10bc1cb8fe4abcb8c26d2c",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "candidates": [
+            {
+              "file": "artifacts/sdk/standard/brotli-terser.mjs",
+              "raw": 327510,
+              "gzip9": 102366,
+              "brotli11": 86472,
+              "sha256": "4aed7fe1da24e799865cd47cce884019f3052fc0d14a68c6e3f39ed59452c44c",
+              "lane": "terser",
+              "minifySeconds": 2.9143176310000016,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-brotli-terser.map",
+                "sha256": "4a9c6b17645bd96f4feca14beb6f961a4bbb7155f0ec21069cca426107cc1b12",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/brotli-oxc.mjs",
+              "raw": 351399,
+              "gzip9": 103779,
+              "brotli11": 88044,
+              "sha256": "fdf487ff949e16f6b1f39757eb164828f7b33bc797cf62e32dc2fa91ccf91356",
+              "lane": "oxc",
+              "minifySeconds": 0.141657312000003,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-brotli-oxc.map",
+                "sha256": "87cf5f208361a84b38f158d951c604178fce6f548381b6806eb79a231b431ab5",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/standard/brotli-esbuild.mjs",
+              "raw": 378384,
+              "gzip9": 111248,
+              "brotli11": 94154,
+              "sha256": "ceba7c027e6d69d71cc935cddc353d2ccc3bc8efde922eccec3fba0324887b62",
+              "lane": "esbuild",
+              "minifySeconds": 0.10347340399999666,
+              "sourceMap": {
+                "file": "artifacts/sdk/standard/standard-brotli-esbuild.map",
+                "sha256": "ae9f4bbf429813514123b23574dc41b62291e869341829bdc7f0e6d04f57fef5",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            }
+          ],
+          "compiler": {
+            "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+            "sourceSha256": "7816733b767afc6148536b6fcad443b987be0e309192bc564773f2d2fb2a44ec",
+            "configSha256": "41cf9eaad77643d64d97da386548375eb37651e5444e3731b59d7c7227ab612f",
+            "entrySha256": "eb38e2aa13be148376dd61ac0bc94d46622e6f3a6e34c3ac073e684c38370d4f",
+            "outputSha256": "121e1eb1a8cd9d251abec84a24a1b1a0082858539594181decfceaf155bc346e",
+            "seconds": 36.71232324500001
+          },
+          "bundleSeconds": 0.09362865099999908,
+          "totalBuildSeconds": 39.720269527000006,
+          "originalBuildSeconds": 3.783919955,
+          "savingsPercent": -1.413207923346671,
+          "samePipelineSavingsPercent": -1.413207923346671
+        }
+      ]
+    },
+    {
+      "id": "full",
+      "label": "Full / no external scripts",
+      "originals": [
+        {
+          "file": "artifacts/sdk/full/published.mjs",
+          "raw": 725043,
+          "gzip9": 209218,
+          "brotli11": 173119,
+          "sha256": "7209a7fff21f97c141f4f0c2db8eeb732c925e419b85c0686a4454b539673945",
+          "lane": "published",
+          "source": "node_modules/posthog-upstream/dist/module.full.no-external.js",
+          "seconds": null,
+          "sourceMap": {
+            "file": "artifacts/sdk/full/module.full.no-external.js.map",
+            "sha256": "88a1b524b803e5975f35ef43e61f02c14c63815b908856305d03ce8693069da5",
+            "scope": "Exact published upstream map."
+          }
+        },
+        {
+          "file": "artifacts/sdk/full/original-terser.mjs",
+          "raw": 747631,
+          "gzip9": 208969,
+          "brotli11": 172801,
+          "sha256": "7b0283ebf05a1027b2fa77683b42381c84aad716f2e1825157194bf6f7221953",
+          "lane": "terser",
+          "bundleSeconds": 0.17423749300000055,
+          "minifySeconds": 4.856336165000001,
+          "sourceMap": {
+            "file": "artifacts/sdk/full/full-original-terser.map",
+            "sha256": "2f7206d213e56869fb4173f3e8316897b70d8f45fcdd711d69feb48240d55c24",
+            "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+          }
+        },
+        {
+          "file": "artifacts/sdk/full/original-oxc.mjs",
+          "raw": 705672,
+          "gzip9": 202948,
+          "brotli11": 169302,
+          "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+          "lane": "oxc",
+          "bundleSeconds": 0.17423749300000055,
+          "minifySeconds": 0.21764758099999745,
+          "sourceMap": {
+            "file": "artifacts/sdk/full/full-original-oxc.map",
+            "sha256": "dc95af1f768678eb1c7df85ab808439d037543561e39cf27e7668199d6113e09",
+            "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+          }
+        },
+        {
+          "file": "artifacts/sdk/full/original-esbuild.mjs",
+          "raw": 755090,
+          "gzip9": 217591,
+          "brotli11": 181243,
+          "sha256": "e44f6236ec3683c5dec4b59d392ce43381b0341a6eb4614d9e0474203ba8031d",
+          "lane": "esbuild",
+          "bundleSeconds": 0.17423749300000055,
+          "minifySeconds": 0.21789022600000316,
+          "sourceMap": {
+            "file": "artifacts/sdk/full/full-original-esbuild.map",
+            "sha256": "9a3d50ad36709f649d88eb560df7951b8c80559acc76a8a42f91cdde35dff52f",
+            "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+          }
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "artifacts/sdk/full/raw.mjs",
+            "raw": 709154,
+            "gzip9": 204584,
+            "brotli11": 171248,
+            "sha256": "4a8401c3550cfc5e084716df3e92c74393fd827213223c294eb06f579d75f93a",
+            "lane": "oxc",
+            "minifySeconds": 0.2501394170000058,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-raw-oxc.map",
+              "sha256": "77673460fd921174e739f3a689e25c3467467baa6e078fb72b6d0c323516b037",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "baseline": {
+            "file": "artifacts/sdk/full/original-oxc.mjs",
+            "raw": 705672,
+            "gzip9": 202948,
+            "brotli11": 169302,
+            "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+            "lane": "oxc",
+            "bundleSeconds": 0.17423749300000055,
+            "minifySeconds": 0.21764758099999745,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-original-oxc.map",
+              "sha256": "dc95af1f768678eb1c7df85ab808439d037543561e39cf27e7668199d6113e09",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "matchedOriginal": {
+            "file": "artifacts/sdk/full/original-oxc.mjs",
+            "raw": 705672,
+            "gzip9": 202948,
+            "brotli11": 169302,
+            "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+            "lane": "oxc",
+            "bundleSeconds": 0.17423749300000055,
+            "minifySeconds": 0.21764758099999745,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-original-oxc.map",
+              "sha256": "dc95af1f768678eb1c7df85ab808439d037543561e39cf27e7668199d6113e09",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "candidates": [
+            {
+              "file": "artifacts/sdk/full/raw-oxc.mjs",
+              "raw": 709154,
+              "gzip9": 204584,
+              "brotli11": 171248,
+              "sha256": "4a8401c3550cfc5e084716df3e92c74393fd827213223c294eb06f579d75f93a",
+              "lane": "oxc",
+              "minifySeconds": 0.2501394170000058,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-raw-oxc.map",
+                "sha256": "77673460fd921174e739f3a689e25c3467467baa6e078fb72b6d0c323516b037",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/full/raw-terser.mjs",
+              "raw": 749129,
+              "gzip9": 210822,
+              "brotli11": 174721,
+              "sha256": "425d5dd870b2f67b5222ab768a65332dea046e11bb44683589921d08319dfe62",
+              "lane": "terser",
+              "minifySeconds": 4.939356922000006,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-raw-terser.map",
+                "sha256": "ecb23d8b5ffc6cb33a9b45731754396e30369bd5fe800bf1fc272ff15e4b2cd3",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/full/raw-esbuild.mjs",
+              "raw": 756114,
+              "gzip9": 218854,
+              "brotli11": 183053,
+              "sha256": "dc0ca041a84b57dc57b916d45596f0bdb592aec2b6473adfa8cef75181a8e10d",
+              "lane": "esbuild",
+              "minifySeconds": 0.24031277799999953,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-raw-esbuild.map",
+                "sha256": "bfc5e4325c15f94194de96156e0158424b2eee21a3cb1f8c70101465483edacc",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            }
+          ],
+          "compiler": {
+            "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+            "sourceSha256": "7816733b767afc6148536b6fcad443b987be0e309192bc564773f2d2fb2a44ec",
+            "configSha256": "7a54f0afa95eb32670d628a142edf64b65da976608615b7aa5806a287cf175c2",
+            "entrySha256": "a412298872a4ed1d056a0f6d88a3af50e40aeb8c62dfd4e193d063701d33ecb1",
+            "outputSha256": "3d98304c33f11d5a88168b0b54c3f1f54f2dae9d354247a0abb4a3b5a88d269d",
+            "seconds": 16.687301562000002
+          },
+          "bundleSeconds": 0.12252170599999954,
+          "totalBuildSeconds": 17.05996268500001,
+          "originalBuildSeconds": 0.391885073999998,
+          "savingsPercent": -0.4934303755852687,
+          "samePipelineSavingsPercent": -0.4934303755852687
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "artifacts/sdk/full/gzip.mjs",
+            "raw": 710467,
+            "gzip9": 204346,
+            "brotli11": 170902,
+            "sha256": "d7a51394aafbe63e786acb88fa17ec2436c16a51b3a41f0c7ffc6a64c593fa3b",
+            "lane": "oxc",
+            "minifySeconds": 0.2638545999999988,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-gzip-oxc.map",
+              "sha256": "a16fde3864aa29ce98e1d43a50d5d62ad02967d983d9676a8e10badda2f6781a",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "baseline": {
+            "file": "artifacts/sdk/full/original-oxc.mjs",
+            "raw": 705672,
+            "gzip9": 202948,
+            "brotli11": 169302,
+            "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+            "lane": "oxc",
+            "bundleSeconds": 0.17423749300000055,
+            "minifySeconds": 0.21764758099999745,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-original-oxc.map",
+              "sha256": "dc95af1f768678eb1c7df85ab808439d037543561e39cf27e7668199d6113e09",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "matchedOriginal": {
+            "file": "artifacts/sdk/full/original-oxc.mjs",
+            "raw": 705672,
+            "gzip9": 202948,
+            "brotli11": 169302,
+            "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+            "lane": "oxc",
+            "bundleSeconds": 0.17423749300000055,
+            "minifySeconds": 0.21764758099999745,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-original-oxc.map",
+              "sha256": "dc95af1f768678eb1c7df85ab808439d037543561e39cf27e7668199d6113e09",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "candidates": [
+            {
+              "file": "artifacts/sdk/full/gzip-oxc.mjs",
+              "raw": 710467,
+              "gzip9": 204346,
+              "brotli11": 170902,
+              "sha256": "d7a51394aafbe63e786acb88fa17ec2436c16a51b3a41f0c7ffc6a64c593fa3b",
+              "lane": "oxc",
+              "minifySeconds": 0.2638545999999988,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-gzip-oxc.map",
+                "sha256": "a16fde3864aa29ce98e1d43a50d5d62ad02967d983d9676a8e10badda2f6781a",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/full/gzip-terser.mjs",
+              "raw": 750339,
+              "gzip9": 210633,
+              "brotli11": 174436,
+              "sha256": "4c445e126ed2d4032e0b14844908bfa05f6d273718582bcee97f3d9a9833d274",
+              "lane": "terser",
+              "minifySeconds": 4.740657138000002,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-gzip-terser.map",
+                "sha256": "1e20ee6a66d3249634d2aed7ed9b2f7e611a70e95c89bc5654298ce21672f295",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/full/gzip-esbuild.mjs",
+              "raw": 757638,
+              "gzip9": 218654,
+              "brotli11": 182606,
+              "sha256": "af9d042030d6a28699e5faa79599e22cd39265dec5ca7532073c431317566ecc",
+              "lane": "esbuild",
+              "minifySeconds": 0.18550779099999637,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-gzip-esbuild.map",
+                "sha256": "af700f2031ee9ad2f797883d4b4d21980d7109e384b11e311c085163cdaec2fe",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            }
+          ],
+          "compiler": {
+            "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+            "sourceSha256": "7816733b767afc6148536b6fcad443b987be0e309192bc564773f2d2fb2a44ec",
+            "configSha256": "782b805df7470c3d21dae03155d16d89356f00847f3e99fcc6034012001be201",
+            "entrySha256": "a412298872a4ed1d056a0f6d88a3af50e40aeb8c62dfd4e193d063701d33ecb1",
+            "outputSha256": "1bf0c49ae46da785cc8c6a62c04812dc1f05728940830e6a9f7c1a5b84f24573",
+            "seconds": 13.596189343999999
+          },
+          "bundleSeconds": 0.0977867780000015,
+          "totalBuildSeconds": 13.957830721999999,
+          "originalBuildSeconds": 0.391885073999998,
+          "savingsPercent": -0.6888464040049724,
+          "samePipelineSavingsPercent": -0.6888464040049724
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "artifacts/sdk/full/brotli.mjs",
+            "raw": 710460,
+            "gzip9": 204376,
+            "brotli11": 170998,
+            "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+            "lane": "oxc",
+            "minifySeconds": 0.2461923999999999,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-brotli-oxc.map",
+              "sha256": "520078220270cac9318c6d1a030fcccd7efeae68e96100f55b7c4b4aebb0471b",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "baseline": {
+            "file": "artifacts/sdk/full/original-oxc.mjs",
+            "raw": 705672,
+            "gzip9": 202948,
+            "brotli11": 169302,
+            "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+            "lane": "oxc",
+            "bundleSeconds": 0.17423749300000055,
+            "minifySeconds": 0.21764758099999745,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-original-oxc.map",
+              "sha256": "dc95af1f768678eb1c7df85ab808439d037543561e39cf27e7668199d6113e09",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "matchedOriginal": {
+            "file": "artifacts/sdk/full/original-oxc.mjs",
+            "raw": 705672,
+            "gzip9": 202948,
+            "brotli11": 169302,
+            "sha256": "3da81ffaf6e9681ec713ed209c406b1b77c8958e3ac72984c05bd57e71715bf2",
+            "lane": "oxc",
+            "bundleSeconds": 0.17423749300000055,
+            "minifySeconds": 0.21764758099999745,
+            "sourceMap": {
+              "file": "artifacts/sdk/full/full-original-oxc.map",
+              "sha256": "dc95af1f768678eb1c7df85ab808439d037543561e39cf27e7668199d6113e09",
+              "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+            }
+          },
+          "candidates": [
+            {
+              "file": "artifacts/sdk/full/brotli-oxc.mjs",
+              "raw": 710460,
+              "gzip9": 204376,
+              "brotli11": 170998,
+              "sha256": "d6695c9541dcd16f795cfc159690055f217c12115fb077a2de0988ad4c7785c6",
+              "lane": "oxc",
+              "minifySeconds": 0.2461923999999999,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-brotli-oxc.map",
+                "sha256": "520078220270cac9318c6d1a030fcccd7efeae68e96100f55b7c4b4aebb0471b",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/full/brotli-terser.mjs",
+              "raw": 750353,
+              "gzip9": 210566,
+              "brotli11": 174415,
+              "sha256": "8e78be5d545d1ac1daa44726aa1e079baaa69c9e29f7c7c1dc51104e1b66a12e",
+              "lane": "terser",
+              "minifySeconds": 5.038428840000001,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-brotli-terser.map",
+                "sha256": "38b748b626db7c8090d3d23d7c7cc79311a14ae68e106ca98d94e5bd22d43dfd",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            },
+            {
+              "file": "artifacts/sdk/full/brotli-esbuild.mjs",
+              "raw": 757636,
+              "gzip9": 218695,
+              "brotli11": 182666,
+              "sha256": "2b01558030bb0a4f137470750a15ef9c7e489ee90f8029ceda1edd40eec85c2c",
+              "lane": "esbuild",
+              "minifySeconds": 0.1969700589999993,
+              "sourceMap": {
+                "file": "artifacts/sdk/full/full-brotli-esbuild.map",
+                "sha256": "5a1c3bad3c049c2c9199c0581af3090f4baed81e582da9fb37dc1002118e55e3",
+                "scope": "Upstream TypeScript and generated LilScript JavaScript; embedded source content."
+              }
+            }
+          ],
+          "compiler": {
+            "sha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+            "sourceSha256": "7816733b767afc6148536b6fcad443b987be0e309192bc564773f2d2fb2a44ec",
+            "configSha256": "41cf9eaad77643d64d97da386548375eb37651e5444e3731b59d7c7227ab612f",
+            "entrySha256": "a412298872a4ed1d056a0f6d88a3af50e40aeb8c62dfd4e193d063701d33ecb1",
+            "outputSha256": "05c6bfb7051b0a6b2307d2a093b967503705511f6f5021c017ee1356efacf5a6",
+            "seconds": 44.03195069899999
+          },
+          "bundleSeconds": 0.10274199000000227,
+          "totalBuildSeconds": 44.380885088999996,
+          "originalBuildSeconds": 0.391885073999998,
+          "savingsPercent": -1.0017601682201116,
+          "samePipelineSavingsPercent": -1.0017601682201116
+        }
+      ]
+    }
+  ]
+}

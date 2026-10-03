@@ -3,8 +3,10 @@ export type Platform = "node:javascript" | "web:javascript" | "hermes"
 
 export interface Mechanism {
   handled?: boolean
-  type?: "generic" | "onunhandledrejection" | "onuncaughtexception" | "onconsole" | "middleware"
+  type?: "generic" | "onunhandledrejection" | "onuncaughtexception" | "onconsole" | "middleware" | "chained"
   source?: string
+  exception_id?: number
+  parent_id?: number
   synthetic?: boolean
 }
 

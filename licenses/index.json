@@ -1,0 +1,72 @@
+[
+  {
+    "package": "core-js",
+    "version": "3.49.0",
+    "file": "licenses/core-js-LICENSE"
+  },
+  {
+    "package": "dompurify",
+    "version": "3.4.13",
+    "file": "licenses/dompurify-LICENSE-MPL"
+  },
+  {
+    "package": "dompurify",
+    "version": "3.4.13",
+    "file": "licenses/dompurify-LICENSE"
+  },
+  {
+    "package": "fflate",
+    "version": "0.4.8",
+    "file": "licenses/fflate-LICENSE"
+  },
+  {
+    "package": "preact",
+    "version": "10.29.3",
+    "file": "licenses/preact-LICENSE"
+  },
+  {
+    "package": "query-selector-shadow-dom",
+    "version": "1.0.1",
+    "file": "licenses/query-selector-shadow-dom-LICENSE"
+  },
+  {
+    "package": "web-vitals",
+    "version": "6.2.1",
+    "file": "licenses/web-vitals-LICENSE"
+  },
+  {
+    "package": "web-vitals-soft-navs",
+    "version": "6.2.1",
+    "file": "licenses/web-vitals-soft-navs-LICENSE"
+  },
+  {
+    "package": "base64-arraybuffer",
+    "version": "1.0.2",
+    "file": "licenses/base64-arraybuffer-LICENSE"
+  },
+  {
+    "package": "mitt",
+    "version": "3.0.1",
+    "file": "licenses/mitt-LICENSE"
+  },
+  {
+    "package": "postcss",
+    "version": "8.5.23",
+    "file": "licenses/postcss-LICENSE"
+  },
+  {
+    "package": "postcss-safe-parser",
+    "version": "7.0.1",
+    "file": "licenses/postcss-safe-parser-LICENSE"
+  },
+  {
+    "package": "@posthog/core",
+    "version": "1.55.3",
+    "file": "licenses/posthog-core-LICENSE"
+  },
+  {
+    "package": "@posthog/types",
+    "version": "1.413.0",
+    "file": "licenses/posthog-types-LICENSE"
+  }
+]

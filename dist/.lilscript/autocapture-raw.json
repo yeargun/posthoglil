@@ -1,0 +1,135 @@
+{
+  "version": 3,
+  "codec": "raw",
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "autocapture.raw.js",
+          "dynamic": false,
+          "closure": [
+            "autocapture.raw.js"
+          ],
+          "row": 8877,
+          "raw_row": 8877
+        }
+      ],
+      "files": [
+        {
+          "file": "autocapture.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "autocapture-entry.lil",
+            "autocapture-utils.lil",
+            "host.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8877,
+          "codec_bytes": 8877,
+          "sha256": "e407f6ab26142e537366ea2c18370802cdef7f5697b56e2bc5ecec8a35516569"
+        }
+      ],
+      "side_effects": [
+        "autocapture.raw.js"
+      ],
+      "codec_total": 8877,
+      "rows_total": 8877,
+      "setters": 0,
+      "output": "primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        208,
+        62,
+        89,
+        170,
+        249,
+        229,
+        176,
+        213,
+        127,
+        176,
+        84,
+        68,
+        191,
+        141,
+        136,
+        43,
+        6,
+        74,
+        196,
+        154,
+        136,
+        76,
+        69,
+        168,
+        14,
+        103,
+        186,
+        6,
+        212,
+        102,
+        32,
+        241
+      ]
+    }
+  ],
+  "source_sha256": "3e5b2d5e100ded0b53e457992ba4f524ab1b6916c44e8f3936f428a804f9bcd5",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "index",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-entry.lil",
+        "bytes": 1184,
+        "sha256": "b056511def2337b701293cc08a68e04795e5400cb2d389f8e3cc0f86e9020c43",
+        "dependencies": [
+          1
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-utils.lil",
+        "bytes": 20961,
+        "sha256": "f8d81beab00cb6c0e5e52245bb4eb64957677a24cdb14bd464f078a4d1e4023d",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
+        "bytes": 4387,
+        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [],
+    "host_reserved": []
+  }
+}

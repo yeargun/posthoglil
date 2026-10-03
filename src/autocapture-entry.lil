@@ -1,4 +1,6 @@
 import {
+  DEFAULT_AUTOCAPTURE_IGNORE_LIST,
+  elementMatchesCSSSelector,
   DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS,
   MAX_DOM_ANCESTOR_DEPTH,
   autocaptureCompatibleElements,
@@ -23,6 +25,8 @@ import {
 } from "./autocapture-utils.lil";
 
 export {
+  DEFAULT_AUTOCAPTURE_IGNORE_LIST,
+  elementMatchesCSSSelector,
   DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS,
   MAX_DOM_ANCESTOR_DEPTH,
   autocaptureCompatibleElements,

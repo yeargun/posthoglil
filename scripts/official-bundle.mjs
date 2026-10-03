@@ -94,9 +94,8 @@ export async function bundleOfficialOtlp(root = defaultRoot) {
             buildResourceAttributes,
             getOtlpSeverityNumber,
             getOtlpSeverityText,
-            toOtlpAnyValue,
-            toOtlpKeyValueList,
           } from "./vendor/posthog-js/packages/core/src/logs/logs-utils.ts"
+          export { toOtlpAnyValue, toOtlpKeyValueList } from "./vendor/posthog-js/packages/core/src/utils/otlp-any-value.ts"
           export {
             DEFAULT_HISTOGRAM_BOUNDS,
             bucketIndexFor,

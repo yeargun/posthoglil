@@ -21,7 +21,7 @@ export int MAX_DOM_ANCESTOR_DEPTH = 1000;
 export string[] autocaptureCompatibleElements = [
   "a", "button", "form", "input", "select", "textarea", "label"
 ];
-string[] defaultAutocaptureIgnoreList = [".ph-no-autocapture", "[data-ph-no-autocapture]"];
+export string[] DEFAULT_AUTOCAPTURE_IGNORE_LIST = [".ph-no-autocapture", "[data-ph-no-autocapture]"];
 string[] defaultContentIgnoreList = ["next", "previous", "prev", ">", "<"];
 export string[] DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS = [
   "next", "previous", "prev", ">", "<", "+", "-", "−", "–"
@@ -67,7 +67,7 @@ bool arrayIncludes(JsValue values, JsValue value) {
   return JS.invoke(values, "includes", value).truthy();
 }
 
-bool matchesSelector(JsValue element, string selector) {
+export bool elementMatchesCSSSelector(JsValue element, string selector) {
   JsValue matcher = element["matches"];
   if (!isFn(matcher)) matcher = element["matchesSelector"];
   if (!isFn(matcher)) matcher = element["msMatchesSelector"];
@@ -88,7 +88,7 @@ bool selectorsMatch(JsValue elements, JsValue selectors) {
   while (i < len(elements)) {
     int j = 0;
     while (j < len(selectors)) {
-      if (matchesSelector(elements[i], toStr(selectors[j]))) return true;
+      if (elementMatchesCSSSelector(elements[i], toStr(selectors[j]))) return true;
       j = j + 1;
     }
     i = i + 1;
@@ -475,7 +475,7 @@ export bool shouldCaptureDomEvent(
   if (!treePassesAllowlist(elements, config)) return false;
   if (!selectorsMatch(elements, config["css_selector_allowlist"])) return false;
   JsValue ignored = config["css_selector_ignorelist"];
-  if (isUndef(ignored)) ignored = defaultAutocaptureIgnoreList;
+  if (isUndef(ignored)) ignored = DEFAULT_AUTOCAPTURE_IGNORE_LIST;
   if (selectorsMatch(elements, ignored)) return false;
   try {
     JsValue style = JS.invoke(win, "getComputedStyle", element);
@@ -538,6 +538,7 @@ JsValue extractAttrClass(JsValue element) {
 }
 
 export string getElementsChainString(JsValue elements) {
+  if (!isArr(elements)) return "";
   string output = "";
   int i = 0;
   while (i < len(elements)) {

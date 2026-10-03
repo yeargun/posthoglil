@@ -25,9 +25,9 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: npm run test:all
-      - run: node scripts/build-site.mjs
-      - run: node --test test/site.test.mjs
+      - run: npm run check:site
       - uses: actions/configure-pages@v6
         with:
           enablement: true

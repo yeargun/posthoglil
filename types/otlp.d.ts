@@ -3,6 +3,7 @@ export type LogAttributeValue =
   | string
   | number
   | boolean
+  | bigint
   | null
   | undefined
   | LogAttributeValue[]
@@ -84,6 +85,7 @@ export function buildOtlpLogRecord(
   options: CaptureLogOptions,
   sdkContext: LogSdkContext,
   logger?: CaptureLogger,
+  occurredAtMs?: number,
 ): OtlpLogRecord
 export function buildResourceAttributes(
   config: MetricsConfig,

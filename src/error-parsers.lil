@@ -14,6 +14,9 @@ extern JsValue Array;
 extern JsValue Object;
 
 export string UNKNOWN_FUNCTION = "?";
+Regex appUrlScheme = new Regex("^([a-z][a-z0-9.+-]+):", "i");
+string[] appUrlSchemes = ["http", "https", "file", "blob", "app", "capacitor", "ionic", "webpack", "webpack-internal", "ng"];
+
 
 Regex chromeRegexNoFnName = new Regex("^\\s*at (\\S+?)(?::(\\d+))(?::(\\d+))\\s*$", "i");
 Regex chromeRegex = new Regex("^\\s*at (?:(.+?\\)(?: \\[.+\\])?|.*?) ?\\((?:address at )?)?(?:async )?((?:<anonymous>|[-a-z]+:|.*bundle|\\/)?.*?)(?::(\\d+))?(?::(\\d+))?\\)?\\s*$", "i");
@@ -42,11 +45,12 @@ JsValue createFrame(JsValue platform, JsValue filename, JsValue functionName, Js
   } else {
     frame["function"] = functionName;
   }
-  bool masked = false;
-  if (isStr(filename)) {
-    masked = toStr(filename).startsWith("webkit-masked-url://");
+  bool inApp = filename.truthy() && !JS.strictEqual(filename, "<anonymous>");
+  if (inApp) {
+    JsValue scheme = JS.invoke(appUrlScheme, "exec", filename);
+    if (scheme.truthy()) inApp = appUrlSchemes.includes(toStr(scheme[1]).toLowerCase());
   }
-  frame["in_app"] = !masked && !JS.strictEqual(filename, "<anonymous>");
+  frame["in_app"] = inApp;
   if (!isUndef(lineno)) {
     frame["lineno"] = lineno;
   }
@@ -356,42 +360,120 @@ export JsValue reverseAndStripFrames(JsValue stack) {
   return out;
 }
 
-JsValue buildStackParser(JsValue platform, JsValue parsers) {
-  func(JsValue, JsValue, JsValue)->JsValue parser = (
-    JsValue self,
-    JsValue stack,
-    JsValue skipFirstLines
-  ) => {
-    int skip = 0;
-    if (!isUndef(skipFirstLines)) {
-      skip = JS.number(skipFirstLines).toInt();
+bool sameStackFrame(JsValue a, JsValue b) {
+  return JS.strictEqual(a["filename"], b["filename"]) && JS.strictEqual(a["function"], b["function"]) && JS.strictEqual(a["module"], b["module"]) && JS.strictEqual(a["lineno"], b["lineno"]) && JS.strictEqual(a["colno"], b["colno"]);
+}
+
+JsValue collapseRepeatedCycle(JsValue frames) {
+  for (int length = 1; length <= 10; length = length + 1) {
+    int start = len(frames) - 2 * length;
+    if (start < 0) return undef();
+    bool cycle = true;
+    for (int offset = 0; offset < length; offset = offset + 1) {
+      if (!sameStackFrame(frames[start + offset], frames[start + length + offset])) { cycle = false; break; }
     }
+    if (cycle) {
+      for (int offset = 0; offset < length; offset = offset + 1) frames[start + offset] = frames[start + length + offset];
+      frames["length"] = start + length;
+      return object { start: start, length: length };
+    }
+  }
+  return undef();
+}
+
+int innermostPartialCycleLength(JsValue frames, JsValue cycle) {
+  int start = JS.number(cycle["start"]).toInt();
+  int length = JS.number(cycle["length"]).toInt();
+  int partial = start;
+  while (partial > 0 && sameStackFrame(frames[partial - 1], frames[partial - 1 + length])) partial = partial - 1;
+  return start - partial;
+}
+
+int partialCycleLength(JsValue frames, JsValue cycle) {
+  int length = JS.number(cycle["length"]).toInt();
+  int copyEnd = JS.number(cycle["start"]).toInt() + length;
+  int partialEnd = copyEnd;
+  while (partialEnd < len(frames) && sameStackFrame(frames[partialEnd], frames[partialEnd - length])) partialEnd = partialEnd + 1;
+  return partialEnd - copyEnd;
+}
+
+int survivingFrameCount(JsValue frames, JsValue cycles) {
+  int count = len(frames);
+  if (cycles[0].truthy()) count = count - innermostPartialCycleLength(frames, cycles[0]);
+  for (int i = 0; i < len(cycles); i = i + 1) count = count - partialCycleLength(frames, cycles[i]);
+  return count;
+}
+
+bool smallerRotation(string[] keys, int candidate, int best) {
+  for (int offset = 0; offset < keys.length; offset = offset + 1) {
+    string left = keys[(candidate + offset) % keys.length];
+    string right = keys[(best + offset) % keys.length];
+    if (left != right) return left < right;
+  }
+  return false;
+}
+
+void canonicalizeCycleRotation(JsValue frames) {
+  string[] keys = [];
+  for (int i = 0; i < len(frames); i = i + 1) {
+    JsValue frame = frames[i];
+    keys.push(toStr(frame["function"]) + "|" + toStr(frame["filename"]) + "|" + toStr(frame["lineno"]) + "|" + toStr(frame["colno"]) + "|" + toStr(frame["module"]));
+  }
+  int first = 0;
+  for (int i = 1; i < keys.length; i = i + 1) if (smallerRotation(keys, i, first)) first = i;
+  JsValue removed = JS.invoke(frames, "splice", 0, first);
+  for (int i = 0; i < len(removed); i = i + 1) JS.invoke(frames, "push", removed[i]);
+}
+
+JsValue buildStackParser(JsValue platform, JsValue parsers) {
+  func(JsValue, JsValue, JsValue)->JsValue parser = (JsValue self, JsValue stack, JsValue skipFirstLines) => {
+    int skip = if (isUndef(skipFirstLines)) { 0 } else { JS.number(skipFirstLines).toInt() };
     JsValue frames = JS.array();
     JsValue lines = JS.invoke(stack, "split", "\n");
-    int i = skip;
-    while (i < len(lines)) {
+    int end = len(lines);
+    if (end > skip + 1000) end = skip + 1000;
+    JsValue cycles = JS.array();
+    for (int i = skip; i < end; i = i + 1) {
       JsValue line = lines[i];
-      if (len(line) <= 1024) {
-        JsValue cleanedLine = line;
-        if (JS.invoke(webpackErrorRegex, "test", line).truthy()) {
-          cleanedLine = JS.invoke(line, "replace", webpackErrorRegex, "$1");
-        }
-        if (!JS.invoke(cleanedLine, "match", errorLineRegex).truthy()) {
-          int p = 0;
-          while (p < len(parsers)) {
-            JsValue frame = JS.call(parsers[p], undef(), cleanedLine, platform);
-            if (frame.truthy()) {
-              JS.invoke(frames, "push", frame);
-              break;
+      if (len(line) > 1024) continue;
+      JsValue cleaned = line;
+      if (JS.invoke(webpackErrorRegex, "test", line).truthy()) cleaned = JS.invoke(line, "replace", webpackErrorRegex, "$1");
+      if (JS.invoke(cleaned, "match", errorLineRegex).truthy()) continue;
+      for (int p = 0; p < len(parsers); p = p + 1) {
+        JsValue frame = JS.call(parsers[p], undef(), cleaned, platform);
+        if (frame.truthy()) {
+          JS.invoke(frames, "push", frame);
+          JsValue cycle = collapseRepeatedCycle(frames);
+          if (cycle.truthy()) {
+            for (int c = len(cycles) - 1; c >= 0; c = c - 1) {
+              JsValue previous = cycles[c];
+              if (JS.number(previous["start"]) + JS.number(previous["length"]) <= JS.number(cycle["start"])) break;
+              JS.invoke(cycles, "pop");
             }
-            p = p + 1;
+            JS.invoke(cycles, "push", cycle);
           }
-          if (len(frames) >= 50) {
-            break;
-          }
+          break;
         }
       }
-      i = i + 1;
+      if (survivingFrameCount(frames, cycles) >= 50) break;
+    }
+    JsValue sections = JS.invoke(cycles, "slice");
+    func(JsValue, JsValue)->number compare = (JsValue a, JsValue b) => JS.number(b["start"]) - JS.number(a["start"]);
+    JS.invoke(sections, "sort", compare);
+    JsValue inner = sections[len(sections) - 1];
+    if (inner.truthy()) {
+      int trimmed = innermostPartialCycleLength(frames, inner);
+      JS.invoke(frames, "splice", JS.number(inner["start"]) - trimmed, trimmed);
+      for (int i = 0; i < len(sections); i = i + 1) sections[i]["start"] = JS.number(sections[i]["start"]) - trimmed;
+    }
+    for (int i = 0; i < len(sections); i = i + 1) {
+      JsValue cycle = sections[i];
+      int copyEnd = JS.number(cycle["start"]).toInt() + JS.number(cycle["length"]).toInt();
+      int partial = partialCycleLength(frames, cycle);
+      if (partial > 0) JS.invoke(frames, "splice", if (copyEnd + partial == len(frames)) { copyEnd } else { JS.number(cycle["start"]).toInt() }, partial);
+    }
+    for (int i = 0; i < len(cycles); i = i + 1) {
+      if (JS.strictEqual(cycles[i]["start"], 0) && JS.strictEqual(cycles[i]["length"], len(frames))) { canonicalizeCycleRotation(frames); break; }
     }
     return reverseAndStripFrames(frames);
   };

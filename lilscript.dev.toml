@@ -1,44 +1,14 @@
-# Compiler-owned delivery; no JavaScript post-minifier or export rewriting.
 [policy]
 version = 3
 [javascript]
 priority = "size-first"
-# Assumes unpatched platform builtins; disable when consumers replace them.
-assume_pristine_builtins = true
-# Remove debugLog instrumentation; ordinary print and host console effects remain.
-strip_debug = true
-
-# Preserved effort setting. 13 favors size; 14/15 allow more expensive marginal searches.
+assume_pristine_builtins = false
+keep_published_function_names = true
 [effort]
 level = 8
-
-# Optimize the delivered files for this codec, independently of raw/gzip objectives.
 [objective]
 codecs = "raw"
 [mangle]
 identifiers = true
 properties = true
 pool_strings = true
-
-[delivery]
-mode = "single"
-directory = "."
-select = ["index"]
-entry_names = "posthog.esm.js"
-[delivery.entries]
-index = "src/entry.lil"
-browser = "src/browser.lil"
-[[delivery.also]]
-name = "cjs"
-entries = ["index"]
-format = "cjs"
-es_module_marker = "always"
-entry_names = "posthog.cjs"
-[[delivery.also]]
-name = "browser"
-entries = ["browser"]
-format = "iife"
-exports = "default"
-global = "posthogLil"
-global_binding = "property"
-entry_names = "posthog.umd.js"

@@ -1,25 +1,8 @@
 import { transform as esbuildTransform } from "esbuild"
 import { minify as terserMinify } from "terser"
-import { dirname, resolve } from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
-
-const lilscriptRoot =
-  process.env.LILSCRIPT_ROOT ?? resolve(dirname(fileURLToPath(import.meta.url)), "../..", "lilscript")
-
 async function viteOxcMinify(filename, source, options) {
-  const popularVite = resolve(lilscriptRoot, "benchmarks/popular/node_modules/vite/dist/node/index.js")
-  try {
-    const lab = await import(pathToFileURL(popularVite).href)
-    if (typeof lab.minify === "function") {
-      return lab.minify(filename, source, options)
-    }
-  } catch {
-    // fall through
-  }
   const vite = await import("vite")
-  if (typeof vite.minify !== "function") {
-    throw new Error("Vite/Oxc minify needs Vite 8. Use the lilscript popular lab or upgrade vite.")
-  }
+  if (typeof vite.minify !== "function") throw new Error("Install the pinned Vite 8 dependency.")
   return vite.minify(filename, source, options)
 }
 
@@ -63,37 +46,17 @@ async function terserLane(source, mangle, passes) {
   return requireCode("Terser", result.code)
 }
 
-export async function minifyLanes(source, filename) {
-  const [oxcOn, oxcOff, terserOn, terserOff, terserOne, esbuildNext, esbuild2018] = await Promise.all([
-    oxcLane(source, filename, true),
-    oxcLane(source, filename, false),
-    terserLane(source, true, 3),
-    terserLane(source, false, 3),
-    terserLane(source, true, 1),
-    esbuildTransform(source, {
-      sourcefile: filename,
-      loader: "js",
-      format: "esm",
-      target: "esnext",
-      minify: true,
-      legalComments: "none",
-    }),
-    esbuildTransform(source, {
-      sourcefile: filename,
-      loader: "js",
-      format: "esm",
-      target: "es2018",
-      minify: true,
-      legalComments: "none",
-    }),
-  ])
-  return {
-    "oxc-mangle": oxcOn,
-    "oxc-nomangle": oxcOff,
-    "terser-mangle": terserOn,
-    "terser-nomangle": terserOff,
-    "terser-passes-1": terserOne,
-    "esbuild-esnext": requireCode("esbuild", esbuildNext.code),
-    "esbuild-es2018": requireCode("esbuild", esbuild2018.code),
-  }
+export async function minifyLane(source,filename,lane){
+  if(lane==='oxc-mangle')return oxcLane(source,filename,true)
+  if(lane==='oxc-nomangle')return oxcLane(source,filename,false)
+  if(lane==='terser-mangle')return terserLane(source,true,3)
+  if(lane==='terser-nomangle')return terserLane(source,false,3)
+  if(lane==='terser-passes-1')return terserLane(source,true,1)
+  if(lane==='esbuild-esnext'||lane==='esbuild-es2018')return requireCode('esbuild',(await esbuildTransform(source,{sourcefile:filename,loader:'js',format:'esm',target:lane==='esbuild-esnext'?'esnext':'es2018',minify:true,legalComments:'none'})).code)
+  throw Error(`Unknown minifier lane: ${lane}`)
+}
+export async function minifyLanes(source,filename){
+  const results={}
+  for(const lane of ['oxc-mangle','oxc-nomangle','terser-mangle','terser-nomangle','terser-passes-1','esbuild-esnext','esbuild-es2018'])results[lane]=await minifyLane(source,filename,lane)
+  return results
 }

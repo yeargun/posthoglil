@@ -1,0 +1,146 @@
+{
+  "version": 3,
+  "codec": "raw",
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "replay-core.raw.js",
+          "dynamic": false,
+          "closure": [
+            "replay-core.raw.js"
+          ],
+          "row": 8442,
+          "raw_row": 8442
+        }
+      ],
+      "files": [
+        {
+          "file": "replay-core.raw.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "replay-core-entry.lil",
+            "replay-core.lil",
+            "host.lil",
+            "autocapture-utils.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 8442,
+          "codec_bytes": 8442,
+          "sha256": "8dc24e5dda28eb19a157af2089453eea10e138e763ddb70dbdf8ee019ac09ab3"
+        }
+      ],
+      "side_effects": [
+        "replay-core.raw.js"
+      ],
+      "codec_total": 8442,
+      "rows_total": 8442,
+      "setters": 0,
+      "output": "primary",
+      "codec": "raw",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        166,
+        242,
+        197,
+        181,
+        88,
+        43,
+        238,
+        226,
+        115,
+        179,
+        124,
+        100,
+        238,
+        27,
+        21,
+        194,
+        100,
+        109,
+        143,
+        28,
+        201,
+        71,
+        215,
+        64,
+        51,
+        177,
+        208,
+        199,
+        85,
+        153,
+        94,
+        92
+      ]
+    }
+  ],
+  "source_sha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "index",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core-entry.lil",
+        "bytes": 1098,
+        "sha256": "83e9df7dd8b8ff081401c4fae1e8053ec3fd8733d0b4aacf2e6f146db273dc82",
+        "dependencies": [
+          1
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/replay-core.lil",
+        "bytes": 16638,
+        "sha256": "f17e6a5dcc2c162b58b4e22f023c66f3962e28d7ee0b22c7927ae7fda81e0383",
+        "dependencies": [
+          2,
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
+        "bytes": 4387,
+        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/autocapture-utils.lil",
+        "bytes": 20961,
+        "sha256": "f8d81beab00cb6c0e5e52245bb4eb64957677a24cdb14bd464f078a4d1e4023d",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [],
+    "host_reserved": []
+  }
+}

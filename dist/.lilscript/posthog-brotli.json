@@ -1,0 +1,485 @@
+{
+  "version": 5,
+  "source_sha256": "c490f87b04b2893493457ee09bd3cfdb77de94a5d16e691460ddd2b0dce2f816",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "browser",
+        "module": 0
+      },
+      {
+        "name": "index",
+        "module": 1
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/browser.lil",
+        "bytes": 77,
+        "sha256": "29215bc9ba5f6a47a3ab1a01761920857d4b7f0c0dd6cc28af705cdcdd7a74c7",
+        "dependencies": [
+          1
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/entry.lil",
+        "bytes": 6827,
+        "sha256": "50344ec8ce10be75f91e0ede30e4cd575d1aa3ff325b1f7ada17573b7bef317c",
+        "dependencies": [
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/uuid.lil",
+        "bytes": 5005,
+        "sha256": "3c5a6a9d03d30d992487be534fee8f739aff51067fa822887cbe013665f98f38",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/host.lil",
+        "bytes": 4387,
+        "sha256": "585a5261b75c383cc23e26460a78b0d4d6ab2a211e2400df26f10c4b60b6ef10",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/flags.lil",
+        "bytes": 6091,
+        "sha256": "122c836fab27a31b3835b2497dff4fb0f022eef465f9411be5ea2f6bbd1ea21b",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/cookie.lil",
+        "bytes": 3966,
+        "sha256": "d32c47a48300b4b80067bb32badff61b9dd40ceb423575413c04c1955accf3d6",
+        "dependencies": [
+          3,
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/router.lil",
+        "bytes": 2373,
+        "sha256": "11708e9565abe5faa89c9e05cd98e2385a294ea86e9b91e9a3a2eb833136a2ed",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/rate-limit.lil",
+        "bytes": 1140,
+        "sha256": "58f15adf94fbdea0bb5f10c5db854b2edce83752658a7e36ae9b597c90ba265a",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/queue.lil",
+        "bytes": 1471,
+        "sha256": "16c6001e0d941a1ef1718fecf301d43ad656f12629e8154aa8fecbd439b2b8e1",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/bot.lil",
+        "bytes": 2052,
+        "sha256": "8b8bdfa997070b99d24d5fbb842c516d45fdbff202d2ece0951bfd5bc9da8645",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/string.lil",
+        "bytes": 1443,
+        "sha256": "76ac527162d2349feb35c3a92b83df58835f8a4a0ed0ca4dc64d8b7693c3f70c",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/number.lil",
+        "bytes": 2085,
+        "sha256": "dc92ae3e329fbc9a52dbade5a19bfb656cac02005985e1c95e7bc85a9b698e5c",
+        "dependencies": [
+          3,
+          12
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/types.lil",
+        "bytes": 2084,
+        "sha256": "c52d392647c6421313931c7c621f3a1af7342c7724ef8d93ea1035c545d82163",
+        "dependencies": [
+          3,
+          10
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/json.lil",
+        "bytes": 641,
+        "sha256": "b5ab129e048a610968f28808f2a5def44f98591c1af421d2b7fa3f173963aaa2",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/url.lil",
+        "bytes": 365,
+        "sha256": "3d65dae6a88c5349223c9000807763c45a9e06ddaf9bb96f7c574841ae223af0",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/posthoglil-work/full-sdk/src/bucketed.lil",
+        "bytes": 1687,
+        "sha256": "4c76e5c1d2aab1273db73548bc10c6a427b4212814f933de2898b60f41083670",
+        "dependencies": [
+          3
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [],
+    "host_reserved": []
+  },
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "browser",
+          "file": "posthog.esm.js",
+          "dynamic": false,
+          "closure": [
+            "posthog.esm.js"
+          ],
+          "row": 5466,
+          "raw_row": 16983
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.esm.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "browser"
+          ],
+          "modules": [
+            "browser.lil",
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 16983,
+          "codec_bytes": 5466,
+          "sha256": "969e09739c077665710fde546a29de5fd26a8e0b4be377e1ff2e31b6365a1353"
+        }
+      ],
+      "side_effects": [
+        "posthog.esm.js"
+      ],
+      "codec_total": 5466,
+      "rows_total": 5466,
+      "setters": 0,
+      "output": "primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        175,
+        143,
+        94,
+        85,
+        76,
+        223,
+        53,
+        35,
+        178,
+        144,
+        196,
+        89,
+        139,
+        30,
+        228,
+        105,
+        94,
+        161,
+        49,
+        46,
+        39,
+        45,
+        18,
+        254,
+        226,
+        221,
+        202,
+        90,
+        238,
+        125,
+        74,
+        174
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "iife",
+      "entries": [
+        {
+          "name": "browser",
+          "file": "posthog.umd.js",
+          "dynamic": false,
+          "closure": [
+            "posthog.umd.js"
+          ],
+          "row": 5353,
+          "raw_row": 15829
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.umd.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "browser"
+          ],
+          "modules": [
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 15829,
+          "codec_bytes": 5353,
+          "sha256": "a411afa70f02f8ccdc67edc672e9623b9506eea372b77f841c6dd8f450e3bfd1"
+        }
+      ],
+      "side_effects": [
+        "posthog.umd.js"
+      ],
+      "codec_total": 5353,
+      "rows_total": 5353,
+      "setters": 0,
+      "output": "browser",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        17,
+        160,
+        96,
+        39,
+        243,
+        91,
+        220,
+        207,
+        52,
+        255,
+        190,
+        18,
+        142,
+        91,
+        253,
+        174,
+        24,
+        201,
+        50,
+        22,
+        159,
+        183,
+        197,
+        26,
+        95,
+        123,
+        147,
+        226,
+        189,
+        52,
+        56,
+        66
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "index",
+          "file": "posthog.cjs",
+          "dynamic": false,
+          "closure": [
+            "posthog.cjs"
+          ],
+          "row": 5876,
+          "raw_row": 21485
+        }
+      ],
+      "files": [
+        {
+          "file": "posthog.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "entry.lil",
+            "uuid.lil",
+            "host.lil",
+            "flags.lil",
+            "cookie.lil",
+            "router.lil",
+            "rate-limit.lil",
+            "queue.lil",
+            "bot.lil",
+            "string.lil",
+            "number.lil",
+            "types.lil",
+            "json.lil",
+            "url.lil",
+            "bucketed.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 21485,
+          "codec_bytes": 5876,
+          "sha256": "1d74978d8653926b48987b74a35ddf335b9cfc5d0ff81a92d41a9caa5e78e78b"
+        }
+      ],
+      "side_effects": [
+        "posthog.cjs"
+      ],
+      "codec_total": 5876,
+      "rows_total": 5876,
+      "setters": 0,
+      "output": "cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        171,
+        53,
+        235,
+        176,
+        142,
+        22,
+        243,
+        212,
+        70,
+        103,
+        36,
+        210,
+        188,
+        242,
+        169,
+        210,
+        144,
+        152,
+        76,
+        194,
+        233,
+        248,
+        203,
+        216,
+        203,
+        131,
+        56,
+        153,
+        193,
+        203,
+        219,
+        116
+      ]
+    }
+  ]
+}

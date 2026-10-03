@@ -1,0 +1,742 @@
+{
+  "schema": 1,
+  "upstreamVersion": "1.435.8",
+  "upstreamCommit": "c9d890a4028b186a5e1b327161ea197001c0c46b",
+  "scope": "Standalone utility exports only. These percentages are not whole-SDK savings.",
+  "buildTimeScope": "Sequential one-run measurements; warm filesystem, no compiler cache. Raw/gzip: ESM. Brotli: ESM+CJS; kernel also UMD. Original time includes equivalent format adaptation. Dependency installation, minifier search, declarations and transport compression excluded.",
+  "compilerSha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+  "rows": [
+    {
+      "id": "posthog",
+      "label": "Utility kernel",
+      "originals": [
+        {
+          "lane": "oxc-mangle",
+          "file": "artifacts/utilities/posthog/original-oxc-mangle.mjs",
+          "raw": 17476,
+          "gzip9": 6774,
+          "brotli11": 6194,
+          "sha256": "534f5267b7b11dd734f2425d9a20d55cde00ecda0f81e4ed67e0b5860ec06379",
+          "bundleSeconds": 0.020385042,
+          "minifySeconds": 0.086197022,
+          "formatSeconds": 0.039391249999999954
+        },
+        {
+          "lane": "terser-mangle",
+          "file": "artifacts/utilities/posthog/original-terser-mangle.mjs",
+          "raw": 17570,
+          "gzip9": 6652,
+          "brotli11": 6064,
+          "sha256": "a7adb5aec301a4f216594c1836be6c3fd3bceef063fc373be201b9931d7c55dd",
+          "bundleSeconds": 0.020385042,
+          "minifySeconds": 0.31376301100000004,
+          "formatSeconds": 0.03328807600000005
+        },
+        {
+          "lane": "esbuild-esnext",
+          "file": "artifacts/utilities/posthog/original-esbuild-esnext.mjs",
+          "raw": 19521,
+          "gzip9": 7661,
+          "brotli11": 6984,
+          "sha256": "2a4d3476065ae5e591cd87207a0c085b66e0c094dbc658c4fd6e1d37c5f7c882",
+          "bundleSeconds": 0.020385042,
+          "minifySeconds": 0.004468512000000032,
+          "formatSeconds": 0.03723262299999999
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "dist/posthog.raw.js",
+            "raw": 16085,
+            "gzip9": 6369,
+            "brotli11": 5675,
+            "sha256": "cc5c54aee170b1fe2a918d112902f94c95b89e3ad4189df3bc533c9e9e6a796f"
+          },
+          "baseline": {
+            "lane": "oxc-mangle",
+            "file": "artifacts/utilities/posthog/original-oxc-mangle.mjs",
+            "raw": 17476,
+            "gzip9": 6774,
+            "brotli11": 6194,
+            "sha256": "534f5267b7b11dd734f2425d9a20d55cde00ecda0f81e4ed67e0b5860ec06379",
+            "bundleSeconds": 0.020385042,
+            "minifySeconds": 0.086197022,
+            "formatSeconds": 0.039391249999999954
+          },
+          "savingsPercent": 7.9594872968642765,
+          "compilerSeconds": 2.692,
+          "originalBuildSeconds": 0.106582064,
+          "sourceSha256": "b6656f479bf535f110b1daf0b69a972e31d3a77345a198aa53d5e86b10e30dd6",
+          "configSha256": "b8c6587e6c8c4dab1be63d270e87e5e4e20a747203eced21ce6850ec4737020c"
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "dist/posthog.gzip.js",
+            "raw": 17047,
+            "gzip9": 6030,
+            "brotli11": 5428,
+            "sha256": "c11c8786888fec48bfccd25a2cd4b9295954e9554be05bd974dd63fd5eb77317"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/posthog/original-terser-mangle.mjs",
+            "raw": 17570,
+            "gzip9": 6652,
+            "brotli11": 6064,
+            "sha256": "a7adb5aec301a4f216594c1836be6c3fd3bceef063fc373be201b9931d7c55dd",
+            "bundleSeconds": 0.020385042,
+            "minifySeconds": 0.31376301100000004,
+            "formatSeconds": 0.03328807600000005
+          },
+          "savingsPercent": 9.350571256764884,
+          "compilerSeconds": 4.625,
+          "originalBuildSeconds": 0.33414805300000006,
+          "sourceSha256": "b6656f479bf535f110b1daf0b69a972e31d3a77345a198aa53d5e86b10e30dd6",
+          "configSha256": "bc695f447fef6b2873298951b0b371d9d0e03ca27efc08f90a728f39f173220e"
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "dist/posthog.esm.js",
+            "raw": 16983,
+            "gzip9": 6132,
+            "brotli11": 5466,
+            "sha256": "969e09739c077665710fde546a29de5fd26a8e0b4be377e1ff2e31b6365a1353"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/posthog/original-terser-mangle.mjs",
+            "raw": 17570,
+            "gzip9": 6652,
+            "brotli11": 6064,
+            "sha256": "a7adb5aec301a4f216594c1836be6c3fd3bceef063fc373be201b9931d7c55dd",
+            "bundleSeconds": 0.020385042,
+            "minifySeconds": 0.31376301100000004,
+            "formatSeconds": 0.03328807600000005
+          },
+          "savingsPercent": 9.861477572559362,
+          "compilerSeconds": 30.182,
+          "originalBuildSeconds": 0.3674361290000001,
+          "sourceSha256": "c490f87b04b2893493457ee09bd3cfdb77de94a5d16e691460ddd2b0dce2f816",
+          "configSha256": "4c64d61524994daffc02e0fe8839c6b8c924841528ac4ec6efe68e46de81e0cc"
+        }
+      ]
+    },
+    {
+      "id": "surveys",
+      "label": "Survey utilities",
+      "originals": [
+        {
+          "lane": "oxc-mangle",
+          "file": "artifacts/utilities/surveys/original-oxc-mangle.mjs",
+          "raw": 8083,
+          "gzip9": 3257,
+          "brotli11": 2913,
+          "sha256": "4820bc3a9d688e403e2d2d23df7fd33a3d1293018838544bb6d2e71d6f1c5bd3",
+          "bundleSeconds": 0.0083096690000001,
+          "minifySeconds": 0.0022285859999999504,
+          "formatSeconds": 0.015679527000000006
+        },
+        {
+          "lane": "terser-mangle",
+          "file": "artifacts/utilities/surveys/original-terser-mangle.mjs",
+          "raw": 7859,
+          "gzip9": 3067,
+          "brotli11": 2735,
+          "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
+          "bundleSeconds": 0.0083096690000001,
+          "minifySeconds": 0.13786208699999997,
+          "formatSeconds": 0.017735116999999946
+        },
+        {
+          "lane": "esbuild-esnext",
+          "file": "artifacts/utilities/surveys/original-esbuild-esnext.mjs",
+          "raw": 9771,
+          "gzip9": 4029,
+          "brotli11": 3634,
+          "sha256": "d1c501e0c735e161dbccc52bf0f6589cda637080db70dd7509cdb31f7a1a8cb4",
+          "bundleSeconds": 0.0083096690000001,
+          "minifySeconds": 0.0023044470000000957,
+          "formatSeconds": 0.01928887800000007
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "dist/surveys.raw.js",
+            "raw": 7545,
+            "gzip9": 2832,
+            "brotli11": 2496,
+            "sha256": "dc2b9caa9bf85a9052a2eaf681039929c12d6677d2a0f52eaa8f99d8a234a69c"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/surveys/original-terser-mangle.mjs",
+            "raw": 7859,
+            "gzip9": 3067,
+            "brotli11": 2735,
+            "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
+            "bundleSeconds": 0.0083096690000001,
+            "minifySeconds": 0.13786208699999997,
+            "formatSeconds": 0.017735116999999946
+          },
+          "savingsPercent": 3.9954192645374698,
+          "compilerSeconds": 1.087,
+          "originalBuildSeconds": 0.14617175600000007,
+          "sourceSha256": "43ac4c61da89e49408686c3cca7387a06339b02e239e0449811947dc8abbcd59",
+          "configSha256": "be0cb0438a41c084c7fad86798d797df996dd27b186678c65b64ac11a6a8a2e9"
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "dist/surveys.gzip.js",
+            "raw": 7821,
+            "gzip9": 2673,
+            "brotli11": 2361,
+            "sha256": "9a0851fc96dd16f8789019c0cbdcfddeef9d74c95d2a2be418b4f0aab79f619f"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/surveys/original-terser-mangle.mjs",
+            "raw": 7859,
+            "gzip9": 3067,
+            "brotli11": 2735,
+            "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
+            "bundleSeconds": 0.0083096690000001,
+            "minifySeconds": 0.13786208699999997,
+            "formatSeconds": 0.017735116999999946
+          },
+          "savingsPercent": 12.846429735898269,
+          "compilerSeconds": 1.17,
+          "originalBuildSeconds": 0.14617175600000007,
+          "sourceSha256": "43ac4c61da89e49408686c3cca7387a06339b02e239e0449811947dc8abbcd59",
+          "configSha256": "d41c4ad7d1091d505bcbabee88af6b794ca411c133b21f0328eca14ac3307a19"
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "dist/surveys.esm.js",
+            "raw": 7861,
+            "gzip9": 2695,
+            "brotli11": 2353,
+            "sha256": "231ff3e53fed0423a7de40ccf27b8363cb4a4596eb1215fe0356dcaab560ca8a"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/surveys/original-terser-mangle.mjs",
+            "raw": 7859,
+            "gzip9": 3067,
+            "brotli11": 2735,
+            "sha256": "60f05e219e1bbff4737bb94a6f99a99aa0872f36b8d93a53bca879ca34335522",
+            "bundleSeconds": 0.0083096690000001,
+            "minifySeconds": 0.13786208699999997,
+            "formatSeconds": 0.017735116999999946
+          },
+          "savingsPercent": 13.967093235831808,
+          "compilerSeconds": 5.6,
+          "originalBuildSeconds": 0.163906873,
+          "sourceSha256": "43ac4c61da89e49408686c3cca7387a06339b02e239e0449811947dc8abbcd59",
+          "configSha256": "99effc0b70527fd8dd1c98e2e09dc0e520174bcf296fe8f13575e0eaf96f3cba"
+        }
+      ]
+    },
+    {
+      "id": "error-tracking",
+      "label": "Error tracking",
+      "originals": [
+        {
+          "lane": "oxc-mangle",
+          "file": "artifacts/utilities/error-tracking/original-oxc-mangle.mjs",
+          "raw": 17766,
+          "gzip9": 6911,
+          "brotli11": 6374,
+          "sha256": "e967d8898cc2032b4d8a88313de30ccd5e9fe8dc579b8e21f7ebd5d6392f3120",
+          "bundleSeconds": 0.009250641000000087,
+          "minifySeconds": 0.00452838399999996,
+          "formatSeconds": 0.02982394599999998
+        },
+        {
+          "lane": "terser-mangle",
+          "file": "artifacts/utilities/error-tracking/original-terser-mangle.mjs",
+          "raw": 17726,
+          "gzip9": 6731,
+          "brotli11": 6162,
+          "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
+          "bundleSeconds": 0.009250641000000087,
+          "minifySeconds": 0.25881348200000004,
+          "formatSeconds": 0.028134911000000103
+        },
+        {
+          "lane": "esbuild-esnext",
+          "file": "artifacts/utilities/error-tracking/original-esbuild-esnext.mjs",
+          "raw": 19666,
+          "gzip9": 7806,
+          "brotli11": 7197,
+          "sha256": "e9e1546bd7fbba31fe06097da10501caee80e5cea809854e71ce7d827b8994f4",
+          "bundleSeconds": 0.009250641000000087,
+          "minifySeconds": 0.004993454999999813,
+          "formatSeconds": 0.03193969000000015
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "dist/error-tracking.raw.js",
+            "raw": 18534,
+            "gzip9": 7301,
+            "brotli11": 6618,
+            "sha256": "ba104197a2a2486b017be57526fe5f4fb32a531179d958a11847a917e314ee51"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/error-tracking/original-terser-mangle.mjs",
+            "raw": 17726,
+            "gzip9": 6731,
+            "brotli11": 6162,
+            "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
+            "bundleSeconds": 0.009250641000000087,
+            "minifySeconds": 0.25881348200000004,
+            "formatSeconds": 0.028134911000000103
+          },
+          "savingsPercent": -4.558275978788218,
+          "compilerSeconds": 15.074,
+          "originalBuildSeconds": 0.26806412300000015,
+          "sourceSha256": "88fbce1295efea7dc4ba806b63ed0e1b616c1cf01645f4262bf8ddabff86ebc1",
+          "configSha256": "2b49dd7f481f4fa5d446486773bc22aa2ba98833b95a7355ef7fc69223b53db7"
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "dist/error-tracking.gzip.js",
+            "raw": 19180,
+            "gzip9": 7081,
+            "brotli11": 6492,
+            "sha256": "91cbd9075e539119214fe101329e9154d5f433d3523c247b7159f1302025a42d"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/error-tracking/original-terser-mangle.mjs",
+            "raw": 17726,
+            "gzip9": 6731,
+            "brotli11": 6162,
+            "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
+            "bundleSeconds": 0.009250641000000087,
+            "minifySeconds": 0.25881348200000004,
+            "formatSeconds": 0.028134911000000103
+          },
+          "savingsPercent": -5.199821720398168,
+          "compilerSeconds": 20.681,
+          "originalBuildSeconds": 0.26806412300000015,
+          "sourceSha256": "88fbce1295efea7dc4ba806b63ed0e1b616c1cf01645f4262bf8ddabff86ebc1",
+          "configSha256": "b92e1d002e87a64f65c00fcd7fb10d1f2461131bd2a85910fd23910b55695b07"
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "dist/error-tracking.esm.js",
+            "raw": 19086,
+            "gzip9": 7127,
+            "brotli11": 6460,
+            "sha256": "d1549172f45bed50535967911bd66430d073fd67c8a6cfc50544c91b8885e80d"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/error-tracking/original-terser-mangle.mjs",
+            "raw": 17726,
+            "gzip9": 6731,
+            "brotli11": 6162,
+            "sha256": "a7bd13d2b3329f438c1fb228bf8b18cf90fe673f028b77d5e1d35293b2fb5d53",
+            "bundleSeconds": 0.009250641000000087,
+            "minifySeconds": 0.25881348200000004,
+            "formatSeconds": 0.028134911000000103
+          },
+          "savingsPercent": -4.836092177864337,
+          "compilerSeconds": 176.435,
+          "originalBuildSeconds": 0.29619903400000025,
+          "sourceSha256": "88fbce1295efea7dc4ba806b63ed0e1b616c1cf01645f4262bf8ddabff86ebc1",
+          "configSha256": "44c9bc04e46c28d9416301dc5efd4c7a5b66422ae6cc5e237a3d1a19009f9b93"
+        }
+      ]
+    },
+    {
+      "id": "otlp",
+      "label": "OTLP encoders",
+      "originals": [
+        {
+          "lane": "oxc-mangle",
+          "file": "artifacts/utilities/otlp/original-oxc-mangle.mjs",
+          "raw": 7634,
+          "gzip9": 3106,
+          "brotli11": 2844,
+          "sha256": "44757d68536293047d7d5f7f02848cec420d8c4549c4187bbcdc200f788f3f2b",
+          "bundleSeconds": 0.008807420999999977,
+          "minifySeconds": 0.0019134350000001633,
+          "formatSeconds": 0.015718740000000026
+        },
+        {
+          "lane": "terser-mangle",
+          "file": "artifacts/utilities/otlp/original-terser-mangle.mjs",
+          "raw": 7475,
+          "gzip9": 2944,
+          "brotli11": 2692,
+          "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
+          "bundleSeconds": 0.008807420999999977,
+          "minifySeconds": 0.06475164399999994,
+          "formatSeconds": 0.018473469999999905
+        },
+        {
+          "lane": "esbuild-esnext",
+          "file": "artifacts/utilities/otlp/original-esbuild-esnext.mjs",
+          "raw": 9313,
+          "gzip9": 3874,
+          "brotli11": 3535,
+          "sha256": "c7c53bc0a3761b2632b6b8ed46c1e3537f98e38259f0762368cda29807fd3bfa",
+          "bundleSeconds": 0.008807420999999977,
+          "minifySeconds": 0.0025883890000000065,
+          "formatSeconds": 0.019205332
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "dist/otlp.raw.js",
+            "raw": 6561,
+            "gzip9": 2752,
+            "brotli11": 2501,
+            "sha256": "93e9bc213f75396067f905cdc1657245943a54fc976d13c0c77f4d597851736f"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/otlp/original-terser-mangle.mjs",
+            "raw": 7475,
+            "gzip9": 2944,
+            "brotli11": 2692,
+            "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
+            "bundleSeconds": 0.008807420999999977,
+            "minifySeconds": 0.06475164399999994,
+            "formatSeconds": 0.018473469999999905
+          },
+          "savingsPercent": 12.227424749163884,
+          "compilerSeconds": 1.089,
+          "originalBuildSeconds": 0.07355906499999992,
+          "sourceSha256": "46130d01d9025f7c280a00ee6b242e425830d359af5cb11f3c44f31c69536e6c",
+          "configSha256": "d18a4d11d65ff005b7800392db41ea5b1105cc4d7512c0afbef16325808b84f1"
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "dist/otlp.gzip.js",
+            "raw": 6925,
+            "gzip9": 2672,
+            "brotli11": 2444,
+            "sha256": "7019959b711af48538b814b1721bc7aa8d172d5376adb9d1b9d91c77c05e5045"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/otlp/original-terser-mangle.mjs",
+            "raw": 7475,
+            "gzip9": 2944,
+            "brotli11": 2692,
+            "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
+            "bundleSeconds": 0.008807420999999977,
+            "minifySeconds": 0.06475164399999994,
+            "formatSeconds": 0.018473469999999905
+          },
+          "savingsPercent": 9.239130434782606,
+          "compilerSeconds": 1.704,
+          "originalBuildSeconds": 0.07355906499999992,
+          "sourceSha256": "46130d01d9025f7c280a00ee6b242e425830d359af5cb11f3c44f31c69536e6c",
+          "configSha256": "6c599f0d4ccef365265c2c484504dc9135cbe64ca9ad93c2cc34bd479ee25415"
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "dist/otlp.esm.js",
+            "raw": 6912,
+            "gzip9": 2675,
+            "brotli11": 2442,
+            "sha256": "f5d47057da1fc202e4b9e1761d901054fa1d3d3df41d366eb6ccf869365600e9"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/otlp/original-terser-mangle.mjs",
+            "raw": 7475,
+            "gzip9": 2944,
+            "brotli11": 2692,
+            "sha256": "29074d6021ad2c72610a79cb09cd42e713dfec4164fac3057f49867750db1aa0",
+            "bundleSeconds": 0.008807420999999977,
+            "minifySeconds": 0.06475164399999994,
+            "formatSeconds": 0.018473469999999905
+          },
+          "savingsPercent": 9.286775631500744,
+          "compilerSeconds": 8.094,
+          "originalBuildSeconds": 0.09203253499999983,
+          "sourceSha256": "46130d01d9025f7c280a00ee6b242e425830d359af5cb11f3c44f31c69536e6c",
+          "configSha256": "7a2e1c86a5e1eefd61af93ef29d549092a930248e8a56baa2c4dcfdbc4317caf"
+        }
+      ]
+    },
+    {
+      "id": "autocapture",
+      "label": "Autocapture utilities",
+      "originals": [
+        {
+          "lane": "oxc-mangle",
+          "file": "artifacts/utilities/autocapture/original-oxc-mangle.mjs",
+          "raw": 11249,
+          "gzip9": 4720,
+          "brotli11": 4296,
+          "sha256": "1c7dc0f76ef522b520bb7f42ba7426c45ac51f6ec39a55b131a400a2b6629cc8",
+          "bundleSeconds": 0.012065725000000157,
+          "minifySeconds": 0.002736687999999958,
+          "formatSeconds": 0.02187098500000002
+        },
+        {
+          "lane": "terser-mangle",
+          "file": "artifacts/utilities/autocapture/original-terser-mangle.mjs",
+          "raw": 10983,
+          "gzip9": 4441,
+          "brotli11": 4023,
+          "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
+          "bundleSeconds": 0.012065725000000157,
+          "minifySeconds": 0.1590330819999999,
+          "formatSeconds": 0.02211235799999986
+        },
+        {
+          "lane": "esbuild-esnext",
+          "file": "artifacts/utilities/autocapture/original-esbuild-esnext.mjs",
+          "raw": 13094,
+          "gzip9": 5584,
+          "brotli11": 5097,
+          "sha256": "50870766f8f047152e1deb3fe4a14118b1c2e537026746f19c63ee6a02af8888",
+          "bundleSeconds": 0.012065725000000157,
+          "minifySeconds": 0.005594751999999971,
+          "formatSeconds": 0.02375658899999985
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "dist/autocapture.raw.js",
+            "raw": 8877,
+            "gzip9": 3722,
+            "brotli11": 3382,
+            "sha256": "e407f6ab26142e537366ea2c18370802cdef7f5697b56e2bc5ecec8a35516569"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/autocapture/original-terser-mangle.mjs",
+            "raw": 10983,
+            "gzip9": 4441,
+            "brotli11": 4023,
+            "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
+            "bundleSeconds": 0.012065725000000157,
+            "minifySeconds": 0.1590330819999999,
+            "formatSeconds": 0.02211235799999986
+          },
+          "savingsPercent": 19.175088773559136,
+          "compilerSeconds": 1.256,
+          "originalBuildSeconds": 0.17109880700000007,
+          "sourceSha256": "3e5b2d5e100ded0b53e457992ba4f524ab1b6916c44e8f3936f428a804f9bcd5",
+          "configSha256": "a501f66c77e2bdbd44c7678888407045a2289976ba78b5012b72251b165cf32a"
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "dist/autocapture.gzip.js",
+            "raw": 9190,
+            "gzip9": 3448,
+            "brotli11": 3138,
+            "sha256": "b89baff9ec0182c44c8887cdc9beeb06decdcfc2d047cdffd18384e7c6fd2527"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/autocapture/original-terser-mangle.mjs",
+            "raw": 10983,
+            "gzip9": 4441,
+            "brotli11": 4023,
+            "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
+            "bundleSeconds": 0.012065725000000157,
+            "minifySeconds": 0.1590330819999999,
+            "formatSeconds": 0.02211235799999986
+          },
+          "savingsPercent": 22.35982886737221,
+          "compilerSeconds": 3.197,
+          "originalBuildSeconds": 0.17109880700000007,
+          "sourceSha256": "3e5b2d5e100ded0b53e457992ba4f524ab1b6916c44e8f3936f428a804f9bcd5",
+          "configSha256": "97ca04f3e2863809cd96c147c8682d6389798aee999199144fa285e415708661"
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "dist/autocapture.esm.js",
+            "raw": 9199,
+            "gzip9": 3481,
+            "brotli11": 3144,
+            "sha256": "8f3ced3f8e61e66843d89c27bd0d696b7444980e650dfd33257bd75dd0cc5e0e"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/autocapture/original-terser-mangle.mjs",
+            "raw": 10983,
+            "gzip9": 4441,
+            "brotli11": 4023,
+            "sha256": "bf74352690dce5ad6bfc63d27de1341af5afa124878dcb717d4848b15065af67",
+            "bundleSeconds": 0.012065725000000157,
+            "minifySeconds": 0.1590330819999999,
+            "formatSeconds": 0.02211235799999986
+          },
+          "savingsPercent": 21.84936614466816,
+          "compilerSeconds": 11.445,
+          "originalBuildSeconds": 0.19321116499999993,
+          "sourceSha256": "3e5b2d5e100ded0b53e457992ba4f524ab1b6916c44e8f3936f428a804f9bcd5",
+          "configSha256": "97f1acdfba1c3afa383ecc4672c35ff2e4c7fe04d90974037e13d63d4d3ab012"
+        }
+      ]
+    },
+    {
+      "id": "replay-core",
+      "label": "Replay configuration and buffers",
+      "originals": [
+        {
+          "lane": "oxc-mangle",
+          "file": "artifacts/utilities/replay-core/original-oxc-mangle.mjs",
+          "raw": 10401,
+          "gzip9": 4717,
+          "brotli11": 4312,
+          "sha256": "bab4c6d245fd1445890f81848df807309bf23e4dd0ccd9b11942c13d1236e76f",
+          "bundleSeconds": 0.011855373999999983,
+          "minifySeconds": 0.0029544559999999365,
+          "formatSeconds": 0.01901291100000003
+        },
+        {
+          "lane": "terser-mangle",
+          "file": "artifacts/utilities/replay-core/original-terser-mangle.mjs",
+          "raw": 10116,
+          "gzip9": 4443,
+          "brotli11": 4062,
+          "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
+          "bundleSeconds": 0.011855373999999983,
+          "minifySeconds": 0.11338245399999983,
+          "formatSeconds": 0.020506468999999923
+        },
+        {
+          "lane": "esbuild-esnext",
+          "file": "artifacts/utilities/replay-core/original-esbuild-esnext.mjs",
+          "raw": 12274,
+          "gzip9": 5581,
+          "brotli11": 5128,
+          "sha256": "d19bc0ecbffe5d35bb3f077cbb559574f127da72431b6acd0f4afd6f0f82b886",
+          "bundleSeconds": 0.011855373999999983,
+          "minifySeconds": 0.003529812999999649,
+          "formatSeconds": 0.023425637999999707
+        }
+      ],
+      "objectives": [
+        {
+          "objective": "raw",
+          "metric": "raw",
+          "artifact": {
+            "file": "dist/replay-core.raw.js",
+            "raw": 8442,
+            "gzip9": 3847,
+            "brotli11": 3493,
+            "sha256": "8dc24e5dda28eb19a157af2089453eea10e138e763ddb70dbdf8ee019ac09ab3"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/replay-core/original-terser-mangle.mjs",
+            "raw": 10116,
+            "gzip9": 4443,
+            "brotli11": 4062,
+            "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
+            "bundleSeconds": 0.011855373999999983,
+            "minifySeconds": 0.11338245399999983,
+            "formatSeconds": 0.020506468999999923
+          },
+          "savingsPercent": 16.548042704626333,
+          "compilerSeconds": 1.364,
+          "originalBuildSeconds": 0.1252378279999998,
+          "sourceSha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+          "configSha256": "9216b4fdfcb392ac0bb351a92c7718af5c5345c19a791b6895e943bfab2d4dad"
+        },
+        {
+          "objective": "gzip",
+          "metric": "gzip9",
+          "artifact": {
+            "file": "dist/replay-core.gzip.js",
+            "raw": 8595,
+            "gzip9": 3668,
+            "brotli11": 3353,
+            "sha256": "db905eae11d20a4bd818625d296e278f930a8174bd52517e4fd9afa94c7ecc11"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/replay-core/original-terser-mangle.mjs",
+            "raw": 10116,
+            "gzip9": 4443,
+            "brotli11": 4062,
+            "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
+            "bundleSeconds": 0.011855373999999983,
+            "minifySeconds": 0.11338245399999983,
+            "formatSeconds": 0.020506468999999923
+          },
+          "savingsPercent": 17.443169029934722,
+          "compilerSeconds": 3.093,
+          "originalBuildSeconds": 0.1252378279999998,
+          "sourceSha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+          "configSha256": "14845d9ce4f92c1174aebb6fa7454c403939416b9a5f722112b984c0caeae06f"
+        },
+        {
+          "objective": "brotli",
+          "metric": "brotli11",
+          "artifact": {
+            "file": "dist/replay-core.esm.js",
+            "raw": 8598,
+            "gzip9": 3705,
+            "brotli11": 3321,
+            "sha256": "ad6e4aad9d4236b86a6edff955d4ddbba18a463e881ec09b567c08cd69499daf"
+          },
+          "baseline": {
+            "lane": "terser-mangle",
+            "file": "artifacts/utilities/replay-core/original-terser-mangle.mjs",
+            "raw": 10116,
+            "gzip9": 4443,
+            "brotli11": 4062,
+            "sha256": "9b736d2cd8e8a944b45588238e0896ea9bdf0883ae58d4dcb4ebeab3da5a1e9b",
+            "bundleSeconds": 0.011855373999999983,
+            "minifySeconds": 0.11338245399999983,
+            "formatSeconds": 0.020506468999999923
+          },
+          "savingsPercent": 18.242245199409158,
+          "compilerSeconds": 17.349,
+          "originalBuildSeconds": 0.14574429699999972,
+          "sourceSha256": "3ba826c2469fca9078cd41017d7fc22ebb88ee49b54dce5a4c83ef768b8c791a",
+          "configSha256": "621e3047feeea07bf24fc456d6ce6b1f6e7b91981bf7859eca51d497a3830f87"
+        }
+      ]
+    }
+  ]
+}

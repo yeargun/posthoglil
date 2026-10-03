@@ -106,6 +106,25 @@ describe("@posthog/core/error-tracking compatibility", () => {
     assert.equal(lil.createStackParser.length, official.createStackParser.length)
   })
 
+  it("preserves host subclassing, overrides and constructor identity", () => {
+    function exercise(api) {
+      class NamedError extends api.ErrorCoercer {
+        getType(error) { return 'Custom:' + super.getType(error) }
+      }
+      class Builder extends api.ErrorPropertiesBuilder {
+        calls = 0
+        applyCoercers(input, context) { this.calls++; return super.applyCoercers(input, context) }
+      }
+      const coercer = new NamedError()
+      const builder = new Builder([coercer], api.createDefaultStackParser())
+      const error = new Error('subclass fixture')
+      error.stack = 'Error: subclass fixture\n    at test (https://example.test/app.js:1:2)'
+      const result = builder.buildFromUnknown(error)
+      return { result, calls: builder.calls, isBuilder: builder instanceof api.ErrorPropertiesBuilder, isCoercer: coercer instanceof api.ErrorCoercer, prototype: Object.getPrototypeOf(NamedError.prototype) === api.ErrorCoercer.prototype }
+    }
+    assert.deepEqual(exercise(lil), exercise(official))
+  })
+
   it("matches exception-step configuration, normalization, byte budgets, and mutation", () => {
     const configs = [
       undefined,

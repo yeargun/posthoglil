@@ -1,583 +1,73 @@
-import officialKernel from "./posthog-official.js"
-import lilKernel from "./posthog.js"
-
-const data = await fetch("./results.json").then((response) => {
-  if (!response.ok) throw new Error(`Unable to load results: ${response.status}`)
-  return response.json()
-})
-
-const formatter = new Intl.NumberFormat("en-US")
-
-const sample = `{
-  "apiKey": "phc_demo",
-  "cookieHeader": "ph_phc_demo_posthog=%7B%22distinct_id%22%3A%22anon-1%22%7D",
-  "config": {
-    "api_host": "https://us.i.posthog.com"
-  },
-  "flags": {
-    "flags": {
-      "beta": {
-        "key": "beta",
-        "enabled": true,
-        "variant": "on",
-        "metadata": { "payload": "{\\"tier\\":\\"pro\\"}" }
-      },
-      "off": {
-        "key": "off",
-        "enabled": false,
-        "metadata": {}
-      }
-    },
-    "errorsWhileComputingFlags": false
-  },
-  "queue": [
-    { "url": "/e/", "data": { "event": "$pageview", "offset": 12 } },
-    { "url": "/e/", "data": { "event": "clicked" } },
-    { "url": "/flags/", "data": { "token": "x" } }
-  ],
-  "rate": {
-    "now": 1500,
-    "eventsPerSecond": 10,
-    "burstLimit": 3,
-    "checkOnly": false
-  },
-  "userAgent": "Mozilla/5.0 AppleWebKit/537.36 (compatible; Googlebot/2.1)",
-  "distinctId": "user-1",
-  "set": { "plan": "pro", "nested": { "z": 1, "a": 2 } },
-  "sampleRate": 0.5,
-  "text": "hello\\ud800"
+const $=selector=>document.querySelector(selector)
+const bytes=n=>new Intl.NumberFormat('en-US').format(n)+' B'
+const kb=n=>(n/1024).toFixed(1)+' KiB'
+const seconds=n=>n.toFixed(n<1?3:2)+' s'
+const escape=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))
+const delta=n=>`<span class="${n>0?'positive':n<0?'negative':''}">${Math.abs(n).toFixed(2)}% ${n>0?'smaller':n<0?'larger':'same'}</span>`
+const artifactUrl=file=>file.startsWith('artifacts/sdk/')?'./sdk/'+file.slice('artifacts/sdk/'.length):file.startsWith('dist/')?'./utilities/'+file.slice(5):'./utility-originals/'+file.slice('artifacts/utilities/'.length)
+let surface='standard',sdk,utilities,performance,validation,pkg
+async function json(path){const response=await fetch(path);if(!response.ok)throw Error(`Could not load ${path}`);return response.json()}
+function drawSizes(){
+  const current=sdk.surfaces.find(row=>row.id===surface)
+  $('#scope').textContent=surface==='standard'?'Standard SDK: initial client JavaScript. Replay and other optional extensions load separately. The browser journey also exercises the published lazy recorder; its additional download is not included in this initial-bundle figure.':'Full / no external scripts: the upstream full/no-external feature set, including the recorder. No additional recorder script is needed. No product tours, conversations, toolbar or chat integrations are implied.'
+  $('#sdk-sizes').innerHTML=current.objectives.map(row=>`<tr><td><a href="${artifactUrl(row.artifact.file)}">${row.objective==='brotli'?'Brotli-11':row.objective==='gzip'?'gzip-9':'Raw'}</a><small>separate ${row.objective} objective</small></td><td>${bytes(row.baseline[row.metric])}<small>${escape(row.baseline.lane)}</small></td><td>${bytes(row.artifact[row.metric])}<small>${escape(row.artifact.lane)} finish</small></td><td>${delta(row.savingsPercent)}</td><td>${seconds(row.originalBuildSeconds)}<small>matching source pipeline</small></td><td>${seconds(row.totalBuildSeconds)}</td></tr>`).join('')
+  const artifacts=[...current.originals.map(row=>({...row,label:'Original · '+row.lane})),...current.objectives.map(row=>({...row.artifact,label:'LilScript · '+row.objective}))]
+  $('#all-artifacts').innerHTML=artifacts.map(row=>`<tr><td><a href="${artifactUrl(row.file)}">${escape(row.label)}</a></td><td>${bytes(row.raw)}</td><td>${bytes(row.gzip9)}</td><td>${bytes(row.brotli11)}</td><td class="mono" title="${row.sha256}">${row.sha256.slice(0,16)}…</td></tr>`).join('')
+  drawPerformance()
 }
-`
-
-function percentAgainst(value, baseline, better, worse) {
-  if (!baseline || value === baseline) {
-    return { text: "baseline", amount: "—", word: "baseline", state: "even" }
-  }
-  const change = (baseline - value) / baseline
-  const magnitude = Math.abs(change * 100)
-  const digits = 1
-  const word = change > 0 ? better : worse
-  return {
-    text: `${magnitude.toFixed(digits)}% ${word}`,
-    amount: `${magnitude.toFixed(digits)}%`,
-    word,
-    state: change > 0 ? "win" : "loss",
-  }
+function drawPerformance(){
+  const objective=$('#runtime-objective').value
+  const row=performance.rows.find(row=>row.surface===surface&&row.objective===objective)
+  const labels={importMs:'Module parse + evaluation',initMs:'Synchronous initialization',capture1000Ms:'Prepare + queue 1,000 events'}
+  $('#performance').innerHTML=Object.entries(row.metrics).map(([key,m])=>`<article class="perf"><h3>${labels[key]}</h3><strong>${m.candidateMedianMs.toFixed(2)} ms</strong><p>Original ${m.originalMedianMs.toFixed(2)} ms · medians</p><p class="verdict-small">${escape(m.verdict)}</p><p>Paired improvement ${m.pairedImprovementPercent.toFixed(1)}%<br>95% interval: ${m.confidence95Percent.map(x=>x.toFixed(1)+'%').join(' to ')}</p></article>`).join('')
+  $('#runtime-method').textContent=`${performance.samples} measured pairs and ${performance.warmupPairs} warmup pairs per build. Original/candidate order alternates; every sample uses a fresh browser context. Chromium ${performance.browser}. Positive paired improvement means faster. Recording, uploads and ingestion are outside these timings.`
 }
-
-function smallerThan(value, baseline) {
-  return percentAgainst(value, baseline, "smaller", "larger")
+function drawUtility(){
+  const module=utilities.rows.find(row=>row.id===$('#utility-select').value)
+  $('#utility-sizes').innerHTML=module.objectives.map(row=>`<tr><td><a href="${artifactUrl(row.artifact.file)}">${row.objective}</a></td><td>${bytes(row.baseline[row.metric])}<small>${escape(row.baseline.lane)}</small></td><td>${bytes(row.artifact[row.metric])}</td><td>${delta(row.savingsPercent)}</td><td>${seconds(row.originalBuildSeconds)}</td><td>${seconds(row.compilerSeconds)}</td></tr>`).join('')
 }
-
-function fasterThan(value, baseline) {
-  return percentAgainst(value, baseline, "faster", "slower")
+async function initialize(){
+  [sdk,utilities,performance,validation,pkg]=await Promise.all(['sdk','utilities','performance','validation','package'].map(name=>json('./evidence/'+name+'.json')))
+  $('#pin').textContent='posthog-js '+sdk.upstream.version+' · checked '+sdk.generatedAt.slice(0,10)
+  const headlines=sdk.surfaces.map(s=>({surface:s,...s.objectives.find(o=>o.objective==='brotli')}))
+  const gains=headlines.every(row=>row.savingsPercent>0)
+  $('#verdict').textContent=gains?'Both complete SDK builds are smaller in this Brotli comparison. Review the scope, runtime measurements and compatibility evidence below.':'The complete SDK candidate is larger than the best minified original today. It is an integration preview, not a demonstrated SDK size upgrade. Standalone utility results are separate.'
+  $('#headline').innerHTML=headlines.map(row=>`<article class="metric"><h3>${escape(row.surface.label)} · Brotli-11</h3><span class="large">${kb(row.artifact.brotli11)}</span><span class="delta">${delta(row.savingsPercent)}</span><p>Minified original ${kb(row.baseline.brotli11)} · ${escape(row.baseline.lane)}<br>Whole SDK scope shown below; no extrapolation from utility results.</p></article>`).join('')
+  const performanceSummary=['standard','full'].map(id=>{const row=performance.rows.find(row=>row.surface===id&&row.objective==='brotli');return `${id==='standard'?'Standard':'Full'}: capture processing ${row.metrics.capture1000Ms.verdict}; initialization ${row.metrics.initMs.verdict}.`}).join(' ')
+  $('#hero-runtime').textContent='Runtime, Brotli builds — '+performanceSummary
+  $('#download').href='./downloads/'+pkg.tarball
+  $('#install').textContent=`# Download the preview tarball, then install under the existing name:\nnpm install posthog-js@file:./${pkg.tarball}\n\n# Experimental; not published to the npm registry.`
+  $('#test-count').textContent=`${validation.upstreamTestsPerObjective} selected upstream tests × 3 objectives`
+  $('#checks').innerHTML=validation.coverage.map(text=>`<li>${escape(text)}</li>`).join('')
+  $('#provenance').textContent=`Upstream ${sdk.upstream.commit} · Compiler SHA-256 ${sdk.surfaces[0].objectives[0].compiler.sha256} · ${sdk.codec}. Rebuilding LilScript requires the matching compiler binary; validation and measurement scripts are public.`
+  $('#utility-select').innerHTML=utilities.rows.map(row=>`<option value="${row.id}">${escape(row.label)}</option>`).join('')
+  for(const button of document.querySelectorAll('[data-surface]'))button.addEventListener('click',()=>{
+    surface=button.dataset.surface
+    for(const item of document.querySelectorAll('[data-surface]'))item.setAttribute('aria-pressed',String(item===button))
+    drawSizes()
+  })
+  $('#runtime-objective').addEventListener('change',drawPerformance)
+  $('#utility-select').addEventListener('change',drawUtility)
+  drawSizes();drawUtility()
 }
-
-const OFFICIAL_SIZE_IDS = [
-  "kernel",
-  "kernel-oxc-nomangle",
-  "kernel-terser-nomangle",
-  "kernel-terser-passes-1",
-  "kernel-terser-mangle",
-  "kernel-esbuild-es2018",
-  "kernel-esbuild-esnext",
-  "kernel-oxc-mangle",
-]
-
-function laneById(id) {
-  return data.size.find((lane) => lane.id === id)
-}
-
-function barClass(id) {
-  if (
-    id === "itslil" ||
-    id === "itslil-package" ||
-    id === "itslil-gzip" ||
-    id === "itslil-bytes"
-  ) {
-    return "bar-lil"
-  }
-  return "bar-official"
-}
-
-function renderCodec(metric, lilId, extras, barId, bodyId) {
-  const oxc = laneById("kernel-oxc-mangle")
-  if (!oxc) return
-  const lanes = [...OFFICIAL_SIZE_IDS, lilId, ...extras].map(laneById).filter(Boolean)
-  const max = Math.max(...lanes.map((lane) => lane[metric]))
-  document.querySelector(barId).innerHTML = lanes
-    .map((lane) => {
-      const width = Math.max(18, (lane[metric] / max) * 100)
-      return `<div class="${barClass(lane.id)}" style="width:${width}%"><span>${lane.name}</span><strong>${formatter.format(lane[metric])} B</strong></div>`
-    })
-    .join("")
-  document.querySelector(bodyId).innerHTML = lanes
-    .map((lane) => {
-      const verdict = smallerThan(lane[metric], oxc[metric])
-      return `
-    <tr>
-      <th scope="row">${lane.name}</th>
-      <td>${formatter.format(lane[metric])}</td>
-      <td class="verdict ${verdict.state}"><strong>${verdict.text}</strong></td>
-    </tr>`
-    })
-    .join("")
-}
-
-function matchedLibraryRow() {
-  const brotli = laneById("itslil")
-  const gzip = laneById("itslil-gzip")
-  const bytes = laneById("itslil-bytes")
-  if (!brotli || !gzip || !bytes) return null
-  return {
-    id: "itslil-matched",
-    name: "LilScript compiler · verified artifacts by objective",
-    raw: bytes.raw,
-    gzip9: gzip.gzip9,
-    brotli11: brotli.brotli11,
-  }
-}
-
-function renderHero() {
-  const oxc = laneById("kernel-oxc-mangle")
-  const itslil = laneById("itslil-package")
-  const packaged = laneById("itslil")
-  const gzip = itslil
-  const bytes = itslil
-  document.querySelector("#hero-spec").textContent = "21/21"
-  if (!oxc || !itslil) return
-  const smaller = smallerThan(itslil.brotli11, oxc.brotli11)
-  document.querySelector("#hero-ratio").innerHTML = `${smaller.amount}<span>${smaller.word}</span>`
-  document.querySelector("#hero-bytes").textContent =
-    `${formatter.format(oxc.brotli11)} B → ${formatter.format(itslil.brotli11)} B Brotli-11`
-  document.querySelector("#hero-shipped").textContent = smallerThan(itslil.brotli11, oxc.brotli11).text
-  if (packaged) {
-    document.querySelector("#hero-package").textContent = smallerThan(
-      packaged.brotli11,
-      oxc.brotli11,
-    ).text
-  }
-  if (gzip) {
-    document.querySelector("#hero-gzip").textContent = smallerThan(gzip.gzip9, oxc.gzip9).text
-  }
-  if (bytes) {
-    document.querySelector("#hero-raw").textContent = smallerThan(bytes.raw, oxc.raw).text
-  }
-  const compile = compileSummary()
-  if (compile) document.querySelector("#hero-compile").textContent = compile.headline
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[character])
-}
-
-function median(values) {
-  const sorted = values.filter(Number.isFinite).sort((left, right) => left - right)
-  return sorted.length === 0 ? null : sorted[Math.floor(sorted.length / 2)]
-}
-
-function formatMs(ms) {
-  return ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${formatter.format(Math.round(ms))} ms`
-}
-
-function compileSummary() {
-  const compiler = data.compiler
-  const samples = compiler?.compileWallMs ?? []
-  const middle = median(samples)
-  if (middle == null) return null
-  return {
-    headline: formatMs(middle),
-    detail: `median of ${samples.length} runs (${samples.map(formatMs).join(" · ")})`,
-  }
-}
-
-function renderCompiler() {
-  const compiler = data.compiler
-  const facts = document.querySelector("#compile-facts")
-  const body = document.querySelector("#body-compile")
-  if (!facts || !body) return
-  const summary = compileSummary()
-  if (!compiler || !summary) {
-    facts.innerHTML = "<article><span>Compile time</span><strong>not recorded</strong></article>"
-    body.innerHTML = ""
-    return
-  }
-  const revision = document.querySelector("#lede-revision")
-  if (revision) revision.textContent = compiler.revision
-  facts.innerHTML = [
-    ["Compile time", summary.headline, summary.detail],
-    ["Compiler revision", compiler.revision, `recorded ${compiler.date}`],
-    ["Compiler binary SHA-256", `${compiler.binarySha256.slice(0, 12)}…`, compiler.binarySha256],
-    [
-      "Measured on",
-      compiler.host,
-      `${compiler.scope}${compiler.load ? `; shared host, 1-minute load average ${compiler.load.atStart} at start, ${compiler.load.atEnd} at end` : ""}`,
-    ],
-  ]
-    .map(
-      ([label, value, detail]) =>
-        `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(detail)}</small></article>`,
-    )
-    .join("")
-  body.innerHTML = (compiler.invocations ?? [])
-    .map(
-      (invocation) => `
-    <tr>
-      <th scope="row">${escapeHtml(invocation.entry)}</th>
-      <td>${escapeHtml(invocation.config)}</td>
-      <td>${escapeHtml(invocation.output)}</td>
-      <td>${invocation.wallMs.map((ms) => formatter.format(ms)).join(" · ")}</td>
-    </tr>`,
-    )
-    .join("")
-}
-
-function changeCell(before, after) {
-  if (before == null || after == null) return '<td class="verdict even"><strong>—</strong></td>'
-  const delta = after - before
-  if (delta === 0) return '<td class="verdict even"><strong>no change</strong></td>'
-  const percent = Math.abs(delta / before) * 100
-  const word = delta < 0 ? "smaller" : "larger"
-  return `<td class="verdict ${delta < 0 ? "win" : "loss"}"><strong>${delta < 0 ? "−" : "+"}${formatter.format(Math.abs(delta))} B · ${percent.toFixed(1)}% ${word}</strong></td>`
-}
-
-function renderPrevious() {
-  const previous = data.previousRelease
-  const body = document.querySelector("#body-previous")
-  if (!body) return
-  if (!previous) {
-    body.innerHTML = ""
-    return
-  }
-  const lead = document.querySelector("#previous-lead")
-  if (lead && previous.label) {
-    lead.textContent = `${previous.label}. The bars are the same files; the sources were rewritten where the port could say more.`
-  }
-  const brotli = laneById("itslil")
-  const gzip = laneById("itslil-gzip")
-  const bytes = laneById("itslil-bytes")
-  const packaged = laneById("itslil-package")
-  const rows = [
-    ["Kernel · Brotli-scored compile", "Brotli-11", previous.kernel?.brotli11, brotli?.brotli11],
-    ["Kernel · gzip-scored compile", "gzip-9", previous.kernel?.gzip9, gzip?.gzip9],
-    ["Kernel · raw-scored compile", "raw", previous.kernel?.raw, bytes?.raw],
-    ["Kernel · packaged ESM", "Brotli-11", previous.kernel?.packageBrotli, packaged?.brotli11],
-    ...(data.packs ?? []).map((pack) => {
-      const before = previous.packs?.[pack.id]
-      const primary = pack.lanes.find((lane) => lane.primary)
-      const objective =
-        before && before.costModel !== pack.costModel
-          ? ` (cost_model ${before.costModel} → ${pack.costModel})`
-          : ""
-      return [`${pack.name} pack${objective}`, "Brotli-11", before?.brotli11, primary?.brotli11]
-    }),
-  ]
-  body.innerHTML = rows
-    .map(
-      ([name, codec, before, after]) => `
-    <tr>
-      <th scope="row">${escapeHtml(name)}</th>
-      <td>${codec}</td>
-      <td>${before == null ? "—" : formatter.format(before)}</td>
-      <td>${after == null ? "—" : formatter.format(after)}</td>
-      ${changeCell(before, after)}
-    </tr>`,
-    )
-    .join("")
-}
-
-function renderDelivered() {
-  const body = document.querySelector("#body-delivered")
-  if (!body) return
-  body.innerHTML = (data.delivered ?? [])
-    .map(
-      (file) => `
-    <tr${file.compilerWritten ? "" : ' class="post-processed"'}>
-      <th scope="row">${escapeHtml(file.file)}</th>
-      <td>${formatter.format(file.raw)}</td>
-      <td>${formatter.format(file.gzip9)}</td>
-      <td>${formatter.format(file.brotli11)}</td>
-      <td class="written-by">${escapeHtml(file.writtenBy)}</td>
-    </tr>`,
-    )
-    .join("")
-}
-
-function renderSize() {
-  const oxc = laneById("kernel-oxc-mangle")
-  if (!oxc) return
-  renderCodec(
-    "brotli11",
-    "itslil",
-    ["itslil-package"],
-    "#bar-brotli",
-    "#body-brotli",
-  )
-  renderCodec("gzip9", "itslil-gzip", [], "#bar-gzip", "#body-gzip")
-  renderCodec("raw", "itslil-bytes", [], "#bar-raw", "#body-raw")
-
-  const matched = matchedLibraryRow()
-  const rows = [
-    ...OFFICIAL_SIZE_IDS.map(laneById),
-    matched,
-    laneById("itslil"),
-    laneById("itslil-package"),
-    laneById("itslil-gzip"),
-    laneById("itslil-bytes"),
-  ].filter(Boolean)
-  document.querySelector("#body-matched").innerHTML = rows
-    .map((lane) => {
-      const verdict = smallerThan(lane.brotli11, oxc.brotli11)
-      return `
-    <tr>
-      <th scope="row">${lane.name}</th>
-      <td>${formatter.format(lane.raw)}</td>
-      <td>${formatter.format(lane.gzip9)}</td>
-      <td>${formatter.format(lane.brotli11)}</td>
-      <td class="verdict ${verdict.state}"><strong>${verdict.text}</strong></td>
-    </tr>`
-    })
-    .join("")
-}
-
-function renderSurface() {
-  const oxc = laneById("kernel-oxc-mangle")
-  const itslil = laneById("itslil")
-  const brotli = oxc && itslil ? smallerThan(itslil.brotli11, oxc.brotli11) : null
-  const cards = [
-    {
-      label: "ported modules from posthog-js 1.418.10",
-      value: "13",
-      win: true,
-    },
-    {
-      label: "named exports kept exact after mangling",
-      value: String(Object.keys(lilKernel).length),
-    },
-    {
-      label: "compat cases versus the official kernel",
-      value: "21/21",
-      geo: true,
-    },
-    {
-      label: "Brotli-11 versus Vite 8 Oxc of that kernel",
-      value: brotli ? brotli.text : "measure pending",
-      win: brotli ? brotli.state === "win" : false,
-    },
-  ]
-  document.querySelector("#perf-cards").innerHTML = cards
-    .map(
-      (card) => `
-    <article class="perf-card${card.win ? " win" : ""}${card.geo ? " geo" : ""}">
-      <strong>${card.value}</strong>
-      <span>${card.label}</span>
-    </article>
-  `,
-    )
-    .join("")
-  document.querySelector("#perf-note").textContent =
-    data.comparison ??
-    "Same capture kernel on every official row. The published posthog-js browser bundle is not a lane."
-}
-
-function renderPacks() {
-  const packs = data.packs ?? []
-  const tabs = document.querySelector("#pack-tabs")
-  const card = document.querySelector("#pack-card")
-  const contract = document.querySelector("#pack-contract")
-  const panel = document.querySelector("#pack-panel")
-  const body = document.querySelector("#body-pack-lanes")
-  if (!tabs || !card || !contract || !panel || !body) return
-  if (packs.length === 0) {
-    tabs.innerHTML = ""
-    card.innerHTML = "<p>Production measurements pending.</p>"
-    contract.innerHTML = ""
-    body.innerHTML = ""
-    return
-  }
-
-  const requested = new URLSearchParams(window.location.search).get("pack")
-  let selected = packs.some((pack) => pack.id === requested)
-    ? requested
-    : packs.some((pack) => pack.id === "autocapture")
-      ? "autocapture"
-      : packs[0].id
-
-  tabs.innerHTML = packs
-    .map(
-      (pack) =>
-        `<button type="button" role="tab" id="pack-tab-${pack.id}" aria-controls="pack-panel" aria-selected="false" tabindex="-1" data-pack="${pack.id}">${pack.name}</button>`,
-    )
-    .join("")
-
-  const show = (id, updateUrl = true) => {
-    const pack = packs.find((candidate) => candidate.id === id) ?? packs[0]
-    selected = pack.id
-    const baseline = pack.lanes.find((lane) => lane.baseline)
-    const primary = pack.lanes.find((lane) => lane.primary)
-    const packaged = pack.lanes.find((lane) => lane.id === "package")
-    const verdict = smallerThan(primary.brotli11, baseline.brotli11)
-    for (const tab of tabs.querySelectorAll("[role=tab]")) {
-      const active = tab.dataset.pack === pack.id
-      tab.setAttribute("aria-selected", String(active))
-      tab.tabIndex = active ? 0 : -1
+let demo
+async function captureDemo(kind){
+  $('#demo-output').textContent='Loading the compiled full SDK…'
+  try{
+    if(!demo){
+      const module=await import('./sdk/full/brotli.mjs');demo=module.default
+      demo.init('phc_local_showcase_only',{api_host:location.origin,asset_host:location.origin,capture_pageview:false,capture_pageleave:false,autocapture:false,persistence:'memory',disable_session_recording:true,disable_surveys:true,disable_external_dependency_loading:true,advanced_disable_flags:true,opt_out_useragent_filter:true,bootstrap:{distinctID:'local-demo',isIdentifiedID:false,featureFlags:{}},before_send:event=>{
+        if(!event)return null
+        $('#demo-output').textContent=JSON.stringify({event:event.event,properties:event.properties},null,2)
+        return null
+      }})
     }
-    panel.setAttribute("aria-labelledby", `pack-tab-${pack.id}`)
-    card.className = `pack-card ${verdict.state}`
-    card.innerHTML = `
-      <div class="pack-kicker"><span>${pack.exports} exports</span><span>${pack.differentialGroups}/${pack.differentialGroups} groups</span><span>cost ${pack.costModel}</span></div>
-      <h3>${pack.name}</h3>
-      <strong>${verdict.amount}<small>${verdict.word} Brotli</small></strong>
-      <p>${formatter.format(baseline.brotli11)} B Oxc → ${formatter.format(primary.brotli11)} B LilScript</p>
-      <code>import { … } from "${pack.subpath}"</code>
-      <span class="pack-package">Packaged ESM: ${formatter.format(packaged.brotli11)} B Brotli-11</span>`
-    contract.innerHTML = `<span>Pinned source graph</span><code>${pack.source}</code><span>Contract</span><strong>${pack.exports} runtime exports · ${pack.differentialGroups}/${pack.differentialGroups} differential groups</strong>`
-    body.innerHTML = pack.lanes
-      .map((lane) => {
-        const laneVerdict = smallerThan(lane.brotli11, baseline.brotli11)
-        const rowClass = lane.primary ? ' class="pack-primary-row"' : ""
-        return `<tr${rowClass}><th scope="row">${lane.name}</th><td>${formatter.format(lane.raw)}</td><td>${formatter.format(lane.gzip9)}</td><td>${formatter.format(lane.brotli11)}</td><td class="verdict ${laneVerdict.state}"><strong>${laneVerdict.text}</strong></td></tr>`
-      })
-      .join("")
-    if (updateUrl) {
-      const url = new URL(window.location.href)
-      url.searchParams.set("pack", pack.id)
-      history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
-    }
-  }
-
-  tabs.addEventListener("click", (event) => {
-    const tab = event.target.closest("[data-pack]")
-    if (tab) show(tab.dataset.pack)
-  })
-  tabs.addEventListener("keydown", (event) => {
-    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"]
-    if (!keys.includes(event.key)) return
-    event.preventDefault()
-    const index = packs.findIndex((pack) => pack.id === selected)
-    const next = event.key === "Home"
-      ? 0
-      : event.key === "End"
-        ? packs.length - 1
-        : (index + (event.key === "ArrowRight" ? 1 : -1) + packs.length) % packs.length
-    show(packs[next].id)
-    tabs.querySelector(`[data-pack="${packs[next].id}"]`).focus()
-  })
-  show(selected, false)
-
-  const note = document.querySelector("#pack-note")
-  if (note) {
-    note.textContent =
-      data.packComparison ??
-      "Each pack is compared independently with its untouched official PostHog source graph."
-  }
+    if(kind==='error'){
+      const error=new Error('Example checkout error');error.stack='Error: Example checkout error\n    at checkout (https://example.test/app.js:10:5)'
+      demo.captureException(error)
+    }else demo.capture('showcase.checkout',{plan:'pro',amount:29,_custom_property:'preserved'})
+  }catch(error){$('#demo-output').textContent='Preview could not run: '+error.message}
 }
-
-function bindCopy() {
-  document.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-copy]")
-    if (!button) return
-    await navigator.clipboard.writeText(button.dataset.copy)
-    button.textContent = "copied"
-    window.setTimeout(() => {
-      button.textContent = "copy"
-    }, 1200)
-  })
-}
-
-function bindProgress() {
-  const bar = document.querySelector(".progress")
-  const update = () => {
-    const max = document.documentElement.scrollHeight - window.innerHeight
-    bar.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`
-  }
-  window.addEventListener("scroll", update, { passive: true })
-  update()
-}
-
-function currentEngine() {
-  const value = document.querySelector("input[name=engine]:checked")?.value
-  return value === "official" ? officialKernel : lilKernel
-}
-
-function runKernel(api, request) {
-  const cookieStore = api.cookieStoreFromHeader(request.cookieHeader ?? "")
-  const cookie = api.readPostHogCookie(cookieStore, request.apiKey)
-  const flags = api.normalizeFlagsResponse(request.flags ?? {})
-  const rate = request.rate ?? {}
-  return {
-    uuidv7: api.uuidv7(),
-    uuidv4: api.uuidv4(),
-    cookie,
-    properties: api.cookieStateToProperties(cookie),
-    optedOut: api.isOptedOut(cookieStore, request.apiKey, request.consent),
-    hosts: {
-      api: api.apiHostFromConfig(request.config.api_host),
-      flags: api.flagsApiHostFromConfig(request.config),
-      ui: api.uiHostFromConfig(request.config),
-      region: api.regionForHost(request.config.api_host),
-      capture: api.endpointFor(request.config, "api", "/e/"),
-    },
-    flagValues: api.getFlagValuesFromFlags(flags.flags),
-    payloads: api.getPayloadsFromFlags(flags.flags),
-    rateLimit: api.rateLimitContext(rate.bucket, rate.now, rate.eventsPerSecond, rate.burstLimit, rate.checkOnly),
-    queue: api.formatQueue(request.queue ?? []),
-    unload: api.sortUnloadRequests(Object.values(api.formatQueue(request.queue ?? []))),
-    blocked: api.isBlockedUA(request.userAgent),
-    personHash: api.getPersonPropertiesHash(request.distinctId ?? "anon", request.set),
-    sampleRate: api.isValidSampleRate(request.sampleRate),
-    sanitized: api.sanitizeString(request.text ?? ""),
-    host: api.removeTrailingSlash(request.config?.api_host),
-  }
-}
-
-function renderPreview() {
-  const out = document.querySelector("#preview")
-  try {
-    const request = JSON.parse(document.querySelector("#source").value)
-    out.textContent = JSON.stringify(runKernel(currentEngine(), request), null, 2)
-  } catch (error) {
-    out.textContent = String(error)
-  }
-}
-
-function bindPlayground() {
-  const source = document.querySelector("#source")
-  source.value = sample
-  source.addEventListener("input", renderPreview)
-  for (const input of document.querySelectorAll("input[name=engine]")) {
-    input.addEventListener("change", renderPreview)
-  }
-  document.querySelector("#race").addEventListener("click", () => {
-    const request = JSON.parse(source.value)
-    const loops = 200
-    const run = (api) => {
-      runKernel(api, request)
-      const start = performance.now()
-      for (let i = 0; i < loops; i++) runKernel(api, request)
-      return performance.now() - start
-    }
-    const lilMs = run(lilKernel)
-    const officialMs = run(officialKernel)
-    document.querySelector("#race-out").textContent =
-      `@itslil/posthog-js ${lilMs.toFixed(1)} ms · official kernel ${officialMs.toFixed(1)} ms · ${fasterThan(lilMs, officialMs).text}`
-  })
-  renderPreview()
-}
-
-renderHero()
-renderSurface()
-renderPacks()
-renderSize()
-renderCompiler()
-renderPrevious()
-renderDelivered()
-bindCopy()
-bindProgress()
-bindPlayground()
+$('#demo-capture').addEventListener('click',()=>captureDemo('event'))
+$('#demo-error').addEventListener('click',()=>captureDemo('error'))
+initialize().catch(error=>{$('#verdict').textContent='Measurements could not load. '+error.message;console.error(error)})
