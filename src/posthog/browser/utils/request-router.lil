@@ -1,0 +1,188 @@
+// packages/browser/src/utils/request-router.ts
+// Decides which endpoint to call for which kind of request (events, replays, flags, assets) for a
+// region (US, EU or a custom host), honouring config overrides.
+// `posthog.requestRouter` is reachable from the page: it keeps `instance`, the four getters (read
+// through the object, as upstream reads them through `this`) and the two public methods. The
+// region cache and the ingestion-endpoint bookkeeping stay plain objects (upstream indexes the
+// cache by host).
+import extern { convertToURL } from "@upstream/browser-common/utils/request-utils";
+extern JsValue convertToURL(JsValue url);
+extern JsValue URL;
+extern JsValue Object;
+
+export JsValue RequestRouterRegion = object {
+  US: "us",
+  EU: "eu",
+  CUSTOM: "custom"
+};
+
+string ingestionDomain = "i.posthog.com";
+Regex staticAssetPath = new Regex("^\\/static\\/");
+Regex trailingSlash = new Regex("\\/$");
+Regex usRegion = new Regex("https:\\/\\/(app|us|us-assets)(\\.i)?\\.posthog\\.com", "i");
+Regex euRegion = new Regex("https:\\/\\/(eu|eu-assets)(\\.i)?\\.posthog\\.com", "i");
+
+export class RequestRouter {
+  JsValue instance;
+  JsValue _regionCache = object {};
+  // { apiHost, rewriteRequestPath, urls: Set } of the rewritten ingestion endpoints
+  JsValue _ingestionEndpoints = undefined;
+
+  init(JsValue instance) {
+    this.instance = instance;
+  }
+
+  bool isIngestionEndpoint(string url) {
+    JsValue ingestionEndpoints = this._ingestionEndpoints;
+    JsValue urlKey = urlKeyOf(url);
+    JsValue knownApiHost = if (ingestionEndpoints == null) { undefined } else { ingestionEndpoints.apiHost };
+    return knownApiHost === (this as JsValue).apiHost &&
+      ingestionEndpoints.rewriteRequestPath === this.instance.config.rewriteRequestPath &&
+      urlKey.truthy() &&
+      ingestionEndpoints.urls.has(urlKey).truthy();
+  }
+
+  JsValue endpointFor(string target, string path = "") {
+    if (path != "") {
+      path = if (path.charAt(0) == "/") { path } else { "/" + path };
+    }
+    JsValue me = this as JsValue;
+    if (target == "ui") {
+      return prepareEndpoint(this, target, path, me.uiHost + path);
+    }
+    if (target == "flags") {
+      return prepareEndpoint(this, target, path, me.flagsApiHost + path);
+    }
+    if (target == "assets") {
+      JsValue assetHostOverride = staticAssetHostOverride(this, path);
+      if (assetHostOverride.truthy()) {
+        return prepareEndpoint(this, target, path, `${assetHostOverride}${path}`);
+      }
+    }
+    if (me.region === "custom") {
+      return prepareEndpoint(this, target, path, me.apiHost + path);
+    }
+    string suffix = ingestionDomain + path;
+    if (target == "assets") {
+      return prepareEndpoint(this, target, path, `https://${me.region}-assets.${suffix}`);
+    }
+    if (target == "api") {
+      return prepareEndpoint(this, target, path, `https://${me.region}.${suffix}`);
+    }
+    return undefined;
+  }
+}
+export constructor RequestRouter;
+
+JsValue apiHostOf(RequestRouter self) {
+  JsValue host = self.instance.config.api_host.trim().replace(trailingSlash, "");
+  if (host === "https://app.posthog.com") {
+    return "https://us.i.posthog.com";
+  }
+  return host;
+}
+
+JsValue flagsApiHostOf(RequestRouter self) {
+  JsValue customHost = self.instance.config.flags_api_host;
+  if (customHost.truthy()) {
+    return customHost.trim().replace(trailingSlash, "");
+  }
+  // Backwards compatibility: without a custom flags_api_host, use the regular apiHost
+  return (self as JsValue).apiHost;
+}
+
+JsValue uiHostOf(RequestRouter self) {
+  JsValue uiHost = self.instance.config.ui_host;
+  JsValue host = if (uiHost == null) { undefined } else { uiHost.replace(trailingSlash, "") };
+  if (!host.truthy()) {
+    // No ui_host set, get it from the api_host: replace the ingestion subdomain with posthog.com
+    host = (self as JsValue).apiHost.replace("." + ingestionDomain, ".posthog.com");
+  }
+  if (host === "https://app.posthog.com") {
+    return "https://us.posthog.com";
+  }
+  return host;
+}
+
+JsValue regionOf(RequestRouter self) {
+  // We don't need to compute this every time so we cache the result
+  JsValue me = self as JsValue;
+  if (!self._regionCache[me.apiHost].truthy()) {
+    if (usRegion.test(me.apiHost as string)) {
+      self._regionCache[me.apiHost] = "us";
+    } else if (euRegion.test(me.apiHost as string)) {
+      self._regionCache[me.apiHost] = "eu";
+    } else {
+      self._regionCache[me.apiHost] = "custom";
+    }
+  }
+  return self._regionCache[me.apiHost];
+}
+
+// Prototype getters, as upstream's class declares them.
+Object.defineProperty((RequestRouter as JsValue).prototype, "apiHost", object {
+  get: (this JsValue receiver) => apiHostOf(receiver as RequestRouter),
+  configurable: true
+});
+Object.defineProperty((RequestRouter as JsValue).prototype, "flagsApiHost", object {
+  get: (this JsValue receiver) => flagsApiHostOf(receiver as RequestRouter),
+  configurable: true
+});
+Object.defineProperty((RequestRouter as JsValue).prototype, "uiHost", object {
+  get: (this JsValue receiver) => uiHostOf(receiver as RequestRouter),
+  configurable: true
+});
+Object.defineProperty((RequestRouter as JsValue).prototype, "region", object {
+  get: (this JsValue receiver) => regionOf(receiver as RequestRouter),
+  configurable: true
+});
+
+JsValue staticAssetHostOverride(RequestRouter self, string path) {
+  if (!staticAssetPath.test(path)) {
+    return undefined;
+  }
+  JsValue override = self.instance.config.asset_host;
+  if (!(override is string)) {
+    return undefined;
+  }
+  JsValue normalizedOverride = override.trim().replace(trailingSlash, "");
+  return normalizedOverride || undefined;
+}
+
+JsValue urlKeyOf(JsValue url) {
+  JsValue parsedUrl = convertToURL(url);
+  return if (parsedUrl.truthy()) { parsedUrl.protocol + "//" + parsedUrl.host + parsedUrl.pathname } else { undefined };
+}
+
+bool isIngestionPath(string path) {
+  return path.indexOf("/s/") == 0 || path.indexOf("/e/") == 0 || path.indexOf("/i/") == 0;
+}
+
+JsValue prepareEndpoint(RequestRouter self, string target, string path, JsValue url) {
+  if (target == "ui") {
+    return url;
+  }
+  JsValue rewrittenUrl = url;
+  JsValue rewriteRequestPath = self.instance.config.rewriteRequestPath;
+  if (rewriteRequestPath.truthy()) {
+    // `URL` is intentionally exposed by this opt-in hook so callers can inspect and update each
+    // component safely.
+    JsValue converted = convertToURL(url);
+    JsValue resolvedUrl = (if (converted == null) { undefined } else { converted.href }) || url;
+    rewrittenUrl = rewriteRequestPath(new URL(resolvedUrl)).toString();
+  }
+  if (rewriteRequestPath.truthy() && target == "api" && isIngestionPath(path)) {
+    JsValue urlKey = urlKeyOf(rewrittenUrl);
+    if (urlKey.truthy()) {
+      JsValue apiHost = (self as JsValue).apiHost;
+      JsValue ingestionEndpoints = self._ingestionEndpoints;
+      JsValue knownApiHost = if (ingestionEndpoints == null) { undefined } else { ingestionEndpoints.apiHost };
+      if (knownApiHost !== apiHost || ingestionEndpoints.rewriteRequestPath !== rewriteRequestPath) {
+        ingestionEndpoints = object { apiHost: apiHost, rewriteRequestPath: rewriteRequestPath, urls: new Set<string>() };
+        self._ingestionEndpoints = ingestionEndpoints;
+      }
+      ingestionEndpoints.urls.add(urlKey);
+    }
+  }
+  return rewrittenUrl;
+}
