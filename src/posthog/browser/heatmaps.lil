@@ -1,0 +1,347 @@
+// packages/browser/src/heatmaps.ts
+// `posthog.heatmaps` is reachable from the page: the class keeps upstream's fields in their key
+// order, the `flushIntervalMilliseconds` and `isEnabled` getters and the public methods. The
+// private `_config` getter and private methods are module functions. The getters return what
+// upstream returns (raw config values), so they stay `JsValue`.
+import { isEmptyObject, isNullish, isNumber, isObject } from "../core/utils/type-utils.lil";
+import { RageClick } from "./extensions/rageclick.lil";
+import { DeadClicksAutocapture, isDeadClicksEnabledForHeatmaps } from "./extensions/dead-clicks-autocapture.lil";
+import extern { document, window } from "@upstream/browser-common/utils/globals";
+import extern { getEventTarget, getParentElement, shouldCaptureRageclick } from "@upstream/browser-common/utils/autocapture-utils";
+import extern { DOM_EVENT_BEFOREUNLOAD, DOM_EVENT_VISIBILITYCHANGE, HEATMAPS_ENABLED_SERVER_SIDE } from "@upstream/browser/constants";
+import extern { stripUrlHash } from "@upstream/core/utils/index";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { isElementInToolbar, isElementNode, isTag } from "@upstream/browser-common/utils/element-utils";
+import extern { addEventListener } from "@upstream/browser-common/utils/general-utils";
+import extern { maskQueryParams } from "@upstream/browser-common/utils/request-utils";
+import extern { PERSONAL_DATA_CAMPAIGN_PARAMS, MASKED } from "@upstream/browser-common/utils/event-utils";
+extern JsValue document;
+extern JsValue window;
+extern JsValue getEventTarget(JsValue e);
+extern JsValue getParentElement(JsValue el);
+extern JsValue shouldCaptureRageclick(JsValue el, JsValue config);
+extern string DOM_EVENT_BEFOREUNLOAD;
+extern string DOM_EVENT_VISIBILITYCHANGE;
+extern string HEATMAPS_ENABLED_SERVER_SIDE;
+extern JsValue stripUrlHash(JsValue url);
+extern JsValue createLogger;
+extern bool isElementInToolbar(JsValue el);
+extern bool isElementNode(JsValue el);
+extern bool isTag(JsValue el, string tag);
+extern JsValue addEventListener;
+extern JsValue maskQueryParams(JsValue url, JsValue maskedParams, JsValue mask);
+extern JsValue PERSONAL_DATA_CAMPAIGN_PARAMS;
+extern JsValue MASKED;
+extern JsValue Date;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+extern JsValue setInterval;
+extern JsValue clearInterval;
+extern JsValue Object;
+
+float DEFAULT_FLUSH_INTERVAL = 5000.0;
+
+JsValue logger = createLogger("[Heatmaps]");
+
+shape HeatmapPoint {
+  data JsValue x;
+  data JsValue y;
+  data bool target_fixed;
+  data string type;
+}
+
+// `elementOrParentPositionMatches(el, ['fixed', 'sticky'], breakOnElement)`
+bool isFixedOrSticky(JsValue el, JsValue breakOnElement) {
+  JsValue curEl = el;
+  while (curEl.truthy() && isElementNode(curEl) && !isTag(curEl, "body")) {
+    if (curEl === breakOnElement) {
+      return false;
+    }
+    JsValue position = undefined;
+    try {
+      JsValue ownerDocument = curEl.ownerDocument;
+      JsValue view = if (ownerDocument == null) { undefined } else { ownerDocument.defaultView };
+      JsValue host = view ?? window;
+      position = if (host == null) { undefined } else { host.getComputedStyle(curEl).position };
+    } catch {
+      return false;
+    }
+    if (position === "fixed" || position === "sticky") {
+      return true;
+    }
+    curEl = getParentElement(curEl);
+  }
+  return false;
+}
+
+bool isValidMouseEvent(JsValue e) {
+  return isObject(e) && "clientX" in e && "clientY" in e && isNumber(e.clientX) && isNumber(e.clientY);
+}
+
+bool shouldPoll(JsValue document) {
+  return (if (document == null) { undefined } else { document.visibilityState }) === "visible";
+}
+
+export class Heatmaps {
+  bool _enabledServerSide = false;
+  bool _initialized = false;
+  JsValue _flushInterval = null;
+  JsValue instance;
+  JsValue rageclicks;
+  JsValue _mouseMoveTimeout = undefined;
+  JsValue _buffer = undefined;
+  JsValue _deadClicksCapture = undefined;
+  JsValue _onClickHandler = undefined;
+  JsValue _onMouseMoveHandler = undefined;
+  JsValue _flushHandler = undefined;
+  JsValue _onVisibilityChange_handler = undefined;
+
+  init(JsValue instance) {
+    this.instance = instance;
+    JsValue persistence = instance.persistence;
+    this._enabledServerSide = if (persistence == null) { false } else { persistence.props[HEATMAPS_ENABLED_SERVER_SIDE].truthy() };
+    this.rageclicks = new RageClick(instance.config.rageclick) as JsValue;
+  }
+
+  void initialize() {
+    (this as JsValue).startIfEnabled();
+  }
+
+  void startIfEnabled() {
+    if ((this as JsValue).isEnabled.truthy()) {
+      // only the first start sets up; a later disable runs the else branch
+      if (this._initialized) {
+        return;
+      }
+      logger.info("starting...");
+      setupListeners(this);
+      onVisibilityChange(this);
+    } else {
+      JsValue flushInterval = this._flushInterval;
+      clearInterval(if (flushInterval == null) { undefined } else { flushInterval });
+      removeListeners(this);
+      (this as JsValue).getAndClearBuffer();
+    }
+  }
+
+  void onRemoteConfig(JsValue result) {
+    if (!result.ok.truthy()) {
+      // Failure behaves like a response without a heatmaps key.
+      return;
+    }
+    JsValue response = result.config;
+    if (!("heatmaps" in response)) {
+      return;
+    }
+    bool optIn = response.heatmaps.truthy();
+    if (this.instance.persistence.truthy()) {
+      JsValue props = object {};
+      props[HEATMAPS_ENABLED_SERVER_SIDE] = optIn;
+      this.instance.persistence.register(props);
+    }
+    // kept in memory in case persistence is disabled
+    this._enabledServerSide = optIn;
+    (this as JsValue).startIfEnabled();
+  }
+
+  JsValue getAndClearBuffer() {
+    JsValue buffer = this._buffer;
+    this._buffer = undefined;
+    return buffer;
+  }
+}
+export constructor Heatmaps;
+
+Object.defineProperty((Heatmaps as JsValue).prototype, "flushIntervalMilliseconds", object {
+  get: (this JsValue receiver) => flushIntervalOf(receiver as Heatmaps),
+  configurable: true
+});
+Object.defineProperty((Heatmaps as JsValue).prototype, "isEnabled", object {
+  get: (this JsValue receiver) => isEnabledOf(receiver as Heatmaps),
+  configurable: true
+});
+
+// upstream's private `_config` getter
+JsValue configOf(Heatmaps self) {
+  return self.instance.config;
+}
+
+JsValue flushIntervalOf(Heatmaps self) {
+  JsValue flushInterval = DEFAULT_FLUSH_INTERVAL;
+  if (isObject(configOf(self).capture_heatmaps) && configOf(self).capture_heatmaps.flush_interval_milliseconds.truthy()) {
+    flushInterval = configOf(self).capture_heatmaps.flush_interval_milliseconds;
+  }
+  return flushInterval;
+}
+
+JsValue isEnabledOf(Heatmaps self) {
+  if (!isNullish(configOf(self).capture_heatmaps)) {
+    return configOf(self).capture_heatmaps !== false;
+  }
+  if (!isNullish(configOf(self).enable_heatmaps)) {
+    return configOf(self).enable_heatmaps;
+  }
+  return self._enabledServerSide;
+}
+
+void onDeadClick(Heatmaps self, JsValue click) {
+  // heatmaps only plots click coordinates; this also rejects swipe candidates, since a swipe's
+  // TouchEvent has no clientX/clientY
+  if (!isValidMouseEvent(click.originalEvent)) {
+    return;
+  }
+  onClick(self, click.originalEvent, "deadclick");
+}
+
+void onVisibilityChange(Heatmaps self) {
+  // always clear the interval just in case
+  if (self._flushInterval.truthy()) {
+    clearInterval(self._flushInterval);
+  }
+  self._flushInterval = if (shouldPoll(document)) {
+    setInterval(() => {
+      flush(self);
+    }, (self as JsValue).flushIntervalMilliseconds)
+  } else {
+    null
+  };
+}
+
+void setupListeners(Heatmaps self) {
+  if (!window.truthy() || !document.truthy()) {
+    return;
+  }
+
+  JsValue flushHandler = () => {
+    flush(self);
+  };
+  self._flushHandler = flushHandler;
+  addEventListener(window, DOM_EVENT_BEFOREUNLOAD, flushHandler);
+
+  JsValue clickHandler = (JsValue e) => {
+    onClick(self, e || (if (window == null) { undefined } else { window.event }), "click");
+  };
+  self._onClickHandler = clickHandler;
+  addEventListener(document, "click", clickHandler, object { capture: true });
+
+  JsValue mouseMoveHandler = (JsValue e) => {
+    onMouseMove(self, e || (if (window == null) { undefined } else { window.event }));
+  };
+  self._onMouseMoveHandler = mouseMoveHandler;
+  addEventListener(document, "mousemove", mouseMoveHandler, object { capture: true });
+
+  JsValue deadClicks = new DeadClicksAutocapture(self.instance, isDeadClicksEnabledForHeatmaps, (JsValue click) => {
+    onDeadClick(self, click);
+  }) as JsValue;
+  self._deadClicksCapture = deadClicks;
+  deadClicks.startIfEnabledOrStop();
+
+  JsValue visibilityHandler = () => {
+    onVisibilityChange(self);
+  };
+  self._onVisibilityChange_handler = visibilityHandler;
+  addEventListener(document, DOM_EVENT_VISIBILITYCHANGE, visibilityHandler);
+
+  self._initialized = true;
+}
+
+void removeListeners(Heatmaps self) {
+  if (!window.truthy() || !document.truthy()) {
+    return;
+  }
+  if (self._flushHandler.truthy()) {
+    window.removeEventListener(DOM_EVENT_BEFOREUNLOAD, self._flushHandler);
+  }
+  if (self._onClickHandler.truthy()) {
+    document.removeEventListener("click", self._onClickHandler, object { capture: true });
+  }
+  if (self._onMouseMoveHandler.truthy()) {
+    document.removeEventListener("mousemove", self._onMouseMoveHandler, object { capture: true });
+  }
+  if (self._onVisibilityChange_handler.truthy()) {
+    document.removeEventListener(DOM_EVENT_VISIBILITYCHANGE, self._onVisibilityChange_handler);
+  }
+  clearTimeout(self._mouseMoveTimeout);
+  JsValue deadClicks = self._deadClicksCapture;
+  if (deadClicks != null) {
+    deadClicks.stop();
+  }
+  self._initialized = false;
+}
+
+HeatmapPoint getProperties(Heatmaps self, JsValue e, string type) {
+  // a fixed or sticky target does not account for scrolling
+  JsValue scrollY = self.instance.scrollManager.scrollY();
+  JsValue scrollX = self.instance.scrollManager.scrollX();
+  JsValue scrollElement = self.instance.scrollManager.scrollElement();
+  bool fixed = isFixedOrSticky(getEventTarget(e), scrollElement);
+  return HeatmapPoint{
+    x: e.clientX + (if (fixed) { 0 as JsValue } else { scrollX }),
+    y: e.clientY + (if (fixed) { 0 as JsValue } else { scrollY }),
+    target_fixed: fixed,
+    type: type
+  };
+}
+
+void onClick(Heatmaps self, JsValue e, string type) {
+  if (isElementInToolbar(e.target) || !isValidMouseEvent(e)) {
+    return;
+  }
+  HeatmapPoint properties = getProperties(self, e, type);
+  JsValue rageclicks = self.rageclicks;
+  if (
+    rageclicks != null &&
+    rageclicks.isRageClick(e.clientX, e.clientY, new Date().getTime()).truthy() &&
+    shouldCaptureRageclick(getEventTarget(e), self.instance.config.rageclick).truthy()
+  ) {
+    capture(self, HeatmapPoint{...properties, type: "rageclick"} as JsValue);
+  }
+  capture(self, properties as JsValue);
+}
+
+void onMouseMove(Heatmaps self, JsValue e) {
+  if (isElementInToolbar(e.target) || !isValidMouseEvent(e)) {
+    return;
+  }
+  clearTimeout(self._mouseMoveTimeout);
+  self._mouseMoveTimeout = setTimeout(() => {
+    capture(self, getProperties(self, e, "mousemove") as JsValue);
+  }, 500);
+}
+
+void capture(Heatmaps self, JsValue properties) {
+  if (!window.truthy()) {
+    return;
+  }
+  JsValue href = if (configOf(self).disable_capture_url_hashes.truthy()) { stripUrlHash(window.location.href) } else { window.location.href };
+
+  // mask url query params
+  JsValue maskPersonalDataProperties = configOf(self).mask_personal_data_properties;
+  JsValue customPersonalDataProperties = configOf(self).custom_personal_data_properties;
+  JsValue[] paramsToMask = [];
+  if (maskPersonalDataProperties.truthy()) {
+    for (JsValue param of PERSONAL_DATA_CAMPAIGN_PARAMS) {
+      paramsToMask.push(param);
+    }
+    if (customPersonalDataProperties.truthy()) {
+      for (JsValue param of customPersonalDataProperties) {
+        paramsToMask.push(param);
+      }
+    }
+  }
+  JsValue url = maskQueryParams(href, paramsToMask as JsValue, MASKED);
+
+  JsValue buffer = self._buffer || object {};
+  self._buffer = buffer;
+  if (!buffer[url].truthy()) {
+    buffer[url] = [];
+  }
+  buffer[url].push(properties);
+}
+
+void flush(Heatmaps self) {
+  if (!self._buffer.truthy() || isEmptyObject(self._buffer)) {
+    return;
+  }
+  self.instance.capture("$$heatmap", object { $heatmap_data: (self as JsValue).getAndClearBuffer() });
+}

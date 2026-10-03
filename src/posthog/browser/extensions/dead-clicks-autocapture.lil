@@ -1,0 +1,141 @@
+// packages/browser/src/extensions/dead-clicks-autocapture.ts
+// `posthog.deadClicksAutocapture` (and heatmaps' private instance) is reachable from the page: the
+// class keeps upstream's parameter-property fields in order, the `lazyLoadedDeadClicksAutocapture`
+// getter and the public methods. The heavy part loads lazily through
+// `window.__PosthogExtensions__` (`initDeadClicksAutocapture`, `loadExternalDependency`).
+import { isBoolean, isObject } from "../../core/utils/type-utils.lil";
+import extern { DEAD_CLICKS_ENABLED_SERVER_SIDE } from "@upstream/browser/constants";
+import extern { document } from "@upstream/browser-common/utils/globals";
+import extern { assignableWindow } from "@upstream/browser/utils/globals";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+extern string DEAD_CLICKS_ENABLED_SERVER_SIDE;
+extern JsValue document;
+extern JsValue assignableWindow;
+extern JsValue createLogger;
+extern JsValue Object;
+
+JsValue logger = createLogger("[Dead Clicks]");
+
+// Upstream exports arrow functions (not constructible); they stay arrows.
+export JsValue isDeadClicksEnabledForHeatmaps = () => true;
+
+export JsValue isDeadClicksEnabledForAutocapture = (JsValue instance) => {
+  JsValue persistence = instance.instance.persistence;
+  bool isRemoteEnabled = if (persistence == null) { false } else { persistence.get_property(DEAD_CLICKS_ENABLED_SERVER_SIDE).truthy() };
+  JsValue clientConfig = instance.instance.config.capture_dead_clicks;
+  if (isBoolean(clientConfig)) {
+    return clientConfig;
+  }
+  if (isObject(clientConfig)) {
+    return true;
+  }
+  return isRemoteEnabled;
+};
+
+export class DeadClicksAutocapture {
+  JsValue instance;
+  JsValue isEnabled;
+  JsValue onCapture;
+  JsValue _lazyLoadedDeadClicksAutocapture = undefined;
+
+  init(JsValue instance, JsValue isEnabled, JsValue onCapture) {
+    this.instance = instance;
+    this.isEnabled = isEnabled;
+    this.onCapture = onCapture;
+    this.startIfEnabledOrStop();
+  }
+
+  void onRemoteConfig(JsValue result) {
+    if (!result.ok.truthy()) {
+      // Failure behaves like a response without a captureDeadClicks key.
+      return;
+    }
+    JsValue response = result.config;
+    if (!("captureDeadClicks" in response)) {
+      return;
+    }
+    JsValue persistence = this.instance.persistence;
+    if (persistence.truthy()) {
+      JsValue props = object {};
+      props[DEAD_CLICKS_ENABLED_SERVER_SIDE] = response.captureDeadClicks;
+      this.instance.persistence.register(props);
+    }
+    (this as JsValue).startIfEnabledOrStop();
+  }
+
+  void startIfEnabledOrStop() {
+    JsValue self = this as JsValue;
+    if (self.isEnabled(self).truthy()) {
+      DeadClicksAutocapture capture = this;
+      loadScript(this, () => {
+        start(capture);
+      });
+    } else {
+      self.stop();
+    }
+  }
+
+  void stop() {
+    JsValue lazy = this._lazyLoadedDeadClicksAutocapture;
+    if (lazy.truthy()) {
+      lazy.stop();
+      this._lazyLoadedDeadClicksAutocapture = undefined;
+      logger.info("stopping...");
+    }
+  }
+}
+export constructor DeadClicksAutocapture;
+
+Object.defineProperty((DeadClicksAutocapture as JsValue).prototype, "lazyLoadedDeadClicksAutocapture", object {
+  get: (this JsValue receiver) => (receiver as DeadClicksAutocapture)._lazyLoadedDeadClicksAutocapture,
+  configurable: true
+});
+
+void loadScript(DeadClicksAutocapture self, func()->void cb) {
+  JsValue extensions = assignableWindow.__PosthogExtensions__;
+  if (extensions != null && extensions.initDeadClicksAutocapture.truthy()) {
+    // already loaded
+    cb();
+    return;
+  }
+  JsValue current = assignableWindow.__PosthogExtensions__;
+  JsValue loader = if (current == null) { undefined } else { current.loadExternalDependency };
+  if (loader != null) {
+    loader.call(current, self.instance, "dead-clicks-autocapture", (JsValue err) => {
+      if (err.truthy()) {
+        logger.error("failed to load script", err);
+        return;
+      }
+      cb();
+    });
+  }
+}
+
+void start(DeadClicksAutocapture self) {
+  if (!document.truthy()) {
+    logger.error("`document` not found. Cannot start.");
+    return;
+  }
+  if (self._lazyLoadedDeadClicksAutocapture.truthy()) {
+    return;
+  }
+  JsValue extensions = assignableWindow.__PosthogExtensions__;
+  if (extensions != null && extensions.initDeadClicksAutocapture.truthy()) {
+    // copied so the writes below can't leak into the user's config object, which is shared
+    // between the autocapture and heatmaps instances of this extension
+    JsValue config = if (isObject(self.instance.config.capture_dead_clicks)) {
+      Object.assign(object {}, self.instance.config.capture_dead_clicks)
+    } else {
+      object {}
+    };
+    config.__onCapture = self.onCapture;
+    if (self.onCapture.truthy()) {
+      // an external consumer (heatmaps) only plots click points, so it never observes swipes
+      config.capture_dead_swipes = false;
+    }
+    JsValue lazy = assignableWindow.__PosthogExtensions__.initDeadClicksAutocapture(self.instance, config);
+    self._lazyLoadedDeadClicksAutocapture = lazy;
+    lazy.start(document);
+    logger.info("starting...");
+  }
+}
