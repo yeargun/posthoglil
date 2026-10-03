@@ -1,0 +1,374 @@
+// packages/browser/src/posthog-exceptions.ts
+// `posthog.exceptions` keeps upstream's public methods; `_instance` is a reserved (unmangled) name
+// upstream, so it stays a field of that name. Private methods are module functions. Exception
+// lists, frames and suppression rules are SDK or server data read dynamically, as upstream does.
+import { isArray, isNullish, isObject, isString } from "../core/utils/type-utils.lil";
+import extern { ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS, ERROR_TRACKING_SUPPRESSION_RULES } from "@upstream/browser/constants";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+import extern { propertyComparisons } from "@upstream/browser-common/utils/property-utils";
+import extern { isStackOverflowError } from "@upstream/browser/utils/stack-overflow";
+import extern {
+  ErrorPropertiesBuilder,
+  DOMExceptionCoercer,
+  PromiseRejectionEventCoercer,
+  ErrorEventCoercer,
+  ErrorCoercer,
+  EventCoercer,
+  ObjectCoercer,
+  StringCoercer,
+  PrimitiveCoercer,
+  createDefaultStackParser,
+  resolveExceptionStepsConfig,
+  ExceptionStepsBuffer,
+  stripReservedExceptionStepFields,
+  EXCEPTION_STEP_INTERNAL_FIELDS,
+  getInjectedReleaseId
+} from "@upstream/core/error-tracking/index";
+extern string ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS;
+extern string ERROR_TRACKING_SUPPRESSION_RULES;
+extern JsValue createLogger;
+extern JsValue propertyComparisons;
+extern bool isStackOverflowError(JsValue error);
+extern JsValue ErrorPropertiesBuilder;
+extern JsValue DOMExceptionCoercer;
+extern JsValue PromiseRejectionEventCoercer;
+extern JsValue ErrorEventCoercer;
+extern JsValue ErrorCoercer;
+extern JsValue EventCoercer;
+extern JsValue ObjectCoercer;
+extern JsValue StringCoercer;
+extern JsValue PrimitiveCoercer;
+extern JsValue createDefaultStackParser;
+extern JsValue resolveExceptionStepsConfig(JsValue config);
+extern JsValue ExceptionStepsBuffer;
+extern JsValue stripReservedExceptionStepFields(JsValue properties);
+extern JsValue EXCEPTION_STEP_INTERNAL_FIELDS;
+extern JsValue getInjectedReleaseId;
+extern JsValue Object;
+extern JsValue Date;
+extern JsValue Boolean;
+
+JsValue logger = createLogger("[Error tracking]");
+
+// Safari masks the URL of extension content scripts as `webkit-masked-url://hidden/`. It masks some
+// of the page's own scripts the same way, so a masked frame alone does not prove the exception
+// came from an extension (see isExtensionException).
+string MASKED_URL_PREFIX = "webkit-masked-url:";
+
+shape MaskedSignature {
+  data string value;
+  data bool exact;
+}
+
+MaskedSignature[] MASKED_EXTENSION_EXCEPTION_VALUE = [
+  MaskedSignature{value: "isolatedAPI.contexts.topHostname", exact: false},
+  MaskedSignature{value: "No response from target", exact: true}
+];
+
+// Browser extensions serve their content scripts from these schemes; `safari-extension:` and
+// `safari-web-extension:` are synthesised by the stack parser, but mark the frame just as well.
+string[] EXTENSION_URL_PREFIXES = [
+  "chrome-extension://",
+  "moz-extension://",
+  "safari-extension:",
+  "safari-web-extension:",
+  MASKED_URL_PREFIX
+];
+
+// Some mobile browsers inject user scripts that read browser-private globals and throw when the
+// global does not exist yet; the frame filename is then the page URL, so the private global is
+// matched in the exception value instead.
+string[] INJECTED_BROWSER_SCRIPT_GLOBALS = ["__firefox__", "__gCrWeb"];
+
+export JsValue buildErrorPropertiesBuilder() {
+  return new ErrorPropertiesBuilder(
+    [
+      new DOMExceptionCoercer(),
+      new PromiseRejectionEventCoercer(),
+      new ErrorEventCoercer(),
+      new ErrorCoercer(),
+      new EventCoercer(),
+      new ObjectCoercer(),
+      new StringCoercer(),
+      new PrimitiveCoercer()
+    ] as JsValue,
+    createDefaultStackParser()
+  );
+}
+
+// upstream's private `_getExceptionStepsConfig`
+JsValue exceptionStepsConfigOf(JsValue instance) {
+  JsValue errorTracking = instance.config.error_tracking;
+  JsValue steps = if (errorTracking == null) { undefined } else { errorTracking.exception_steps };
+  return steps ?? object {};
+}
+
+export class PostHogExceptions {
+  JsValue _suppressionRules = [];
+  JsValue _errorPropertiesBuilder = buildErrorPropertiesBuilder();
+  JsValue _instance;
+  JsValue _exceptionStepsConfig;
+  JsValue _exceptionStepsBuffer;
+
+  init(JsValue instance) {
+    this._instance = instance;
+    JsValue persistence = instance.persistence;
+    this._suppressionRules = (if (persistence == null) { undefined } else { persistence.get_property(ERROR_TRACKING_SUPPRESSION_RULES) }) ?? ([] as JsValue);
+    JsValue config = resolveExceptionStepsConfig(exceptionStepsConfigOf(instance));
+    this._exceptionStepsConfig = config;
+    this._exceptionStepsBuffer = new ExceptionStepsBuffer(config);
+  }
+
+  void onConfigChange() {
+    this._exceptionStepsConfig = resolveExceptionStepsConfig(exceptionStepsConfigOf(this._instance));
+    this._exceptionStepsBuffer.setConfig(this._exceptionStepsConfig);
+  }
+
+  void onRemoteConfig(JsValue result) {
+    if (!result.ok.truthy()) {
+      // Failure behaves like a response without an errorTracking key.
+      return;
+    }
+    JsValue response = result.config;
+    if (!("errorTracking" in response)) {
+      return;
+    }
+    JsValue errorTracking = response.errorTracking;
+    JsValue suppressionRules = (if (errorTracking == null) { undefined } else { errorTracking.suppressionRules }) ?? ([] as JsValue);
+    JsValue errorTrackingAgain = response.errorTracking;
+    JsValue captureExtensionExceptions = if (errorTrackingAgain == null) { undefined } else { errorTrackingAgain.captureExtensionExceptions };
+    // kept in memory in case persistence is disabled
+    this._suppressionRules = suppressionRules;
+    if (this._instance.persistence.truthy()) {
+      JsValue props = object {};
+      props[ERROR_TRACKING_SUPPRESSION_RULES] = this._suppressionRules;
+      props[ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS] = captureExtensionExceptions;
+      this._instance.persistence.register(props);
+    }
+  }
+
+  JsValue buildProperties(JsValue input, JsValue metadata) {
+    return this._errorPropertiesBuilder.buildFromUnknown(input, object {
+      syntheticException: if (metadata == null) { undefined } else { metadata.syntheticException },
+      mechanism: object {
+        handled: if (metadata == null) { undefined } else { metadata.handled }
+      }
+    });
+  }
+
+  void addExceptionStep(JsValue message, JsValue properties) {
+    if (!this._exceptionStepsConfig.enabled.truthy()) {
+      return;
+    }
+    try {
+      if (!isString(message) || message.trim()["length"] === 0) {
+        logger.warn("Ignoring exception step because message must be a non-empty string");
+        return;
+      }
+      // upstream's private `_coerceExceptionStepProperties`
+      JsValue userProperties = if (isObject(properties)) { Object.assign(object {}, properties) } else { object {} };
+      JsValue stripped = stripReservedExceptionStepFields(userProperties);
+      JsValue sanitizedProperties = stripped.sanitizedProperties;
+      JsValue droppedKeys = stripped.droppedKeys;
+      if (droppedKeys["length"] > 0) {
+        logger.warn("Ignoring reserved exception step fields", object { droppedKeys: droppedKeys });
+      }
+      JsValue step = object {};
+      step[EXCEPTION_STEP_INTERNAL_FIELDS.MESSAGE] = message;
+      step[EXCEPTION_STEP_INTERNAL_FIELDS.TIMESTAMP] = new Date().toISOString();
+      this._exceptionStepsBuffer.add(Object.assign(step, sanitizedProperties));
+    } catch (JsValue error) {
+      logger.error("Failed to add exception step. Ignoring breadcrumb.", error);
+    }
+  }
+
+  JsValue sendExceptionEvent(JsValue properties) {
+    try {
+      JsValue exceptionList = properties.$exception_list;
+      if (!isNullish(exceptionList) && isArray(exceptionList)) {
+        if (matchesSuppressionRule(this, exceptionList)) {
+          addDroppedExceptionStep(this, "Exception dropped: matched a suppression rule");
+          logger.info("Skipping exception capture because a suppression rule matched");
+          return undefined;
+        }
+        if (!captureExtensionExceptions(this).truthy() && isExtensionException(exceptionList)) {
+          addDroppedExceptionStep(this, "Exception dropped: thrown by a browser extension");
+          logger.info("Skipping exception capture because it was thrown by an extension");
+          return undefined;
+        }
+        if (!captureExtensionExceptions(this).truthy() && isInjectedBrowserScriptException(exceptionList)) {
+          addDroppedExceptionStep(this, "Exception dropped: thrown by an injected browser script");
+          logger.info("Skipping exception capture because it was thrown by an injected browser script");
+          return undefined;
+        }
+        if (!this._instance.config.error_tracking.__capturePostHogExceptions.truthy() && isPostHogException(exceptionList)) {
+          addDroppedExceptionStep(this, "Exception dropped: thrown by the PostHog SDK");
+          logger.info("Skipping exception capture because it was thrown by the PostHog SDK");
+          return undefined;
+        }
+      }
+
+      JsValue propertiesForExceptionCapture = if (this._exceptionStepsConfig.enabled.truthy() && isNullish(properties.$exception_steps)) {
+        addBufferedExceptionSteps(this, properties)
+      } else {
+        properties
+      };
+
+      JsValue injectedReleaseId = getInjectedReleaseId();
+      if (injectedReleaseId.truthy()) {
+        propertiesForExceptionCapture.$release_id = injectedReleaseId;
+      }
+
+      try {
+        JsValue result = this._instance.capture("$exception", propertiesForExceptionCapture, object {
+          _noTruncate: true,
+          _batchKey: "exceptionEvent",
+          _originatedFromCaptureException: true
+        });
+        if (result.truthy()) {
+          this._exceptionStepsBuffer.clear();
+        }
+        return result;
+      } catch (JsValue error) {
+        if (!isStackOverflowError(error)) {
+          logger.error("Failed to capture exception event. Dropping this exception.", error);
+        }
+        this._exceptionStepsBuffer.clear();
+        return undefined;
+      }
+    } catch (JsValue error) {
+      if (!isStackOverflowError(error)) {
+        logger.error("Failed to process exception event. Ignoring this exception.", error);
+      }
+      return undefined;
+    }
+  }
+}
+export constructor PostHogExceptions;
+
+// upstream's private `_captureExtensionExceptions` getter
+JsValue captureExtensionExceptions(PostHogExceptions self) {
+  bool enabledServerSide = self._instance.get_property(ERROR_TRACKING_CAPTURE_EXTENSION_EXCEPTIONS).truthy();
+  JsValue enabledClientSide = self._instance.config.error_tracking.captureExtensionExceptions;
+  return enabledClientSide ?? enabledServerSide;
+}
+
+JsValue addBufferedExceptionSteps(PostHogExceptions self, JsValue properties) {
+  try {
+    JsValue exceptionSteps = self._exceptionStepsBuffer.getAttachable();
+    if (exceptionSteps["length"] === 0) {
+      return properties;
+    }
+    return Object.assign(object {}, properties, object { $exception_steps: exceptionSteps });
+  } catch (JsValue error) {
+    logger.error("Failed to read buffered exception steps. Capturing exception without steps.", error);
+    return properties;
+  }
+}
+
+void addDroppedExceptionStep(PostHogExceptions self, string message) {
+  if (self._exceptionStepsConfig.enabled.truthy()) {
+    JsValue step = object {};
+    step[EXCEPTION_STEP_INTERNAL_FIELDS.MESSAGE] = message;
+    step[EXCEPTION_STEP_INTERNAL_FIELDS.TIMESTAMP] = new Date().toISOString();
+    self._exceptionStepsBuffer.add(step);
+  }
+}
+
+bool matchesSuppressionRule(PostHogExceptions self, JsValue exceptionList) {
+  if (exceptionList["length"] === 0) {
+    return false;
+  }
+  try {
+    JsValue exceptionValues = exceptionList.reduce((JsValue acc, JsValue exception) => {
+      JsValue type = exception.type;
+      JsValue value = exception.value;
+      if (isString(type) && type["length"] > 0) {
+        acc.$exception_types.push(type);
+      }
+      if (isString(value) && value["length"] > 0) {
+        acc.$exception_values.push(value);
+      }
+      return acc;
+    }, object { $exception_types: [] as JsValue, $exception_values: [] as JsValue });
+
+    return self._suppressionRules.some((JsValue rule) => {
+      JsValue results = rule.values.map((JsValue v) => {
+        JsValue compare = propertyComparisons[v.operator];
+        JsValue values = exceptionValues[v.key];
+        if (!compare.truthy() || !values.truthy()) {
+          return false as JsValue;
+        }
+        JsValue targets = if (isArray(v.value)) { v.value } else { [v.value] as JsValue };
+        return if (targets["length"] > 0) { compare(targets, values) } else { false as JsValue };
+      });
+      return if (rule.type === "OR") { results.some(Boolean) } else { results.every(Boolean) };
+    }).truthy();
+  } catch (JsValue error) {
+    // Suppression only ever filters what is captured, so failing to evaluate it must not cost the
+    // exception.
+    logger.warn("Failed to evaluate suppression rules. Capturing the exception.", error);
+    return false;
+  }
+}
+
+bool startsWithExtensionPrefix(JsValue filename) {
+  return EXTENSION_URL_PREFIXES.some((string prefix) => filename.startsWith(prefix).truthy());
+}
+
+bool isExtensionException(JsValue exceptionList) {
+  JsValue frames = exceptionList.flatMap((JsValue e) => {
+    JsValue stacktrace = e.stacktrace;
+    return (if (stacktrace == null) { undefined } else { stacktrace.frames }) ?? ([] as JsValue);
+  });
+  JsValue extensionFrames = frames.filter((JsValue frame) => {
+    JsValue filename = frame.filename;
+    return filename.truthy() && startsWithExtensionPrefix(filename);
+  });
+  if (extensionFrames["length"] === 0) {
+    return false;
+  }
+
+  // Safari also masks blob, eval'd and injected application code: an all-masked stack needs a
+  // known extension-only signature and no remaining page frame. Masked frames are ignored when
+  // checking for page code because the Sentry integration may forward them with `in_app: true`.
+  bool onlyMaskedExtensionFrames = extensionFrames.every((JsValue frame) => {
+    JsValue filename = frame.filename;
+    return filename.truthy() && filename.startsWith(MASKED_URL_PREFIX).truthy();
+  }).truthy();
+  if (onlyMaskedExtensionFrames) {
+    bool hasKnownExtensionSignature = exceptionList.some((JsValue exception) => {
+      JsValue type = exception.type;
+      JsValue value = exception.value;
+      return type === "NoResponse" || (isString(value) && MASKED_EXTENSION_EXCEPTION_VALUE.some((MaskedSignature signature) => {
+        return if (signature.exact) { value === signature.value } else { value.includes(signature.value).truthy() };
+      }));
+    }).truthy();
+    return hasKnownExtensionSignature && !frames.some((JsValue frame) => {
+      JsValue in_app = frame.in_app;
+      JsValue filename = frame.filename;
+      return in_app.truthy() && !(if (filename == null) { undefined } else { filename.startsWith(MASKED_URL_PREFIX) }).truthy();
+    }).truthy();
+  }
+  return true;
+}
+
+bool isInjectedBrowserScriptException(JsValue exceptionList) {
+  return exceptionList.some((JsValue exception) => {
+    JsValue value = exception.value;
+    return isString(value) && INJECTED_BROWSER_SCRIPT_GLOBALS.some((string global) => value.includes(global).truthy());
+  }).truthy();
+}
+
+bool isPostHogException(JsValue exceptionList) {
+  if (exceptionList["length"] > 0) {
+    JsValue exception = exceptionList[0];
+    JsValue stacktrace = exception.stacktrace;
+    JsValue frames = (if (stacktrace == null) { undefined } else { stacktrace.frames }) ?? ([] as JsValue);
+    JsValue lastFrame = frames[frames["length"] - 1];
+    JsValue filename = if (lastFrame == null) { undefined } else { lastFrame.filename };
+    JsValue includes = if (filename == null) { undefined } else { filename.includes("posthog.com/static") };
+    return (includes ?? false).truthy();
+  }
+  return false;
+}
