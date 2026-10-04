@@ -35,7 +35,8 @@ export class ErrorPropertiesBuilder {
     JsValue hint = if (hintArgument === undefined) { object {} } else { hintArgument };
     JsValue providedMechanism = hint && hint.mechanism;
     JsValue mechanism = providedMechanism || object { handled: true, type: "generic" };
-    JsValue coercingContext = this.buildCoercingContext(mechanism, hint, 0.0);
+    // Through the instance, as upstream's `this.buildCoercingContext(…)` dispatches.
+    JsValue coercingContext = (this as JsValue).buildCoercingContext(mechanism, hint, 0);
     JsValue exceptionWithCause = coercingContext.apply(input);
     ParsingContext parsingContext = ParsingContext{
       chunkIdMap: getFilenameToChunkIdMap(this.stackParser),

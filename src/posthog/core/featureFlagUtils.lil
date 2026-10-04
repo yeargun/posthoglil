@@ -84,11 +84,10 @@ export func(JsValue, JsValue)->JsValue createFlagsResponseFromFlagsAndPayloads =
   // If a feature flag payload key is not in the feature flags, we treat it as true feature flag.
   // `[...new Set([...a, ...b])]`: the keys in first-seen order.
   JsValue flagValues = Array.from(JS.construct(Set, Object.keys(featureFlags ?? object {}).concat(Object.keys(featureFlagPayloads ?? object {}))))
-    .filter((JsValue flag) => {
-      JsValue value = if (featureFlags == null) { undefined } else { featureFlags[flag] };
-      JsValue payload = if (featureFlagPayloads == null) { undefined } else { featureFlagPayloads[flag] };
-      return value !== undefined || payload.truthy();
-    })
+    .filter((JsValue flag) =>
+      (if (featureFlags == null) { undefined } else { featureFlags[flag] }) !== undefined
+        || (if (featureFlagPayloads == null) { undefined } else { featureFlagPayloads[flag] }).truthy()
+    )
     .reduce((JsValue res, JsValue key) => {
       JsValue value = if (featureFlags == null) { undefined } else { featureFlags[key] };
       res[key] = value ?? true;
