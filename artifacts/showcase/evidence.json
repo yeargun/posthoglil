@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-04T09:16:20.579Z",
+ "generated": "2026-10-04T09:16:59.847Z",
  "meta": {
   "upstreamVersion": "1.435.8",
   "upstreamCommit": "c9d890a4",
@@ -581,6 +581,50 @@
     }
    }
   ]
+ },
+ "files": {
+  "files/upstream/terser-upstream/error-tracking.mjs": "24f2ce66e4f082c41cd588320b550a1fb966ca8d72990d4994218a3768a72145",
+  "files/upstream/esbuild/error-tracking.mjs": "4e1655de3d0ec06ae3047c2c3274ed936a7d0e1a489556fe92c18d1e9d8334fb",
+  "files/upstream/oxc/error-tracking.mjs": "11c04ff295b8679b56f24d71e347fb7bad3abc0f0e51feeab215f1cc2c959bd5",
+  "files/lilscript/raw/error-tracking.mjs": "df4b30d8ab57e775dc3f969a049864c75b8a3945a7a9989cb83d8e6a0bcd4b2f",
+  "files/lilscript/gzip/error-tracking.mjs": "f87f3021682bc55b3ec85fadd2e9eba02ce2ed9cd984fede3aa88bbcfffd2895",
+  "files/lilscript/brotli/error-tracking.mjs": "d4fd8d700ac5678b373faf24153f6b7a60f3d544452dc9f5fbf293a65d29c862",
+  "files/upstream/terser-upstream/user-agent.mjs": "e780edad73f989458d9c92454095e7d3fb0d7ec90625cf976e88dd34265a40d2",
+  "files/upstream/esbuild/user-agent.mjs": "29e7fbe8af64b8420908e002f4d4a25d2be16ba154050683343b702f5d67c534",
+  "files/upstream/oxc/user-agent.mjs": "306af2cc165244701197b20dcb0647b0066e286a336e713e51bdc08c608c26c8",
+  "files/lilscript/raw/user-agent.mjs": "3fcf97d2497653da376be3084e6cc275613b70317fd4f7755bd7a728936506cb",
+  "files/lilscript/gzip/user-agent.mjs": "8203570cc97918335df436bf7f81686ecce3ed08f610442fcc67d9697e5a5192",
+  "files/lilscript/brotli/user-agent.mjs": "420c93c0669694d61954fc89a0d2cff4d8faa7097921c68a6f04fcff2cff6245",
+  "files/upstream/terser-upstream/autocapture-utils.mjs": "db2847c7fbf7e14d967472c18e937bf68f7fcac607178442337e0ab01149e833",
+  "files/upstream/esbuild/autocapture-utils.mjs": "4c815ada08d7a2ee1e8400016ab0ef9eb0b1b93fe6c7ce6da188dcee037aef01",
+  "files/upstream/oxc/autocapture-utils.mjs": "1778e379362d463540c0f968bc8d09b6d9ece17c263905da0d5de6bae7761551",
+  "files/lilscript/raw/autocapture-utils.mjs": "7ed75f9083c758237d5810323e2d49a0e02440c0c863d996a4a0d7030cdd74f2",
+  "files/lilscript/gzip/autocapture-utils.mjs": "e99c4f59c9df62ed470f903245f3fb3b20d3b29f59d8bf9b52b313802c066d57",
+  "files/lilscript/brotli/autocapture-utils.mjs": "f75eaa00e242dba23dc22a8ae511f1cab7d35f3c8708714030df55d12e2418a6",
+  "files/upstream/terser-upstream/feature-flags.mjs": "b612be7bdee8d143f1f6ae8a6c85ccac49951eab67bdc47c6c2879b4cae90088",
+  "files/upstream/esbuild/feature-flags.mjs": "cfe679120e275e8cdb0355cda6680a897adedd25468d05818b60067349896736",
+  "files/upstream/oxc/feature-flags.mjs": "39307c9cd959acdd49e3b8ab484d6bf35dd1235a6ca6f81b3285d3aeb39c667b",
+  "files/lilscript/raw/feature-flags.mjs": "92895ec199bb70301e0c298e2366af6c4897dcd7b8fcb59a1b484ba39250eba3",
+  "files/lilscript/gzip/feature-flags.mjs": "feff8dd60f66eaf79687690a58543047552f70c38b1d1347738f9d40e4b18683",
+  "files/lilscript/brotli/feature-flags.mjs": "feff8dd60f66eaf79687690a58543047552f70c38b1d1347738f9d40e4b18683",
+  "files/upstream/terser-upstream/metrics.mjs": "d971268939aca8825a5eb7976b17571964d0058de29cb1d44da13217c3c4562e",
+  "files/upstream/esbuild/metrics.mjs": "c2a543e5bd751490c54bacefd7ff8a0ea8d6711258f54a2f39306502b1921f43",
+  "files/upstream/oxc/metrics.mjs": "2442a4f9ac3a11184a1cd7aea6c9be1deda522236c6251ecc596a671e6f05f85",
+  "files/lilscript/raw/metrics.mjs": "ecd6d3fe0b957e164316df5f91dbcee52e1865b2d13914afe576da1aee4bd81a",
+  "files/lilscript/gzip/metrics.mjs": "cb6d61d636b5255f5d718778ddb98c151b33b27b1fd2d16866714229f4e0fa55",
+  "files/lilscript/brotli/metrics.mjs": "aef7342ea8558dc95b1f84bae08c933e517089bfce98cf62ea39ba3e05e461ff",
+  "files/upstream/terser-upstream/uuidv7.mjs": "c38ca16d461ca2ec7a41e104a436799d6f03bd85c7ebee9becfdca5c4152e988",
+  "files/upstream/esbuild/uuidv7.mjs": "52fc1e0734aac99f48f9c2e849070a2111c5cd0118f8f15f59169c2e57e3245a",
+  "files/upstream/oxc/uuidv7.mjs": "53a5d7d0477dce9406b222cf5bfa82a7ce4a930951798ef0e0365d91f266d12d",
+  "files/lilscript/raw/uuidv7.mjs": "b8d62efb7182429736acfc0c81a9e3b1ae80f7f6c424d20d179f20fefb033887",
+  "files/lilscript/gzip/uuidv7.mjs": "d4eb5e8b3d97651cabff895011da85c7f41ecd792b2a363e613a96e54cb3e182",
+  "files/lilscript/brotli/uuidv7.mjs": "531031330cd327bdc4d7b77bd150832e5fe07866dd63f551cf65aa34b33cdb14",
+  "files/upstream/terser-upstream/gzip.mjs": "0292e9d70e59bafed68bc34330f3209cb8f8f8078443345a841b2787e672e12d",
+  "files/upstream/esbuild/gzip.mjs": "4621916eac6695354c0a5289761c7ef1a98b5aea01b9669ba66ddc62d1219e68",
+  "files/upstream/oxc/gzip.mjs": "56f861b0d5be24586829bc4225c42b68a6244df392b8d3311af3d5f3a1ed54f3",
+  "files/lilscript/raw/gzip.mjs": "b310855e37795b982b409fa5810d58c10bc1dba5fd242eaed14131abc9dfce25",
+  "files/lilscript/gzip/gzip.mjs": "111c94549f67061c3e8e2ea637cb77a23b7a3ca879e312c0783166a0f2458a34",
+  "files/lilscript/brotli/gzip.mjs": "642167c59d5158e60411827556dcce29c64a23e9e98ad34e8139fea4bf2b450e"
  },
  "perf": {
   "modules": {
