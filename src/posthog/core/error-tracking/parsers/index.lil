@@ -120,10 +120,8 @@ void canonicalizeCycleRotation(JsValue[] frames) {
       first = i;
     }
   }
-  JsValue[] head = frames.splice(0, first);
-  for (JsValue frame of head) {
-    frames.push(frame);
-  }
+  JsValue view = frames;
+  view.push(...view.splice(0, first));
 }
 
 // Reads both rotations from their first frame on; the whole copy decides.
@@ -145,9 +143,10 @@ export JsValue reverseAndStripFrames(JsValue stack) {
   JsValue localStack = Array.from(stack);
   localStack.reverse();
   return localStack.slice(0, STACKTRACE_FRAME_LIMIT).map((JsValue frame) => {
-    JsValue stripped = Object.assign(object {}, frame, object { filename: frame.filename || getLastStackFrame(localStack).filename });
-    stripped["function"] = frame["function"] || UNKNOWN_FUNCTION;
-    return stripped;
+    return Object.assign(object {}, frame, object {
+      filename: frame.filename || getLastStackFrame(localStack).filename,
+      function: frame["function"] || UNKNOWN_FUNCTION
+    });
   });
 }
 
@@ -193,7 +192,7 @@ export JsValue createStackParser(JsValue platform, JsValue... parsers) {
       if (JS.stringMatch(cleanedLine, new Regex("\\S*Error: ")).truthy()) {
         continue;
       }
-      for (JsValue parser of parsers) {
+      for (JsValue parser of (parsers as JsValue)) {
         JsValue frame = parser(cleanedLine, platform);
         if (frame.truthy()) {
           frames.push(frame);
