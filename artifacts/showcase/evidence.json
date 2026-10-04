@@ -1,0 +1,1033 @@
+{
+ "generated": "2026-10-04T08:26:54.696Z",
+ "meta": {
+  "upstreamVersion": "1.435.8",
+  "upstreamCommit": "c9d890a4",
+  "compiler": "d8f79ed5",
+  "versions": {
+   "terser": "5.51.2",
+   "esbuild": "0.28.2",
+   "rolldown": "1.2.12"
+  },
+  "modules": {
+   "error-tracking": {
+    "name": "Exception capture",
+    "summary": "Turns thrown values into $exception events",
+    "description": "Coerces any thrown value (Error, DOMException, ErrorEvent, promise rejections, plain objects, strings) into PostHog's exception list, parses Chrome, Firefox and Safari stack traces, collapses repeated recursion cycles, attaches chunk ids, and keeps the exception steps buffer.",
+    "upstream": "packages/core/src/error-tracking/",
+    "port": "src/posthog/core/error-tracking/"
+   },
+   "user-agent": {
+    "name": "Browser, OS and device detection",
+    "summary": "Reads $browser, $os and $device_type from the user agent",
+    "description": "Detects the browser and its version, the operating system and the device type from a user agent string, as posthog-js does for every event's properties.",
+    "upstream": "packages/core/src/utils/user-agent-utils.ts",
+    "port": "src/posthog/core/utils/user-agent-utils.lil"
+   },
+   "autocapture-utils": {
+    "name": "Autocapture DOM utilities",
+    "summary": "Decides what a click captures and how it is described",
+    "description": "The helpers autocapture runs on every click: element chains, which elements and values are safe to capture, sensitive-input checks, class and text extraction.",
+    "upstream": "packages/browser-common/src/utils/autocapture-utils.ts",
+    "port": "src/posthog/browser-common/utils/autocapture-utils.lil"
+   },
+   "feature-flags": {
+    "name": "Feature flag responses",
+    "summary": "Normalizes /flags responses into flag values and payloads",
+    "description": "Normalizes /flags responses, in the older and the current format, into flag values, details and payloads; reads a flag's value and variant; trims the properties of $feature_flag_called events.",
+    "upstream": "packages/core/src/featureFlagUtils.ts",
+    "port": "src/posthog/core/featureFlagUtils.lil"
+   },
+   "metrics": {
+    "name": "Metrics client",
+    "summary": "Aggregates counters, gauges and histograms into OTLP",
+    "description": "The pre-aggregating metrics client: counts, gauges and histograms per series, a cardinality cap, beforeSend hooks, retry-after backoff and the OTLP payload it sends.",
+    "upstream": "packages/core/src/metrics/index.ts",
+    "port": "src/posthog/core/metrics/index.lil"
+   },
+   "uuidv7": {
+    "name": "UUIDv7 ids",
+    "summary": "Generates the event and session ids",
+    "description": "Generates time-ordered UUIDv7 values, the ids posthog-js gives every event and session, and reads the timestamp back out of one.",
+    "upstream": "packages/browser-common/src/utils/uuidv7.ts",
+    "port": "src/posthog/browser-common/utils/uuidv7.lil"
+   },
+   "gzip": {
+    "name": "Request compression",
+    "summary": "Gzips request bodies before they are sent",
+    "description": "Compresses request bodies with the browser's CompressionStream, and tells whether gzip is supported and whether a body or request is already gzipped.",
+    "upstream": "packages/core/src/gzip.ts",
+    "port": "src/posthog/core/gzip.lil"
+   }
+  },
+  "workloads": {
+   "error-tracking": {
+    "build-properties": "29 inputs through the properties builder: real Chromium errors with causes, an AggregateError, a DOMException, error and rejection events, strings, objects",
+    "parse-stacks": "11 Chrome, Firefox and Safari stack strings through the parser",
+    "exception-steps": "150 exception steps into the 32 KB buffer"
+   },
+   "user-agent": {
+    "corpus": "OS, browser, device, device type and version for the 606 user agents in posthog-js’s tests",
+    "traffic-mix": "the same per-event sequence for 200 events from a modern browser mix"
+   },
+   "autocapture-utils": {
+    "click-pipeline": "43 clicks on a realistic app page through posthog-js’s autocapture flow, with the dead-click and rage-click checks",
+    "text-scrub": "scrubbing page text, attributes and 12 network bodies"
+   },
+   "feature-flags": {
+    "flags-v2-reads": "a 64-flag /flags response handled as the client does: normalize, values, payloads, reads, overrides, the flag-called event",
+    "flags-v1-storage": "rebuilding stored flags in the older format"
+   },
+   "metrics": {
+    "record-drain": "1,000 samples (histograms, counters, gauges), then drainWindow()",
+    "record-flush": "200 samples, then await flush()"
+   },
+   "uuidv7": {
+    "generate": "1,000 uuidv7() calls",
+    "timestamp": "1,000 uuid7ToTimestampMs() calls"
+   },
+   "gzip": {
+    "event-batch": "a 30-event batch (61 KB)",
+    "replay-snapshot": "a 563 KB replay snapshot"
+   }
+  }
+ },
+ "results": {
+  "compiler": "/home/azureuser/lilscript-work/bin/posthog100-f18/lilscript",
+  "date": "2026-10-04T08:15:41.676Z",
+  "results": [
+   {
+    "id": "error-tracking",
+    "title": "Exception capture pipeline",
+    "upstream": {
+     "terser-upstream": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/error-tracking.mjs",
+      "raw": 14046,
+      "gzip": 5385,
+      "brotli": 4911
+     },
+     "esbuild": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/error-tracking.mjs",
+      "raw": 17510,
+      "gzip": 7095,
+      "brotli": 6497
+     },
+     "oxc": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/error-tracking.mjs",
+      "raw": 14282,
+      "gzip": 5471,
+      "brotli": 4997
+     }
+    },
+    "best": {
+     "raw": {
+      "lane": "terser-upstream",
+      "bytes": 14046
+     },
+     "gzip": {
+      "lane": "terser-upstream",
+      "bytes": 5385
+     },
+     "brotli": {
+      "lane": "terser-upstream",
+      "bytes": 4911
+     }
+    },
+    "lilscript": {
+     "raw": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/error-tracking.mjs",
+      "seconds": 3.17,
+      "raw": 12903,
+      "gzip": 5471,
+      "brotli": 4956
+     },
+     "gzip": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/error-tracking.mjs",
+      "seconds": 6.04,
+      "raw": 13110,
+      "gzip": 5356,
+      "brotli": 4898
+     },
+     "brotli": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/error-tracking.mjs",
+      "seconds": 8.25,
+      "raw": 13403,
+      "gzip": 5398,
+      "brotli": 4875
+     }
+    },
+    "delta": {
+     "raw": -8.14,
+     "gzip": -0.54,
+     "brotli": -0.73
+    }
+   },
+   {
+    "id": "user-agent",
+    "title": "Browser, OS and device detection",
+    "upstream": {
+     "terser-upstream": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/user-agent.mjs",
+      "raw": 5588,
+      "gzip": 2399,
+      "brotli": 2189
+     },
+     "esbuild": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/user-agent.mjs",
+      "raw": 5282,
+      "gzip": 2488,
+      "brotli": 2280
+     },
+     "oxc": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/user-agent.mjs",
+      "raw": 6047,
+      "gzip": 2483,
+      "brotli": 2260
+     }
+    },
+    "best": {
+     "raw": {
+      "lane": "esbuild",
+      "bytes": 5282
+     },
+     "gzip": {
+      "lane": "terser-upstream",
+      "bytes": 2399
+     },
+     "brotli": {
+      "lane": "terser-upstream",
+      "bytes": 2189
+     }
+    },
+    "lilscript": {
+     "raw": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/user-agent-utils.mjs",
+      "seconds": 0.42,
+      "raw": 5198,
+      "gzip": 2330,
+      "brotli": 2160
+     },
+     "gzip": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/user-agent-utils.mjs",
+      "seconds": 0.5,
+      "raw": 5533,
+      "gzip": 2239,
+      "brotli": 2069
+     },
+     "brotli": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/user-agent-utils.mjs",
+      "seconds": 1.81,
+      "raw": 5526,
+      "gzip": 2223,
+      "brotli": 2049
+     }
+    },
+    "delta": {
+     "raw": -1.59,
+     "gzip": -6.67,
+     "brotli": -6.4
+    }
+   },
+   {
+    "id": "autocapture-utils",
+    "title": "Autocapture DOM utilities",
+    "upstream": {
+     "terser-upstream": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/autocapture-utils.mjs",
+      "raw": 9624,
+      "gzip": 3971,
+      "brotli": 3560
+     },
+     "esbuild": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/autocapture-utils.mjs",
+      "raw": 14173,
+      "gzip": 6181,
+      "brotli": 5544
+     },
+     "oxc": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/autocapture-utils.mjs",
+      "raw": 9865,
+      "gzip": 4138,
+      "brotli": 3719
+     }
+    },
+    "best": {
+     "raw": {
+      "lane": "terser-upstream",
+      "bytes": 9624
+     },
+     "gzip": {
+      "lane": "terser-upstream",
+      "bytes": 3971
+     },
+     "brotli": {
+      "lane": "terser-upstream",
+      "bytes": 3560
+     }
+    },
+    "lilscript": {
+     "raw": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/autocapture-utils.mjs",
+      "seconds": 1.52,
+      "raw": 9203,
+      "gzip": 4075,
+      "brotli": 3635
+     },
+     "gzip": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/autocapture-utils.mjs",
+      "seconds": 2.59,
+      "raw": 9502,
+      "gzip": 3941,
+      "brotli": 3538
+     },
+     "brotli": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/autocapture-utils.mjs",
+      "seconds": 6.71,
+      "raw": 9409,
+      "gzip": 3980,
+      "brotli": 3548
+     }
+    },
+    "delta": {
+     "raw": -4.37,
+     "gzip": -0.76,
+     "brotli": -0.34
+    }
+   },
+   {
+    "id": "feature-flags",
+    "title": "Feature flag response utilities",
+    "upstream": {
+     "terser-upstream": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/feature-flags.mjs",
+      "raw": 2669,
+      "gzip": 1118,
+      "brotli": 976
+     },
+     "esbuild": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/feature-flags.mjs",
+      "raw": 2658,
+      "gzip": 1145,
+      "brotli": 998
+     },
+     "oxc": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/feature-flags.mjs",
+      "raw": 2671,
+      "gzip": 1140,
+      "brotli": 994
+     }
+    },
+    "best": {
+     "raw": {
+      "lane": "esbuild",
+      "bytes": 2658
+     },
+     "gzip": {
+      "lane": "terser-upstream",
+      "bytes": 1118
+     },
+     "brotli": {
+      "lane": "terser-upstream",
+      "bytes": 976
+     }
+    },
+    "lilscript": {
+     "raw": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/featureFlagUtils.mjs",
+      "seconds": 0.1,
+      "raw": 2608,
+      "gzip": 1140,
+      "brotli": 999
+     },
+     "gzip": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/featureFlagUtils.mjs",
+      "seconds": 0.1,
+      "raw": 2632,
+      "gzip": 1107,
+      "brotli": 972
+     },
+     "brotli": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/featureFlagUtils.mjs",
+      "seconds": 0.33,
+      "raw": 2632,
+      "gzip": 1107,
+      "brotli": 972
+     }
+    },
+    "delta": {
+     "raw": -1.88,
+     "gzip": -0.98,
+     "brotli": -0.41
+    }
+   },
+   {
+    "id": "metrics",
+    "title": "Metrics client (OTLP)",
+    "upstream": {
+     "terser-upstream": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/metrics.mjs",
+      "raw": 10409,
+      "gzip": 3920,
+      "brotli": 3611
+     },
+     "esbuild": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/metrics.mjs",
+      "raw": 14927,
+      "gzip": 5674,
+      "brotli": 5170
+     },
+     "oxc": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/metrics.mjs",
+      "raw": 12090,
+      "gzip": 4169,
+      "brotli": 3817
+     }
+    },
+    "best": {
+     "raw": {
+      "lane": "terser-upstream",
+      "bytes": 10409
+     },
+     "gzip": {
+      "lane": "terser-upstream",
+      "bytes": 3920
+     },
+     "brotli": {
+      "lane": "terser-upstream",
+      "bytes": 3611
+     }
+    },
+    "lilscript": {
+     "raw": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/index.mjs",
+      "seconds": 2.42,
+      "raw": 9512,
+      "gzip": 4059,
+      "brotli": 3681
+     },
+     "gzip": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/index.mjs",
+      "seconds": 3.17,
+      "raw": 10003,
+      "gzip": 3878,
+      "brotli": 3584
+     },
+     "brotli": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/index.mjs",
+      "seconds": 8.49,
+      "raw": 9982,
+      "gzip": 3931,
+      "brotli": 3569
+     }
+    },
+    "delta": {
+     "raw": -8.62,
+     "gzip": -1.07,
+     "brotli": -1.16
+    }
+   },
+   {
+    "id": "uuidv7",
+    "title": "UUIDv7 event and session IDs",
+    "upstream": {
+     "terser-upstream": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/uuidv7.mjs",
+      "raw": 2775,
+      "gzip": 1271,
+      "brotli": 1114
+     },
+     "esbuild": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/uuidv7.mjs",
+      "raw": 7505,
+      "gzip": 3412,
+      "brotli": 3016
+     },
+     "oxc": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/uuidv7.mjs",
+      "raw": 3413,
+      "gzip": 1609,
+      "brotli": 1379
+     }
+    },
+    "best": {
+     "raw": {
+      "lane": "terser-upstream",
+      "bytes": 2775
+     },
+     "gzip": {
+      "lane": "terser-upstream",
+      "bytes": 1271
+     },
+     "brotli": {
+      "lane": "terser-upstream",
+      "bytes": 1114
+     }
+    },
+    "lilscript": {
+     "raw": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/uuidv7.mjs",
+      "seconds": 0.21,
+      "raw": 2402,
+      "gzip": 1274,
+      "brotli": 1117
+     },
+     "gzip": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/uuidv7.mjs",
+      "seconds": 0.28,
+      "raw": 2442,
+      "gzip": 1245,
+      "brotli": 1080
+     },
+     "brotli": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/uuidv7.mjs",
+      "seconds": 0.47,
+      "raw": 2441,
+      "gzip": 1256,
+      "brotli": 1093
+     }
+    },
+    "delta": {
+     "raw": -13.44,
+     "gzip": -2.05,
+     "brotli": -1.89
+    }
+   },
+   {
+    "id": "gzip",
+    "title": "Request gzip compression",
+    "upstream": {
+     "terser-upstream": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/gzip.mjs",
+      "raw": 1876,
+      "gzip": 981,
+      "brotli": 873
+     },
+     "esbuild": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/gzip.mjs",
+      "raw": 5000,
+      "gzip": 2457,
+      "brotli": 2202
+     },
+     "oxc": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/gzip.mjs",
+      "raw": 1866,
+      "gzip": 981,
+      "brotli": 874
+     }
+    },
+    "best": {
+     "raw": {
+      "lane": "oxc",
+      "bytes": 1866
+     },
+     "gzip": {
+      "lane": "terser-upstream",
+      "bytes": 981
+     },
+     "brotli": {
+      "lane": "terser-upstream",
+      "bytes": 873
+     }
+    },
+    "lilscript": {
+     "raw": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/gzip.mjs",
+      "seconds": 0.21,
+      "raw": 1847,
+      "gzip": 996,
+      "brotli": 878
+     },
+     "gzip": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/gzip.mjs",
+      "seconds": 0.27,
+      "raw": 1879,
+      "gzip": 968,
+      "brotli": 849
+     },
+     "brotli": {
+      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/gzip.mjs",
+      "seconds": 0.5,
+      "raw": 1865,
+      "gzip": 977,
+      "brotli": 847
+     }
+    },
+    "delta": {
+     "raw": -1.02,
+     "gzip": -1.33,
+     "brotli": -2.98
+    }
+   }
+  ]
+ },
+ "perf": {
+  "modules": {
+   "error-tracking": {
+    "workloads": [
+     {
+      "name": "Import (parse and evaluate)",
+      "posthogMs": 1.5650000125169754,
+      "lilMs": 1.7650000154972076,
+      "improvementPercent": -11.869549508305377,
+      "ci": [
+       -16.854610908662302,
+       -8.511969931315255
+      ],
+      "verdict": "slower",
+      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+     },
+     {
+      "name": "build-properties",
+      "posthogMs": 2.635000005364418,
+      "lilMs": 2.6475000083446503,
+      "improvementPercent": -0.4761911573864075,
+      "ci": [
+       -1.50098645413288,
+       0.4734855166889207
+      ],
+      "verdict": "no clear difference",
+      "description": "29 inputs through the properties builder: real Chromium errors with causes, an AggregateError, a DOMException, error and rejection events, strings, objects"
+     },
+     {
+      "name": "parse-stacks",
+      "posthogMs": 1.7137499898672104,
+      "lilMs": 1.7575000002980232,
+      "improvementPercent": -2.467391006031594,
+      "ci": [
+       -3.537107896332148,
+       -1.8729259249290031
+      ],
+      "verdict": "slower",
+      "description": "11 Chrome, Firefox and Safari stack strings through the parser"
+     },
+     {
+      "name": "exception-steps",
+      "posthogMs": 0.9549999833106995,
+      "lilMs": 0.9150000214576721,
+      "improvementPercent": 4.724442183472,
+      "ci": [
+       3.456129811170927,
+       5.909573404483526
+      ],
+      "verdict": "faster",
+      "description": "150 exception steps into the 32 KB buffer"
+     }
+    ]
+   },
+   "user-agent": {
+    "workloads": [
+     {
+      "name": "Import (parse and evaluate)",
+      "posthogMs": 1.280000001192093,
+      "lilMs": 1.2450000047683716,
+      "improvementPercent": 4.173913776393118,
+      "ci": [
+       -0.17845206350406428,
+       6.600740467895994
+      ],
+      "verdict": "no clear difference",
+      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+     },
+     {
+      "name": "corpus",
+      "posthogMs": 4.030000001192093,
+      "lilMs": 3.592500001192093,
+      "improvementPercent": 11.290340282144223,
+      "ci": [
+       9.985281187973754,
+       12.509339926848916
+      ],
+      "verdict": "faster",
+      "description": "OS, browser, device, device type and version for the 606 user agents in posthog-js’s tests"
+     },
+     {
+      "name": "traffic-mix",
+      "posthogMs": 0.9208333343267441,
+      "lilMs": 0.7816666662693024,
+      "improvementPercent": 15.405405715982322,
+      "ci": [
+       14.556845792599578,
+       15.718170104463518
+      ],
+      "verdict": "faster",
+      "description": "the same per-event sequence for 200 events from a modern browser mix"
+     }
+    ]
+   },
+   "autocapture-utils": {
+    "workloads": [
+     {
+      "name": "Import (parse and evaluate)",
+      "posthogMs": 1.5399999916553497,
+      "lilMs": 1.5600000023841858,
+      "improvementPercent": -4.499296163390742,
+      "ci": [
+       -7.777460758204768,
+       0.853242522165043
+      ],
+      "verdict": "no clear difference",
+      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+     },
+     {
+      "name": "click-pipeline",
+      "posthogMs": 11.824999988079071,
+      "lilMs": 11.685000002384186,
+      "improvementPercent": 1.1109078140263073,
+      "ci": [
+       0.04177105457081609,
+       2.7043994556978648
+      ],
+      "verdict": "faster",
+      "description": "43 clicks on a realistic app page through posthog-js’s autocapture flow, with the dead-click and rage-click checks"
+     },
+     {
+      "name": "text-scrub",
+      "posthogMs": 0.5374999940395355,
+      "lilMs": 0.5400000065565109,
+      "improvementPercent": -0.47620080801505926,
+      "ci": [
+       -2.9841268657286313,
+       2.3152606266383433
+      ],
+      "verdict": "no clear difference",
+      "description": "scrubbing page text, attributes and 12 network bodies"
+     }
+    ]
+   },
+   "feature-flags": {
+    "workloads": [
+     {
+      "name": "Import (parse and evaluate)",
+      "posthogMs": 1.0975000262260437,
+      "lilMs": 1.1274999976158142,
+      "improvementPercent": -3.2558150430703092,
+      "ci": [
+       -9.921790590057055,
+       4.0243551500550145
+      ],
+      "verdict": "no clear difference",
+      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+     },
+     {
+      "name": "flags-v2-reads",
+      "posthogMs": 0.5212500020861626,
+      "lilMs": 0.5318749994039536,
+      "improvementPercent": -1.4152912059095968,
+      "ci": [
+       -2.4934909405749273,
+       -0.48199721670830753
+      ],
+      "verdict": "slower",
+      "description": "a 64-flag /flags response handled as the client does: normalize, values, payloads, reads, overrides, the flag-called event"
+     },
+     {
+      "name": "flags-v1-storage",
+      "posthogMs": 0.171875,
+      "lilMs": 0.15312499925494194,
+      "improvementPercent": 11.573578250804108,
+      "ci": [
+       7.833817209912352,
+       12.431485856801078
+      ],
+      "verdict": "faster",
+      "description": "rebuilding stored flags in the older format"
+     }
+    ]
+   },
+   "metrics": {
+    "workloads": [
+     {
+      "name": "Import (parse and evaluate)",
+      "posthogMs": 1.344999998807907,
+      "lilMs": 1.5250000059604645,
+      "improvementPercent": -16.555914249134517,
+      "ci": [
+       -21.216993320080846,
+       -7.487286172884678
+      ],
+      "verdict": "slower",
+      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+     },
+     {
+      "name": "record-drain",
+      "posthogMs": 1.6137499958276749,
+      "lilMs": 1.6000000014901161,
+      "improvementPercent": 0.7843148584138981,
+      "ci": [
+       -0.31130656146879376,
+       5.244652626951913
+      ],
+      "verdict": "no clear difference",
+      "description": "1,000 samples (histograms, counters, gauges), then drainWindow()"
+     },
+     {
+      "name": "record-flush",
+      "posthogMs": 0.5456250011920929,
+      "lilMs": 0.48249999806284904,
+      "improvementPercent": 11.004646627768883,
+      "ci": [
+       8.273133678188877,
+       13.377833647651277
+      ],
+      "verdict": "faster",
+      "description": "200 samples, then await flush()"
+     }
+    ]
+   },
+   "uuidv7": {
+    "workloads": [
+     {
+      "name": "Import (parse and evaluate)",
+      "posthogMs": 1.2025000005960464,
+      "lilMs": 1.2124999910593033,
+      "improvementPercent": 3.055557444516377,
+      "ci": [
+       -2.9841268657286313,
+       6.027889521752606
+      ],
+      "verdict": "no clear difference",
+      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+     },
+     {
+      "name": "generate",
+      "posthogMs": 0.7818749994039536,
+      "lilMs": 0.786250002682209,
+      "improvementPercent": -0.9719322158319721,
+      "ci": [
+       -1.9186724974758818,
+       0.24001088491886757
+      ],
+      "verdict": "no clear difference",
+      "description": "1,000 uuidv7() calls"
+     },
+     {
+      "name": "timestamp",
+      "posthogMs": 0.270625002682209,
+      "lilMs": 0.2737499997019768,
+      "improvementPercent": -0.9593710705056768,
+      "ci": [
+       -2.803983358211526,
+       1.376608956395975
+      ],
+      "verdict": "no clear difference",
+      "description": "1,000 uuid7ToTimestampMs() calls"
+     }
+    ]
+   },
+   "gzip": {
+    "workloads": [
+     {
+      "name": "Import (parse and evaluate)",
+      "posthogMs": 1.1024999916553497,
+      "lilMs": 1.1099999994039536,
+      "improvementPercent": -1.7726382888267334,
+      "ci": [
+       -9.772609960318835,
+       2.4509838725318422
+      ],
+      "verdict": "no clear difference",
+      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+     },
+     {
+      "name": "event-batch",
+      "posthogMs": 2.4137500002980232,
+      "lilMs": 2.4124999940395355,
+      "improvementPercent": -0.1567396625506423,
+      "ci": [
+       -1.3455574901019673,
+       1.7476088801152756
+      ],
+      "verdict": "no clear difference",
+      "description": "a 30-event batch (61 KB)"
+     },
+     {
+      "name": "replay-snapshot",
+      "posthogMs": 14.259999990463257,
+      "lilMs": 14.23250000178814,
+      "improvementPercent": 0.06996070238526331,
+      "ci": [
+       -0.3525342311803792,
+       0.5793739369233941
+      ],
+      "verdict": "no clear difference",
+      "description": "a 563 KB replay snapshot"
+     }
+    ]
+   }
+  },
+  "date": "2026-10-04T08:15:41.958Z",
+  "environment": {
+   "browser": "chromium 139.0.7258.5",
+   "headless": true,
+   "playwright": "1.54.2",
+   "node": "v20.19.0",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "cores": 8,
+   "memoryMB": {
+    "total": 15932,
+    "freeAtStart": 10128
+   },
+   "loadAverageAtStart": [
+    1.37,
+    1.56,
+    1.44
+   ],
+   "host": "EDDOCU-WE-WIN",
+   "busyProcessesAtStart": [],
+   "timer": {
+    "crossOriginIsolated": true,
+    "minStepMs": 0.004999995231628418
+   },
+   "loadAverageAtEnd": [
+    2.72,
+    2.11,
+    1.72
+   ],
+   "busyProcessesAtEnd": []
+  },
+  "settings": {
+   "samples": 40,
+   "warmupBlocks": 2,
+   "warmupReps": 5,
+   "timedReps": 15,
+   "scale": 1,
+   "forcedGc": true,
+   "variants": [
+    "posthog",
+    "brotli",
+    "gzip",
+    "raw",
+    "posthog-aa"
+   ],
+   "smoke": false,
+   "order": "Williams square (balanced order and first-order carry-over)",
+   "orderRows": [
+    [
+     "posthog",
+     "brotli",
+     "posthog-aa",
+     "gzip",
+     "raw"
+    ],
+    [
+     "brotli",
+     "gzip",
+     "posthog",
+     "raw",
+     "posthog-aa"
+    ],
+    [
+     "gzip",
+     "raw",
+     "brotli",
+     "posthog-aa",
+     "posthog"
+    ],
+    [
+     "raw",
+     "posthog-aa",
+     "gzip",
+     "posthog",
+     "brotli"
+    ],
+    [
+     "posthog-aa",
+     "posthog",
+     "raw",
+     "brotli",
+     "gzip"
+    ],
+    [
+     "raw",
+     "gzip",
+     "posthog-aa",
+     "brotli",
+     "posthog"
+    ],
+    [
+     "posthog-aa",
+     "raw",
+     "posthog",
+     "gzip",
+     "brotli"
+    ],
+    [
+     "posthog",
+     "posthog-aa",
+     "brotli",
+     "raw",
+     "gzip"
+    ],
+    [
+     "brotli",
+     "posthog",
+     "gzip",
+     "posthog-aa",
+     "raw"
+    ],
+    [
+     "gzip",
+     "brotli",
+     "raw",
+     "posthog",
+     "posthog-aa"
+    ]
+   ],
+   "sampleValue": "median of the timed repetitions in one fresh browser context, per inner iteration (one workload unit)",
+   "improvement": "median over blocks of 100*(1 - lil/posthog); positive = LilScript faster",
+   "interval": "95% percentile bootstrap of that median, 5,000 deterministic resamples of blocks",
+   "verdict": "faster if the interval is above 0, slower if below 0, otherwise no clear difference",
+   "importScope": "dynamic import of a fresh Blob URL of the module source: parse, compile, evaluate and module scheduling; no network, no code cache",
+   "coldScope": "first execution of the workload unit right after import (lazy compilation, cold inline caches)"
+  },
+  "method": "Chromium 139.0.7258.5 (headless) on AMD EPYC 7763 64-Core Processor. Each sample is a fresh browser context on a local cross-origin-isolated page; PostHog’s build and LilScript’s alternate in ABBA order, 40 samples per module. Times are medians; the change is the median of paired differences with a 95% bootstrap interval, and a verdict is given only when that interval excludes zero. Both builds first run the same inputs and must produce identical output."
+ },
+ "tests": {
+  "passed": 1170,
+  "total": 1208,
+  "modules": {
+   "error-tracking": {
+    "gated": 241,
+    "passed": 241,
+    "neither": 0,
+    "files": 11
+   },
+   "user-agent": {
+    "gated": 533,
+    "passed": 533,
+    "neither": 0,
+    "files": 1
+   },
+   "autocapture-utils": {
+    "gated": 84,
+    "passed": 84,
+    "neither": 0,
+    "files": 2
+   },
+   "feature-flags": {
+    "gated": 176,
+    "passed": 176,
+    "neither": 0,
+    "files": 3
+   },
+   "metrics": {
+    "gated": 8,
+    "passed": 8,
+    "neither": 38,
+    "files": 1
+   },
+   "uuidv7": {
+    "gated": 11,
+    "passed": 11,
+    "neither": 0,
+    "files": 2
+   },
+   "gzip": {
+    "gated": 23,
+    "passed": 23,
+    "neither": 0,
+    "files": 1
+   }
+  }
+ }
+}
