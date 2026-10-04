@@ -166,8 +166,8 @@ const html=`<!DOCTYPE html>
             <code>PostHog’s own build</code> of the same code, and with esbuild and Oxc.
           </p>
 <div class="hero-actions">
-<a class="button primary" href="#lab">Playground</a>
-<a class="button secondary" href="https://github.com/yeargun/posthoglil">GitHub ↗</a>
+<a class="button primary" href="#stack">Compare modules</a>
+<a class="button secondary" href="#lab">Playground</a>
 </div>
 </div>
 <div aria-label="Compression results" class="scoreboard">
@@ -186,19 +186,25 @@ ${codecs.map(c=>`<div><strong>${Math.abs(pct(totals[c].lil,totals[c].posthog)).t
 <section aria-label="Rewritten submodules" class="ticker">
 <div>${[...modules,...modules].map(m=>esc(m.title)).join(' <span>✦</span> ')}</div>
 </section>
-<section class="shell" id="stack">
+<section class="shell compare" id="stack">
 <div class="section-heading">
 <div>
-<p class="eyebrow">The modules</p>
-<h2>All seven,<br/>then each module.</h2>
+<p class="eyebrow">Pick a module</p>
+<h2>Size and speed,<br/>module by module.</h2>
 </div>
 <p>
-            The first tab adds up the seven submodules. Each other tab is one submodule: its sizes, its
-            speed, its build time and its upstream tests, with every measured file linked.
+            Each tab is one submodule; the first adds up all seven. Under it: the size of every build for
+            raw, gzip and Brotli against PostHog’s own build, esbuild and Oxc, the speed in Chromium against
+            PostHog’s build, the build time and the upstream tests — every measured file linked.
           </p>
 </div>
-<div aria-label="Submodule comparisons" class="stack-tabs" id="stack-tabs" role="tablist">${[all,...modules].map((m,i)=>`<button type="button" role="tab" data-id="${m.id}" aria-selected="${i===0}">${esc(m.tab)}</button>`).join('')}</div>
-<div id="stack-detail">${cardHtml(allComparison)}</div></section>
+<div class="compare-tabs"><div aria-label="Submodule" class="stack-tabs" id="stack-tabs" role="tablist">${[all,...modules].map((m,i)=>`<button type="button" role="tab" data-id="${m.id}" aria-selected="${i===0}">${esc(m.tab)}</button>`).join('')}</div></div>
+<div id="stack-detail">${cardHtml(allComparison)}</div>
+<div class="compare-block" id="evidence"><p class="eyebrow"><span data-module-label>${esc(all.title)}</span> · size</p><h3 class="compare-heading">Three objectives, measured separately.</h3><div id="compression-comparison">${nodes['#compression-comparison'].innerHTML}</div></div>
+<div class="compare-block" id="speed"><p class="eyebrow"><span data-module-label>${esc(all.title)}</span> · speed · Chromium ${esc(String(benchmark?.environment?.browser??'').replace(/^chromium /,''))}</p><h3 class="compare-heading">Speed in the browser.</h3><div id="speed-root">${speedHtml(allComparison)}</div>
+<p class="objective-note">Each sample is a fresh browser context on a local, cross-origin-isolated page; PostHog’s build and LilScript’s alternate in ABBA order, ${benchmark?.settings?.samples??''} samples per module. A time is the median of 15 repetitions after 5 untimed ones; the change is the median of the paired differences with a 95% bootstrap interval, and a verdict needs that interval to exclude zero. Both builds first run the same inputs and must give identical output. A control — PostHog’s build against an identical copy of itself — flagged ${benchmark?benchmark.summary.filter(r=>r.objective==='posthog-aa'&&r.verdict&&r.verdict!=='no clear difference').length:0} of ${benchmark?benchmark.summary.filter(r=>r.objective==='posthog-aa').length:0} rows, so changes of one or two percent are within noise. Import is slower where a module defines most of its functions as top-level arrows, which V8 parses more slowly in module code.</p></div>
+<div class="compare-block" id="compiler"><p class="eyebrow"><span data-module-label>${esc(all.title)}</span> · same machine · sequential builds</p><h3 class="compare-heading">Build time.</h3><div id="objective-build-times">${nodes['#objective-build-times'].innerHTML}</div></div>
+</section>
 <section class="lab shell" id="lab">
 <div class="section-heading">
 <div>
@@ -214,10 +220,6 @@ ${codecs.map(c=>`<div><strong>${Math.abs(pct(totals[c].lil,totals[c].posthog)).t
 <div id="playground-root"><p class="lab-note">The lab runs with JavaScript enabled.</p></div>
 </div>
 </section>
-<section class="objective-section shell" id="evidence"><p class="eyebrow"><span data-module-label>${esc(all.title)}</span> · original minified</p><h2>Three objectives.<br/>Measured separately.</h2><div id="compression-comparison">${nodes['#compression-comparison'].innerHTML}</div></section>
-<section class="objective-section shell" id="speed"><p class="eyebrow"><span data-module-label>${esc(all.title)}</span> · Chromium ${esc(String(benchmark?.environment?.browser??'').replace(/^chromium /,''))}</p><h2>Speed.<br/>In the browser.</h2><div id="speed-root">${speedHtml(allComparison)}</div>
-<p class="objective-note">Each sample is a fresh browser context on a local, cross-origin-isolated page; PostHog’s build and LilScript’s alternate in ABBA order, ${benchmark?.settings?.samples??''} samples per module. A time is the median of 15 repetitions after 5 untimed ones; the change is the median of the paired differences with a 95% bootstrap interval, and a verdict needs that interval to exclude zero. Both builds first run the same inputs and must give identical output. A control — PostHog’s build against an identical copy of itself — flagged ${benchmark?benchmark.summary.filter(r=>r.objective==='posthog-aa'&&r.verdict&&r.verdict!=='no clear difference').length:0} of ${benchmark?benchmark.summary.filter(r=>r.objective==='posthog-aa').length:0} rows, so changes of one or two percent are within noise. Import is slower where a module defines most of its functions as top-level arrows, which V8 parses more slowly in module code.</p></section>
-<section class="objective-section shell" id="compiler"><p class="eyebrow">Same machine · sequential builds</p><h2>Build time.</h2><div id="objective-build-times">${nodes['#objective-build-times'].innerHTML}</div></section>
 <section class="closing shell">
 <p class="eyebrow">posthog-js@${esc(meta.upstreamVersion)} · LilScript ${esc(meta.compiler)}</p>
 <h2>Same behaviour.<br/>Smaller.</h2>
@@ -235,5 +237,5 @@ ${codecs.map(c=>`<div><strong>${Math.abs(pct(totals[c].lil,totals[c].posthog)).t
 `
 writeFileSync(join(out,'index.html'),html)
 for(const f of ['styles.css','objective-comparison.css','objective-comparison.js','views.js','app.js','playground.js'])copyFileSync(join(here,f),join(out,f))
-writeFileSync(join(out,'evidence.json'),JSON.stringify({generated:new Date().toISOString(),meta,results,files:published,perf:benchmark&&{date:benchmark.date,environment:benchmark.environment,settings:benchmark.settings,modules:Object.fromEntries(modules.map(m=>[m.id,{workloads:m.speed}]))},tests:{passed:testTotal.checks,gated:testTotal.gated,modules:Object.fromEntries(modules.map(m=>[m.id,m.validation&&{gated:m.validation.gated,passed:m.validation.checks,neither:m.validation.neither,files:m.validation.files}]))}},null,1)+'\n')
+writeFileSync(join(out,'evidence.json'),JSON.stringify({generated:results.date,meta,results,files:published,perf:benchmark&&{date:benchmark.date,environment:benchmark.environment,settings:benchmark.settings,modules:Object.fromEntries(modules.map(m=>[m.id,{workloads:m.speed}]))},tests:{passed:testTotal.checks,gated:testTotal.gated,modules:Object.fromEntries(modules.map(m=>[m.id,m.validation&&{gated:m.validation.gated,passed:m.validation.checks,neither:m.validation.neither,files:m.validation.files}]))}},null,1)+'\n')
 console.log(`wrote ${relative(root,join(out,'index.html'))}: ${cells}/${totalCells} cells won`)

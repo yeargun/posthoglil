@@ -308,3 +308,19 @@ h1, h2 { overflow-wrap: anywhere; }
   .lab .play-grid textarea { height: 220px; }
   .lab .play-grid pre { height: 420px; }
 }
+/* Module comparison: the tabs stay in view while their size, speed and build time scroll by. */
+.compare { padding-block: 100px 40px; }
+.compare-tabs { position: sticky; top: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.compare-tabs .stack-tabs { padding-top: 14px; }
+.compare-block { padding-top: 56px; scroll-margin-top: 90px; }
+.compare-heading { margin: 8px 0 6px; font-size: clamp(30px, 4.6vw, 52px); line-height: 1.05; letter-spacing: -.05em; }
+.compare-block .eyebrow { margin-bottom: 8px; }
+#stack-detail .stack-card { margin-top: 32px !important; }
+@media (max-width: 620px) {
+  .compare-tabs .stack-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .compare-tabs .stack-tabs button { flex: 0 0 auto; }
+}
+/* Workload descriptions wrap under their names, so the timing columns stay in view. */
+.objective-table td.desc { white-space: normal; text-align: left; min-width: 220px; max-width: 420px; }
+.objective-table td.desc strong { display: block; color: var(--ink); }
+.objective-table td.desc small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 1.45; }
