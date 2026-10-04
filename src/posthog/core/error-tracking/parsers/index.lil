@@ -158,18 +158,11 @@ export JsValue createDefaultStackParser() {
   return createStackParser("web:javascript", chromeStackLineParser, geckoStackLineParser);
 }
 
-// A copy of the records sorted by start, descending (a stable insertion sort, as `sort` is).
+// A copy of the records sorted by start, descending: the parser keeps them in ascending start order
+// (a record overlapping a newer one is popped first), so upstream's stable sort is their reversal.
 RepeatedCycle[] sortedByStartDescending(RepeatedCycle[] cycles) {
-  RepeatedCycle[] sorted = [];
-  for (RepeatedCycle cycle of cycles) {
-    sorted.push(cycle);
-    int index = sorted.length - 1;
-    while (index > 0 && sorted[index - 1].start < cycle.start) {
-      sorted[index] = sorted[index - 1];
-      index -= 1;
-    }
-    sorted[index] = cycle;
-  }
+  RepeatedCycle[] sorted = [...cycles];
+  sorted.reverse();
   return sorted;
 }
 
