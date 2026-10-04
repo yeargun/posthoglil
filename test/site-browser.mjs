@@ -25,12 +25,21 @@ try{
   for(const [name,viewport] of [['desktop',{width:1440,height:1050}],['mobile',{width:390,height:844}]]){
     const page=await browser.newPage({viewport}),errors=[],external=[]
     page.on('pageerror',error=>errors.push(String(error)))
-    await page.route('**/*',route=>{if(route.request().url().startsWith(origin))return route.continue();external.push(route.request().url());return route.abort()})
+    // The template's fonts are the only outside requests.
+    const allowed=url=>url.startsWith(origin)||/^https:\/\/fonts\.(googleapis|gstatic)\.com\//.test(url)
+    await page.route('**/*',route=>{const url=route.request().url();if(allowed(url))return url.startsWith(origin)?route.continue():route.abort();external.push(url);return route.abort()})
     await page.goto(origin,{waitUntil:'networkidle'})
-    assert.equal(await page.locator('table.overview tbody tr').count(),7)
-    assert.equal(await page.locator('section.module').count(),7)
-    assert.equal(await page.locator('section.module table.lanes').count(),7)
-    assert.equal(await page.locator('section.module table.speed').count(),7)
+    assert.equal(await page.locator('#surface tbody tr').count(),7)
+    assert.equal(await page.locator('.pack-tabs [role="tab"]').count(),7)
+    assert.equal(await page.locator('.pack-panel').count(),7)
+    assert.equal(await page.locator('.pack-panel:visible').count(),1)
+    const tab=page.locator('.pack-tabs [role="tab"]').nth(4)
+    await tab.click()
+    assert.equal(await tab.getAttribute('aria-selected'),'true')
+    assert.equal(await page.locator('.pack-panel:visible').count(),1)
+    assert.match(page.url(),/[?&]module=/)
+    assert.ok(await page.locator('#speed tbody tr').count()>=14)
+    assert.equal(await page.locator('#behaviour tbody tr').count(),8)
     // No horizontal page scroll at either width.
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),`${name}: horizontal overflow`)
     assert.deepEqual(errors,[]);assert.deepEqual(external,[])

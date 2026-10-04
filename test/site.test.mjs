@@ -25,7 +25,7 @@ test('seven submodules, each shown with its sizes and every cell a win',()=>{
   assert.equal(modules.length,7)
   for(const r of modules){
     const name=evidence.meta.modules[r.id].name
-    assert.ok(html.includes(`id="${r.id}"`),r.id)
+    assert.ok(html.includes(`id="panel-${r.id}"`),r.id)
     assert.ok(html.includes(name.replace(/&/g,'&amp;')),name)
     for(const codec of ['raw','gzip','brotli']){
       const ours=r.lilscript[codec][codec]
@@ -33,7 +33,7 @@ test('seven submodules, each shown with its sizes and every cell a win',()=>{
       assert.ok(html.includes(ours.toLocaleString('en-US')),`${r.id} ${codec} ${ours}`)
     }
   }
-  assert.match(html,/21 of 21/)
+  assert.match(html,/21\/21/)
 })
 
 test('behaviour: every gated upstream test passes',()=>{

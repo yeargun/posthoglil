@@ -24,7 +24,7 @@ for(const r of evidence.results.results){
   }
 }
 await rm(output,{recursive:true,force:true});await mkdir(output,{recursive:true})
-for(const file of ['index.html','styles.css'])await cp(join(root,'site',file),join(output,file))
+for(const file of ['index.html','styles.css','app.js'])await cp(join(root,'site',file),join(output,file))
 await cp(join(showcase,'files'),join(output,'files'),{recursive:true})
 await cp(join(showcase,'evidence.json'),join(output,'evidence.json'))
 for(const file of ['LICENSE','NOTICE.md'])await cp(join(root,file),join(output,file))

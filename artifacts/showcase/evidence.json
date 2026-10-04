@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-04T08:26:54.696Z",
+ "generated": "2026-10-04T09:14:01.338Z",
  "meta": {
   "upstreamVersion": "1.435.8",
   "upstreamCommit": "c9d890a4",
@@ -565,7 +565,9 @@
    "error-tracking": {
     "workloads": [
      {
-      "name": "Import (parse and evaluate)",
+      "name": "import",
+      "label": "Import",
+      "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
       "posthogMs": 1.5650000125169754,
       "lilMs": 1.7650000154972076,
       "improvementPercent": -11.869549508305377,
@@ -573,11 +575,12 @@
        -16.854610908662302,
        -8.511969931315255
       ],
-      "verdict": "slower",
-      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+      "verdict": "slower"
      },
      {
       "name": "build-properties",
+      "label": "build-properties",
+      "description": "29 inputs through the properties builder: real Chromium errors with causes, an AggregateError, a DOMException, error and rejection events, strings, objects",
       "posthogMs": 2.635000005364418,
       "lilMs": 2.6475000083446503,
       "improvementPercent": -0.4761911573864075,
@@ -585,11 +588,12 @@
        -1.50098645413288,
        0.4734855166889207
       ],
-      "verdict": "no clear difference",
-      "description": "29 inputs through the properties builder: real Chromium errors with causes, an AggregateError, a DOMException, error and rejection events, strings, objects"
+      "verdict": "no clear difference"
      },
      {
       "name": "parse-stacks",
+      "label": "parse-stacks",
+      "description": "11 Chrome, Firefox and Safari stack strings through the parser",
       "posthogMs": 1.7137499898672104,
       "lilMs": 1.7575000002980232,
       "improvementPercent": -2.467391006031594,
@@ -597,11 +601,12 @@
        -3.537107896332148,
        -1.8729259249290031
       ],
-      "verdict": "slower",
-      "description": "11 Chrome, Firefox and Safari stack strings through the parser"
+      "verdict": "slower"
      },
      {
       "name": "exception-steps",
+      "label": "exception-steps",
+      "description": "150 exception steps into the 32 KB buffer",
       "posthogMs": 0.9549999833106995,
       "lilMs": 0.9150000214576721,
       "improvementPercent": 4.724442183472,
@@ -609,15 +614,16 @@
        3.456129811170927,
        5.909573404483526
       ],
-      "verdict": "faster",
-      "description": "150 exception steps into the 32 KB buffer"
+      "verdict": "faster"
      }
     ]
    },
    "user-agent": {
     "workloads": [
      {
-      "name": "Import (parse and evaluate)",
+      "name": "import",
+      "label": "Import",
+      "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
       "posthogMs": 1.280000001192093,
       "lilMs": 1.2450000047683716,
       "improvementPercent": 4.173913776393118,
@@ -625,11 +631,12 @@
        -0.17845206350406428,
        6.600740467895994
       ],
-      "verdict": "no clear difference",
-      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+      "verdict": "no clear difference"
      },
      {
       "name": "corpus",
+      "label": "corpus",
+      "description": "OS, browser, device, device type and version for the 606 user agents in posthog-js’s tests",
       "posthogMs": 4.030000001192093,
       "lilMs": 3.592500001192093,
       "improvementPercent": 11.290340282144223,
@@ -637,11 +644,12 @@
        9.985281187973754,
        12.509339926848916
       ],
-      "verdict": "faster",
-      "description": "OS, browser, device, device type and version for the 606 user agents in posthog-js’s tests"
+      "verdict": "faster"
      },
      {
       "name": "traffic-mix",
+      "label": "traffic-mix",
+      "description": "the same per-event sequence for 200 events from a modern browser mix",
       "posthogMs": 0.9208333343267441,
       "lilMs": 0.7816666662693024,
       "improvementPercent": 15.405405715982322,
@@ -649,15 +657,16 @@
        14.556845792599578,
        15.718170104463518
       ],
-      "verdict": "faster",
-      "description": "the same per-event sequence for 200 events from a modern browser mix"
+      "verdict": "faster"
      }
     ]
    },
    "autocapture-utils": {
     "workloads": [
      {
-      "name": "Import (parse and evaluate)",
+      "name": "import",
+      "label": "Import",
+      "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
       "posthogMs": 1.5399999916553497,
       "lilMs": 1.5600000023841858,
       "improvementPercent": -4.499296163390742,
@@ -665,11 +674,12 @@
        -7.777460758204768,
        0.853242522165043
       ],
-      "verdict": "no clear difference",
-      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+      "verdict": "no clear difference"
      },
      {
       "name": "click-pipeline",
+      "label": "click-pipeline",
+      "description": "43 clicks on a realistic app page through posthog-js’s autocapture flow, with the dead-click and rage-click checks",
       "posthogMs": 11.824999988079071,
       "lilMs": 11.685000002384186,
       "improvementPercent": 1.1109078140263073,
@@ -677,11 +687,12 @@
        0.04177105457081609,
        2.7043994556978648
       ],
-      "verdict": "faster",
-      "description": "43 clicks on a realistic app page through posthog-js’s autocapture flow, with the dead-click and rage-click checks"
+      "verdict": "faster"
      },
      {
       "name": "text-scrub",
+      "label": "text-scrub",
+      "description": "scrubbing page text, attributes and 12 network bodies",
       "posthogMs": 0.5374999940395355,
       "lilMs": 0.5400000065565109,
       "improvementPercent": -0.47620080801505926,
@@ -689,15 +700,16 @@
        -2.9841268657286313,
        2.3152606266383433
       ],
-      "verdict": "no clear difference",
-      "description": "scrubbing page text, attributes and 12 network bodies"
+      "verdict": "no clear difference"
      }
     ]
    },
    "feature-flags": {
     "workloads": [
      {
-      "name": "Import (parse and evaluate)",
+      "name": "import",
+      "label": "Import",
+      "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
       "posthogMs": 1.0975000262260437,
       "lilMs": 1.1274999976158142,
       "improvementPercent": -3.2558150430703092,
@@ -705,11 +717,12 @@
        -9.921790590057055,
        4.0243551500550145
       ],
-      "verdict": "no clear difference",
-      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+      "verdict": "no clear difference"
      },
      {
       "name": "flags-v2-reads",
+      "label": "flags-v2-reads",
+      "description": "a 64-flag /flags response handled as the client does: normalize, values, payloads, reads, overrides, the flag-called event",
       "posthogMs": 0.5212500020861626,
       "lilMs": 0.5318749994039536,
       "improvementPercent": -1.4152912059095968,
@@ -717,11 +730,12 @@
        -2.4934909405749273,
        -0.48199721670830753
       ],
-      "verdict": "slower",
-      "description": "a 64-flag /flags response handled as the client does: normalize, values, payloads, reads, overrides, the flag-called event"
+      "verdict": "slower"
      },
      {
       "name": "flags-v1-storage",
+      "label": "flags-v1-storage",
+      "description": "rebuilding stored flags in the older format",
       "posthogMs": 0.171875,
       "lilMs": 0.15312499925494194,
       "improvementPercent": 11.573578250804108,
@@ -729,15 +743,16 @@
        7.833817209912352,
        12.431485856801078
       ],
-      "verdict": "faster",
-      "description": "rebuilding stored flags in the older format"
+      "verdict": "faster"
      }
     ]
    },
    "metrics": {
     "workloads": [
      {
-      "name": "Import (parse and evaluate)",
+      "name": "import",
+      "label": "Import",
+      "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
       "posthogMs": 1.344999998807907,
       "lilMs": 1.5250000059604645,
       "improvementPercent": -16.555914249134517,
@@ -745,11 +760,12 @@
        -21.216993320080846,
        -7.487286172884678
       ],
-      "verdict": "slower",
-      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+      "verdict": "slower"
      },
      {
       "name": "record-drain",
+      "label": "record-drain",
+      "description": "1,000 samples (histograms, counters, gauges), then drainWindow()",
       "posthogMs": 1.6137499958276749,
       "lilMs": 1.6000000014901161,
       "improvementPercent": 0.7843148584138981,
@@ -757,11 +773,12 @@
        -0.31130656146879376,
        5.244652626951913
       ],
-      "verdict": "no clear difference",
-      "description": "1,000 samples (histograms, counters, gauges), then drainWindow()"
+      "verdict": "no clear difference"
      },
      {
       "name": "record-flush",
+      "label": "record-flush",
+      "description": "200 samples, then await flush()",
       "posthogMs": 0.5456250011920929,
       "lilMs": 0.48249999806284904,
       "improvementPercent": 11.004646627768883,
@@ -769,15 +786,16 @@
        8.273133678188877,
        13.377833647651277
       ],
-      "verdict": "faster",
-      "description": "200 samples, then await flush()"
+      "verdict": "faster"
      }
     ]
    },
    "uuidv7": {
     "workloads": [
      {
-      "name": "Import (parse and evaluate)",
+      "name": "import",
+      "label": "Import",
+      "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
       "posthogMs": 1.2025000005960464,
       "lilMs": 1.2124999910593033,
       "improvementPercent": 3.055557444516377,
@@ -785,11 +803,12 @@
        -2.9841268657286313,
        6.027889521752606
       ],
-      "verdict": "no clear difference",
-      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+      "verdict": "no clear difference"
      },
      {
       "name": "generate",
+      "label": "generate",
+      "description": "1,000 uuidv7() calls",
       "posthogMs": 0.7818749994039536,
       "lilMs": 0.786250002682209,
       "improvementPercent": -0.9719322158319721,
@@ -797,11 +816,12 @@
        -1.9186724974758818,
        0.24001088491886757
       ],
-      "verdict": "no clear difference",
-      "description": "1,000 uuidv7() calls"
+      "verdict": "no clear difference"
      },
      {
       "name": "timestamp",
+      "label": "timestamp",
+      "description": "1,000 uuid7ToTimestampMs() calls",
       "posthogMs": 0.270625002682209,
       "lilMs": 0.2737499997019768,
       "improvementPercent": -0.9593710705056768,
@@ -809,15 +829,16 @@
        -2.803983358211526,
        1.376608956395975
       ],
-      "verdict": "no clear difference",
-      "description": "1,000 uuid7ToTimestampMs() calls"
+      "verdict": "no clear difference"
      }
     ]
    },
    "gzip": {
     "workloads": [
      {
-      "name": "Import (parse and evaluate)",
+      "name": "import",
+      "label": "Import",
+      "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
       "posthogMs": 1.1024999916553497,
       "lilMs": 1.1099999994039536,
       "improvementPercent": -1.7726382888267334,
@@ -825,11 +846,12 @@
        -9.772609960318835,
        2.4509838725318422
       ],
-      "verdict": "no clear difference",
-      "description": "dynamic import of the module from a fresh Blob URL: parse, compile, evaluate"
+      "verdict": "no clear difference"
      },
      {
       "name": "event-batch",
+      "label": "event-batch",
+      "description": "a 30-event batch (61 KB)",
       "posthogMs": 2.4137500002980232,
       "lilMs": 2.4124999940395355,
       "improvementPercent": -0.1567396625506423,
@@ -837,11 +859,12 @@
        -1.3455574901019673,
        1.7476088801152756
       ],
-      "verdict": "no clear difference",
-      "description": "a 30-event batch (61 KB)"
+      "verdict": "no clear difference"
      },
      {
       "name": "replay-snapshot",
+      "label": "replay-snapshot",
+      "description": "a 563 KB replay snapshot",
       "posthogMs": 14.259999990463257,
       "lilMs": 14.23250000178814,
       "improvementPercent": 0.06996070238526331,
@@ -849,8 +872,7 @@
        -0.3525342311803792,
        0.5793739369233941
       ],
-      "verdict": "no clear difference",
-      "description": "a 563 KB replay snapshot"
+      "verdict": "no clear difference"
      }
     ]
    }
@@ -980,11 +1002,14 @@
    "importScope": "dynamic import of a fresh Blob URL of the module source: parse, compile, evaluate and module scheduling; no network, no code cache",
    "coldScope": "first execution of the workload unit right after import (lazy compilation, cold inline caches)"
   },
-  "method": "Chromium 139.0.7258.5 (headless) on AMD EPYC 7763 64-Core Processor. Each sample is a fresh browser context on a local cross-origin-isolated page; PostHog’s build and LilScript’s alternate in ABBA order, 40 samples per module. Times are medians; the change is the median of paired differences with a 95% bootstrap interval, and a verdict is given only when that interval excludes zero. Both builds first run the same inputs and must produce identical output."
+  "control": {
+   "rows": 37,
+   "flagged": 3
+  }
  },
  "tests": {
-  "passed": 1170,
-  "total": 1208,
+  "passed": 1076,
+  "gated": 1076,
   "modules": {
    "error-tracking": {
     "gated": 241,
