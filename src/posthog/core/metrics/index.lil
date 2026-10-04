@@ -62,16 +62,6 @@ void addSeries(SeriesWindow window, SeriesState state) {
   window._ordered.push(state);
 }
 
-// `{...source}`: own enumerable string keys, copied as data properties (`__proto__` included).
-JsValue copyOwnEnumerable(JsValue source) {
-  JsValue target = object {};
-  JsValue keys = Object.keys(source);
-  for (int i = 0; i < keys.length; i += 1) {
-    JsValue key = keys[i];
-    Object.defineProperty(target, key, object { value: source[key], writable: true, enumerable: true, configurable: true });
-  }
-  return target;
-}
 
 export class PostHogMetrics {
   JsValue _instance;
@@ -216,7 +206,8 @@ void capture(PostHogMetrics self, JsValue sample) {
   JsValue attributes = undefined;
   string key = "";
   try {
-    attributes = if (filtered.attributes.truthy()) { copyOwnEnumerable(filtered.attributes) } else { undefined };
+    // `{ ...sample.attributes }`
+    attributes = if (filtered.attributes.truthy()) { Object.assign(object {}, filtered.attributes) } else { undefined };
     key = seriesKey(filtered.type, filtered.name, filtered.unit, attributes);
   } catch (JsValue e) {
     self._logger.warn(`Dropping metric '${filtered.name}': attributes could not be serialized`, e);
@@ -228,11 +219,11 @@ void capture(PostHogMetrics self, JsValue sample) {
   }
   // Bookkeeping only for admitted samples, so name cardinality can't grow past the series cap.
   string name = filtered.name as string;
-  if (!self._typeByName.has(name)) {
+  JsValue? seen = self._typeByName.get(name);
+  if (seen == null) {
     self._typeByName.set(name, filtered.type);
   } else {
-    JsValue? seen = self._typeByName.get(name);
-    JsValue seenType = if (seen == null) { undefined } else { seen };
+    JsValue seenType = seen;
     if (seenType !== filtered.type && !self._typeCollisionWarned.has(name)) {
       self._typeCollisionWarned.add(name);
       self._logger.warn(
