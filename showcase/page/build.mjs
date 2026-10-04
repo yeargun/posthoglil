@@ -28,7 +28,8 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex')
 
 rmSync(out,{recursive:true,force:true});mkdirSync(join(out,'files'),{recursive:true})
-const file=(source,name)=>{const target=join(out,'files',name);mkdirSync(dirname(target),{recursive:true});copyFileSync(source,target);return {href:`files/${name}`,sha256:sha(source)}}
+const published={}
+const file=(source,name)=>{const target=join(out,'files',name);mkdirSync(dirname(target),{recursive:true});copyFileSync(source,target);const f={href:`files/${name}`,sha256:sha(source)};published[f.href]=f.sha256;return f}
 const link=(f,label='file')=>`<a class="file" href="${f.href}" title="sha256 ${f.sha256}">${label}</a>`
 
 // Behaviour, counted as the G1 gate counts it: upstream tests that pass against PostHog's bundled,
@@ -340,5 +341,5 @@ const html=`<!doctype html>
 writeFileSync(join(out,'index.html'),html)
 copyFileSync(join(here,'styles.css'),join(out,'styles.css'))
 copyFileSync(join(here,'app.js'),join(out,'app.js'))
-writeFileSync(join(out,'evidence.json'),JSON.stringify({generated:new Date().toISOString(),meta,results,perf,tests:tests&&{passed:testTotal.passed,gated:testTotal.gated,modules:Object.fromEntries(modules.map(m=>[m.id,m.tests]))}},null,1)+'\n')
+writeFileSync(join(out,'evidence.json'),JSON.stringify({generated:new Date().toISOString(),meta,results,files:published,perf,tests:tests&&{passed:testTotal.passed,gated:testTotal.gated,modules:Object.fromEntries(modules.map(m=>[m.id,m.tests]))}},null,1)+'\n')
 console.log(`wrote ${relative(root,join(out,'index.html'))}: ${cells}/${modules.length*3} cells won`)
