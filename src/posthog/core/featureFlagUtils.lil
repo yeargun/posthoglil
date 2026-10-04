@@ -2,8 +2,49 @@
 // Object spread (`{...a, k: v}`) is `Object.assign({}, a, {k: v})`: same keys, order and values.
 extern JsValue Object;
 extern JsValue JSON;
+extern JsValue Set;
+extern JsValue Array;
 
-export JsValue normalizeFlagsResponse(JsValue flagsResponse) {
+export func(JsValue)->JsValue parsePayload = (JsValue response) => {
+  if (!(response is string)) {
+    return response;
+  }
+  try {
+    return JSON.parse(response);
+  } catch (JsValue error) {
+    return response;
+  }
+};
+
+export func(JsValue)->JsValue getFeatureFlagValue = (JsValue detail) => {
+  return if (detail === undefined) { undefined } else { detail.variant ?? detail.enabled };
+};
+
+export func(JsValue)->JsValue getFlagValuesFromFlags = (JsValue flags) => {
+  return Object.fromEntries(
+    Object.entries(flags ?? object {})
+      .map((JsValue entry) => [entry[0], getFeatureFlagValue(entry[1])])
+      .filter((JsValue entry) => entry[1] !== undefined)
+  );
+};
+
+export func(JsValue)->JsValue getPayloadsFromFlags = (JsValue flags) => {
+  JsValue safeFlags = flags ?? object {};
+  return Object.fromEntries(
+    Object.keys(safeFlags)
+      .filter((JsValue flag) => {
+        JsValue details = safeFlags[flag];
+        return details.enabled && details.metadata && details.metadata.payload !== undefined;
+      })
+      .map((JsValue flag) => {
+        JsValue metadata = safeFlags[flag].metadata;
+        JsValue payload = if (metadata == null) { undefined } else { metadata.payload };
+        return [flag, if (payload.truthy()) { parsePayload(payload) } else { undefined }];
+      })
+  );
+};
+
+export func(JsValue)->JsValue normalizeFlagsResponse = (JsValue flagsResponse) => {
   if (JS.in("flags", flagsResponse)) {
     // Convert v2 format to v1 format
     JsValue featureFlags = getFlagValuesFromFlags(flagsResponse.flags);
@@ -22,7 +63,7 @@ export JsValue normalizeFlagsResponse(JsValue flagsResponse) {
     ])
   );
   return Object.assign(object {}, flagsResponse, object { featureFlags: featureFlags, featureFlagPayloads: featureFlagPayloads, flags: flags });
-}
+};
 
 JsValue getFlagDetailFromFlagAndPayload(JsValue key, JsValue value, JsValue payload) {
   return object {
@@ -39,62 +80,10 @@ JsValue getFlagDetailFromFlagAndPayload(JsValue key, JsValue value, JsValue payl
   };
 }
 
-export JsValue getFlagValuesFromFlags(JsValue flags) {
-  return Object.fromEntries(
-    Object.entries(flags ?? object {})
-      .map((JsValue entry) => [entry[0], getFeatureFlagValue(entry[1])])
-      .filter((JsValue entry) => entry[1] !== undefined)
-  );
-}
-
-export JsValue getPayloadsFromFlags(JsValue flags) {
-  JsValue safeFlags = flags ?? object {};
-  return Object.fromEntries(
-    Object.keys(safeFlags)
-      .filter((JsValue flag) => {
-        JsValue details = safeFlags[flag];
-        return details.enabled && details.metadata && details.metadata.payload !== undefined;
-      })
-      .map((JsValue flag) => {
-        JsValue metadata = safeFlags[flag].metadata;
-        JsValue payload = if (metadata == null) { undefined } else { metadata.payload };
-        return [flag, if (payload.truthy()) { parsePayload(payload) } else { undefined }];
-      })
-  );
-}
-
-export JsValue getFeatureFlagValue(JsValue detail) {
-  return if (detail === undefined) { undefined } else { detail.variant ?? detail.enabled };
-}
-
-export JsValue parsePayload(JsValue response) {
-  if (!(response is string)) {
-    return response;
-  }
-  try {
-    return JSON.parse(response);
-  } catch (JsValue error) {
-    return response;
-  }
-}
-
-export JsValue createFlagsResponseFromFlagsAndPayloads(JsValue featureFlags, JsValue featureFlagPayloads) {
+export func(JsValue, JsValue)->JsValue createFlagsResponseFromFlagsAndPayloads = (JsValue featureFlags, JsValue featureFlagPayloads) => {
   // If a feature flag payload key is not in the feature flags, we treat it as true feature flag.
   // `[...new Set([...a, ...b])]`: the keys in first-seen order.
-  JsValue allKeys = [];
-  Set<string> seen = new Set<string>();
-  JsValue lists = [Object.keys(featureFlags ?? object {}), Object.keys(featureFlagPayloads ?? object {})];
-  for (int l = 0; l < 2; l += 1) {
-    JsValue keys = lists[l];
-    for (int i = 0; i < keys.length; i += 1) {
-      string key = keys[i] as string;
-      if (!seen.has(key)) {
-        seen.add(key);
-        allKeys.push(key);
-      }
-    }
-  }
-  JsValue flagValues = allKeys
+  JsValue flagValues = Array.from(JS.construct(Set, Object.keys(featureFlags ?? object {}).concat(Object.keys(featureFlagPayloads ?? object {}))))
     .filter((JsValue flag) => {
       JsValue value = if (featureFlags == null) { undefined } else { featureFlags[flag] };
       JsValue payload = if (featureFlagPayloads == null) { undefined } else { featureFlagPayloads[flag] };
@@ -110,11 +99,11 @@ export JsValue createFlagsResponseFromFlagsAndPayloads(JsValue featureFlags, JsV
     featureFlagPayloads: featureFlagPayloads ?? object {}
   };
   return normalizeFlagsResponse(flagDetails);
-}
+};
 
-export JsValue updateFlagValue(JsValue flag, JsValue value) {
+export func(JsValue, JsValue)->JsValue updateFlagValue = (JsValue flag, JsValue value) => {
   return Object.assign(object {}, flag, object { enabled: getEnabledFromValue(value), variant: getVariantFromValue(value) });
-}
+};
 
 export JsValue getEnabledFromValue(JsValue value) {
   return if (value is string) { true } else { value };
@@ -124,7 +113,7 @@ export JsValue getVariantFromValue(JsValue value) {
   return if (value is string) { value } else { undefined };
 }
 
-export JsValue flagDetailsToResults(JsValue flagDetails) {
+export func(JsValue)->JsValue flagDetailsToResults = (JsValue flagDetails) => {
   return Object.values(flagDetails).map((JsValue detail) => {
     JsValue value = detail.variant ?? detail.enabled;
     JsValue metadata = detail.metadata;
@@ -136,7 +125,7 @@ export JsValue flagDetailsToResults(JsValue flagDetails) {
       payload: if (rawPayload !== undefined) { parsePayload(rawPayload) } else { null }
     };
   });
-}
+};
 
 export string[] MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES = [
   "utm_source",
@@ -199,9 +188,7 @@ export JsValue minimizeFlagCalledEventProperties(JsValue properties, JsValue tra
       minimal[key] = properties[key];
     }
   };
-  for (string key of MINIMAL_FLAG_CALLED_EVENT_PROPERTIES) {
-    copyKey(key);
-  }
+  (MINIMAL_FLAG_CALLED_EVENT_PROPERTIES as JsValue).forEach(copyKey);
   transportKeys.forEach(copyKey);
   return minimal;
 }

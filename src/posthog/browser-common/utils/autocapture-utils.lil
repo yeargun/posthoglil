@@ -7,9 +7,9 @@ import { isArray, isBoolean, isNullish, isString, isUndefined } from "../../core
 import { trim } from "../../core/utils/string-utils.lil";
 import { logger } from "./logger.lil";
 import { window } from "./globals.lil";
+extern JsValue Object;
 import { getTargetingUrl } from "./url-targeting-utils.lil";
 import { isElementNode, isShadowRoot, isTag, isTextNode } from "./element-utils.lil";
-import { copyDataProperties } from "../../lil/object.lil";
 
 // Real DOM trees are at most a few hundred nodes deep; a patched parentNode
 // chain could otherwise trap ancestor walks in an unbounded loop.
@@ -655,25 +655,20 @@ string elementsToString(JsValue elements) {
         el_string += `.${single_class.replace(new Regex("\"", "g"), "")}`;
       }
     }
-    // { ...(text ? { text } : {}), 'nth-child', 'nth-of-type', ...(href ? { href } : {}), ...(attr_id ? { attr_id } : {}), ...attributes }:
-    // every entry becomes an own data property, in this order (spread semantics).
-    JsValue attributes = object {};
-    if (element.text.truthy()) {
-      copyDataProperties(attributes, object { text: element.text });
-    }
+    // { ...(text ? { text } : {}), 'nth-child', 'nth-of-type', ...(href ? { href } : {}), ...(attr_id ? { attr_id } : {}), ...attributes }
     JsValue nthChild = element.nth_child;
     JsValue nthOfType = element.nth_of_type;
-    copyDataProperties(attributes, object {
-      "nth-child": if (nthChild == null) { 0 as JsValue } else { nthChild },
-      "nth-of-type": if (nthOfType == null) { 0 as JsValue } else { nthOfType }
-    });
-    if (element.href.truthy()) {
-      copyDataProperties(attributes, object { href: element.href });
-    }
-    if (element.attr_id.truthy()) {
-      copyDataProperties(attributes, object { attr_id: element.attr_id });
-    }
-    copyDataProperties(attributes, element.attributes);
+    JsValue attributes = Object.assign(
+      object {},
+      if (element.text.truthy()) { object { text: element.text } } else { object {} },
+      object {
+        "nth-child": if (nthChild == null) { 0 as JsValue } else { nthChild },
+        "nth-of-type": if (nthOfType == null) { 0 as JsValue } else { nthOfType }
+      },
+      if (element.href.truthy()) { object { href: element.href } } else { object {} },
+      if (element.attr_id.truthy()) { object { attr_id: element.attr_id } } else { object {} },
+      element.attributes
+    );
     JsValue sortedAttributes = object {};
     entries(attributes)
       .sort((JsValue a, JsValue b) => lexicalCompare(a[0] as string, b[0] as string))

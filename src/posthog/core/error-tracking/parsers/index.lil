@@ -145,8 +145,7 @@ export JsValue reverseAndStripFrames(JsValue stack) {
   JsValue localStack = Array.from(stack);
   localStack.reverse();
   return localStack.slice(0, STACKTRACE_FRAME_LIMIT).map((JsValue frame) => {
-    JsValue stripped = Object.assign(object {}, frame);
-    stripped.filename = frame.filename || getLastStackFrame(localStack).filename;
+    JsValue stripped = Object.assign(object {}, frame, object { filename: frame.filename || getLastStackFrame(localStack).filename });
     stripped["function"] = frame["function"] || UNKNOWN_FUNCTION;
     return stripped;
   });

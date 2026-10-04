@@ -110,70 +110,124 @@ export string detectBrowser(string user_agent, string? vendor, JsValue hints, Js
     return GOOGLE_SEARCH_APP;
   }
 
-  if (includes(user_agent, " OPR/") && includes(user_agent, "Mini")) {
-    return OPERA_MINI;
-  } else if (includes(user_agent, " OPR/")) {
-    return OPERA;
-  } else if (BLACKBERRY_REGEX.test(user_agent)) {
-    return BLACKBERRY;
-  } else if (includes(user_agent, "IE" + MOBILE) || includes(user_agent, "WPDesktop")) {
-    return INTERNET_EXPLORER_MOBILE;
-  } else if (includes(user_agent, "OculusBrowser")) {
-    // Oculus Browser is Chromium-based: check it before Chrome and SamsungBrowser.
-    return OCULUS_BROWSER;
-  } else if (includes(user_agent, SAMSUNG_BROWSER)) {
-    return SAMSUNG_INTERNET;
-  } else if (includes(user_agent, EDGE) || includes(user_agent, "Edg/")) {
-    return MICROSOFT_EDGE;
-  } else if (includes(user_agent, VIVALDI + "/")) {
-    // Chromium forks that stamp themselves into the UA, checked before Chrome.
-    return VIVALDI;
-  } else if (includes(user_agent, "YaBrowser/")) {
-    return YANDEX;
-  } else if (includes(user_agent, WHALE + "/")) {
-    return WHALE;
-  } else if (includes(user_agent, DUCKDUCKGO + "/") || includes(user_agent, "Ddg/")) {
-    return DUCKDUCKGO;
-  } else if (includes(user_agent, CLAUDE + "/")) {
-    return CLAUDE;
-  } else if (includes(user_agent, CODEX + "/")) {
-    return CODEX;
-  } else if (includes(user_agent, CHATGPT + "/")) {
-    return CHATGPT;
-  } else if (includes(user_agent, "FBIOS")) {
-    return FACEBOOK + " " + MOBILE;
-  } else if (includes(user_agent, "UCWEB") || includes(user_agent, "UCBrowser")) {
-    return "UC Browser";
-  } else if (includes(user_agent, "CriOS")) {
-    return CHROME_IOS;
-  } else if (includes(user_agent, "CrMo")) {
-    return CHROME;
-  } else if (includes(user_agent, CHROME)) {
-    return CHROME;
-  } else if (includes(user_agent, ANDROID) && includes(user_agent, SAFARI)) {
-    return ANDROID_MOBILE;
-  } else if (includes(user_agent, "FxiOS")) {
-    return FIREFOX_IOS;
-  } else if (includes(user_agent.toLowerCase(), KONQUEROR.toLowerCase())) {
-    return KONQUEROR;
-  } else if (includes(user_agent, BRAVE + "/")) {
-    // Brave on iOS stamps `Brave/X` into the UA; it must come before the Safari branch.
-    return BRAVE;
-  } else if (safariCheck(user_agent, vendorText)) {
-    return if (includes(user_agent, MOBILE)) { MOBILE_SAFARI } else { SAFARI };
-  } else if (includes(user_agent, "PaleMoon/")) {
-    // Firefox forks that stamp themselves into the UA, checked before Firefox.
-    return PALE_MOON;
-  } else if (includes(user_agent, WATERFOX + "/")) {
-    return WATERFOX;
-  } else if (includes(user_agent, FIREFOX)) {
-    return FIREFOX;
-  } else if (includes(user_agent, "MSIE") || includes(user_agent, "Trident/")) {
-    return INTERNET_EXPLORER;
-  } else if (includes(user_agent, "Gecko")) {
-    return FIREFOX;
-  }
-  return "";
+  // One expression, as upstream's build folds this chain into a nested conditional.
+  return if (includes(user_agent, " OPR/") && includes(user_agent, "Mini")) {
+ OPERA_MINI
+ } else {
+ if (includes(user_agent, " OPR/")) {
+ OPERA
+ } else {
+ if (BLACKBERRY_REGEX.test(user_agent)) {
+ BLACKBERRY
+ } else {
+ if (includes(user_agent, "IE" + MOBILE) || includes(user_agent, "WPDesktop")) {
+ INTERNET_EXPLORER_MOBILE
+ } else {
+ if (includes(user_agent, "OculusBrowser")) {
+ OCULUS_BROWSER
+ } else {
+ if (includes(user_agent, SAMSUNG_BROWSER)) {
+ SAMSUNG_INTERNET
+ } else {
+ if (includes(user_agent, EDGE) || includes(user_agent, "Edg/")) {
+ MICROSOFT_EDGE
+ } else {
+ if (includes(user_agent, VIVALDI + "/")) {
+ VIVALDI
+ } else {
+ if (includes(user_agent, "YaBrowser/")) {
+ YANDEX
+ } else {
+ if (includes(user_agent, WHALE + "/")) {
+ WHALE
+ } else {
+ if (includes(user_agent, DUCKDUCKGO + "/") || includes(user_agent, "Ddg/")) {
+ DUCKDUCKGO
+ } else {
+ if (includes(user_agent, CLAUDE + "/")) {
+ CLAUDE
+ } else {
+ if (includes(user_agent, CODEX + "/")) {
+ CODEX
+ } else {
+ if (includes(user_agent, CHATGPT + "/")) {
+ CHATGPT
+ } else {
+ if (includes(user_agent, "FBIOS")) {
+ FACEBOOK + " " + MOBILE
+ } else {
+ if (includes(user_agent, "UCWEB") || includes(user_agent, "UCBrowser")) {
+ "UC Browser"
+ } else {
+ if (includes(user_agent, "CriOS")) {
+ CHROME_IOS
+ } else {
+ if (includes(user_agent, "CrMo")) {
+ CHROME
+ } else {
+ if (includes(user_agent, CHROME)) {
+ CHROME
+ } else {
+ if (includes(user_agent, ANDROID) && includes(user_agent, SAFARI)) {
+ ANDROID_MOBILE
+ } else {
+ if (includes(user_agent, "FxiOS")) {
+ FIREFOX_IOS
+ } else {
+ if (includes(user_agent.toLowerCase(), KONQUEROR.toLowerCase())) {
+ KONQUEROR
+ } else {
+ if (includes(user_agent, BRAVE + "/")) {
+ BRAVE
+ } else {
+ if (safariCheck(user_agent, vendorText)) {
+ if (includes(user_agent, MOBILE)) { MOBILE_SAFARI } else { SAFARI }
+ } else {
+ if (includes(user_agent, "PaleMoon/")) {
+ PALE_MOON
+ } else {
+ if (includes(user_agent, WATERFOX + "/")) {
+ WATERFOX
+ } else {
+ if (includes(user_agent, FIREFOX)) {
+ FIREFOX
+ } else {
+ if (includes(user_agent, "MSIE") || includes(user_agent, "Trident/")) {
+ INTERNET_EXPLORER
+ } else {
+ if (includes(user_agent, "Gecko")) {
+ FIREFOX
+ } else {
+ ""
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ };
 }
 
 Record<Regex[]> versionRegexes = record {

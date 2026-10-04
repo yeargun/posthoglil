@@ -17,6 +17,8 @@ assume_pure_property_reads = true
 assume_private_underscore_properties = true
 # and its compress folds `x === null || x === undefined` into `null == x`: no value is document.all
 assume_no_document_all = true
+# upstream's source writes these copies as object spread, which defines an own `__proto__` key where Object.assign would set the prototype
+assume_no_proto_keys = true
 strip_debug = false
 # upstream's npm build mangles function and class names too
 keep_published_function_names = false

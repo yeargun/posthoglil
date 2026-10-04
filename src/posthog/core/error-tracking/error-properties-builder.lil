@@ -63,9 +63,7 @@ export class ErrorPropertiesBuilder {
   JsValue buildCoercingContext(JsValue mechanism, JsValue hint, float depth = 0.0) {
     CoercionRun run = new CoercionRun(this, mechanism, hint);
     JsValue context = createContext(run, depth, 0.0);
-    JsValue result = Object.assign(object {}, context);
-    result.apply = (JsValue input) => coerceInput(run, input, depth, 0.0) ?? coerceFallback(context);
-    return result;
+    return Object.assign(object {}, context, object { apply: (JsValue input) => coerceInput(run, input, depth, 0.0) ?? coerceFallback(context) });
   }
 }
 export constructor ErrorPropertiesBuilder;
@@ -93,12 +91,9 @@ JsValue parseStacktrace(ErrorPropertiesBuilder self, JsValue err, ParsingContext
       // A malformed stack must not discard this exception or its relatives.
     }
   }
-  JsValue parsed = Object.assign(object {}, err);
-  parsed.cause = cause;
-  parsed.stack = stack;
   JsValue errors = err.errors;
-  parsed.errors = if (errors == null) { undefined } else { errors.map((JsValue child) => parseStacktrace(self, child, ctx)) };
-  return parsed;
+  JsValue parsedErrors = if (errors == null) { undefined } else { errors.map((JsValue child) => parseStacktrace(self, child, ctx)) };
+  return Object.assign(object {}, err, object { cause: cause, stack: stack, errors: parsedErrors });
 }
 
 JsValue applyChunkIds(JsValue frames, JsValue chunkIdMap) {
@@ -290,23 +285,22 @@ JsValue coerceInput(CoercionRun run, JsValue input, float depth, float wrapperDe
       children.push(child);
     }
   }
-  JsValue result = Object.assign(object {}, exception);
-  result.errors = children;
-  return result;
+  return Object.assign(object {}, exception, object { errors: children });
 }
 
 JsValue createContext(CoercionRun run, float depth, float wrapperDepth) {
-  JsValue context = Object.assign(object {}, run.hint);
-  // Capture-boundary metadata and replacement stacks belong only to the root.
-  context.syntheticException = if (depth == 0.0) { run.hint.syntheticException } else { undefined };
-  context.mechanism = if (depth == 0.0) { run.mechanism } else { object {} };
-  context.apply = (JsValue input) => {
-    JsValue exception = coerceInput(run, input, depth, wrapperDepth + 1.0);
-    if (!exception.truthy()) {
-      throw run.skipped;
-    }
-    return exception;
-  };
-  context.next = (JsValue input) => coerceInput(run, input, depth + 1.0, 0.0);
-  return context;
+  JsValue hint = run.hint;
+  return Object.assign(object {}, hint, object {
+    // Capture-boundary metadata and replacement stacks belong only to the root.
+    syntheticException: if (depth == 0.0) { hint.syntheticException } else { undefined },
+    mechanism: if (depth == 0.0) { run.mechanism } else { object {} },
+    apply: (JsValue input) => {
+      JsValue exception = coerceInput(run, input, depth, wrapperDepth + 1.0);
+      if (!exception.truthy()) {
+        throw run.skipped;
+      }
+      return exception;
+    },
+    next: (JsValue input) => coerceInput(run, input, depth + 1.0, 0.0)
+  });
 }

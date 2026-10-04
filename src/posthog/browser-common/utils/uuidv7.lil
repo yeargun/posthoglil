@@ -53,37 +53,17 @@ Uint8Array fieldsV7(float unixTsMs, float randA, float randBHi, float randBLo) {
   view[3] = unixTsMs / 65536.0;
   view[4] = unixTsMs / 256.0;
   view[5] = unixTsMs;
-  int a = randA.toInt();
-  int hi = randBHi.toInt();
-  int lo = randBLo.toInt();
-  bytes[6] = 112 | (a >>> 8);
-  bytes[7] = a;
-  bytes[8] = 128 | (hi >>> 24);
-  bytes[9] = hi >>> 16;
-  bytes[10] = hi >>> 8;
-  bytes[11] = hi;
-  bytes[12] = lo >>> 24;
-  bytes[13] = lo >>> 16;
-  bytes[14] = lo >>> 8;
-  bytes[15] = lo;
+  view[6] = 112 | (randA.toInt() >>> 8);
+  view[7] = randA;
+  view[8] = 128 | (randBHi.toInt() >>> 24);
+  view[9] = randBHi.toInt() >>> 16;
+  view[10] = randBHi.toInt() >>> 8;
+  view[11] = randBHi;
+  view[12] = randBLo.toInt() >>> 24;
+  view[13] = randBLo.toInt() >>> 16;
+  view[14] = randBLo.toInt() >>> 8;
+  view[15] = randBLo;
   return bytes;
-}
-
-// UUID.prototype.toString: the 8-4-4-4-12 canonical hexadecimal form.
-string formatBytes(Uint8Array bytes) {
-  string text = "";
-  for (int i = 0; i < bytes.length; i++) {
-    text = text + (bytes[i] >>> 4).toString(16) + (bytes[i] & 15).toString(16);
-    if (i == 3 || i == 5 || i == 7 || i == 9) {
-      text += "-";
-    }
-  }
-  if (text.length != 36) {
-    // We saw one customer whose bundling code was mangling the UUID generation
-    // rather than accept a bad UUID, we throw an error here.
-    throw new Error("Invalid UUIDv7 was generated");
-  }
-  return text;
 }
 
 export class UUID {
@@ -96,16 +76,31 @@ export class UUID {
     }
   }
 
+  // The 8-4-4-4-12 canonical hexadecimal form.
   string toString() {
-    return formatBytes(this.bytes);
+    string text = "";
+    Uint8Array bytes = this.bytes;
+    for (int i = 0; i < bytes.length; i++) {
+      text = text + (bytes[i] >>> 4).toString(16) + (bytes[i] & 15).toString(16);
+      if (i == 3 || i == 5 || i == 7 || i == 9) {
+        text += "-";
+      }
+    }
+    if (text.length != 36) {
+      // We saw one customer whose bundling code was mangling the UUID generation
+      // rather than accept a bad UUID, we throw an error here.
+      throw new Error("Invalid UUIDv7 was generated");
+    }
+    return text;
   }
 
   UUID clone() {
     return new UUID((this.bytes as JsValue).slice(0) as Uint8Array);
   }
 
+  // Through the instance, as upstream's `this.compareTo(other)` dispatches.
   bool equals(UUID other) {
-    return this.compareTo(other) == 0.0;
+    return (this as JsValue).compareTo(other) === 0;
   }
 
   float compareTo(UUID other) {
@@ -221,11 +216,10 @@ Uint8Array generate() {
   return valueAfterReset;
 }
 
-export string uuidv7() {
-  return formatBytes(generate());
-}
+// Upstream's `uuidv7obj().toString()`, through the instance's own method.
+export func()->string uuidv7 = () => (new UUID(generate()) as JsValue).toString() as string;
 
-export float uuid7ToTimestampMs(string uuid) {
+export func(string)->float uuid7ToTimestampMs = (string uuid) => {
   // remove hyphens
   string hex = uuid.replace(new Regex("-", "g"), "");
   // ensure that it's a version 7 UUID
@@ -237,4 +231,4 @@ export float uuid7ToTimestampMs(string uuid) {
   }
   // the first 6 bytes are the timestamp, which means that we can read only the first 12 hex characters
   return parseInt(hex.slice(0, 12), 16) as float;
-}
+};

@@ -16,10 +16,8 @@ export class ErrorEventCoercer {
       return ctx.apply(err.error);
     }
     JsValue exceptionLike = ctx.apply(err["message"]);
-    JsValue result = Object.assign(object {}, exceptionLike);
-    result.stack = buildLocationStack(err) ?? exceptionLike.stack;
-    result.synthetic = true;
-    return result;
+    JsValue stack = buildLocationStack(err) ?? exceptionLike.stack;
+    return Object.assign(object {}, exceptionLike, object { stack: stack, synthetic: true });
   }
 }
 export constructor ErrorEventCoercer;

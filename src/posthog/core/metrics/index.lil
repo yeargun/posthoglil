@@ -98,7 +98,7 @@ export class PostHogMetrics {
     this._logger = logger;
     PostHogMetrics self = this;
     this._flushTimer = new FlushTimer(() =>
-      (self.flush() as JsValue).catch((JsValue e) => {
+      (self as JsValue).flush().catch((JsValue e) => {
         self._logger.error("Metrics flush failed:", e);
       })
     );
@@ -165,7 +165,7 @@ export class PostHogMetrics {
     this._retryAfter.reset();
     this._consecutiveFlushFailures = 0.0;
     this._flushJitter = NO_JITTER;
-    flushTimerOf(this).clear();
+    this._flushTimer.clear();
     this._series = new SeriesWindow();
     this._flushPromise = null;
     this._seriesCapWarned = false;
@@ -174,10 +174,6 @@ export class PostHogMetrics {
   }
 }
 export constructor PostHogMetrics;
-
-FlushTimer flushTimerOf(PostHogMetrics self) {
-  return self._flushTimer as FlushTimer;
-}
 
 void resetWindow(PostHogMetrics self) {
   self._series = new SeriesWindow();
@@ -340,11 +336,10 @@ JsValue runBeforeSend(PostHogMetrics self, JsValue sample) {
 
 // Every capture calls this, so a pending timer is left alone.
 void armFlushTimer(PostHogMetrics self) {
-  FlushTimer flushTimer = flushTimerOf(self);
-  if (flushTimer._timer.truthy()) {
+  if (self._flushTimer.pending.truthy()) {
     return;
   }
-  flushTimer.arm(nextFlushDelay(self));
+  self._flushTimer.arm(nextFlushDelay(self));
 }
 
 // Exponential backoff with per-failure jitter, floored by `Retry-After`.
@@ -359,8 +354,7 @@ float nextFlushDelay(PostHogMetrics self) {
 
 async void doFlush(PostHogMetrics self) {
   // A flush retires the pending timer.
-  FlushTimer flushTimer = flushTimerOf(self);
-  flushTimer.clear();
+  self._flushTimer.clear();
   if (self._series._ordered.length == 0) {
     return;
   }
@@ -383,8 +377,8 @@ async void doFlush(PostHogMetrics self) {
     self._flushJitter = NO_JITTER;
   }
   // Outright: a timer a mid-flight capture armed is measured against this outcome's window.
-  if (flushTimer._timer.truthy()) {
-    flushTimer.arm(nextFlushDelay(self));
+  if (self._flushTimer.pending.truthy()) {
+    self._flushTimer.arm(nextFlushDelay(self));
   }
   JsValue kind = outcome.kind;
   if (kind === "ok") {
@@ -392,7 +386,7 @@ async void doFlush(PostHogMetrics self) {
   } else if (kind === "retry-later") {
     // Merge the unsent window back and re-arm, since nothing else would schedule that flush.
     mergeWindowBack(self, window);
-    flushTimer.armNoEarlierThan(nextFlushDelay(self));
+    self._flushTimer.armNoEarlierThan(nextFlushDelay(self));
   } else if (kind === "too-large") {
     self._logger.warn("Metrics batch exceeded the server size limit and was dropped");
   } else if (kind === "fatal") {

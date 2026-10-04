@@ -1,5 +1,5 @@
 // packages/core/src/utils/flush-timer.ts — the pending flush timer of an export queue, and when it
-// is due. The queues keep it in a private field, so its own calls to `arm`/`clear` are static.
+// is due. Its own calls to `arm`/`clear`/`_onFire` go through the instance, as upstream's `this.x()` do.
 import { safeSetTimeout } from "../../lil/core-utils.lil";
 extern JsValue Date;
 extern JsValue Object;
@@ -17,12 +17,12 @@ export class FlushTimer {
 
   // Schedules a flush in `delayMs`, replacing any timer already pending.
   void arm(float delayMs) {
-    this.clear();
+    (this as JsValue).clear();
     this._firesAt = (Date.now() as float) + delayMs;
     FlushTimer self = this;
     this._timer = safeSetTimeout(() => {
       self._timer = undefined;
-      self._onFire.call(self);
+      (self as JsValue)._onFire();
     }, delayMs);
   }
 
@@ -31,7 +31,7 @@ export class FlushTimer {
     if (this._timer.truthy() && (Date.now() as float) + delayMs <= this._firesAt) {
       return;
     }
-    this.arm(delayMs);
+    (this as JsValue).arm(delayMs);
   }
 
   void clear() {
