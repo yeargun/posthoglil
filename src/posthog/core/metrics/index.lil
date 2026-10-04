@@ -17,6 +17,7 @@ import {
   seriesKey
 } from "./metrics-utils.lil";
 import { resolveMetricsConfig } from "./config.lil";
+extern JsValue Array;
 extern JsValue Date;
 extern JsValue Number;
 extern JsValue Object;
@@ -52,14 +53,13 @@ shape SeriesState {
   data HistogramState hist;
 }
 
+// Series by key, in insertion order (upstream's `Map`).
 class SeriesWindow {
   Map<string, SeriesState> _byKey = new Map<string, SeriesState>();
-  SeriesState[] _ordered = [];
 }
 
 void addSeries(SeriesWindow window, SeriesState state) {
   window._byKey.set(state.key, state);
-  window._ordered.push(state);
 }
 
 
@@ -86,10 +86,9 @@ export class PostHogMetrics {
     this._instance = instance;
     this._config = config;
     this._logger = logger;
-    PostHogMetrics self = this;
     this._flushTimer = new FlushTimer(() =>
-      (self as JsValue).flush().catch((JsValue e) => {
-        self._logger.error("Metrics flush failed:", e);
+      (this as JsValue).flush().catch((JsValue e) => {
+        this._logger.error("Metrics flush failed:", e);
       })
     );
   }
@@ -127,11 +126,10 @@ export class PostHogMetrics {
   // Sends everything aggregated so far without waiting for the flush interval.
   JsValue flush() {
     JsValue prev = this._flushPromise;
-    PostHogMetrics self = this;
     JsValue p = undefined;
     p = (runFlush(this, prev) as JsValue).finally(() => {
-      if (self._flushPromise === p) {
-        self._flushPromise = null;
+      if (this._flushPromise === p) {
+        this._flushPromise = null;
       }
     });
     this._flushPromise = p;
@@ -141,7 +139,7 @@ export class PostHogMetrics {
   // Synchronously snapshots and resets the current window as an OTLP payload (for unload-time
   // sendBeacon drains); `null` when there is nothing to send.
   JsValue drainWindow() {
-    if (this._series._ordered.length == 0) {
+    if (this._series._byKey.size == 0) {
       return null;
     }
     SeriesWindow window = this._series;
@@ -227,8 +225,7 @@ void capture(PostHogMetrics self, JsValue sample) {
     if (seenType !== filtered.type && !self._typeCollisionWarned.has(name)) {
       self._typeCollisionWarned.add(name);
       self._logger.warn(
-        `Metric name '${filtered.name}' is already used as a ${seenType}; ` +
-          `recording it as a ${filtered.type} too will blend both series in charts. Use a distinct name.`
+        `Metric name '${filtered.name}' is already used as a ${seenType}; recording it as a ${filtered.type} too will blend both series in charts. Use a distinct name.`
       );
     }
   }
@@ -268,8 +265,7 @@ bool admitNewSeries(PostHogMetrics self) {
   if (!self._seriesCapWarned) {
     self._seriesCapWarned = true;
     self._logger.warn(
-      `Metric series cap reached (${self._config.maxSeriesPerFlush} per flush window); ` +
-        `dropping new series until the next flush. Reduce attribute cardinality.`
+      `Metric series cap reached (${self._config.maxSeriesPerFlush} per flush window); dropping new series until the next flush. Reduce attribute cardinality.`
     );
   }
   return false;
@@ -289,15 +285,14 @@ void fold(SeriesState state, float value) {
     hist.sum += value;
     hist.min = hist.min.min(value);
     hist.max = hist.max.max(value);
-    hist.bucketCounts[bucketIndexFor(value, DEFAULT_HISTOGRAM_BOUNDS).toInt()] += 1.0;
+    float[] counts = hist.bucketCounts;
+    int index = bucketIndexFor(value, DEFAULT_HISTOGRAM_BOUNDS).toInt();
+    counts[index] = counts[index] + 1.0;
   }
 }
 
 HistogramState newHistogram(float value) {
-  float[] bucketCounts = [];
-  for (int i = 0; i < DEFAULT_HISTOGRAM_BOUNDS.length + 1; i += 1) {
-    bucketCounts.push(0.0);
-  }
+  float[] bucketCounts = JS.assume(Array(DEFAULT_HISTOGRAM_BOUNDS.length + 1).fill(0));
   return HistogramState{count: 0.0, sum: 0.0, min: value, max: value, bucketCounts: bucketCounts};
 }
 
@@ -308,8 +303,7 @@ JsValue runBeforeSend(PostHogMetrics self, JsValue sample) {
   }
   JsValue fns = if (isArray(beforeSend)) { beforeSend } else { [beforeSend] };
   JsValue result = sample;
-  for (float i = 0.0; i < fns.length; i += 1.0) {
-    JsValue fn = fns[i];
+  for (JsValue fn of fns) {
     try {
       JsValue next = fn(result);
       if (!next.truthy()) {
@@ -346,7 +340,7 @@ float nextFlushDelay(PostHogMetrics self) {
 async void doFlush(PostHogMetrics self) {
   // A flush retires the pending timer.
   self._flushTimer.clear();
-  if (self._series._ordered.length == 0) {
+  if (self._series._byKey.size == 0) {
     return;
   }
   // Snapshot and reset the window; samples captured during the send fold into a fresh one.
@@ -371,10 +365,9 @@ async void doFlush(PostHogMetrics self) {
   if (self._flushTimer.pending.truthy()) {
     self._flushTimer.arm(nextFlushDelay(self));
   }
+  // "ok" needs nothing more.
   JsValue kind = outcome.kind;
-  if (kind === "ok") {
-    return;
-  } else if (kind === "retry-later") {
+  if (kind === "retry-later") {
     // Merge the unsent window back and re-arm, since nothing else would schedule that flush.
     mergeWindowBack(self, window);
     self._flushTimer.armNoEarlierThan(nextFlushDelay(self));
@@ -400,11 +393,11 @@ JsValue[] buildMetrics(PostHogMetrics self, SeriesWindow window) {
   string nowNano = msToUnixNano(Date.now());
   Map<string, JsValue> byMetric = new Map<string, JsValue>();
   JsValue[] metrics = [];
-  for (SeriesState state of window._ordered) {
+  for (JsValue entry of (window._byKey as JsValue).values()) {
+    SeriesState state = entry as SeriesState;
     string metricKey = seriesKey(state.type, state.name, state.unit, undefined);
-    JsValue? found = byMetric.get(metricKey);
-    JsValue metric = if (found == null) { undefined } else { found };
-    if (found == null) {
+    JsValue metric = (byMetric as JsValue).get(metricKey);
+    if (metric == null) {
       metric = object { name: state.name };
       if (state.unit.truthy()) {
         metric.unit = state.unit;
@@ -456,7 +449,8 @@ JsValue[] buildMetrics(PostHogMetrics self, SeriesWindow window) {
 
 // Folds an unsent window back into the live one after a transient send failure.
 void mergeWindowBack(PostHogMetrics self, SeriesWindow window) {
-  for (SeriesState old of window._ordered) {
+  for (JsValue entry of (window._byKey as JsValue).values()) {
+    SeriesState old = entry as SeriesState;
     SeriesState? current = self._series._byKey.get(old.key);
     if (current == null) {
       // The cap still applies: a failed flush must not reintroduce series past the cap.
@@ -484,8 +478,10 @@ void mergeSeries(SeriesState current, SeriesState old) {
         currentHist.sum += oldHist.sum;
         currentHist.min = currentHist.min.min(oldHist.min);
         currentHist.max = currentHist.max.max(oldHist.max);
-        for (int i = 0; i < currentHist.bucketCounts.length; i += 1) {
-          currentHist.bucketCounts[i] += oldHist.bucketCounts[i];
+        float[] counts = currentHist.bucketCounts;
+        float[] oldCounts = oldHist.bucketCounts;
+        for (int i = 0; i < counts.length; i += 1) {
+          counts[i] = counts[i] + oldCounts[i];
         }
       }
     }

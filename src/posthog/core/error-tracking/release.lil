@@ -3,10 +3,7 @@ extern JsValue globalThis;
 
 // The release id posthog-cli injects as `globalThis._posthogReleaseId`; `undefined` when nothing
 // was injected or the value is malformed.
-export string | undefined getInjectedReleaseId() {
+export JsValue getInjectedReleaseId() {
   JsValue injected = globalThis._posthogReleaseId;
-  if (injected is string && injected.length > 0) {
-    return injected;
-  }
-  return undefined;
+  return if (injected is string && injected.length > 0) { injected } else { undefined };
 }

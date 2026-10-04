@@ -52,8 +52,7 @@ export class ErrorPropertiesBuilder {
   }
 
   async JsValue modifyFrames(JsValue exceptionList) {
-    for (float i = 0.0; i < exceptionList.length; i += 1.0) {
-      JsValue exc = exceptionList[i];
+    for (JsValue exc of exceptionList) {
       if (exc.stacktrace.truthy() && exc.stacktrace.frames.truthy() && isArray(exc.stacktrace.frames)) {
         exc.stacktrace.frames = await applyModifiers(this, exc.stacktrace.frames);
       }
@@ -107,9 +106,7 @@ JsValue applyChunkIds(JsValue frames, JsValue chunkIdMap) {
 }
 
 JsValue applyCoercers(ErrorPropertiesBuilder self, JsValue input, JsValue ctx) {
-  JsValue coercers = self.coercers;
-  for (float i = 0.0; i < coercers.length; i += 1.0) {
-    JsValue adapter = coercers[i];
+  for (JsValue adapter of self.coercers) {
     if (adapter.match(input).truthy()) {
       return adapter.coerce(input, ctx);
     }
@@ -119,9 +116,7 @@ JsValue applyCoercers(ErrorPropertiesBuilder self, JsValue input, JsValue ctx) {
 
 async JsValue applyModifiers(ErrorPropertiesBuilder self, JsValue frames) {
   JsValue newFrames = frames;
-  JsValue modifiers = self.modifiers;
-  for (float i = 0.0; i < modifiers.length; i += 1.0) {
-    JsValue modifier = modifiers[i];
+  for (JsValue modifier of self.modifiers) {
     Task<JsValue> modified = JS.assume(modifier(newFrames));
     newFrames = await modified;
   }
@@ -165,9 +160,8 @@ void appendException(JsValue[] exceptionList, JsValue mechanism, JsValue excepti
   if (exception.cause.truthy()) {
     appendException(exceptionList, mechanism, exception.cause, exceptionId, "cause");
   }
-  JsValue children = exception.errors ?? [];
-  for (float i = 0.0; i < children.length; i += 1.0) {
-    appendException(exceptionList, mechanism, children[i], exceptionId, "member");
+  for (JsValue child of exception.errors ?? []) {
+    appendException(exceptionList, mechanism, child, exceptionId, "member");
   }
 }
 

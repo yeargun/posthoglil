@@ -8,11 +8,10 @@ export class StringCoercer {
 
   JsValue coerce(JsValue input, JsValue ctx) {
     JsValue[] infos = this.getInfos(input as string);
-    JsValue synthetic = ctx.syntheticException;
     return object {
       type: infos[0] ?? "Error",
       value: infos[1] ?? input,
-      stack: if (synthetic == null) { undefined } else { synthetic.stack },
+      stack: if (ctx.syntheticException == null) { undefined } else { ctx.syntheticException.stack },
       synthetic: true
     };
   }

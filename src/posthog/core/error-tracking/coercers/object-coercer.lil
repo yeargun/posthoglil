@@ -15,17 +15,10 @@ export class ObjectCoercer {
     if (errorProperty.truthy()) {
       return ctx.apply(errorProperty);
     }
-    JsValue type = this.getType(candidate);
-    string value = this.getValue(candidate);
-    JsValue stack = getStack(candidate);
-    if (stack == null) {
-      JsValue synthetic = ctx.syntheticException;
-      stack = if (synthetic == null) { undefined } else { synthetic.stack };
-    }
     return object {
-      type: type,
-      value: value,
-      stack: stack,
+      type: this.getType(candidate),
+      value: this.getValue(candidate),
+      stack: getStack(candidate) ?? (if (ctx.syntheticException == null) { undefined } else { ctx.syntheticException.stack }),
       level: if (isSeverityLevel(candidate.level)) { candidate.level } else { "error" },
       synthetic: true
     };

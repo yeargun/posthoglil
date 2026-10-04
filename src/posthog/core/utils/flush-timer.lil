@@ -19,10 +19,9 @@ export class FlushTimer {
   void arm(float delayMs) {
     (this as JsValue).clear();
     this._firesAt = (Date.now() as float) + delayMs;
-    FlushTimer self = this;
     this._timer = safeSetTimeout(() => {
-      self._timer = undefined;
-      (self as JsValue)._onFire();
+      this._timer = undefined;
+      (this as JsValue)._onFire();
     }, delayMs);
   }
 

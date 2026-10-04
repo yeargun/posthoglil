@@ -8,11 +8,10 @@ export class PrimitiveCoercer {
   }
 
   JsValue coerce(JsValue value, JsValue ctx) {
-    JsValue synthetic = ctx.syntheticException;
     return object {
       type: "Error",
       value: `Primitive value captured as exception: ${String(value)}`,
-      stack: if (synthetic == null) { undefined } else { synthetic.stack },
+      stack: if (ctx.syntheticException == null) { undefined } else { ctx.syntheticException.stack },
       synthetic: true
     };
   }

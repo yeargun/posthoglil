@@ -11,11 +11,10 @@ export class PromiseRejectionEventCoercer {
   JsValue coerce(JsValue err, JsValue ctx) {
     JsValue reason = getUnhandledRejectionReason(err);
     if (isPrimitive(reason)) {
-      JsValue synthetic = ctx.syntheticException;
       return object {
         type: "UnhandledRejection",
         value: `Non-Error promise rejection captured with value: ${String(reason)}`,
-        stack: if (synthetic == null) { undefined } else { synthetic.stack },
+        stack: if (ctx.syntheticException == null) { undefined } else { ctx.syntheticException.stack },
         synthetic: true
       };
     }

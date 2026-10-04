@@ -8,19 +8,9 @@ shape CachedResult {
   data JsValue chunkId;
 }
 
-Map<string, CachedResult>? parsedStackResults = null;
+Map<string, CachedResult> parsedStackResults = new Map<string, CachedResult>();
 float lastKeysCount = -1.0;
 JsValue cachedFilenameChunkIds = undefined;
-
-Map<string, CachedResult> stackResults() {
-  Map<string, CachedResult>? existing = parsedStackResults;
-  if (existing != null) {
-    return existing;
-  }
-  Map<string, CachedResult> created = new Map<string, CachedResult>();
-  parsedStackResults = created;
-  return created;
-}
 
 export JsValue getFilenameToChunkIdMap(JsValue stackParser) {
   JsValue chunkIdMap = globalThis._posthogChunkIds;
@@ -33,9 +23,9 @@ export JsValue getFilenameToChunkIdMap(JsValue stackParser) {
   }
   lastKeysCount = chunkIdKeys.length;
   JsValue acc = object {};
-  for (int k = 0; k < chunkIdKeys.length; k += 1) {
-    string stackKey = chunkIdKeys[k] as string;
-    Map<string, CachedResult> cache = stackResults();
+  for (JsValue key of chunkIdKeys) {
+    string stackKey = key as string;
+    Map<string, CachedResult> cache = parsedStackResults;
     CachedResult? result = cache.get(stackKey);
     if (result != null) {
       acc[result.filename] = result.chunkId;
