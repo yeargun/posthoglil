@@ -88,5 +88,6 @@
    "event-batch": "a 30-event batch (61 KB)",
    "replay-snapshot": "a 563 KB replay snapshot"
   }
- }
+ },
+ "compilerSha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
 }

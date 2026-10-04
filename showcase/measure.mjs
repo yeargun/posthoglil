@@ -76,14 +76,19 @@ function lilscript(entry,objective){
 
 export async function measure(group){
   // PostHog's own pipeline: Rolldown (core side-effect free) + Terser with posthog-js's settings
-  const bundled=await rolldownBundle(group.upstream,false)
+  // Each lane is timed from source: bundling plus its minifier (warm process, no output writes).
+  const timed=async f=>{const t=performance.now();const text=await f();return {text,seconds:+((performance.now()-t)/1000).toFixed(3)}}
   const lanes={}
-  const code={'terser-upstream':(await minify(bundled,upstreamTerser)).code,'esbuild':await esbuildBundle(group.upstream,true),'oxc':await oxcBundle(group.upstream)}
-  for(const [lane,text] of Object.entries(code)){
+  const code={
+    'terser-upstream':await timed(async()=>(await minify(await rolldownBundle(group.upstream,false),upstreamTerser)).code),
+    'esbuild':await timed(()=>esbuildBundle(group.upstream,true)),
+    'oxc':await timed(()=>oxcBundle(group.upstream)),
+  }
+  for(const [lane,{text,seconds}] of Object.entries(code)){
     // Every measured upstream file is kept, so each published number can be checked.
     const file=join(root,'showcase/out/lanes',lane,group.id+'.mjs')
     mkdirSync(dirname(file),{recursive:true});writeFileSync(file,text)
-    lanes[lane]={file,...sizes(Buffer.from(text))}
+    lanes[lane]={file,seconds,...sizes(Buffer.from(text))}
   }
   const best={}
   for(const codec of ['raw','gzip','brotli']){
