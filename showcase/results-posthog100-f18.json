@@ -1,22 +1,25 @@
 {
  "compiler": "/home/azureuser/lilscript-work/bin/posthog100-f18/lilscript",
- "date": "2026-10-04T07:50:18.189Z",
+ "date": "2026-10-04T08:15:41.676Z",
  "results": [
   {
    "id": "error-tracking",
    "title": "Exception capture pipeline",
    "upstream": {
     "terser-upstream": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/error-tracking.mjs",
      "raw": 14046,
      "gzip": 5385,
      "brotli": 4911
     },
     "esbuild": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/error-tracking.mjs",
      "raw": 17510,
      "gzip": 7095,
      "brotli": 6497
     },
     "oxc": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/error-tracking.mjs",
      "raw": 14282,
      "gzip": 5471,
      "brotli": 4997
@@ -39,21 +42,21 @@
    "lilscript": {
     "raw": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/error-tracking.mjs",
-     "seconds": 3.48,
+     "seconds": 3.17,
      "raw": 12903,
      "gzip": 5471,
      "brotli": 4956
     },
     "gzip": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/error-tracking.mjs",
-     "seconds": 6.11,
+     "seconds": 6.04,
      "raw": 13110,
      "gzip": 5356,
      "brotli": 4898
     },
     "brotli": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/error-tracking.mjs",
-     "seconds": 8.32,
+     "seconds": 8.25,
      "raw": 13403,
      "gzip": 5398,
      "brotli": 4875
@@ -70,16 +73,19 @@
    "title": "Browser, OS and device detection",
    "upstream": {
     "terser-upstream": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/user-agent.mjs",
      "raw": 5588,
      "gzip": 2399,
      "brotli": 2189
     },
     "esbuild": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/user-agent.mjs",
      "raw": 5282,
      "gzip": 2488,
      "brotli": 2280
     },
     "oxc": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/user-agent.mjs",
      "raw": 6047,
      "gzip": 2483,
      "brotli": 2260
@@ -116,7 +122,7 @@
     },
     "brotli": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/user-agent-utils.mjs",
-     "seconds": 1.82,
+     "seconds": 1.81,
      "raw": 5526,
      "gzip": 2223,
      "brotli": 2049
@@ -133,16 +139,19 @@
    "title": "Autocapture DOM utilities",
    "upstream": {
     "terser-upstream": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/autocapture-utils.mjs",
      "raw": 9624,
      "gzip": 3971,
      "brotli": 3560
     },
     "esbuild": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/autocapture-utils.mjs",
      "raw": 14173,
      "gzip": 6181,
      "brotli": 5544
     },
     "oxc": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/autocapture-utils.mjs",
      "raw": 9865,
      "gzip": 4138,
      "brotli": 3719
@@ -172,14 +181,14 @@
     },
     "gzip": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/autocapture-utils.mjs",
-     "seconds": 2.66,
+     "seconds": 2.59,
      "raw": 9502,
      "gzip": 3941,
      "brotli": 3538
     },
     "brotli": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/autocapture-utils.mjs",
-     "seconds": 6.84,
+     "seconds": 6.71,
      "raw": 9409,
      "gzip": 3980,
      "brotli": 3548
@@ -196,16 +205,19 @@
    "title": "Feature flag response utilities",
    "upstream": {
     "terser-upstream": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/feature-flags.mjs",
      "raw": 2669,
      "gzip": 1118,
      "brotli": 976
     },
     "esbuild": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/feature-flags.mjs",
      "raw": 2658,
      "gzip": 1145,
      "brotli": 998
     },
     "oxc": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/feature-flags.mjs",
      "raw": 2671,
      "gzip": 1140,
      "brotli": 994
@@ -235,14 +247,14 @@
     },
     "gzip": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/gzip/featureFlagUtils.mjs",
-     "seconds": 0.11,
+     "seconds": 0.1,
      "raw": 2632,
      "gzip": 1107,
      "brotli": 972
     },
     "brotli": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/featureFlagUtils.mjs",
-     "seconds": 0.32,
+     "seconds": 0.33,
      "raw": 2632,
      "gzip": 1107,
      "brotli": 972
@@ -259,16 +271,19 @@
    "title": "Metrics client (OTLP)",
    "upstream": {
     "terser-upstream": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/metrics.mjs",
      "raw": 10409,
      "gzip": 3920,
      "brotli": 3611
     },
     "esbuild": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/metrics.mjs",
      "raw": 14927,
      "gzip": 5674,
      "brotli": 5170
     },
     "oxc": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/metrics.mjs",
      "raw": 12090,
      "gzip": 4169,
      "brotli": 3817
@@ -291,7 +306,7 @@
    "lilscript": {
     "raw": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/raw/index.mjs",
-     "seconds": 2.49,
+     "seconds": 2.42,
      "raw": 9512,
      "gzip": 4059,
      "brotli": 3681
@@ -305,7 +320,7 @@
     },
     "brotli": {
      "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/brotli/index.mjs",
-     "seconds": 8.59,
+     "seconds": 8.49,
      "raw": 9982,
      "gzip": 3931,
      "brotli": 3569
@@ -322,16 +337,19 @@
    "title": "UUIDv7 event and session IDs",
    "upstream": {
     "terser-upstream": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/uuidv7.mjs",
      "raw": 2775,
      "gzip": 1271,
      "brotli": 1114
     },
     "esbuild": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/uuidv7.mjs",
      "raw": 7505,
      "gzip": 3412,
      "brotli": 3016
     },
     "oxc": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/uuidv7.mjs",
      "raw": 3413,
      "gzip": 1609,
      "brotli": 1379
@@ -385,16 +403,19 @@
    "title": "Request gzip compression",
    "upstream": {
     "terser-upstream": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/terser-upstream/gzip.mjs",
      "raw": 1876,
      "gzip": 981,
      "brotli": 873
     },
     "esbuild": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/esbuild/gzip.mjs",
      "raw": 5000,
      "gzip": 2457,
      "brotli": 2202
     },
     "oxc": {
+     "file": "/home/azureuser/posthoglil-work/lil100/showcase/out/lanes/oxc/gzip.mjs",
      "raw": 1866,
      "gzip": 981,
      "brotli": 874

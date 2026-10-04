@@ -1,0 +1,92 @@
+{
+ "upstreamVersion": "1.435.8",
+ "upstreamCommit": "c9d890a4",
+ "compiler": "d8f79ed5",
+ "versions": {
+  "terser": "5.51.2",
+  "esbuild": "0.28.2",
+  "rolldown": "1.2.12"
+ },
+ "modules": {
+  "error-tracking": {
+   "name": "Exception capture",
+   "summary": "Turns thrown values into $exception events",
+   "description": "Coerces any thrown value (Error, DOMException, ErrorEvent, promise rejections, plain objects, strings) into PostHog's exception list, parses Chrome, Firefox and Safari stack traces, collapses repeated recursion cycles, attaches chunk ids, and keeps the exception steps buffer.",
+   "upstream": "packages/core/src/error-tracking/",
+   "port": "src/posthog/core/error-tracking/"
+  },
+  "user-agent": {
+   "name": "Browser, OS and device detection",
+   "summary": "Reads $browser, $os and $device_type from the user agent",
+   "description": "Detects the browser and its version, the operating system and the device type from a user agent string, as posthog-js does for every event's properties.",
+   "upstream": "packages/core/src/utils/user-agent-utils.ts",
+   "port": "src/posthog/core/utils/user-agent-utils.lil"
+  },
+  "autocapture-utils": {
+   "name": "Autocapture DOM utilities",
+   "summary": "Decides what a click captures and how it is described",
+   "description": "The helpers autocapture runs on every click: element chains, which elements and values are safe to capture, sensitive-input checks, class and text extraction.",
+   "upstream": "packages/browser-common/src/utils/autocapture-utils.ts",
+   "port": "src/posthog/browser-common/utils/autocapture-utils.lil"
+  },
+  "feature-flags": {
+   "name": "Feature flag responses",
+   "summary": "Normalizes /flags responses into flag values and payloads",
+   "description": "Normalizes /flags responses, in the older and the current format, into flag values, details and payloads; reads a flag's value and variant; trims the properties of $feature_flag_called events.",
+   "upstream": "packages/core/src/featureFlagUtils.ts",
+   "port": "src/posthog/core/featureFlagUtils.lil"
+  },
+  "metrics": {
+   "name": "Metrics client",
+   "summary": "Aggregates counters, gauges and histograms into OTLP",
+   "description": "The pre-aggregating metrics client: counts, gauges and histograms per series, a cardinality cap, beforeSend hooks, retry-after backoff and the OTLP payload it sends.",
+   "upstream": "packages/core/src/metrics/index.ts",
+   "port": "src/posthog/core/metrics/index.lil"
+  },
+  "uuidv7": {
+   "name": "UUIDv7 ids",
+   "summary": "Generates the event and session ids",
+   "description": "Generates time-ordered UUIDv7 values, the ids posthog-js gives every event and session, and reads the timestamp back out of one.",
+   "upstream": "packages/browser-common/src/utils/uuidv7.ts",
+   "port": "src/posthog/browser-common/utils/uuidv7.lil"
+  },
+  "gzip": {
+   "name": "Request compression",
+   "summary": "Gzips request bodies before they are sent",
+   "description": "Compresses request bodies with the browser's CompressionStream, and tells whether gzip is supported and whether a body or request is already gzipped.",
+   "upstream": "packages/core/src/gzip.ts",
+   "port": "src/posthog/core/gzip.lil"
+  }
+ },
+ "workloads": {
+  "error-tracking": {
+   "build-properties": "29 inputs through the properties builder: real Chromium errors with causes, an AggregateError, a DOMException, error and rejection events, strings, objects",
+   "parse-stacks": "11 Chrome, Firefox and Safari stack strings through the parser",
+   "exception-steps": "150 exception steps into the 32 KB buffer"
+  },
+  "user-agent": {
+   "corpus": "OS, browser, device, device type and version for the 606 user agents in posthog-js’s tests",
+   "traffic-mix": "the same per-event sequence for 200 events from a modern browser mix"
+  },
+  "autocapture-utils": {
+   "click-pipeline": "43 clicks on a realistic app page through posthog-js’s autocapture flow, with the dead-click and rage-click checks",
+   "text-scrub": "scrubbing page text, attributes and 12 network bodies"
+  },
+  "feature-flags": {
+   "flags-v2-reads": "a 64-flag /flags response handled as the client does: normalize, values, payloads, reads, overrides, the flag-called event",
+   "flags-v1-storage": "rebuilding stored flags in the older format"
+  },
+  "metrics": {
+   "record-drain": "1,000 samples (histograms, counters, gauges), then drainWindow()",
+   "record-flush": "200 samples, then await flush()"
+  },
+  "uuidv7": {
+   "generate": "1,000 uuidv7() calls",
+   "timestamp": "1,000 uuid7ToTimestampMs() calls"
+  },
+  "gzip": {
+   "event-batch": "a 30-event batch (61 KB)",
+   "replay-snapshot": "a 563 KB replay snapshot"
+  }
+ }
+}

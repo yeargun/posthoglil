@@ -78,9 +78,13 @@ export async function measure(group){
   // PostHog's own pipeline: Rolldown (core side-effect free) + Terser with posthog-js's settings
   const bundled=await rolldownBundle(group.upstream,false)
   const lanes={}
-  lanes['terser-upstream']=sizes(Buffer.from((await minify(bundled,upstreamTerser)).code))
-  lanes['esbuild']=sizes(Buffer.from(await esbuildBundle(group.upstream,true)))
-  lanes['oxc']=sizes(Buffer.from(await oxcBundle(group.upstream)))
+  const code={'terser-upstream':(await minify(bundled,upstreamTerser)).code,'esbuild':await esbuildBundle(group.upstream,true),'oxc':await oxcBundle(group.upstream)}
+  for(const [lane,text] of Object.entries(code)){
+    // Every measured upstream file is kept, so each published number can be checked.
+    const file=join(root,'showcase/out/lanes',lane,group.id+'.mjs')
+    mkdirSync(dirname(file),{recursive:true});writeFileSync(file,text)
+    lanes[lane]={file,...sizes(Buffer.from(text))}
+  }
   const best={}
   for(const codec of ['raw','gzip','brotli']){
     const [lane,s]=Object.entries(lanes).reduce((a,b)=>b[1][codec]<a[1][codec]?b:a)
