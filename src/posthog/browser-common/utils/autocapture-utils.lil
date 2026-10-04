@@ -199,13 +199,8 @@ export bool shouldCaptureDeadClick(JsValue el, JsValue _config) {
   if (!window.truthy() || cannotCheckForAutocapture(el)) {
     return false;
   }
-  JsValue selectorIgnoreList = DEFAULT_DEAD_CLICK_IGNORE_LIST;
-  if (!isBoolean(_config)) {
-    JsValue configured = if (_config == null) { undefined } else { _config.css_selector_ignorelist };
-    if (configured != null) {
-      selectorIgnoreList = configured;
-    }
-  }
+  JsValue defaults = DEFAULT_DEAD_CLICK_IGNORE_LIST;
+  JsValue selectorIgnoreList = if (isBoolean(_config)) { defaults } else { (if (_config == null) { undefined } else { _config.css_selector_ignorelist }) ?? defaults };
   JsValue[] targetElementList = getElementAndParentsForElement(el, false).targetElementList;
   // we don't capture if we match the ignore list
   return !checkIfElementsMatchCSSSelector(targetElementList, selectorIgnoreList);
@@ -245,24 +240,17 @@ export bool shouldCaptureRageclick(JsValue el, JsValue _config) {
   if (!window.truthy() || cannotCheckForAutocapture(el)) {
     return false;
   }
-  JsValue selectorIgnoreList = DEFAULT_RAGE_CLICK_IGNORE_LIST;
+  JsValue defaults = DEFAULT_RAGE_CLICK_IGNORE_LIST;
+  JsValue selectorIgnoreList = undefined;
   JsValue contentIgnorelist = undefined;
   JsValue ignoreTextSelection = false;
   if (isBoolean(_config)) {
-    if (!_config.truthy()) {
-      selectorIgnoreList = false;
-    }
+    selectorIgnoreList = _config.truthy() && defaults;
     // For backward compatibility, don't enable content or text-selection filtering for rageclick: true
   } else {
-    JsValue configured = if (_config == null) { undefined } else { _config.css_selector_ignorelist };
-    if (configured != null) {
-      selectorIgnoreList = configured;
-    }
+    selectorIgnoreList = (if (_config == null) { undefined } else { _config.css_selector_ignorelist }) ?? defaults;
     contentIgnorelist = if (_config == null) { undefined } else { _config.content_ignorelist };
-    JsValue ignoreSelection = if (_config == null) { undefined } else { _config.ignore_text_selection };
-    if (ignoreSelection != null) {
-      ignoreTextSelection = ignoreSelection;
-    }
+    ignoreTextSelection = (if (_config == null) { undefined } else { _config.ignore_text_selection }) ?? false;
   }
   if (selectorIgnoreList === false) {
     return false;
