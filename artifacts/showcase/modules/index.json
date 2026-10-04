@@ -1,0 +1,44 @@
+{
+ "modules": [
+  {
+   "id": "all",
+   "tab": "All seven",
+   "title": "All seven submodules"
+  },
+  {
+   "id": "error-tracking",
+   "tab": "Exception capture",
+   "title": "Exception capture"
+  },
+  {
+   "id": "user-agent",
+   "tab": "Browser, OS and device detection",
+   "title": "Browser, OS and device detection"
+  },
+  {
+   "id": "autocapture-utils",
+   "tab": "Autocapture DOM utilities",
+   "title": "Autocapture DOM utilities"
+  },
+  {
+   "id": "feature-flags",
+   "tab": "Feature flag responses",
+   "title": "Feature flag responses"
+  },
+  {
+   "id": "metrics",
+   "tab": "Metrics client",
+   "title": "Metrics client"
+  },
+  {
+   "id": "uuidv7",
+   "tab": "UUIDv7 ids",
+   "title": "UUIDv7 ids"
+  },
+  {
+   "id": "gzip",
+   "tab": "Request compression",
+   "title": "Request compression"
+  }
+ ]
+}

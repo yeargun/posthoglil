@@ -1,0 +1,219 @@
+{
+ "schemaVersion": 4,
+ "id": "user-agent",
+ "name": "posthoglil",
+ "package": "posthog-js · Browser, OS and device detection",
+ "title": "Browser, OS and device detection",
+ "tab": "Browser, OS and device detection",
+ "description": "Detects the browser and its version, the operating system and the device type from a user agent string, as posthog-js does for every event's properties.",
+ "upstreamPath": "packages/core/src/utils/user-agent-utils.ts",
+ "portPath": "src/posthog/core/utils/user-agent-utils.lil",
+ "measuredAt": "2026-10-04T09:15:56.821Z",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "upstream": {
+  "package": "posthog-js",
+  "version": "1.435.8",
+  "commit": "c9d890a4",
+  "external": [],
+  "sharedExports": [
+   "detectBrowser",
+   "detectBrowserVersion",
+   "detectDevice",
+   "detectDeviceType",
+   "detectOS"
+  ],
+  "excludedExports": []
+ },
+ "scope": "Browser, OS and device detection: packages/core/src/utils/user-agent-utils.ts bundled from posthog-js’s TypeScript with everything it imports; the LilScript port exports the same names and nothing is external.",
+ "machine": {
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "logicalCpus": 8,
+  "memoryGiB": 15.6,
+  "os": "Linux 7.0.0-1014-azure",
+  "node": "v20.19.0"
+ },
+ "objectives": [
+  {
+   "objective": "raw",
+   "metric": "raw",
+   "lilscript": {
+    "artifact": "./files/lilscript/raw/user-agent.mjs",
+    "sizes": {
+     "raw": 5198,
+     "gzip9": 2330,
+     "brotli11": 2160
+    },
+    "sha256": "3fcf97d2497653da376be3084e6cc275613b70317fd4f7755bd7a728936506cb",
+    "buildSeconds": 0.42,
+    "config": "configs/lil/showcase-raw.toml"
+   },
+   "original": {
+    "tool": "esbuild",
+    "version": "0.28.2",
+    "artifact": "./files/upstream/esbuild/user-agent.mjs",
+    "sizes": {
+     "raw": 5282,
+     "gzip9": 2488,
+     "brotli11": 2280
+    },
+    "sha256": "29e7fbe8af64b8420908e002f4d4a25d2be16ba154050683343b702f5d67c534",
+    "buildSeconds": 0.008
+   },
+   "ratio": 0.9840969329799318
+  },
+  {
+   "objective": "gzip",
+   "metric": "gzip9",
+   "lilscript": {
+    "artifact": "./files/lilscript/gzip/user-agent.mjs",
+    "sizes": {
+     "raw": 5533,
+     "gzip9": 2239,
+     "brotli11": 2069
+    },
+    "sha256": "8203570cc97918335df436bf7f81686ecce3ed08f610442fcc67d9697e5a5192",
+    "buildSeconds": 0.49,
+    "config": "configs/lil/showcase-gzip.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/user-agent.mjs",
+    "sizes": {
+     "raw": 5588,
+     "gzip9": 2399,
+     "brotli11": 2189
+    },
+    "sha256": "e780edad73f989458d9c92454095e7d3fb0d7ec90625cf976e88dd34265a40d2",
+    "buildSeconds": 0.096
+   },
+   "ratio": 0.933305543976657
+  },
+  {
+   "objective": "brotli",
+   "metric": "brotli11",
+   "lilscript": {
+    "artifact": "./files/lilscript/brotli/user-agent.mjs",
+    "sizes": {
+     "raw": 5526,
+     "gzip9": 2223,
+     "brotli11": 2049
+    },
+    "sha256": "420c93c0669694d61954fc89a0d2cff4d8faa7097921c68a6f04fcff2cff6245",
+    "buildSeconds": 1.83,
+    "config": "configs/lil/showcase-brotli.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/user-agent.mjs",
+    "sizes": {
+     "raw": 5588,
+     "gzip9": 2399,
+     "brotli11": 2189
+    },
+    "sha256": "e780edad73f989458d9c92454095e7d3fb0d7ec90625cf976e88dd34265a40d2",
+    "buildSeconds": 0.096
+   },
+   "ratio": 0.9360438556418456
+  }
+ ],
+ "minifiers": [
+  {
+   "tool": "PostHog’s build",
+   "version": "Rolldown 1.2.12 + Terser 5.51.2",
+   "artifact": "./files/upstream/terser-upstream/user-agent.mjs",
+   "sizes": {
+    "raw": 5588,
+    "gzip9": 2399,
+    "brotli11": 2189
+   },
+   "sha256": "e780edad73f989458d9c92454095e7d3fb0d7ec90625cf976e88dd34265a40d2",
+   "buildSeconds": 0.096
+  },
+  {
+   "tool": "esbuild",
+   "version": "0.28.2",
+   "artifact": "./files/upstream/esbuild/user-agent.mjs",
+   "sizes": {
+    "raw": 5282,
+    "gzip9": 2488,
+    "brotli11": 2280
+   },
+   "sha256": "29e7fbe8af64b8420908e002f4d4a25d2be16ba154050683343b702f5d67c534",
+   "buildSeconds": 0.008
+  },
+  {
+   "tool": "Oxc (Rolldown)",
+   "version": "Rolldown 1.2.12",
+   "artifact": "./files/upstream/oxc/user-agent.mjs",
+   "sizes": {
+    "raw": 6047,
+    "gzip9": 2483,
+    "brotli11": 2260
+   },
+   "sha256": "306af2cc165244701197b20dcb0647b0066e286a336e713e51bdc08c608c26c8",
+   "buildSeconds": 0.005
+  }
+ ],
+ "validation": {
+  "checks": 533,
+  "gated": 533,
+  "neither": 0,
+  "files": 1
+ },
+ "speed": [
+  {
+   "module": "Browser, OS and device detection",
+   "name": "import",
+   "label": "Import",
+   "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
+   "posthogMs": 1.280000001192093,
+   "lilMs": 1.2450000047683716,
+   "improvementPercent": 4.173913776393118,
+   "ci": [
+    -0.17845206350406428,
+    6.600740467895994
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "Browser, OS and device detection",
+   "name": "corpus",
+   "label": "corpus",
+   "description": "OS, browser, device, device type and version for the 606 user agents in posthog-js’s tests",
+   "posthogMs": 4.030000001192093,
+   "lilMs": 3.592500001192093,
+   "improvementPercent": 11.290340282144223,
+   "ci": [
+    9.985281187973754,
+    12.509339926848916
+   ],
+   "verdict": "faster"
+  },
+  {
+   "module": "Browser, OS and device detection",
+   "name": "traffic-mix",
+   "label": "traffic-mix",
+   "description": "the same per-event sequence for 200 events from a modern browser mix",
+   "posthogMs": 0.9208333343267441,
+   "lilMs": 0.7816666662693024,
+   "improvementPercent": 15.405405715982322,
+   "ci": [
+    14.556845792599578,
+    15.718170104463518
+   ],
+   "verdict": "faster"
+  }
+ ],
+ "wins": 3,
+ "cells": 3,
+ "files": {
+  "posthog": "./files/upstream/terser-upstream/user-agent.mjs",
+  "lilscript": "./files/lilscript/brotli/user-agent.mjs"
+ },
+ "linksBase": "./modules/user-agent/"
+}

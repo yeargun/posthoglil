@@ -1,0 +1,217 @@
+{
+ "schemaVersion": 4,
+ "id": "uuidv7",
+ "name": "posthoglil",
+ "package": "posthog-js · UUIDv7 ids",
+ "title": "UUIDv7 ids",
+ "tab": "UUIDv7 ids",
+ "description": "Generates time-ordered UUIDv7 values, the ids posthog-js gives every event and session, and reads the timestamp back out of one.",
+ "upstreamPath": "packages/browser-common/src/utils/uuidv7.ts",
+ "portPath": "src/posthog/browser-common/utils/uuidv7.lil",
+ "measuredAt": "2026-10-04T09:15:56.821Z",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "upstream": {
+  "package": "posthog-js",
+  "version": "1.435.8",
+  "commit": "c9d890a4",
+  "external": [],
+  "sharedExports": [
+   "UUID",
+   "uuid7ToTimestampMs",
+   "uuidv7"
+  ],
+  "excludedExports": []
+ },
+ "scope": "UUIDv7 ids: packages/browser-common/src/utils/uuidv7.ts bundled from posthog-js’s TypeScript with everything it imports; the LilScript port exports the same names and nothing is external.",
+ "machine": {
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "logicalCpus": 8,
+  "memoryGiB": 15.6,
+  "os": "Linux 7.0.0-1014-azure",
+  "node": "v20.19.0"
+ },
+ "objectives": [
+  {
+   "objective": "raw",
+   "metric": "raw",
+   "lilscript": {
+    "artifact": "./files/lilscript/raw/uuidv7.mjs",
+    "sizes": {
+     "raw": 2402,
+     "gzip9": 1274,
+     "brotli11": 1117
+    },
+    "sha256": "b8d62efb7182429736acfc0c81a9e3b1ae80f7f6c424d20d179f20fefb033887",
+    "buildSeconds": 0.21,
+    "config": "configs/lil/showcase-raw.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/uuidv7.mjs",
+    "sizes": {
+     "raw": 2775,
+     "gzip9": 1271,
+     "brotli11": 1114
+    },
+    "sha256": "c38ca16d461ca2ec7a41e104a436799d6f03bd85c7ebee9becfdca5c4152e988",
+    "buildSeconds": 0.082
+   },
+   "ratio": 0.8655855855855856
+  },
+  {
+   "objective": "gzip",
+   "metric": "gzip9",
+   "lilscript": {
+    "artifact": "./files/lilscript/gzip/uuidv7.mjs",
+    "sizes": {
+     "raw": 2442,
+     "gzip9": 1245,
+     "brotli11": 1080
+    },
+    "sha256": "d4eb5e8b3d97651cabff895011da85c7f41ecd792b2a363e613a96e54cb3e182",
+    "buildSeconds": 0.28,
+    "config": "configs/lil/showcase-gzip.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/uuidv7.mjs",
+    "sizes": {
+     "raw": 2775,
+     "gzip9": 1271,
+     "brotli11": 1114
+    },
+    "sha256": "c38ca16d461ca2ec7a41e104a436799d6f03bd85c7ebee9becfdca5c4152e988",
+    "buildSeconds": 0.082
+   },
+   "ratio": 0.9795436664044059
+  },
+  {
+   "objective": "brotli",
+   "metric": "brotli11",
+   "lilscript": {
+    "artifact": "./files/lilscript/brotli/uuidv7.mjs",
+    "sizes": {
+     "raw": 2441,
+     "gzip9": 1256,
+     "brotli11": 1093
+    },
+    "sha256": "531031330cd327bdc4d7b77bd150832e5fe07866dd63f551cf65aa34b33cdb14",
+    "buildSeconds": 0.48,
+    "config": "configs/lil/showcase-brotli.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/uuidv7.mjs",
+    "sizes": {
+     "raw": 2775,
+     "gzip9": 1271,
+     "brotli11": 1114
+    },
+    "sha256": "c38ca16d461ca2ec7a41e104a436799d6f03bd85c7ebee9becfdca5c4152e988",
+    "buildSeconds": 0.082
+   },
+   "ratio": 0.981149012567325
+  }
+ ],
+ "minifiers": [
+  {
+   "tool": "PostHog’s build",
+   "version": "Rolldown 1.2.12 + Terser 5.51.2",
+   "artifact": "./files/upstream/terser-upstream/uuidv7.mjs",
+   "sizes": {
+    "raw": 2775,
+    "gzip9": 1271,
+    "brotli11": 1114
+   },
+   "sha256": "c38ca16d461ca2ec7a41e104a436799d6f03bd85c7ebee9becfdca5c4152e988",
+   "buildSeconds": 0.082
+  },
+  {
+   "tool": "esbuild",
+   "version": "0.28.2",
+   "artifact": "./files/upstream/esbuild/uuidv7.mjs",
+   "sizes": {
+    "raw": 7505,
+    "gzip9": 3412,
+    "brotli11": 3016
+   },
+   "sha256": "52fc1e0734aac99f48f9c2e849070a2111c5cd0118f8f15f59169c2e57e3245a",
+   "buildSeconds": 0.032
+  },
+  {
+   "tool": "Oxc (Rolldown)",
+   "version": "Rolldown 1.2.12",
+   "artifact": "./files/upstream/oxc/uuidv7.mjs",
+   "sizes": {
+    "raw": 3413,
+    "gzip9": 1609,
+    "brotli11": 1379
+   },
+   "sha256": "53a5d7d0477dce9406b222cf5bfa82a7ce4a930951798ef0e0365d91f266d12d",
+   "buildSeconds": 0.013
+  }
+ ],
+ "validation": {
+  "checks": 11,
+  "gated": 11,
+  "neither": 0,
+  "files": 2
+ },
+ "speed": [
+  {
+   "module": "UUIDv7 ids",
+   "name": "import",
+   "label": "Import",
+   "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
+   "posthogMs": 1.2025000005960464,
+   "lilMs": 1.2124999910593033,
+   "improvementPercent": 3.055557444516377,
+   "ci": [
+    -2.9841268657286313,
+    6.027889521752606
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "UUIDv7 ids",
+   "name": "generate",
+   "label": "generate",
+   "description": "1,000 uuidv7() calls",
+   "posthogMs": 0.7818749994039536,
+   "lilMs": 0.786250002682209,
+   "improvementPercent": -0.9719322158319721,
+   "ci": [
+    -1.9186724974758818,
+    0.24001088491886757
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "UUIDv7 ids",
+   "name": "timestamp",
+   "label": "timestamp",
+   "description": "1,000 uuid7ToTimestampMs() calls",
+   "posthogMs": 0.270625002682209,
+   "lilMs": 0.2737499997019768,
+   "improvementPercent": -0.9593710705056768,
+   "ci": [
+    -2.803983358211526,
+    1.376608956395975
+   ],
+   "verdict": "no clear difference"
+  }
+ ],
+ "wins": 3,
+ "cells": 3,
+ "files": {
+  "posthog": "./files/upstream/terser-upstream/uuidv7.mjs",
+  "lilscript": "./files/lilscript/brotli/uuidv7.mjs"
+ },
+ "linksBase": "./modules/uuidv7/"
+}

@@ -1,0 +1,220 @@
+{
+ "schemaVersion": 4,
+ "id": "gzip",
+ "name": "posthoglil",
+ "package": "posthog-js · Request compression",
+ "title": "Request compression",
+ "tab": "Request compression",
+ "description": "Compresses request bodies with the browser's CompressionStream, and tells whether gzip is supported and whether a body or request is already gzipped.",
+ "upstreamPath": "packages/core/src/gzip.ts",
+ "portPath": "src/posthog/core/gzip.lil",
+ "measuredAt": "2026-10-04T09:15:56.821Z",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "upstream": {
+  "package": "posthog-js",
+  "version": "1.435.8",
+  "commit": "c9d890a4",
+  "external": [],
+  "sharedExports": [
+   "gzipCompress",
+   "isGzipData",
+   "isGzipRequest",
+   "isGzipSupported",
+   "isNativeAsyncGzipError",
+   "isNativeAsyncGzipReadError"
+  ],
+  "excludedExports": []
+ },
+ "scope": "Request compression: packages/core/src/gzip.ts bundled from posthog-js’s TypeScript with everything it imports; the LilScript port exports the same names and nothing is external.",
+ "machine": {
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "logicalCpus": 8,
+  "memoryGiB": 15.6,
+  "os": "Linux 7.0.0-1014-azure",
+  "node": "v20.19.0"
+ },
+ "objectives": [
+  {
+   "objective": "raw",
+   "metric": "raw",
+   "lilscript": {
+    "artifact": "./files/lilscript/raw/gzip.mjs",
+    "sizes": {
+     "raw": 1847,
+     "gzip9": 996,
+     "brotli11": 878
+    },
+    "sha256": "b310855e37795b982b409fa5810d58c10bc1dba5fd242eaed14131abc9dfce25",
+    "buildSeconds": 0.21,
+    "config": "configs/lil/showcase-raw.toml"
+   },
+   "original": {
+    "tool": "Oxc (Rolldown)",
+    "version": "Rolldown 1.2.12",
+    "artifact": "./files/upstream/oxc/gzip.mjs",
+    "sizes": {
+     "raw": 1866,
+     "gzip9": 981,
+     "brotli11": 874
+    },
+    "sha256": "56f861b0d5be24586829bc4225c42b68a6244df392b8d3311af3d5f3a1ed54f3",
+    "buildSeconds": 0.005
+   },
+   "ratio": 0.9898177920685959
+  },
+  {
+   "objective": "gzip",
+   "metric": "gzip9",
+   "lilscript": {
+    "artifact": "./files/lilscript/gzip/gzip.mjs",
+    "sizes": {
+     "raw": 1879,
+     "gzip9": 968,
+     "brotli11": 849
+    },
+    "sha256": "111c94549f67061c3e8e2ea637cb77a23b7a3ca879e312c0783166a0f2458a34",
+    "buildSeconds": 0.28,
+    "config": "configs/lil/showcase-gzip.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/gzip.mjs",
+    "sizes": {
+     "raw": 1876,
+     "gzip9": 981,
+     "brotli11": 873
+    },
+    "sha256": "0292e9d70e59bafed68bc34330f3209cb8f8f8078443345a841b2787e672e12d",
+    "buildSeconds": 0.039
+   },
+   "ratio": 0.9867482161060143
+  },
+  {
+   "objective": "brotli",
+   "metric": "brotli11",
+   "lilscript": {
+    "artifact": "./files/lilscript/brotli/gzip.mjs",
+    "sizes": {
+     "raw": 1865,
+     "gzip9": 977,
+     "brotli11": 847
+    },
+    "sha256": "642167c59d5158e60411827556dcce29c64a23e9e98ad34e8139fea4bf2b450e",
+    "buildSeconds": 0.5,
+    "config": "configs/lil/showcase-brotli.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/gzip.mjs",
+    "sizes": {
+     "raw": 1876,
+     "gzip9": 981,
+     "brotli11": 873
+    },
+    "sha256": "0292e9d70e59bafed68bc34330f3209cb8f8f8078443345a841b2787e672e12d",
+    "buildSeconds": 0.039
+   },
+   "ratio": 0.9702176403207331
+  }
+ ],
+ "minifiers": [
+  {
+   "tool": "PostHog’s build",
+   "version": "Rolldown 1.2.12 + Terser 5.51.2",
+   "artifact": "./files/upstream/terser-upstream/gzip.mjs",
+   "sizes": {
+    "raw": 1876,
+    "gzip9": 981,
+    "brotli11": 873
+   },
+   "sha256": "0292e9d70e59bafed68bc34330f3209cb8f8f8078443345a841b2787e672e12d",
+   "buildSeconds": 0.039
+  },
+  {
+   "tool": "esbuild",
+   "version": "0.28.2",
+   "artifact": "./files/upstream/esbuild/gzip.mjs",
+   "sizes": {
+    "raw": 5000,
+    "gzip9": 2457,
+    "brotli11": 2202
+   },
+   "sha256": "4621916eac6695354c0a5289761c7ef1a98b5aea01b9669ba66ddc62d1219e68",
+   "buildSeconds": 0.009
+  },
+  {
+   "tool": "Oxc (Rolldown)",
+   "version": "Rolldown 1.2.12",
+   "artifact": "./files/upstream/oxc/gzip.mjs",
+   "sizes": {
+    "raw": 1866,
+    "gzip9": 981,
+    "brotli11": 874
+   },
+   "sha256": "56f861b0d5be24586829bc4225c42b68a6244df392b8d3311af3d5f3a1ed54f3",
+   "buildSeconds": 0.005
+  }
+ ],
+ "validation": {
+  "checks": 23,
+  "gated": 23,
+  "neither": 0,
+  "files": 1
+ },
+ "speed": [
+  {
+   "module": "Request compression",
+   "name": "import",
+   "label": "Import",
+   "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
+   "posthogMs": 1.1024999916553497,
+   "lilMs": 1.1099999994039536,
+   "improvementPercent": -1.7726382888267334,
+   "ci": [
+    -9.772609960318835,
+    2.4509838725318422
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "Request compression",
+   "name": "event-batch",
+   "label": "event-batch",
+   "description": "a 30-event batch (61 KB)",
+   "posthogMs": 2.4137500002980232,
+   "lilMs": 2.4124999940395355,
+   "improvementPercent": -0.1567396625506423,
+   "ci": [
+    -1.3455574901019673,
+    1.7476088801152756
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "Request compression",
+   "name": "replay-snapshot",
+   "label": "replay-snapshot",
+   "description": "a 563 KB replay snapshot",
+   "posthogMs": 14.259999990463257,
+   "lilMs": 14.23250000178814,
+   "improvementPercent": 0.06996070238526331,
+   "ci": [
+    -0.3525342311803792,
+    0.5793739369233941
+   ],
+   "verdict": "no clear difference"
+  }
+ ],
+ "wins": 3,
+ "cells": 3,
+ "files": {
+  "posthog": "./files/upstream/terser-upstream/gzip.mjs",
+  "lilscript": "./files/lilscript/brotli/gzip.mjs"
+ },
+ "linksBase": "./modules/gzip/"
+}

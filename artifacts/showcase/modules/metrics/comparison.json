@@ -1,0 +1,219 @@
+{
+ "schemaVersion": 4,
+ "id": "metrics",
+ "name": "posthoglil",
+ "package": "posthog-js · Metrics client",
+ "title": "Metrics client",
+ "tab": "Metrics client",
+ "description": "The pre-aggregating metrics client: counts, gauges and histograms per series, a cardinality cap, beforeSend hooks, retry-after backoff and the OTLP payload it sends.",
+ "upstreamPath": "packages/core/src/metrics/index.ts",
+ "portPath": "src/posthog/core/metrics/index.lil",
+ "measuredAt": "2026-10-04T09:15:56.821Z",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "upstream": {
+  "package": "posthog-js",
+  "version": "1.435.8",
+  "commit": "c9d890a4",
+  "external": [],
+  "sharedExports": [
+   "DEFAULT_HISTOGRAM_BOUNDS",
+   "PostHogMetrics",
+   "buildMetricsResourceAttributes",
+   "buildOtlpMetricsPayload",
+   "resolveMetricsConfig"
+  ],
+  "excludedExports": []
+ },
+ "scope": "Metrics client: packages/core/src/metrics/index.ts bundled from posthog-js’s TypeScript with everything it imports; the LilScript port exports the same names and nothing is external.",
+ "machine": {
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "logicalCpus": 8,
+  "memoryGiB": 15.6,
+  "os": "Linux 7.0.0-1014-azure",
+  "node": "v20.19.0"
+ },
+ "objectives": [
+  {
+   "objective": "raw",
+   "metric": "raw",
+   "lilscript": {
+    "artifact": "./files/lilscript/raw/metrics.mjs",
+    "sizes": {
+     "raw": 9512,
+     "gzip9": 4059,
+     "brotli11": 3681
+    },
+    "sha256": "ecd6d3fe0b957e164316df5f91dbcee52e1865b2d13914afe576da1aee4bd81a",
+    "buildSeconds": 2.42,
+    "config": "configs/lil/showcase-raw.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/metrics.mjs",
+    "sizes": {
+     "raw": 10409,
+     "gzip9": 3920,
+     "brotli11": 3611
+    },
+    "sha256": "d971268939aca8825a5eb7976b17571964d0058de29cb1d44da13217c3c4562e",
+    "buildSeconds": 0.125
+   },
+   "ratio": 0.9138245748871169
+  },
+  {
+   "objective": "gzip",
+   "metric": "gzip9",
+   "lilscript": {
+    "artifact": "./files/lilscript/gzip/metrics.mjs",
+    "sizes": {
+     "raw": 10003,
+     "gzip9": 3878,
+     "brotli11": 3584
+    },
+    "sha256": "cb6d61d636b5255f5d718778ddb98c151b33b27b1fd2d16866714229f4e0fa55",
+    "buildSeconds": 3.13,
+    "config": "configs/lil/showcase-gzip.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/metrics.mjs",
+    "sizes": {
+     "raw": 10409,
+     "gzip9": 3920,
+     "brotli11": 3611
+    },
+    "sha256": "d971268939aca8825a5eb7976b17571964d0058de29cb1d44da13217c3c4562e",
+    "buildSeconds": 0.125
+   },
+   "ratio": 0.9892857142857143
+  },
+  {
+   "objective": "brotli",
+   "metric": "brotli11",
+   "lilscript": {
+    "artifact": "./files/lilscript/brotli/metrics.mjs",
+    "sizes": {
+     "raw": 9982,
+     "gzip9": 3931,
+     "brotli11": 3569
+    },
+    "sha256": "aef7342ea8558dc95b1f84bae08c933e517089bfce98cf62ea39ba3e05e461ff",
+    "buildSeconds": 8.45,
+    "config": "configs/lil/showcase-brotli.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/metrics.mjs",
+    "sizes": {
+     "raw": 10409,
+     "gzip9": 3920,
+     "brotli11": 3611
+    },
+    "sha256": "d971268939aca8825a5eb7976b17571964d0058de29cb1d44da13217c3c4562e",
+    "buildSeconds": 0.125
+   },
+   "ratio": 0.9883688728883966
+  }
+ ],
+ "minifiers": [
+  {
+   "tool": "PostHog’s build",
+   "version": "Rolldown 1.2.12 + Terser 5.51.2",
+   "artifact": "./files/upstream/terser-upstream/metrics.mjs",
+   "sizes": {
+    "raw": 10409,
+    "gzip9": 3920,
+    "brotli11": 3611
+   },
+   "sha256": "d971268939aca8825a5eb7976b17571964d0058de29cb1d44da13217c3c4562e",
+   "buildSeconds": 0.125
+  },
+  {
+   "tool": "esbuild",
+   "version": "0.28.2",
+   "artifact": "./files/upstream/esbuild/metrics.mjs",
+   "sizes": {
+    "raw": 14927,
+    "gzip9": 5674,
+    "brotli11": 5170
+   },
+   "sha256": "c2a543e5bd751490c54bacefd7ff8a0ea8d6711258f54a2f39306502b1921f43",
+   "buildSeconds": 0.015
+  },
+  {
+   "tool": "Oxc (Rolldown)",
+   "version": "Rolldown 1.2.12",
+   "artifact": "./files/upstream/oxc/metrics.mjs",
+   "sizes": {
+    "raw": 12090,
+    "gzip9": 4169,
+    "brotli11": 3817
+   },
+   "sha256": "2442a4f9ac3a11184a1cd7aea6c9be1deda522236c6251ecc596a671e6f05f85",
+   "buildSeconds": 0.008
+  }
+ ],
+ "validation": {
+  "checks": 8,
+  "gated": 8,
+  "neither": 38,
+  "files": 1
+ },
+ "speed": [
+  {
+   "module": "Metrics client",
+   "name": "import",
+   "label": "Import",
+   "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
+   "posthogMs": 1.344999998807907,
+   "lilMs": 1.5250000059604645,
+   "improvementPercent": -16.555914249134517,
+   "ci": [
+    -21.216993320080846,
+    -7.487286172884678
+   ],
+   "verdict": "slower"
+  },
+  {
+   "module": "Metrics client",
+   "name": "record-drain",
+   "label": "record-drain",
+   "description": "1,000 samples (histograms, counters, gauges), then drainWindow()",
+   "posthogMs": 1.6137499958276749,
+   "lilMs": 1.6000000014901161,
+   "improvementPercent": 0.7843148584138981,
+   "ci": [
+    -0.31130656146879376,
+    5.244652626951913
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "Metrics client",
+   "name": "record-flush",
+   "label": "record-flush",
+   "description": "200 samples, then await flush()",
+   "posthogMs": 0.5456250011920929,
+   "lilMs": 0.48249999806284904,
+   "improvementPercent": 11.004646627768883,
+   "ci": [
+    8.273133678188877,
+    13.377833647651277
+   ],
+   "verdict": "faster"
+  }
+ ],
+ "wins": 3,
+ "cells": 3,
+ "files": {
+  "posthog": "./files/upstream/terser-upstream/metrics.mjs",
+  "lilscript": "./files/lilscript/brotli/metrics.mjs"
+ },
+ "linksBase": "./modules/metrics/"
+}

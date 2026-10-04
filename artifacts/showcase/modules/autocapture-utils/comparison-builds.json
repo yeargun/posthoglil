@@ -1,0 +1,54 @@
+{
+ "measuredBy": "showcase/measure.mjs on branch lil/posthog-100 (one process, sequential, warm)",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "lilscript": [
+  {
+   "objective": "raw",
+   "command": [
+    "lilscript",
+    "<src/posthog/browser-common/utils/autocapture-utils.lil>",
+    "--config",
+    "configs/lil/showcase-raw.toml",
+    "--target",
+    "js-module",
+    "--jobs",
+    "1"
+   ]
+  },
+  {
+   "objective": "gzip",
+   "command": [
+    "lilscript",
+    "<src/posthog/browser-common/utils/autocapture-utils.lil>",
+    "--config",
+    "configs/lil/showcase-gzip.toml",
+    "--target",
+    "js-module",
+    "--jobs",
+    "1"
+   ]
+  },
+  {
+   "objective": "brotli",
+   "command": [
+    "lilscript",
+    "<src/posthog/browser-common/utils/autocapture-utils.lil>",
+    "--config",
+    "configs/lil/showcase-brotli.toml",
+    "--target",
+    "js-module",
+    "--jobs",
+    "1"
+   ]
+  }
+ ],
+ "upstream": {
+  "terser-upstream": "Rolldown bundle (core marked side-effect free, as posthog-js’s rollup config), then Terser with posthog-js’s compress and mangle settings (private _ names mangled, its reserved list kept), ES2020",
+  "esbuild": "esbuild bundle + minify, ES2020, browser platform",
+  "oxc": "Rolldown bundle with minify (Oxc), ES2020"
+ },
+ "timing": "One warm run per build from source: bundling plus minifier for upstream lanes; the whole LilScript compilation on one thread. Installation and compression excluded."
+}

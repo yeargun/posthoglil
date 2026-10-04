@@ -1,0 +1,243 @@
+{
+ "schemaVersion": 4,
+ "id": "error-tracking",
+ "name": "posthoglil",
+ "package": "posthog-js · Exception capture",
+ "title": "Exception capture",
+ "tab": "Exception capture",
+ "description": "Coerces any thrown value (Error, DOMException, ErrorEvent, promise rejections, plain objects, strings) into PostHog's exception list, parses Chrome, Firefox and Safari stack traces, collapses repeated recursion cycles, attaches chunk ids, and keeps the exception steps buffer.",
+ "upstreamPath": "packages/core/src/error-tracking/",
+ "portPath": "src/posthog/core/error-tracking/",
+ "measuredAt": "2026-10-04T09:15:56.821Z",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "upstream": {
+  "package": "posthog-js",
+  "version": "1.435.8",
+  "commit": "c9d890a4",
+  "external": [],
+  "sharedExports": [
+   "DOMExceptionCoercer",
+   "EXCEPTION_STEP_INTERNAL_FIELDS",
+   "ErrorCoercer",
+   "ErrorEventCoercer",
+   "ErrorPropertiesBuilder",
+   "EventCoercer",
+   "ExceptionStepsBuffer",
+   "ObjectCoercer",
+   "PrimitiveCoercer",
+   "PromiseRejectionEventCoercer",
+   "StringCoercer",
+   "createDefaultStackParser",
+   "getInjectedReleaseId",
+   "resolveExceptionStepsConfig",
+   "stripReservedExceptionStepFields"
+  ],
+  "excludedExports": []
+ },
+ "scope": "Exception capture: packages/core/src/error-tracking/ bundled from posthog-js’s TypeScript with everything it imports; the LilScript port exports the same names and nothing is external.",
+ "machine": {
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "logicalCpus": 8,
+  "memoryGiB": 15.6,
+  "os": "Linux 7.0.0-1014-azure",
+  "node": "v20.19.0"
+ },
+ "objectives": [
+  {
+   "objective": "raw",
+   "metric": "raw",
+   "lilscript": {
+    "artifact": "./files/lilscript/raw/error-tracking.mjs",
+    "sizes": {
+     "raw": 12903,
+     "gzip9": 5471,
+     "brotli11": 4956
+    },
+    "sha256": "df4b30d8ab57e775dc3f969a049864c75b8a3945a7a9989cb83d8e6a0bcd4b2f",
+    "buildSeconds": 3.17,
+    "config": "configs/lil/showcase-raw.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/error-tracking.mjs",
+    "sizes": {
+     "raw": 14046,
+     "gzip9": 5385,
+     "brotli11": 4911
+    },
+    "sha256": "24f2ce66e4f082c41cd588320b550a1fb966ca8d72990d4994218a3768a72145",
+    "buildSeconds": 0.326
+   },
+   "ratio": 0.9186245194361384
+  },
+  {
+   "objective": "gzip",
+   "metric": "gzip9",
+   "lilscript": {
+    "artifact": "./files/lilscript/gzip/error-tracking.mjs",
+    "sizes": {
+     "raw": 13110,
+     "gzip9": 5356,
+     "brotli11": 4898
+    },
+    "sha256": "f87f3021682bc55b3ec85fadd2e9eba02ce2ed9cd984fede3aa88bbcfffd2895",
+    "buildSeconds": 6.06,
+    "config": "configs/lil/showcase-gzip.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/error-tracking.mjs",
+    "sizes": {
+     "raw": 14046,
+     "gzip9": 5385,
+     "brotli11": 4911
+    },
+    "sha256": "24f2ce66e4f082c41cd588320b550a1fb966ca8d72990d4994218a3768a72145",
+    "buildSeconds": 0.326
+   },
+   "ratio": 0.9946146703806871
+  },
+  {
+   "objective": "brotli",
+   "metric": "brotli11",
+   "lilscript": {
+    "artifact": "./files/lilscript/brotli/error-tracking.mjs",
+    "sizes": {
+     "raw": 13403,
+     "gzip9": 5398,
+     "brotli11": 4875
+    },
+    "sha256": "d4fd8d700ac5678b373faf24153f6b7a60f3d544452dc9f5fbf293a65d29c862",
+    "buildSeconds": 8.17,
+    "config": "configs/lil/showcase-brotli.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/error-tracking.mjs",
+    "sizes": {
+     "raw": 14046,
+     "gzip9": 5385,
+     "brotli11": 4911
+    },
+    "sha256": "24f2ce66e4f082c41cd588320b550a1fb966ca8d72990d4994218a3768a72145",
+    "buildSeconds": 0.326
+   },
+   "ratio": 0.9926695174098962
+  }
+ ],
+ "minifiers": [
+  {
+   "tool": "PostHog’s build",
+   "version": "Rolldown 1.2.12 + Terser 5.51.2",
+   "artifact": "./files/upstream/terser-upstream/error-tracking.mjs",
+   "sizes": {
+    "raw": 14046,
+    "gzip9": 5385,
+    "brotli11": 4911
+   },
+   "sha256": "24f2ce66e4f082c41cd588320b550a1fb966ca8d72990d4994218a3768a72145",
+   "buildSeconds": 0.326
+  },
+  {
+   "tool": "esbuild",
+   "version": "0.28.2",
+   "artifact": "./files/upstream/esbuild/error-tracking.mjs",
+   "sizes": {
+    "raw": 17510,
+    "gzip9": 7095,
+    "brotli11": 6497
+   },
+   "sha256": "4e1655de3d0ec06ae3047c2c3274ed936a7d0e1a489556fe92c18d1e9d8334fb",
+   "buildSeconds": 0.038
+  },
+  {
+   "tool": "Oxc (Rolldown)",
+   "version": "Rolldown 1.2.12",
+   "artifact": "./files/upstream/oxc/error-tracking.mjs",
+   "sizes": {
+    "raw": 14282,
+    "gzip9": 5471,
+    "brotli11": 4997
+   },
+   "sha256": "11c04ff295b8679b56f24d71e347fb7bad3abc0f0e51feeab215f1cc2c959bd5",
+   "buildSeconds": 0.011
+  }
+ ],
+ "validation": {
+  "checks": 241,
+  "gated": 241,
+  "neither": 0,
+  "files": 11
+ },
+ "speed": [
+  {
+   "module": "Exception capture",
+   "name": "import",
+   "label": "Import",
+   "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
+   "posthogMs": 1.5650000125169754,
+   "lilMs": 1.7650000154972076,
+   "improvementPercent": -11.869549508305377,
+   "ci": [
+    -16.854610908662302,
+    -8.511969931315255
+   ],
+   "verdict": "slower"
+  },
+  {
+   "module": "Exception capture",
+   "name": "build-properties",
+   "label": "build-properties",
+   "description": "29 inputs through the properties builder: real Chromium errors with causes, an AggregateError, a DOMException, error and rejection events, strings, objects",
+   "posthogMs": 2.635000005364418,
+   "lilMs": 2.6475000083446503,
+   "improvementPercent": -0.4761911573864075,
+   "ci": [
+    -1.50098645413288,
+    0.4734855166889207
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "Exception capture",
+   "name": "parse-stacks",
+   "label": "parse-stacks",
+   "description": "11 Chrome, Firefox and Safari stack strings through the parser",
+   "posthogMs": 1.7137499898672104,
+   "lilMs": 1.7575000002980232,
+   "improvementPercent": -2.467391006031594,
+   "ci": [
+    -3.537107896332148,
+    -1.8729259249290031
+   ],
+   "verdict": "slower"
+  },
+  {
+   "module": "Exception capture",
+   "name": "exception-steps",
+   "label": "exception-steps",
+   "description": "150 exception steps into the 32 KB buffer",
+   "posthogMs": 0.9549999833106995,
+   "lilMs": 0.9150000214576721,
+   "improvementPercent": 4.724442183472,
+   "ci": [
+    3.456129811170927,
+    5.909573404483526
+   ],
+   "verdict": "faster"
+  }
+ ],
+ "wins": 3,
+ "cells": 3,
+ "files": {
+  "posthog": "./files/upstream/terser-upstream/error-tracking.mjs",
+  "lilscript": "./files/lilscript/brotli/error-tracking.mjs"
+ },
+ "linksBase": "./modules/error-tracking/"
+}

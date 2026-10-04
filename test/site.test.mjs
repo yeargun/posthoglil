@@ -1,53 +1,48 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {existsSync,readFileSync} from 'node:fs'
-import {join} from 'node:path'
-import test from 'node:test'
-import {dirname} from 'node:path'
+import {dirname,join} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import test from 'node:test'
 const root=join(dirname(fileURLToPath(import.meta.url)),'..')
 const site=join(root,'_site')
 const html=readFileSync(join(site,'index.html'),'utf8')
 const evidence=JSON.parse(readFileSync(join(site,'evidence.json'),'utf8'))
+const index=JSON.parse(readFileSync(join(site,'modules/index.json'),'utf8'))
+const comparison=id=>JSON.parse(readFileSync(join(site,'modules',id,'comparison.json'),'utf8'))
 const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex')
-const modules=evidence.results.results
 
-test('every linked file exists and matches its published hash',()=>{
-  const links=[...html.matchAll(/href="(files\/[^"]+)" title="sha256 ([a-f0-9]{64})"/g)]
-  assert.ok(links.length>=modules.length*6)
-  for(const [,href,hash] of links){
-    assert.ok(existsSync(join(site,href)),href)
-    assert.equal(sha(join(site,href)),hash,href)
-  }
+test('every published file exists and matches its recorded hash',()=>{
+  const files=Object.entries(evidence.files)
+  assert.equal(files.length,42)
+  for(const [path,hash] of files){assert.ok(existsSync(join(site,path)),path);assert.equal(sha(join(site,path)),hash,path)}
 })
 
-test('seven submodules, each shown with its sizes and every cell a win',()=>{
-  assert.equal(modules.length,7)
-  for(const r of modules){
-    const name=evidence.meta.modules[r.id].name
-    assert.ok(html.includes(`id="panel-${r.id}"`),r.id)
-    assert.ok(html.includes(name.replace(/&/g,'&amp;')),name)
-    for(const codec of ['raw','gzip','brotli']){
-      const ours=r.lilscript[codec][codec]
-      assert.ok(ours<=Math.min(...Object.values(r.upstream).map(lane=>lane[codec])),`${r.id} ${codec}`)
-      assert.ok(html.includes(ours.toLocaleString('en-US')),`${r.id} ${codec} ${ours}`)
+test('all seven, then each module: every cell a win, linked to its file',()=>{
+  assert.deepEqual(index.modules.map(m=>m.id),['all','error-tracking','user-agent','autocapture-utils','feature-flags','metrics','uuidv7','gzip'])
+  for(const {id} of index.modules.slice(1)){
+    const c=comparison(id)
+    assert.equal(c.schemaVersion,4)
+    for(const row of c.objectives){
+      assert.ok(row.ratio<=1,`${id} ${row.objective}`)
+      assert.equal(sha(join(site,row.lilscript.artifact)),row.lilscript.sha256)
+      assert.equal(sha(join(site,row.original.artifact)),row.original.sha256)
     }
+    assert.equal(c.wins,3,id)
   }
+  assert.equal(comparison('all').wins,21)
   assert.match(html,/21\/21/)
+  for(const row of comparison('all').objectives)assert.ok(html.includes(row.lilscript.sizes[row.metric].toLocaleString('en-US')),row.objective)
 })
 
 test('behaviour: every gated upstream test passes',()=>{
-  for(const [id,t] of Object.entries(evidence.tests.modules)){
-    assert.ok(t.gated>0,id)
-    assert.equal(t.passed,t.gated,id)
-  }
+  for(const [id,t] of Object.entries(evidence.tests.modules)){assert.ok(t.gated>0,id);assert.equal(t.passed,t.gated,id)}
 })
 
 test('speed: every module has measured workloads with a verdict',()=>{
-  assert.ok(evidence.perf,'browser timing results')
-  for(const r of modules){
-    const rows=evidence.perf.modules[r.id]?.workloads
-    assert.ok(rows?.length,r.id)
-    for(const w of rows)assert.ok(['faster','no clear difference','slower'].includes(w.verdict),`${r.id} ${w.name}`)
+  for(const {id} of index.modules.slice(1)){
+    const rows=comparison(id).speed
+    assert.ok(rows.length>=2,id)
+    for(const w of rows)assert.ok(['faster','no clear difference','slower'].includes(w.verdict),`${id} ${w.name}`)
   }
 })

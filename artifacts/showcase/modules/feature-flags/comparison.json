@@ -1,0 +1,227 @@
+{
+ "schemaVersion": 4,
+ "id": "feature-flags",
+ "name": "posthoglil",
+ "package": "posthog-js · Feature flag responses",
+ "title": "Feature flag responses",
+ "tab": "Feature flag responses",
+ "description": "Normalizes /flags responses, in the older and the current format, into flag values, details and payloads; reads a flag's value and variant; trims the properties of $feature_flag_called events.",
+ "upstreamPath": "packages/core/src/featureFlagUtils.ts",
+ "portPath": "src/posthog/core/featureFlagUtils.lil",
+ "measuredAt": "2026-10-04T09:15:56.821Z",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "upstream": {
+  "package": "posthog-js",
+  "version": "1.435.8",
+  "commit": "c9d890a4",
+  "external": [],
+  "sharedExports": [
+   "MINIMAL_FLAG_CALLED_EVENT_CAMPAIGN_PROPERTIES",
+   "MINIMAL_FLAG_CALLED_EVENT_PROPERTIES",
+   "createFlagsResponseFromFlagsAndPayloads",
+   "flagDetailsToResults",
+   "getEnabledFromValue",
+   "getFeatureFlagValue",
+   "getFlagValuesFromFlags",
+   "getPayloadsFromFlags",
+   "getVariantFromValue",
+   "minimizeFlagCalledEventProperties",
+   "normalizeFlagsResponse",
+   "parsePayload",
+   "updateFlagValue"
+  ],
+  "excludedExports": []
+ },
+ "scope": "Feature flag responses: packages/core/src/featureFlagUtils.ts bundled from posthog-js’s TypeScript with everything it imports; the LilScript port exports the same names and nothing is external.",
+ "machine": {
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "logicalCpus": 8,
+  "memoryGiB": 15.6,
+  "os": "Linux 7.0.0-1014-azure",
+  "node": "v20.19.0"
+ },
+ "objectives": [
+  {
+   "objective": "raw",
+   "metric": "raw",
+   "lilscript": {
+    "artifact": "./files/lilscript/raw/feature-flags.mjs",
+    "sizes": {
+     "raw": 2608,
+     "gzip9": 1140,
+     "brotli11": 999
+    },
+    "sha256": "92895ec199bb70301e0c298e2366af6c4897dcd7b8fcb59a1b484ba39250eba3",
+    "buildSeconds": 0.1,
+    "config": "configs/lil/showcase-raw.toml"
+   },
+   "original": {
+    "tool": "esbuild",
+    "version": "0.28.2",
+    "artifact": "./files/upstream/esbuild/feature-flags.mjs",
+    "sizes": {
+     "raw": 2658,
+     "gzip9": 1145,
+     "brotli11": 998
+    },
+    "sha256": "cfe679120e275e8cdb0355cda6680a897adedd25468d05818b60067349896736",
+    "buildSeconds": 0.009
+   },
+   "ratio": 0.9811888638073739
+  },
+  {
+   "objective": "gzip",
+   "metric": "gzip9",
+   "lilscript": {
+    "artifact": "./files/lilscript/gzip/feature-flags.mjs",
+    "sizes": {
+     "raw": 2632,
+     "gzip9": 1107,
+     "brotli11": 972
+    },
+    "sha256": "feff8dd60f66eaf79687690a58543047552f70c38b1d1347738f9d40e4b18683",
+    "buildSeconds": 0.11,
+    "config": "configs/lil/showcase-gzip.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/feature-flags.mjs",
+    "sizes": {
+     "raw": 2669,
+     "gzip9": 1118,
+     "brotli11": 976
+    },
+    "sha256": "b612be7bdee8d143f1f6ae8a6c85ccac49951eab67bdc47c6c2879b4cae90088",
+    "buildSeconds": 0.045
+   },
+   "ratio": 0.9901610017889088
+  },
+  {
+   "objective": "brotli",
+   "metric": "brotli11",
+   "lilscript": {
+    "artifact": "./files/lilscript/brotli/feature-flags.mjs",
+    "sizes": {
+     "raw": 2632,
+     "gzip9": 1107,
+     "brotli11": 972
+    },
+    "sha256": "feff8dd60f66eaf79687690a58543047552f70c38b1d1347738f9d40e4b18683",
+    "buildSeconds": 0.32,
+    "config": "configs/lil/showcase-brotli.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/feature-flags.mjs",
+    "sizes": {
+     "raw": 2669,
+     "gzip9": 1118,
+     "brotli11": 976
+    },
+    "sha256": "b612be7bdee8d143f1f6ae8a6c85ccac49951eab67bdc47c6c2879b4cae90088",
+    "buildSeconds": 0.045
+   },
+   "ratio": 0.9959016393442623
+  }
+ ],
+ "minifiers": [
+  {
+   "tool": "PostHog’s build",
+   "version": "Rolldown 1.2.12 + Terser 5.51.2",
+   "artifact": "./files/upstream/terser-upstream/feature-flags.mjs",
+   "sizes": {
+    "raw": 2669,
+    "gzip9": 1118,
+    "brotli11": 976
+   },
+   "sha256": "b612be7bdee8d143f1f6ae8a6c85ccac49951eab67bdc47c6c2879b4cae90088",
+   "buildSeconds": 0.045
+  },
+  {
+   "tool": "esbuild",
+   "version": "0.28.2",
+   "artifact": "./files/upstream/esbuild/feature-flags.mjs",
+   "sizes": {
+    "raw": 2658,
+    "gzip9": 1145,
+    "brotli11": 998
+   },
+   "sha256": "cfe679120e275e8cdb0355cda6680a897adedd25468d05818b60067349896736",
+   "buildSeconds": 0.009
+  },
+  {
+   "tool": "Oxc (Rolldown)",
+   "version": "Rolldown 1.2.12",
+   "artifact": "./files/upstream/oxc/feature-flags.mjs",
+   "sizes": {
+    "raw": 2671,
+    "gzip9": 1140,
+    "brotli11": 994
+   },
+   "sha256": "39307c9cd959acdd49e3b8ab484d6bf35dd1235a6ca6f81b3285d3aeb39c667b",
+   "buildSeconds": 0.003
+  }
+ ],
+ "validation": {
+  "checks": 176,
+  "gated": 176,
+  "neither": 0,
+  "files": 3
+ },
+ "speed": [
+  {
+   "module": "Feature flag responses",
+   "name": "import",
+   "label": "Import",
+   "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
+   "posthogMs": 1.0975000262260437,
+   "lilMs": 1.1274999976158142,
+   "improvementPercent": -3.2558150430703092,
+   "ci": [
+    -9.921790590057055,
+    4.0243551500550145
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "Feature flag responses",
+   "name": "flags-v2-reads",
+   "label": "flags-v2-reads",
+   "description": "a 64-flag /flags response handled as the client does: normalize, values, payloads, reads, overrides, the flag-called event",
+   "posthogMs": 0.5212500020861626,
+   "lilMs": 0.5318749994039536,
+   "improvementPercent": -1.4152912059095968,
+   "ci": [
+    -2.4934909405749273,
+    -0.48199721670830753
+   ],
+   "verdict": "slower"
+  },
+  {
+   "module": "Feature flag responses",
+   "name": "flags-v1-storage",
+   "label": "flags-v1-storage",
+   "description": "rebuilding stored flags in the older format",
+   "posthogMs": 0.171875,
+   "lilMs": 0.15312499925494194,
+   "improvementPercent": 11.573578250804108,
+   "ci": [
+    7.833817209912352,
+    12.431485856801078
+   ],
+   "verdict": "faster"
+  }
+ ],
+ "wins": 3,
+ "cells": 3,
+ "files": {
+  "posthog": "./files/upstream/terser-upstream/feature-flags.mjs",
+  "lilscript": "./files/lilscript/brotli/feature-flags.mjs"
+ },
+ "linksBase": "./modules/feature-flags/"
+}

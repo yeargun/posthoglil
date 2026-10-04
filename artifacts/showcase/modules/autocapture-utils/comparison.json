@@ -1,0 +1,237 @@
+{
+ "schemaVersion": 4,
+ "id": "autocapture-utils",
+ "name": "posthoglil",
+ "package": "posthog-js · Autocapture DOM utilities",
+ "title": "Autocapture DOM utilities",
+ "tab": "Autocapture DOM utilities",
+ "description": "The helpers autocapture runs on every click: element chains, which elements and values are safe to capture, sensitive-input checks, class and text extraction.",
+ "upstreamPath": "packages/browser-common/src/utils/autocapture-utils.ts",
+ "portPath": "src/posthog/browser-common/utils/autocapture-utils.lil",
+ "measuredAt": "2026-10-04T09:15:56.821Z",
+ "compiler": {
+  "revision": "d8f79ed5",
+  "binarySha256": "68b5d4776ebc3a2ac67b8945846256126285bc7f09f4b2024b40b4aa79dd9d88"
+ },
+ "upstream": {
+  "package": "posthog-js",
+  "version": "1.435.8",
+  "commit": "c9d890a4",
+  "external": [],
+  "sharedExports": [
+   "DEFAULT_AUTOCAPTURE_IGNORE_LIST",
+   "DEFAULT_CONTENT_IGNORELIST_WITH_STEPPERS",
+   "MAX_DOM_ANCESTOR_DEPTH",
+   "autocaptureCompatibleElements",
+   "elementMatchesCSSSelector",
+   "getClassNames",
+   "getDirectAndNestedSpanText",
+   "getElementsChainString",
+   "getEventTarget",
+   "getNestedSpanText",
+   "getParentElement",
+   "getSafeText",
+   "isAngularStyleAttr",
+   "isSensitiveElement",
+   "isTextSelectionTarget",
+   "makeSafeText",
+   "shouldCaptureDeadClick",
+   "shouldCaptureDomEvent",
+   "shouldCaptureElement",
+   "shouldCaptureRageclick",
+   "shouldCaptureValue",
+   "shouldSkipDeadClick",
+   "splitClassString"
+  ],
+  "excludedExports": []
+ },
+ "scope": "Autocapture DOM utilities: packages/browser-common/src/utils/autocapture-utils.ts bundled from posthog-js’s TypeScript with everything it imports; the LilScript port exports the same names and nothing is external.",
+ "machine": {
+  "cpu": "AMD EPYC 7763 64-Core Processor",
+  "logicalCpus": 8,
+  "memoryGiB": 15.6,
+  "os": "Linux 7.0.0-1014-azure",
+  "node": "v20.19.0"
+ },
+ "objectives": [
+  {
+   "objective": "raw",
+   "metric": "raw",
+   "lilscript": {
+    "artifact": "./files/lilscript/raw/autocapture-utils.mjs",
+    "sizes": {
+     "raw": 9203,
+     "gzip9": 4075,
+     "brotli11": 3635
+    },
+    "sha256": "7ed75f9083c758237d5810323e2d49a0e02440c0c863d996a4a0d7030cdd74f2",
+    "buildSeconds": 1.52,
+    "config": "configs/lil/showcase-raw.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/autocapture-utils.mjs",
+    "sizes": {
+     "raw": 9624,
+     "gzip9": 3971,
+     "brotli11": 3560
+    },
+    "sha256": "db2847c7fbf7e14d967472c18e937bf68f7fcac607178442337e0ab01149e833",
+    "buildSeconds": 0.157
+   },
+   "ratio": 0.9562551953449709
+  },
+  {
+   "objective": "gzip",
+   "metric": "gzip9",
+   "lilscript": {
+    "artifact": "./files/lilscript/gzip/autocapture-utils.mjs",
+    "sizes": {
+     "raw": 9502,
+     "gzip9": 3941,
+     "brotli11": 3538
+    },
+    "sha256": "e99c4f59c9df62ed470f903245f3fb3b20d3b29f59d8bf9b52b313802c066d57",
+    "buildSeconds": 2.6,
+    "config": "configs/lil/showcase-gzip.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/autocapture-utils.mjs",
+    "sizes": {
+     "raw": 9624,
+     "gzip9": 3971,
+     "brotli11": 3560
+    },
+    "sha256": "db2847c7fbf7e14d967472c18e937bf68f7fcac607178442337e0ab01149e833",
+    "buildSeconds": 0.157
+   },
+   "ratio": 0.9924452279022916
+  },
+  {
+   "objective": "brotli",
+   "metric": "brotli11",
+   "lilscript": {
+    "artifact": "./files/lilscript/brotli/autocapture-utils.mjs",
+    "sizes": {
+     "raw": 9409,
+     "gzip9": 3980,
+     "brotli11": 3548
+    },
+    "sha256": "f75eaa00e242dba23dc22a8ae511f1cab7d35f3c8708714030df55d12e2418a6",
+    "buildSeconds": 6.75,
+    "config": "configs/lil/showcase-brotli.toml"
+   },
+   "original": {
+    "tool": "PostHog’s build",
+    "version": "Rolldown 1.2.12 + Terser 5.51.2",
+    "artifact": "./files/upstream/terser-upstream/autocapture-utils.mjs",
+    "sizes": {
+     "raw": 9624,
+     "gzip9": 3971,
+     "brotli11": 3560
+    },
+    "sha256": "db2847c7fbf7e14d967472c18e937bf68f7fcac607178442337e0ab01149e833",
+    "buildSeconds": 0.157
+   },
+   "ratio": 0.996629213483146
+  }
+ ],
+ "minifiers": [
+  {
+   "tool": "PostHog’s build",
+   "version": "Rolldown 1.2.12 + Terser 5.51.2",
+   "artifact": "./files/upstream/terser-upstream/autocapture-utils.mjs",
+   "sizes": {
+    "raw": 9624,
+    "gzip9": 3971,
+    "brotli11": 3560
+   },
+   "sha256": "db2847c7fbf7e14d967472c18e937bf68f7fcac607178442337e0ab01149e833",
+   "buildSeconds": 0.157
+  },
+  {
+   "tool": "esbuild",
+   "version": "0.28.2",
+   "artifact": "./files/upstream/esbuild/autocapture-utils.mjs",
+   "sizes": {
+    "raw": 14173,
+    "gzip9": 6181,
+    "brotli11": 5544
+   },
+   "sha256": "4c815ada08d7a2ee1e8400016ab0ef9eb0b1b93fe6c7ce6da188dcee037aef01",
+   "buildSeconds": 0.04
+  },
+  {
+   "tool": "Oxc (Rolldown)",
+   "version": "Rolldown 1.2.12",
+   "artifact": "./files/upstream/oxc/autocapture-utils.mjs",
+   "sizes": {
+    "raw": 9865,
+    "gzip9": 4138,
+    "brotli11": 3719
+   },
+   "sha256": "1778e379362d463540c0f968bc8d09b6d9ece17c263905da0d5de6bae7761551",
+   "buildSeconds": 0.013
+  }
+ ],
+ "validation": {
+  "checks": 84,
+  "gated": 84,
+  "neither": 0,
+  "files": 2
+ },
+ "speed": [
+  {
+   "module": "Autocapture DOM utilities",
+   "name": "import",
+   "label": "Import",
+   "description": "dynamic import from a fresh Blob URL: parse, compile, evaluate",
+   "posthogMs": 1.5399999916553497,
+   "lilMs": 1.5600000023841858,
+   "improvementPercent": -4.499296163390742,
+   "ci": [
+    -7.777460758204768,
+    0.853242522165043
+   ],
+   "verdict": "no clear difference"
+  },
+  {
+   "module": "Autocapture DOM utilities",
+   "name": "click-pipeline",
+   "label": "click-pipeline",
+   "description": "43 clicks on a realistic app page through posthog-js’s autocapture flow, with the dead-click and rage-click checks",
+   "posthogMs": 11.824999988079071,
+   "lilMs": 11.685000002384186,
+   "improvementPercent": 1.1109078140263073,
+   "ci": [
+    0.04177105457081609,
+    2.7043994556978648
+   ],
+   "verdict": "faster"
+  },
+  {
+   "module": "Autocapture DOM utilities",
+   "name": "text-scrub",
+   "label": "text-scrub",
+   "description": "scrubbing page text, attributes and 12 network bodies",
+   "posthogMs": 0.5374999940395355,
+   "lilMs": 0.5400000065565109,
+   "improvementPercent": -0.47620080801505926,
+   "ci": [
+    -2.9841268657286313,
+    2.3152606266383433
+   ],
+   "verdict": "no clear difference"
+  }
+ ],
+ "wins": 3,
+ "cells": 3,
+ "files": {
+  "posthog": "./files/upstream/terser-upstream/autocapture-utils.mjs",
+  "lilscript": "./files/lilscript/brotli/autocapture-utils.mjs"
+ },
+ "linksBase": "./modules/autocapture-utils/"
+}
