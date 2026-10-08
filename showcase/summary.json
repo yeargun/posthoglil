@@ -8,28 +8,28 @@
     "passed": 243
    },
    "raw": {
-    "lil": 13904,
+    "lil": 13218,
     "posthogBuild": 14046,
     "best": 14046,
     "bestLane": "terser-upstream",
-    "vsPosthog": -1,
-    "vsBest": -1
+    "vsPosthog": -5.9,
+    "vsBest": -5.9
    },
    "gzip": {
-    "lil": 5596,
+    "lil": 5461,
     "posthogBuild": 5385,
     "best": 5385,
     "bestLane": "terser-upstream",
-    "vsPosthog": 3.9,
-    "vsBest": 3.9
+    "vsPosthog": 1.4,
+    "vsBest": 1.4
    },
    "brotli": {
-    "lil": 5110,
+    "lil": 4979,
     "posthogBuild": 4911,
     "best": 4911,
     "bestLane": "terser-upstream",
-    "vsPosthog": 4.1,
-    "vsBest": 4.1
+    "vsPosthog": 1.4,
+    "vsBest": 1.4
    }
   },
   {
@@ -40,28 +40,28 @@
     "passed": 625
    },
    "raw": {
-    "lil": 5700,
+    "lil": 5198,
     "posthogBuild": 5588,
     "best": 5282,
     "bestLane": "esbuild",
-    "vsPosthog": 2,
-    "vsBest": 7.9
+    "vsPosthog": -7,
+    "vsBest": -1.6
    },
    "gzip": {
-    "lil": 2268,
+    "lil": 2239,
     "posthogBuild": 2399,
     "best": 2399,
     "bestLane": "terser-upstream",
-    "vsPosthog": -5.5,
-    "vsBest": -5.5
+    "vsPosthog": -6.7,
+    "vsBest": -6.7
    },
    "brotli": {
-    "lil": 2084,
+    "lil": 2049,
     "posthogBuild": 2189,
     "best": 2189,
     "bestLane": "terser-upstream",
-    "vsPosthog": -4.8,
-    "vsBest": -4.8
+    "vsPosthog": -6.4,
+    "vsBest": -6.4
    }
   },
   {
@@ -72,28 +72,28 @@
     "passed": 84
    },
    "raw": {
-    "lil": 10196,
+    "lil": 9205,
     "posthogBuild": 9624,
     "best": 9624,
     "bestLane": "terser-upstream",
-    "vsPosthog": 5.9,
-    "vsBest": 5.9
+    "vsPosthog": -4.4,
+    "vsBest": -4.4
    },
    "gzip": {
-    "lil": 4239,
+    "lil": 3944,
     "posthogBuild": 3971,
     "best": 3971,
     "bestLane": "terser-upstream",
-    "vsPosthog": 6.7,
-    "vsBest": 6.7
+    "vsPosthog": -0.7,
+    "vsBest": -0.7
    },
    "brotli": {
-    "lil": 3794,
+    "lil": 3537,
     "posthogBuild": 3560,
     "best": 3560,
     "bestLane": "terser-upstream",
-    "vsPosthog": 6.6,
-    "vsBest": 6.6
+    "vsPosthog": -0.6,
+    "vsBest": -0.6
    }
   },
   {
@@ -104,28 +104,28 @@
     "passed": 176
    },
    "raw": {
-    "lil": 3051,
+    "lil": 2608,
     "posthogBuild": 2669,
     "best": 2658,
     "bestLane": "esbuild",
-    "vsPosthog": 14.3,
-    "vsBest": 14.8
+    "vsPosthog": -2.3,
+    "vsBest": -1.9
    },
    "gzip": {
-    "lil": 1238,
+    "lil": 1107,
     "posthogBuild": 1118,
     "best": 1118,
     "bestLane": "terser-upstream",
-    "vsPosthog": 10.7,
-    "vsBest": 10.7
+    "vsPosthog": -1,
+    "vsBest": -1
    },
    "brotli": {
-    "lil": 1095,
+    "lil": 972,
     "posthogBuild": 976,
     "best": 976,
     "bestLane": "terser-upstream",
-    "vsPosthog": 12.2,
-    "vsBest": 12.2
+    "vsPosthog": -0.4,
+    "vsBest": -0.4
    }
   },
   {
@@ -136,28 +136,28 @@
     "passed": 46
    },
    "raw": {
-    "lil": 10348,
+    "lil": 9690,
     "posthogBuild": 10409,
     "best": 10409,
     "bestLane": "terser-upstream",
-    "vsPosthog": -0.6,
-    "vsBest": -0.6
+    "vsPosthog": -6.9,
+    "vsBest": -6.9
    },
    "gzip": {
-    "lil": 4133,
+    "lil": 3986,
     "posthogBuild": 3920,
     "best": 3920,
     "bestLane": "terser-upstream",
-    "vsPosthog": 5.4,
-    "vsBest": 5.4
+    "vsPosthog": 1.7,
+    "vsBest": 1.7
    },
    "brotli": {
-    "lil": 3779,
+    "lil": 3663,
     "posthogBuild": 3611,
     "best": 3611,
     "bestLane": "terser-upstream",
-    "vsPosthog": 4.7,
-    "vsBest": 4.7
+    "vsPosthog": 1.4,
+    "vsBest": 1.4
    }
   },
   {
@@ -168,28 +168,28 @@
     "passed": 11
    },
    "raw": {
-    "lil": 2664,
+    "lil": 2402,
     "posthogBuild": 2775,
     "best": 2775,
     "bestLane": "terser-upstream",
-    "vsPosthog": -4,
-    "vsBest": -4
+    "vsPosthog": -13.4,
+    "vsBest": -13.4
    },
    "gzip": {
-    "lil": 1374,
+    "lil": 1245,
     "posthogBuild": 1271,
     "best": 1271,
     "bestLane": "terser-upstream",
-    "vsPosthog": 8.1,
-    "vsBest": 8.1
+    "vsPosthog": -2,
+    "vsBest": -2
    },
    "brotli": {
-    "lil": 1207,
+    "lil": 1093,
     "posthogBuild": 1114,
     "best": 1114,
     "bestLane": "terser-upstream",
-    "vsPosthog": 8.3,
-    "vsBest": 8.3
+    "vsPosthog": -1.9,
+    "vsBest": -1.9
    }
   },
   {
@@ -200,52 +200,52 @@
     "passed": 23
    },
    "raw": {
-    "lil": 2053,
+    "lil": 1847,
     "posthogBuild": 1876,
     "best": 1866,
     "bestLane": "oxc",
-    "vsPosthog": 9.4,
-    "vsBest": 10
+    "vsPosthog": -1.5,
+    "vsBest": -1
    },
    "gzip": {
-    "lil": 1049,
+    "lil": 968,
     "posthogBuild": 981,
     "best": 981,
     "bestLane": "terser-upstream",
-    "vsPosthog": 6.9,
-    "vsBest": 6.9
+    "vsPosthog": -1.3,
+    "vsBest": -1.3
    },
    "brotli": {
-    "lil": 931,
+    "lil": 847,
     "posthogBuild": 873,
     "best": 873,
     "bestLane": "terser-upstream",
-    "vsPosthog": 6.6,
-    "vsBest": 6.6
+    "vsPosthog": -3,
+    "vsBest": -3
    }
   }
  ],
  "total": {
   "raw": {
-   "lil": 47916,
+   "lil": 44168,
    "posthogBuild": 46987,
    "best": 46660,
-   "vsPosthog": 2,
-   "vsBest": 2.7
+   "vsPosthog": -6,
+   "vsBest": -5.3
   },
   "gzip": {
-   "lil": 19897,
+   "lil": 18950,
    "posthogBuild": 19045,
    "best": 19045,
-   "vsPosthog": 4.5,
-   "vsBest": 4.5
+   "vsPosthog": -0.5,
+   "vsBest": -0.5
   },
   "brotli": {
-   "lil": 18000,
+   "lil": 17140,
    "posthogBuild": 17234,
    "best": 17234,
-   "vsPosthog": 4.4,
-   "vsBest": 4.4
+   "vsPosthog": -0.5,
+   "vsBest": -0.5
   }
  }
 }

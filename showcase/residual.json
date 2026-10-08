@@ -1,44 +1,44 @@
 [
  {
   "id": "error-tracking",
-  "lil": 5124,
-  "lilPlusTerser": 5049,
+  "lil": 5064,
+  "lilPlusTerser": 4968,
   "posthog": 4911
  },
  {
   "id": "user-agent",
-  "lil": 2084,
-  "lilPlusTerser": 2068,
+  "lil": 2049,
+  "lilPlusTerser": 2049,
   "posthog": 2189
  },
  {
   "id": "autocapture-utils",
-  "lil": 3841,
-  "lilPlusTerser": 3752,
+  "lil": 3539,
+  "lilPlusTerser": 3541,
   "posthog": 3560
  },
  {
   "id": "feature-flags",
-  "lil": 1095,
-  "lilPlusTerser": 1082,
+  "lil": 986,
+  "lilPlusTerser": 995,
   "posthog": 976
  },
  {
   "id": "metrics",
-  "lil": 3901,
-  "lilPlusTerser": 3885,
+  "lil": 3737,
+  "lilPlusTerser": 3715,
   "posthog": 3611
  },
  {
   "id": "uuidv7",
-  "lil": 1247,
-  "lilPlusTerser": 1164,
+  "lil": 1085,
+  "lilPlusTerser": 1087,
   "posthog": 1114
  },
  {
   "id": "gzip",
-  "lil": 931,
-  "lilPlusTerser": 913,
+  "lil": 844,
+  "lilPlusTerser": 854,
   "posthog": 873
  }
 ]
