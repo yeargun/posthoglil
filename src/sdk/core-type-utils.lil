@@ -1,0 +1,63 @@
+// packages/core/src/utils/type-utils.ts, PostHog 1.435.8.
+// A PostHog isNumber/isString predicate also accepts boxed values. It is NOT
+// a LilScript primitive narrowing proof; callers must retain that distinction.
+import { knownUnsafeEditableEvent, knownUnsafeEditableEventProperty } from "./core-types.lil";
+import { includes } from "./core-string-utils.lil";
+extern JsValue Array;
+extern JsValue Object;
+extern JsValue Error;
+extern JsValue Event;
+extern JsValue FormData;
+extern JsValue File;
+
+JsValue nativeIsArray = Array["isArray"];
+JsValue ObjProto = Object["prototype"];
+export JsValue hasOwnProperty = ObjProto.hasOwnProperty;
+JsValue toString = ObjProto.toString;
+export JsValue isArray = if (nativeIsArray.truthy()) { nativeIsArray } else {
+    ((this JsValue self, JsValue obj) => { return toString.call(obj) === "[object Array]"; }) as JsValue
+};
+
+export func(JsValue)->bool isFunction = (JsValue x) => JS.typeOf(x) == "function";
+export func(JsValue)->bool isNativeFunction = (JsValue x) => isFunction(x) && x.toString().indexOf("[native code]") !== -1.0;
+export func(JsValue)->bool isObject = (JsValue x) => x === Object(x) && !isArray(x).truthy();
+export func(JsValue)->bool isEmptyObject = (JsValue x) => {
+    if (isObject(x)) {
+        for (string key in x) if (hasOwnProperty.call(x, key).truthy()) return false;
+        return true;
+    }
+    return false;
+};
+export func(JsValue)->bool isUndefined = (JsValue x) => JS.isUndefined(x);
+export func(JsValue)->bool isString = (JsValue x) => toString.call(x) == "[object String]";
+export func(JsValue)->bool isEmptyString = (JsValue x) => isString(x) && x.trim().length === 0.0;
+export func(JsValue)->bool isNull = (JsValue x) => x === null;
+export func(JsValue)->bool isNullish = (JsValue x) => isUndefined(x) || isNull(x);
+export func(JsValue)->bool isNumber = (JsValue x) => toString.call(x) == "[object Number]" && x === x;
+export func(JsValue)->bool isPositiveNumber = (JsValue x) => isNumber(x) && x > 0.0;
+export func(JsValue)->bool isBoolean = (JsValue x) => toString.call(x) === "[object Boolean]";
+export func(JsValue)->bool isFormData = (JsValue x) => x instanceof FormData;
+export func(JsValue)->bool isFile = (JsValue x) => x instanceof File;
+export func(JsValue)->bool isPlainError = (JsValue x) => x instanceof Error;
+export func(JsValue)->bool isKnownUnsafeEditableEvent = (JsValue x) => includes(knownUnsafeEditableEvent, x);
+export func(JsValue)->bool isKnownUnsafeEditableEventProperty = (JsValue x) => includes(knownUnsafeEditableEventProperty, x);
+
+export bool isPrimitive(JsValue value) { return value === null || JS.typeOf(value) != "object"; }
+export bool isBuiltin(JsValue candidate, JsValue className) {
+    return Object["prototype"].toString.call(candidate) === `[object ${className}]`;
+}
+bool isInstanceOf(JsValue candidate, JsValue base) {
+    try { return candidate instanceof base; } catch { return false; }
+}
+export bool isError(JsValue candidate) {
+    JsValue tag = Object["prototype"].toString.call(candidate);
+    return tag === "[object Error]" || tag === "[object Exception]" || tag === "[object DOMException]" || tag === "[object DOMError]" || tag === "[object WebAssembly.Exception]" || isInstanceOf(candidate, Error);
+}
+export bool isErrorEvent(JsValue event) { return isBuiltin(event, "ErrorEvent"); }
+export bool isEvent(JsValue candidate) { return JS.typeOf(Event) != "undefined" && isInstanceOf(candidate, Event); }
+export bool isPlainObject(JsValue candidate) { return isBuiltin(candidate, "Object"); }
+
+export JsValue yesLikeValues = JS.array(true, "true", 1.0, "1", "yes");
+export func(JsValue)->bool isYesLike = (JsValue val) => includes(yesLikeValues, val);
+export JsValue noLikeValues = JS.array(false, "false", 0.0, "0", "no");
+export func(JsValue)->bool isNoLike = (JsValue val) => includes(noLikeValues, val);

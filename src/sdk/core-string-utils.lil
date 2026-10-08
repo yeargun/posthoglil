@@ -1,0 +1,56 @@
+// packages/core/src/utils/string-utils.ts, PostHog 1.435.8.
+// Public values retain JS semantics; only predicates have a closed bool result.
+extern JsValue Array;
+extern JsValue Object;
+extern JsValue JSON;
+extern JsValue Error;
+extern JsValue RegExp;
+
+export bool includes(JsValue str, JsValue needle) {
+    return str.indexOf(needle) !== -1.0;
+}
+
+// Ordinary function expressions, like upstream (including constructibility).
+export JsValue trim = (this JsValue self, JsValue str) => { return str.trim(); };
+export JsValue stripLeadingDollar = (this JsValue self, JsValue str) => {
+    return str.replace(JS.construct(RegExp, "^\\$", ""), "");
+};
+
+export bool isDistinctIdStringLike(JsValue value) {
+    return JS.array("distinct_id", "distinctid").includes(value.toLowerCase()).truthy();
+}
+
+export JsValue safeJsonStringify(JsValue value) {
+    JsValue ancestors = JS.array();
+    JsValue result = JSON["stringify"](value, (this JsValue self, JsValue key, JsValue replacementValue) => {
+        if (JS.typeOf(replacementValue) == "bigint") return replacementValue.toString();
+        if (JS.typeOf(replacementValue) == "function" || JS.typeOf(replacementValue) == "symbol") return JS.undefined();
+        if (replacementValue instanceof Error) {
+            return object {name: replacementValue.name, message: replacementValue.message, stack: replacementValue.stack};
+        }
+        if (replacementValue.truthy() && JS.typeOf(replacementValue) == "object") {
+            while (ancestors.length > 0.0 && ancestors[ancestors.length - 1.0] !== self) ancestors.pop();
+            if (ancestors.includes(replacementValue).truthy()) return "[Circular]";
+            ancestors.push(replacementValue);
+        }
+        return replacementValue;
+    });
+    return if (JS.isNullish(result)) { "null" as JsValue } else { result };
+}
+
+JsValue deepSortKeys(JsValue value) {
+    if (value === null || JS.typeOf(value) != "object") return value;
+    if (Array["isArray"](value).truthy()) return value.map(deepSortKeys);
+    return Object["keys"](value).sort().reduce((JsValue acc, JsValue key) => {
+        acc[key] = deepSortKeys(value[key]);
+        return acc;
+    }, object {});
+}
+
+export JsValue getPersonPropertiesHash(JsValue distinct_id, JsValue userPropertiesToSet = JS.undefined(), JsValue userPropertiesToSetOnce = JS.undefined()) {
+    return JSON["stringify"](object {
+        distinct_id: distinct_id,
+        userPropertiesToSet: if (userPropertiesToSet.truthy()) { deepSortKeys(userPropertiesToSet) } else { JS.undefined() },
+        userPropertiesToSetOnce: if (userPropertiesToSetOnce.truthy()) { deepSortKeys(userPropertiesToSetOnce) } else { JS.undefined() }
+    });
+}

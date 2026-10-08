@@ -1,0 +1,28 @@
+// Whole-module migration from packages/core/src/utils/webview-app-utils.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+extern JsValue RegExp;
+JsValue facebookAppVersion = JS.construct(RegExp, "\\bFBAV\\/(\\d+(?:\\.\\d+)*)", "i");
+
+JsValue webviewAppMatchers = JS.array(JS.array(JS.construct(RegExp, "\\bInstagram(?:[ /](\\d+(?:\\.\\d+)*))?\\b", "i"), "Instagram"), JS.array(JS.construct(RegExp, "\\bBarcelona[ /](\\d+(?:\\.\\d+)*)?", "i"), "Threads"), JS.array(JS.construct(RegExp, "\\b(?:MessengerForiOS|(?:FBAN|FB_IAB)\\/Orca-Android)\\b", "i"), "Messenger", facebookAppVersion), JS.array(JS.construct(RegExp, "\\bFBAN\\/EMA\\b", "i"), "Facebook Lite", facebookAppVersion), JS.array(JS.construct(RegExp, "\\b(?:FBIOS|(?:FBAN|FB_IAB)\\/(?:FB4A|FBIOS))\\b", "i"), "Facebook", facebookAppVersion), JS.array(JS.construct(RegExp, "\\bLinkedInApp(?:\\]?\\/(\\d+(?:\\.\\d+)*))?\\b", "i"), "LinkedIn"), JS.array(JS.construct(RegExp, "\\bTwitter(?:Android| for (?:iPhone|iPad|Android))(?:\\/(\\d+(?:\\.\\d+)*))?\\b", "i"), "Twitter"), JS.array(JS.construct(RegExp, "\\b(?:musical_ly|trill)(?:[_/](\\d+\\.\\d+(?:\\.\\d+)*))?(?=\\b|_)", "i"), "TikTok", JS.construct(RegExp, "\\bapp_version\\/(\\d+(?:\\.\\d+)*)", "i")), JS.array(JS.construct(RegExp, "\\b(?:MicroMessenger|WeChat)\\/(\\d+(?:\\.\\d+)*)?", "i"), "WeChat"), JS.array(JS.construct(RegExp, "\\bLine\\/(\\d+(?:\\.\\d+)*)?", "i"), "Line"), JS.array(JS.construct(RegExp, "\\bGSA\\/(\\d+(?:\\.\\d+)*)?", "i"), "Google"), JS.array(JS.construct(RegExp, "\\[Pinterest\\/(?:iOS|Android)\\b|\\bPinterest(?: for (?:Android(?: Tablet)?|iOS))?\\/(\\d+(?:\\.\\d+)*)", "i"), "Pinterest"), JS.array(JS.construct(RegExp, "\\b(?:WA4A|WAiOS)\\/(\\d+(?:\\.\\d+)*)?", "i"), "WhatsApp"), JS.array(JS.construct(RegExp, "\\bSnapchat[ /](\\d+(?:\\.\\d+)*)?", "i"), "Snapchat"), JS.array(JS.construct(RegExp, "\\bBing(?:Web|Sapphire)\\/(\\d+(?:\\.\\d+)*)?", "i"), "Bing"), JS.array(JS.construct(RegExp, "\\bNAVER\\(inapp; search;", "i"), "Naver", JS.construct(RegExp, "\\bNAVER\\(inapp; search;[^;)]*; (\\d+(?:\\.\\d+)*)", "i")), JS.array(JS.construct(RegExp, "\\bKAKAOTALK[ /](\\d+\\.\\d+(?:\\.\\d+)*)?", "i"), "KakaoTalk"));
+
+
+
+JsValue detectWebviewApp(JsValue userAgent) {
+for (JsValue i = 0.0; (((i as JsValue) < ((webviewAppMatchers as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {JsValue __port_0 = (webviewAppMatchers as JsValue)[i];
+JsValue regex = JS.undefined();
+JsValue name = JS.undefined();
+JsValue versionRegex = JS.undefined();
+int __port_1 = 0;
+for (JsValue __port_2 of __port_0) {
+if (__port_1 === 0) { regex = __port_2; }
+if (__port_1 === 1) { name = __port_2; }
+if (__port_1 === 2) { versionRegex = __port_2; }
+__port_1 += 1; if (__port_1 === 3) break;
+}
+JsValue ph_match = (userAgent as JsValue)["match"](regex);
+if ((ph_match as JsValue).truthy()) {JsValue versionMatch = (((((versionRegex as JsValue) && ((userAgent as JsValue)["match"](versionRegex) as JsValue))) as JsValue) || (ph_match as JsValue));
+return (JS.array(name, (((if ((((((versionMatch as JsValue) === (null as JsValue)) as JsValue) || (((versionMatch as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((versionMatch as JsValue)[1.0] as JsValue) }) as JsValue) || ("" as JsValue))) as JsValue);}}
+return (JS.array("", "") as JsValue);
+return JS.undefined();}
+export { detectWebviewApp as detectWebviewApp };

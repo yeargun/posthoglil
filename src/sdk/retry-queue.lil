@@ -1,0 +1,185 @@
+import extern { logger } from "../../vendor/posthog-js/packages/browser-common/src/utils/logger.ts";
+import extern { window as browserWindow } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { addEventListener } from "../../vendor/posthog-js/packages/browser-common/src/utils/general-utils.ts";
+import extern { isPositiveNumber } from "../../vendor/posthog-js/packages/core/src/utils/type-utils.ts";
+import extern { sendRequest } from "../../vendor/posthog-js/packages/browser/src/request-dispatch.ts";
+import extern { extendURLParams } from "../../vendor/posthog-js/packages/browser/src/request.ts";
+import extern {copyProperties, restPropertiesExcept} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue restPropertiesExcept;
+extern JsValue logger;
+extern JsValue browserWindow;
+extern JsValue addEventListener;
+extern JsValue isPositiveNumber;
+extern JsValue sendRequest;
+extern JsValue extendURLParams;
+extern JsValue Date;
+extern JsValue Math;
+extern JsValue Object;
+extern JsValue navigator;
+extern JsValue setTimeout;
+extern JsValue clearTimeout;
+
+export number pickNextRetryDelay(number retriesPerformedSoFar) {
+  number rawBackoffTime = 3000.0 * JS.number(Math.pow(2.0, retriesPerformedSoFar));
+  number minBackoff = rawBackoffTime / 2.0;
+  number cappedBackoffTime = JS.number(Math.min(1800000.0, rawBackoffTime));
+  number jitterFraction = JS.number(Math.random()) - 0.5;
+  number jitter = jitterFraction * (cappedBackoffTime - minBackoff);
+  return JS.number(Math.ceil(cappedBackoffTime + jitter));
+}
+
+export class RetryQueue {
+  JsValue __lil_get_length() { return (this as JsValue)._queue.length; }
+
+  init(JsValue instance) {
+    JsValue self = this as JsValue;
+    self._instance = instance;
+    self._isPolling = false;
+    self._poller = JS.undefined();
+    self._pollIntervalMs = 3000.0;
+    self._queue = JS.array();
+    self._areWeOnline = JS.undefined();
+    self._onlineListener = JS.undefined();
+    self._offlineListener = JS.undefined();
+    self._queue = JS.array();
+    self._areWeOnline = true;
+    self.resume();
+  }
+
+  JsValue resume() {
+    JsValue self = this as JsValue;
+    if (!JS.isUndefined(browserWindow) && JS.in("onLine", browserWindow.navigator)) {
+      self._areWeOnline = browserWindow.navigator.onLine;
+      if (self._onlineListener.truthy()) return JS.undefined();
+      self._onlineListener = () => {
+        self._areWeOnline = true;
+        self._flush();
+        return JS.undefined();
+      };
+      self._offlineListener = () => {
+        self._areWeOnline = false;
+        return JS.undefined();
+      };
+      addEventListener(browserWindow, "online", self._onlineListener);
+      addEventListener(browserWindow, "offline", self._offlineListener);
+    }
+    return JS.undefined();
+  }
+
+  JsValue retriableRequest(JsValue input, JsValue transportOverride) {
+    JsValue self = this as JsValue;
+    JsValue retriesPerformedSoFar = input.retriesPerformedSoFar;
+    JsValue options = restPropertiesExcept(input, "retriesPerformedSoFar");
+    if (isPositiveNumber(retriesPerformedSoFar).truthy()) {
+      options.url = extendURLParams(options.url, object { retry_count: retriesPerformedSoFar });
+    }
+    JsValue attempt = options;
+    if (transportOverride.truthy()) {
+      attempt = copyProperties(JS.object(), options);
+      Object.defineProperty(attempt, "transport", object {
+        value: transportOverride, enumerable: true, configurable: true, writable: true
+      });
+    }
+    sendRequest(self._instance, attempt, (JsValue response, JsValue retryAfterMs) => {
+      if (response.statusCode !== 200.0 && (response.statusCode < 400.0 || response.statusCode >= 500.0)) {
+        number maxRetries = if (response.statusCode === 0.0) { 3.0 } else { 10.0 };
+        JsValue retries = if (JS.isNullish(retriesPerformedSoFar)) { 0.0 } else { retriesPerformedSoFar };
+        if (retries < maxRetries) {
+          self._enqueue(copyProperties(object { retriesPerformedSoFar: retriesPerformedSoFar }, options), retryAfterMs);
+          return JS.undefined();
+        }
+        if (response.statusCode === 0.0) {
+          logger.warn(`Request failed before receiving an HTTP response; this can happen due to network issues, CORS, browser blocking, or ad blockers. Stopped retrying after ${retries} retries.`);
+        }
+      }
+      JsValue callback = options.callback;
+      if (!JS.isNullish(callback)) callback.call(options, response);
+      return JS.undefined();
+    });
+    return JS.undefined();
+  }
+
+  JsValue _enqueue(JsValue requestOptions, JsValue retryAfterMs) {
+    JsValue self = this as JsValue;
+    JsValue retriesPerformedSoFar = requestOptions.retriesPerformedSoFar || 0.0;
+    requestOptions.retriesPerformedSoFar = retriesPerformedSoFar + 1.0;
+    JsValue nextDelay = (pickNextRetryDelay as JsValue)(retriesPerformedSoFar);
+    JsValue msToNextRetry = Math.max(nextDelay, if (JS.isNullish(retryAfterMs)) { 0.0 } else { retryAfterMs });
+    JsValue retryAt = Date.now() + msToNextRetry;
+    self._queue.push(object { retryAt: retryAt, requestOptions: requestOptions });
+    string logMessage = `Enqueued failed request for retry in ${msToNextRetry}`;
+    if (!navigator.onLine.truthy()) logMessage += " (Browser is offline)";
+    logger.warn(logMessage);
+    if (!self._isPolling.truthy()) {
+      self._isPolling = true;
+      self._poll();
+    }
+    return JS.undefined();
+  }
+
+  JsValue _poll() {
+    JsValue self = this as JsValue;
+    if (self._poller.truthy()) clearTimeout(self._poller);
+    if (self._queue.length === 0.0) {
+      self._isPolling = false;
+      self._poller = JS.undefined();
+      return JS.undefined();
+    }
+    self._poller = setTimeout(() => {
+      if (self._areWeOnline.truthy() && self._queue.length > 0.0) self._flush();
+      self._poll();
+      return JS.undefined();
+    }, self._pollIntervalMs);
+    return JS.undefined();
+  }
+
+  JsValue _flush() {
+    JsValue self = this as JsValue;
+    JsValue now = Date.now();
+    JsValue notToFlush = JS.array();
+    JsValue toFlush = self._queue.filter((JsValue item) => {
+      if (item.retryAt < now) return true;
+      notToFlush.push(item);
+      return false;
+    });
+    self._queue = notToFlush;
+    if (toFlush.length > 0.0) {
+      for (JsValue item of toFlush) self.retriableRequest(item.requestOptions);
+    }
+    return JS.undefined();
+  }
+
+  JsValue unload() {
+    JsValue self = this as JsValue;
+    if (self._poller.truthy()) {
+      clearTimeout(self._poller);
+      self._poller = JS.undefined();
+    }
+    self._isPolling = false;
+    if (!JS.isUndefined(browserWindow)) {
+      if (self._onlineListener.truthy()) {
+        browserWindow.removeEventListener("online", self._onlineListener);
+        self._onlineListener = JS.undefined();
+      }
+      if (self._offlineListener.truthy()) {
+        browserWindow.removeEventListener("offline", self._offlineListener);
+        self._offlineListener = JS.undefined();
+      }
+    }
+    for (JsValue item of self._queue) {
+      try {
+        JsValue request = copyProperties(JS.object(), item.requestOptions);
+        Object.defineProperty(request, "transport", object {
+          value: "sendBeacon", enumerable: true, configurable: true, writable: true
+        });
+        self._instance._send_request(request);
+      } catch (JsValue error) {
+        logger.error(error);
+      }
+    }
+    self._queue = JS.array();
+    return JS.undefined();
+  }
+}
+export constructor RetryQueue;

@@ -1,0 +1,96 @@
+// Whole-module migration from packages/core/src/types.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+JsValue PostHogPersistedProperty = JS.undefined();
+
+((((this JsValue __port_0, JsValue PostHogPersistedProperty) => { 
+(((PostHogPersistedProperty as JsValue)["AnonymousId"] = "anonymous_id"));
+(((PostHogPersistedProperty as JsValue)["DistinctId"] = "distinct_id"));
+(((PostHogPersistedProperty as JsValue)["Props"] = "props"));
+(((PostHogPersistedProperty as JsValue)["EnablePersonProcessing"] = "enable_person_processing"));
+(((PostHogPersistedProperty as JsValue)["PersonMode"] = "person_mode"));
+(((PostHogPersistedProperty as JsValue)["FeatureFlagDetails"] = "feature_flag_details"));
+(((PostHogPersistedProperty as JsValue)["FeatureFlags"] = "feature_flags"));
+(((PostHogPersistedProperty as JsValue)["FeatureFlagPayloads"] = "feature_flag_payloads"));
+(((PostHogPersistedProperty as JsValue)["BootstrapFeatureFlagDetails"] = "bootstrap_feature_flag_details"));
+(((PostHogPersistedProperty as JsValue)["BootstrapFeatureFlags"] = "bootstrap_feature_flags"));
+(((PostHogPersistedProperty as JsValue)["BootstrapFeatureFlagPayloads"] = "bootstrap_feature_flag_payloads"));
+(((PostHogPersistedProperty as JsValue)["OverrideFeatureFlags"] = "override_feature_flags"));
+(((PostHogPersistedProperty as JsValue)["Queue"] = "queue"));
+(((PostHogPersistedProperty as JsValue)["AiQueue"] = "ai_queue"));
+(((PostHogPersistedProperty as JsValue)["AiCaptureQueue"] = "ai_capture_queue"));
+(((PostHogPersistedProperty as JsValue)["LogsQueue"] = "logs_queue"));
+(((PostHogPersistedProperty as JsValue)["OptedOut"] = "opted_out"));
+(((PostHogPersistedProperty as JsValue)["SessionId"] = "session_id"));
+(((PostHogPersistedProperty as JsValue)["SessionStartTimestamp"] = "session_start_timestamp"));
+(((PostHogPersistedProperty as JsValue)["SessionLastTimestamp"] = "session_timestamp"));
+(((PostHogPersistedProperty as JsValue)["PersonProperties"] = "person_properties"));
+(((PostHogPersistedProperty as JsValue)["GroupProperties"] = "group_properties"));
+(((PostHogPersistedProperty as JsValue)["InstalledAppBuild"] = "installed_app_build"));
+(((PostHogPersistedProperty as JsValue)["InstalledAppVersion"] = "installed_app_version"));
+(((PostHogPersistedProperty as JsValue)["SessionReplay"] = "session_replay"));
+(((PostHogPersistedProperty as JsValue)["PushRegistered"] = "push_registered"));
+(((PostHogPersistedProperty as JsValue)["SessionReplayEventTriggerActivatedSession"] = "session_replay_event_trigger_activated_session"));
+(((PostHogPersistedProperty as JsValue)["SurveyLastSeenDate"] = "survey_last_seen_date"));
+(((PostHogPersistedProperty as JsValue)["SurveysInProgress"] = "surveys_in_progress"));
+(((PostHogPersistedProperty as JsValue)["SurveysSeen"] = "surveys_seen"));
+(((PostHogPersistedProperty as JsValue)["Surveys"] = "surveys"));
+(((PostHogPersistedProperty as JsValue)["RemoteConfig"] = "remote_config"));
+(((PostHogPersistedProperty as JsValue)["FlagsEndpointWasHit"] = "flags_endpoint_was_hit"));
+(((PostHogPersistedProperty as JsValue)["DeviceId"] = "device_id"));
+return JS.undefined(); }) as JsValue)(((PostHogPersistedProperty as JsValue) || (((PostHogPersistedProperty = object {  })) as JsValue))));
+
+JsValue Compression = JS.undefined();
+
+((((this JsValue __port_1, JsValue Compression) => { 
+(((Compression as JsValue)["GZipJS"] = "gzip-js"));
+(((Compression as JsValue)["Base64"] = "base64"));
+return JS.undefined(); }) as JsValue)(((Compression as JsValue) || (((Compression = object {  })) as JsValue))));
+
+JsValue FeatureFlagError = object { "ERRORS_WHILE_COMPUTING": "errors_while_computing_flags", "FLAG_MISSING": "flag_missing", "QUOTA_LIMITED": "quota_limited", "TIMEOUT": "timeout", "CONNECTION_ERROR": "connection_error", "UNKNOWN_ERROR": "unknown_error", "apiError": (JsValue status) => { 
+return (`api_error_${status}` as JsValue);
+return JS.undefined(); } };
+
+JsValue SurveyPosition = object { "TopLeft": "top_left", "TopCenter": "top_center", "TopRight": "top_right", "MiddleLeft": "middle_left", "MiddleCenter": "middle_center", "MiddleRight": "middle_right", "Left": "left", "Right": "right", "Center": "center" };
+
+JsValue SurveyWidgetType = object { "Button": "button", "Tab": "tab", "Selector": "selector" };
+
+JsValue SurveyType = object { "Popover": "popover", "API": "api", "Widget": "widget", "ExternalSurvey": "external_survey" };
+
+JsValue SurveyQuestionDescriptionContentType = object { "Html": "html", "Text": "text" };
+
+JsValue SurveyValidationType = object { "MinLength": "min_length", "MaxLength": "max_length" };
+
+JsValue SurveyRatingDisplay = object { "Number": "number", "Emoji": "emoji" };
+
+JsValue SurveyQuestionType = object { "Open": "open", "MultipleChoice": "multiple_choice", "SingleChoice": "single_choice", "Rating": "rating", "Link": "link" };
+
+JsValue SurveyQuestionBranchingType = object { "NextQuestion": "next_question", "End": "end", "ResponseBased": "response_based", "SpecificQuestion": "specific_question" };
+
+JsValue SurveyMatchType = object { "Regex": "regex", "NotRegex": "not_regex", "Exact": "exact", "IsNot": "is_not", "Icontains": "icontains", "NotIcontains": "not_icontains" };
+
+JsValue SurveySchedule = object { "Once": "once", "Recurring": "recurring", "Always": "always" };
+
+JsValue ActionStepStringMatching = object { "Contains": "contains", "Exact": "exact", "Regex": "regex" };
+
+JsValue knownUnsafeEditableEvent = JS.array("$snapshot", "$pageview", "$pageleave", "$set", "survey dismissed", "survey sent", "survey shown", "$identify", "$groupidentify", "$create_alias", "$$client_ingestion_warning", "$web_experiment_applied", "$feature_enrollment_update", "$feature_flag_called");
+
+JsValue knownUnsafeEditableEventProperty = JS.array("token");
+
+
+export { PostHogPersistedProperty as PostHogPersistedProperty };
+export { Compression as Compression };
+export { FeatureFlagError as FeatureFlagError };
+export { SurveyPosition as SurveyPosition };
+export { SurveyWidgetType as SurveyWidgetType };
+export { SurveyType as SurveyType };
+export { SurveyQuestionDescriptionContentType as SurveyQuestionDescriptionContentType };
+export { SurveyValidationType as SurveyValidationType };
+export { SurveyRatingDisplay as SurveyRatingDisplay };
+export { SurveyQuestionType as SurveyQuestionType };
+export { SurveyQuestionBranchingType as SurveyQuestionBranchingType };
+export { SurveyMatchType as SurveyMatchType };
+export { SurveySchedule as SurveySchedule };
+export { ActionStepStringMatching as ActionStepStringMatching };
+export { knownUnsafeEditableEvent as knownUnsafeEditableEvent };
+export { knownUnsafeEditableEventProperty as knownUnsafeEditableEventProperty };

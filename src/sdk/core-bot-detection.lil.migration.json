@@ -1,0 +1,15 @@
+{
+  "source": "packages/core/src/utils/bot-detection.ts",
+  "implementation": "src/sdk/core-bot-detection.lil",
+  "exports": [
+    "DEFAULT_BLOCKED_UA_STRS",
+    "isBlockedUA"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [],
+  "primitiveTypes": [],
+  "asyncClosures": [],
+  "qualified": false
+}

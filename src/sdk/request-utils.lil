@@ -1,0 +1,112 @@
+import extern { isArray, isError, isFile, safeJsonStringify } from "../../vendor/posthog-js/packages/core/src/index.ts";
+import extern { each, errorToProperties } from "../../vendor/posthog-js/packages/browser-common/src/utils/general-utils.ts";
+import extern { document, isBrowserOnline, location } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { logger } from "../../vendor/posthog-js/packages/browser-common/src/utils/logger.ts";
+extern JsValue isArray;
+extern JsValue isError;
+extern JsValue isFile;
+extern JsValue safeJsonStringify;
+extern JsValue each;
+extern JsValue errorToProperties;
+extern JsValue document;
+extern JsValue isBrowserOnline;
+extern JsValue location;
+extern JsValue logger;
+extern JsValue WeakMap;
+extern JsValue JSON;
+extern JsValue RegExp;
+extern JsValue encodeURIComponent;
+extern JsValue decodeURIComponent;
+
+export JsValue jsonStringify(JsValue data, JsValue space) {
+  try {
+    JsValue errors = JS.undefined();
+    return JSON.stringify(data, (JsValue key, JsValue value) => {
+      if (isError(value).truthy()) {
+        if (JS.isNullish(errors)) errors = JS.construct(WeakMap);
+        if (!errors.has(value).truthy()) errors.set(value, errorToProperties(value));
+        return errors.get(value);
+      }
+      return if (JS.typeOf(value) === "bigint") { value.toString() } else { value };
+    }, space);
+  } catch { return safeJsonStringify(data); }
+}
+
+export JsValue convertToURL(JsValue url) {
+  JsValue anchor = if (JS.isNullish(document)) { JS.undefined() } else { document.createElement("a") };
+  if (JS.isUndefined(anchor)) return null;
+  anchor.href = url;
+  return anchor;
+}
+
+export JsValue formDataToQuery(JsValue formData, JsValue separator = "&") {
+  JsValue output = JS.array();
+  each(formData, (JsValue value, JsValue key) => {
+    if (JS.isUndefined(value) || JS.isUndefined(key) || key === "undefined") return JS.undefined();
+    JsValue encodedValue = encodeURIComponent(if (isFile(value).truthy()) { value.name } else { value.toString() });
+    JsValue encodedKey = encodeURIComponent(key);
+    output[output.length] = encodedKey + "=" + encodedValue;
+    return JS.undefined();
+  });
+  return output.join(separator);
+}
+
+export JsValue getQueryParam(JsValue url, JsValue param) {
+  JsValue withoutHash = url.split("#")[0.0] || "";
+  JsValue params = withoutHash.split(JS.construct(RegExp, "\\?(.*)"))[1.0] || "";
+  JsValue parts = params.replace(JS.construct(RegExp, "^\\?+", "g"), "").split("&");
+  JsValue pair = JS.undefined();
+  for (number i = 0.0; i < parts.length; i += 1.0) {
+    JsValue current = parts[i].split("=");
+    if (current[0.0] === param) { pair = current; break; }
+  }
+  if (!isArray(pair).truthy() || pair.length < 2.0) return "";
+  JsValue result = pair[1.0];
+  try { result = decodeURIComponent(result); }
+  catch { logger.error("Skipping decoding for malformed query param: " + result); }
+  return result.replace(JS.construct(RegExp, "\\+", "g"), " ");
+}
+
+export JsValue maskQueryParams(JsValue url, JsValue maskedParams, JsValue mask) {
+  if (!url.truthy() || !maskedParams.truthy() || !maskedParams["length"].truthy()) return url;
+  JsValue hashParts = url.split("#");
+  JsValue base = hashParts[0.0] || "";
+  JsValue hash = hashParts[1.0];
+  JsValue query = base.split("?");
+  JsValue queryString = query[1.0];
+  JsValue parts = (queryString || "").split("&");
+  JsValue output = JS.array();
+  for (number i = 0.0; i < parts.length; i += 1.0) {
+    JsValue pair = parts[i].split("=");
+    if (!isArray(pair).truthy()) continue;
+    if (maskedParams.includes(pair[0.0]).truthy()) output.push(pair[0.0] + "=" + mask);
+    else output.push(parts[i]);
+  }
+  JsValue result = query[0.0];
+  if (!JS.isNullish(queryString)) result += "?" + output.join("&");
+  if (!JS.isNullish(hash)) result += "#" + hash;
+  return result;
+}
+
+export JsValue _getHashParam(JsValue hash, JsValue param) {
+  JsValue matches = hash.match(JS.construct(RegExp, param + "=([^&]*)"));
+  return if (matches.truthy()) { matches[1.0] } else { null };
+}
+
+export JsValue isLocalhost() { return JS.array("localhost", "127.0.0.1").includes(location.hostname); }
+
+export JsValue isStatusZeroFailureCircuitBreakerTripped(JsValue consecutive, JsValue maximum) {
+  return consecutive >= maximum && isBrowserOnline();
+}
+
+export JsValue updateStatusZeroFailureCount(JsValue statusCode, JsValue consecutive, JsValue maximum, JsValue onTripped) {
+  if (statusCode === 0.0) {
+    if (isBrowserOnline().truthy()) {
+      JsValue next = consecutive + 1.0;
+      if (next === maximum) onTripped();
+      return next;
+    }
+    return consecutive;
+  }
+  return 0.0;
+}

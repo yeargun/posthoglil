@@ -1,0 +1,709 @@
+{
+  "source": "packages/browser/src/posthog-featureflags.ts",
+  "implementation": "src/sdk/posthog-featureflags.lil",
+  "exports": [
+    "FeatureFlagError",
+    "filterActiveFeatureFlags",
+    "parseFlagsResponse",
+    "QuotaLimitedResource",
+    "PostHogFeatureFlags"
+  ],
+  "classMembers": [
+    {
+      "class": "PostHogFeatureFlags",
+      "implementation": "__lil_get__config",
+      "kind": "get",
+      "name": "_config"
+    },
+    {
+      "class": "PostHogFeatureFlags",
+      "implementation": "__lil_get_hasLoadedFlags",
+      "kind": "get",
+      "name": "hasLoadedFlags"
+    }
+  ],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_22",
+      "arguments": 6,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        },
+        {
+          "kind": "computed",
+          "key": 4,
+          "value": 5
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_23",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_28",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_29",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_39",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "enabled",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "variant",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_40",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "payload",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "original_payload",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_41",
+      "arguments": 4,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "$lib",
+          "value": 2
+        },
+        {
+          "kind": "data",
+          "key": "$lib_version",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_42",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_43",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_45",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_44",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "spread",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_48",
+      "arguments": 4,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_49",
+      "arguments": 4,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_50",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_51",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_53",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_54",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "computed",
+          "key": 1,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_55",
+      "arguments": 6,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        },
+        {
+          "kind": "computed",
+          "key": 4,
+          "value": 5
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_57",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_56",
+      "arguments": 6,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        },
+        {
+          "kind": "computed",
+          "key": 4,
+          "value": 5
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_58",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_61",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        },
+        {
+          "kind": "spread",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_60",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_62",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_63",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_64",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_65",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_66",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_68",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "computed",
+          "key": 1,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_67",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_75",
+      "arguments": 6,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        },
+        {
+          "kind": "computed",
+          "key": 4,
+          "value": 5
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_76",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_77",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_78",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_79",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_88",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_89",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_94",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_95",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_96",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_98",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_99",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_97",
+      "arguments": 12,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        },
+        {
+          "kind": "computed",
+          "key": 4,
+          "value": 5
+        },
+        {
+          "kind": "computed",
+          "key": 6,
+          "value": 7
+        },
+        {
+          "kind": "computed",
+          "key": 8,
+          "value": 9
+        },
+        {
+          "kind": "spread",
+          "value": 10
+        },
+        {
+          "kind": "spread",
+          "value": 11
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_100",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "featureFlags",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "featureFlagPayloads",
+          "value": 2
+        }
+      ]
+    }
+  ],
+  "localFunctions": [
+    {
+      "name": "isFlagsTimeout",
+      "arity": 1,
+      "calls": 1
+    },
+    {
+      "name": "isRetryableFlagsResponse",
+      "arity": 1,
+      "calls": 1
+    },
+    {
+      "name": "arrayToFlagsRecord",
+      "arity": 1,
+      "calls": 2
+    },
+    {
+      "name": "normalizeFlagsResponse",
+      "arity": 2,
+      "calls": 1
+    }
+  ],
+  "asyncClosures": [],
+  "qualified": false
+}

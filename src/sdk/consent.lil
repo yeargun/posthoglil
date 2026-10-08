@@ -1,0 +1,107 @@
+import extern { COOKIELESS_ALWAYS, COOKIELESS_ON_REJECT } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { navigator as browserNavigator } from "../../vendor/posthog-js/packages/browser-common/src/utils/globals.ts";
+import extern { assignableWindow } from "../../vendor/posthog-js/packages/browser/src/utils/globals.ts";
+import extern { cookieStore, localStore, memoryStore } from "../../vendor/posthog-js/packages/browser/src/storage.ts";
+import extern { isNoLike, isYesLike } from "../../vendor/posthog-js/packages/core/src/utils/type-utils.ts";
+extern JsValue COOKIELESS_ALWAYS;
+extern JsValue COOKIELESS_ON_REJECT;
+extern JsValue browserNavigator;
+extern JsValue assignableWindow;
+extern JsValue cookieStore;
+extern JsValue localStore;
+extern JsValue memoryStore;
+extern JsValue isNoLike;
+extern JsValue isYesLike;
+extern JsValue Object;
+
+export JsValue ConsentStatus = object { PENDING: -1.0, DENIED: 0.0, GRANTED: 1.0 };
+
+JsValue storageKey(JsValue self) {
+  JsValue config = self._instance.config;
+  JsValue token = config.token;
+  JsValue prefix = config.opt_out_capturing_cookie_prefix;
+  JsValue name = config.consent_persistence_name;
+  if (name.truthy()) return name;
+  if (prefix.truthy()) return prefix + token;
+  return "__ph_opt_in_out_" + token;
+}
+
+JsValue storedConsent(JsValue self) {
+  JsValue value = self._storage._get(self._storageKey);
+  if (isYesLike(value).truthy()) return ConsentStatus.GRANTED;
+  if (isNoLike(value).truthy()) return ConsentStatus.DENIED;
+  return ConsentStatus.PENDING;
+}
+
+JsValue storage(JsValue self) {
+  JsValue kind = self._config.opt_out_capturing_persistence_type;
+  JsValue preferred = if (kind === "localStorage") { localStore } else { cookieStore };
+  JsValue expected = if (preferred._is_supported().truthy()) { preferred } else { memoryStore };
+  if (!self._persistentStore.truthy() || self._persistentStore !== expected) {
+    self._persistentStore = expected;
+    JsValue other = if (kind === "localStorage") { cookieStore } else { localStore };
+    if (other._get(self._storageKey).truthy()) {
+      if (!self._persistentStore._get(self._storageKey).truthy()) self.optInOut(isYesLike(other._get(self._storageKey)));
+      other._remove(self._storageKey, self._config.cross_subdomain_cookie);
+    }
+  }
+  return self._persistentStore;
+}
+
+export class ConsentManager {
+  JsValue __lil_get__config() { return (this as JsValue)._instance.config; }
+  JsValue __lil_get_consent() { JsValue self = this as JsValue; if (self._getDnt().truthy()) return ConsentStatus.DENIED; return self._storedConsent; }
+  JsValue __lil_get__storageKey() { return storageKey(this as JsValue); }
+  JsValue __lil_get__storedConsent() { return storedConsent(this as JsValue); }
+  JsValue __lil_get__storage() { return storage(this as JsValue); }
+
+  init(JsValue instance) {
+    JsValue self = this as JsValue;
+    self._instance = instance;
+    self._persistentStore = JS.undefined();
+  }
+
+  JsValue isOptedOut() {
+    JsValue self = this as JsValue;
+    if (self._config.cookieless_mode === COOKIELESS_ALWAYS) return true;
+    return self.isRejected() || (self.consent === ConsentStatus.PENDING && self._config.cookieless_mode === COOKIELESS_ON_REJECT);
+  }
+
+  JsValue isOptedIn() {
+    JsValue self = this as JsValue;
+    return !self.isOptedOut().truthy();
+  }
+
+  JsValue isExplicitlyOptedOut() {
+    JsValue self = this as JsValue;
+    return self.consent === ConsentStatus.DENIED;
+  }
+
+  JsValue isRejected() {
+    JsValue self = this as JsValue;
+    return self.consent === ConsentStatus.DENIED || (self.consent === ConsentStatus.PENDING && self._config.opt_out_capturing_by_default);
+  }
+
+  JsValue optInOut(JsValue optedIn) {
+    JsValue self = this as JsValue;
+    self._storage._set(self._storageKey, if (optedIn.truthy()) { 1.0 } else { 0.0 }, self._config.cookie_expiration, self._config.cross_subdomain_cookie, self._config.secure_cookie);
+    return JS.undefined();
+  }
+
+  JsValue reset() {
+    JsValue self = this as JsValue;
+    self._storage._remove(self._storageKey, self._config.cross_subdomain_cookie);
+    return JS.undefined();
+  }
+
+  JsValue _getDnt() {
+    JsValue self = this as JsValue;
+    if (!self._config.respect_dnt.truthy()) return false;
+    JsValue standard = if (JS.isNullish(browserNavigator)) { JS.undefined() } else { browserNavigator.doNotTrack };
+    JsValue microsoft = if (JS.isNullish(browserNavigator)) { JS.undefined() } else { browserNavigator.msDoNotTrack };
+    JsValue windowValue = assignableWindow.doNotTrack;
+    JsValue privacy = if (JS.isNullish(browserNavigator)) { JS.undefined() } else { browserNavigator.globalPrivacyControl };
+    return JS.array(standard, microsoft, windowValue, privacy).some((JsValue value) => isYesLike(value));
+  }
+}
+export constructor ConsentManager;

@@ -1,0 +1,18 @@
+extern JsValue window;
+extern JsValue globalThis;
+
+JsValue win = if (JS.typeOf(window) != "undefined") { window } else { JS.undefined() };
+JsValue global = if (JS.typeOf(globalThis) != "undefined") { globalThis } else { win };
+export JsValue navigator = if (JS.isNullish(global)) { JS.undefined() } else { global.navigator };
+export JsValue document = if (JS.isNullish(global)) { JS.undefined() } else { global.document };
+export JsValue location = if (JS.isNullish(global)) { JS.undefined() } else { global.location };
+export JsValue fetch = if (JS.isNullish(global)) { JS.undefined() } else { global.fetch };
+JsValue xhr = if (JS.isNullish(global)) { JS.undefined() } else { global.XMLHttpRequest };
+export JsValue XMLHttpRequest = if (xhr.truthy() && JS.in("withCredentials", JS.construct(global.XMLHttpRequest))) { global.XMLHttpRequest } else { JS.undefined() };
+export JsValue AbortController = if (JS.isNullish(global)) { JS.undefined() } else { global.AbortController };
+export JsValue CompressionStream = if (JS.isNullish(global)) { JS.undefined() } else { global.CompressionStream };
+export JsValue userAgent = if (JS.isNullish(navigator)) { JS.undefined() } else { navigator.userAgent };
+export bool isBrowserOnline() {
+  return win.truthy() && win.navigator.onLine !== false;
+}
+export { win as window };

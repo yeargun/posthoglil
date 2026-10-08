@@ -1,0 +1,11 @@
+{
+  "source": "packages/browser/src/surveys-config.ts",
+  "implementation": "src/sdk/surveys-config.lil",
+  "exports": [],
+  "classMembers": [],
+  "classBases": [],
+  "objectLiterals": [],
+  "localFunctions": [],
+  "asyncClosures": [],
+  "qualified": false
+}

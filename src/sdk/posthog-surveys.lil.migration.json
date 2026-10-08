@@ -1,0 +1,67 @@
+{
+  "source": "packages/browser/src/posthog-surveys.ts",
+  "implementation": "src/sdk/posthog-surveys.lil",
+  "exports": [
+    "PostHogSurveys"
+  ],
+  "classMembers": [
+    {
+      "class": "PostHogSurveys",
+      "implementation": "__lil_get__config",
+      "kind": "get",
+      "name": "_config"
+    }
+  ],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_3",
+      "arguments": 4,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_7",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "surveyPopupDelaySeconds",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_6",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "appearance",
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "localFunctions": [],
+  "asyncClosures": [],
+  "qualified": false
+}

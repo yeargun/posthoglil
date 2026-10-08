@@ -1,0 +1,12 @@
+// Whole-module migration from packages/core/src/utils/browser-utils.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import { includes as includes } from "./core-string-utils.lil";
+
+
+
+
+JsValue isWebKit(JsValue userAgent) {
+return ((((includes as JsValue)(userAgent, "AppleWebKit") as JsValue) && (!((includes as JsValue)(userAgent, "Chrome") as JsValue).truthy() as JsValue)) as JsValue);
+return JS.undefined();}
+export { isWebKit as isWebKit };

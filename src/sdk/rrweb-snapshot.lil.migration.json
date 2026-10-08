@@ -1,0 +1,27 @@
+{
+  "source": "packages/rrweb/rrweb-snapshot/src/snapshot.ts",
+  "implementation": "src/sdk/rrweb-snapshot.lil",
+  "exports": [
+    "IGNORED_NODE",
+    "genId",
+    "absoluteToDoc",
+    "transformAttribute",
+    "ignoreAttribute",
+    "_isBlockedElement",
+    "classMatchesRegex",
+    "needMaskingText",
+    "resetStylesheetLoadTracking",
+    "DEFAULT_MAX_DEPTH",
+    "wasMaxDepthReached",
+    "resetMaxDepthState",
+    "serializeNodeWithId",
+    "slimDOMDefaults",
+    "visitSnapshot",
+    "cleanupSnapshot",
+    "default"
+  ],
+  "classMembers": [],
+  "classBases": [],
+  "asyncClosures": [],
+  "qualified": false
+}

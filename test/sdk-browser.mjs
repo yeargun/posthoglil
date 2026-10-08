@@ -7,7 +7,9 @@ import {gunzipSync,inflateSync} from 'node:zlib'
 import {chromium} from '@playwright/test'
 import ts from 'typescript'
 import {root,upstreamVersion} from '../scripts/sdk-source.mjs'
-mkdirSync(join(root,'reports/full-sdk'),{recursive:true})
+const reportDirectory=resolve(root,process.env.POSTHOGLIL_SDK_REPORT_DIR??'reports/full-sdk')
+mkdirSync(reportDirectory,{recursive:true})
+let activeLazyAssets
 
 const declarations=ts.createSourceFile('module.d.ts',readFileSync(join(root,'node_modules/posthog-upstream/dist/module.d.ts'),'utf8'),ts.ScriptTarget.Latest,true)
 // Upstream also emits internal underscore methods in .d.ts, then mangles them.
@@ -48,8 +50,10 @@ const server=createServer(async(req,res)=>{
     res.setHeader('Content-Type',extname(file)==='.css'?'text/css':'text/javascript');res.end(readFileSync(file));return
   }
   if(url.pathname.endsWith('/lazy-recorder.js')||url.pathname.endsWith('/recorder.js')){
-    res.setHeader('Content-Type','text/javascript');res.end(readFileSync(join(root,'node_modules/posthog-upstream/dist/lazy-recorder.js')))
-    received.push({path:url.pathname,method:req.method,body:null,asset:'published recorder'})
+    const filename=url.pathname.split('/').at(-1)
+    const asset=activeLazyAssets?.[filename]
+    res.setHeader('Content-Type','text/javascript');res.end(readFileSync(asset?join(root,asset.file):join(root,'node_modules/posthog-upstream/dist/lazy-recorder.js')))
+    received.push({path:url.pathname,method:req.method,body:null,asset:asset?'source recorder':'published recorder',file:asset?.file})
     return
   }
   if(url.pathname.endsWith('/config.js')){
@@ -70,7 +74,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
 const origin=`http://127.0.0.1:${server.address().port}`
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']})
 const output=[]
-const benchmark=JSON.parse(readFileSync(join(root,'artifacts/sdk/results.json'),'utf8'))
+const benchmark=JSON.parse(readFileSync(resolve(root,process.env.POSTHOGLIL_SDK_RESULTS??'artifacts/sdk/results.json'),'utf8'))
 const settle=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
 function decodeReplay(value){
@@ -88,6 +92,7 @@ function stable(value){
 }
 
 async function journey(label,file,surface){
+  activeLazyAssets=label.startsWith('lilscript-')?benchmark.lazyAssets?.candidate[label.slice('lilscript-'.length)]:label==='published'?undefined:benchmark.lazyAssets?.original
   const begin=received.length
   const context=await browser.newContext({viewport:{width:1280,height:800},userAgent:'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'})
   await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort())
@@ -179,7 +184,12 @@ async function journey(label,file,surface){
   }
   {
     await page.evaluate(()=>{globalThis.sdkUnderTest.set_config({disable_session_recording:false});globalThis.sdkUnderTest.startSessionRecording(true)})
-    await page.waitForFunction(()=>globalThis.sdkUnderTest.sessionRecordingStarted(),{timeout:15000})
+    try {
+      await page.waitForFunction(()=>globalThis.sdkUnderTest.sessionRecordingStarted(),undefined,{timeout:15000})
+    } catch(error) {
+      writeFileSync(join(reportDirectory,`${surface}-${label}-failure.json`),JSON.stringify({label,file,errors,requests:received.slice(begin),state:await page.evaluate(()=>({extensions:Object.keys(globalThis.__PosthogExtensions__??{}),recording:globalThis.sdkUnderTest.sessionRecordingStarted(),recorderKeys:Object.keys(globalThis.sdkUnderTest.sessionRecording??{})}))},null,2)+'\n')
+      throw error
+    }
     await page.evaluate(()=>document.querySelector('#change').textContent='Replay mutation after start')
     await settle(2200)
   }
@@ -187,7 +197,7 @@ async function journey(label,file,surface){
   await page.evaluate(()=>globalThis.sdkUnderTest.stopSessionRecording())
   await settle(100)
   const requests=received.slice(begin)
-  writeFileSync(join(root,`reports/full-sdk/${surface}-${label}-requests.json`),JSON.stringify(requests,null,2)+'\n')
+  writeFileSync(join(reportDirectory,`${surface}-${label}-requests.json`),JSON.stringify(requests,null,2)+'\n')
   const events=requests.flatMap(request=>Array.isArray(request.body)?request.body:Array.isArray(request.body?.batch)?request.body.batch:request.body?.event?[request.body]:[])
   assert.deepEqual(errors,[],`${label} browser errors`)
   assert.equal(result.api.sameSingleton,true);assert.equal(result.api.instance,true)
@@ -235,7 +245,7 @@ async function journey(label,file,surface){
   // Concurrent HTTP requests may arrive in either order; capture callback order
   // is compared independently above. Keep every event and user property.
   const comparable=events.filter(event=>['checkout','identified checkout','after consent','$autocapture','$exception','browser journey complete','survey sent'].includes(event.event)).map(stable).sort((a,b)=>a.event.localeCompare(b.event))
-  writeFileSync(join(root,`reports/full-sdk/${surface}-${label}-events.json`),JSON.stringify(comparable,null,2)+'\n')
+  writeFileSync(join(reportDirectory,`${surface}-${label}-events.json`),JSON.stringify(comparable,null,2)+'\n')
   // Identity survives a fresh page + SDK instance, then reset clears it.
   await page.goto(origin+'/app')
   const persistence=await page.evaluate(async({file,origin})=>{
@@ -251,8 +261,8 @@ async function journey(label,file,surface){
     return {retained,reset,isolated}
   },{file,origin})
   assert.deepEqual(persistence,{retained:'person-123',reset:true,isolated:true})
-  if(surface==='full')assert.ok(!requests.some(request=>request.asset==='published recorder'),'Full SDK unexpectedly fetched a recorder')
-  else assert.ok(requests.some(request=>request.asset==='published recorder'),'Standard SDK did not exercise the lazy recorder ABI')
+  if(surface==='full')assert.ok(!requests.some(request=>request.asset),'Full SDK unexpectedly fetched a recorder')
+  else assert.ok(requests.some(request=>request.asset),'Standard SDK did not exercise the lazy recorder ABI')
   await context.close()
   return {label,surface,file,sha256:createHash('sha256').update(readFileSync(join(root,file))).digest('hex'),ok:true,result,persistence,events:comparable,eventNames:events.map(event=>event.event),requests:requests.map(({path,method})=>({path,method})),errors}
 }
@@ -288,6 +298,6 @@ try{
   }
   }
 }finally{
-  writeFileSync(join(root,process.env.POSTHOGLIL_CONSUMER_RESULTS?'reports/full-sdk/consumer-journeys.json':'reports/full-sdk/browser-journeys.json'),JSON.stringify(output,null,2)+'\n')
+  writeFileSync(join(reportDirectory,process.env.POSTHOGLIL_CONSUMER_RESULTS?'consumer-journeys.json':'browser-journeys.json'),JSON.stringify(output,null,2)+'\n')
   await browser.close();server.close()
 }

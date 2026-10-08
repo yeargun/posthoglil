@@ -1,0 +1,239 @@
+{
+  "source": "packages/browser/src/extensions/replay/session-recording.ts",
+  "implementation": "src/sdk/session-recording.lil",
+  "exports": [
+    "SessionRecording"
+  ],
+  "classMembers": [
+    {
+      "class": "SessionRecording",
+      "implementation": "__lil_get__config",
+      "kind": "get",
+      "name": "_config"
+    },
+    {
+      "class": "SessionRecording",
+      "implementation": "__lil_get__persistence",
+      "kind": "get",
+      "name": "_persistence"
+    },
+    {
+      "class": "SessionRecording",
+      "implementation": "__lil_get_started",
+      "kind": "get",
+      "name": "started"
+    },
+    {
+      "class": "SessionRecording",
+      "implementation": "__lil_get_status",
+      "kind": "get",
+      "name": "status"
+    },
+    {
+      "class": "SessionRecording",
+      "implementation": "__lil_get__isRecordingEnabled",
+      "kind": "get",
+      "name": "_isRecordingEnabled"
+    },
+    {
+      "class": "SessionRecording",
+      "implementation": "__lil_get__scriptName",
+      "kind": "get",
+      "name": "_scriptName"
+    },
+    {
+      "class": "SessionRecording",
+      "implementation": "__lil_get_sdkDebugProperties",
+      "kind": "get",
+      "name": "sdkDebugProperties"
+    }
+  ],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_4",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_7",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "data",
+          "key": "capturePerformance",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_6",
+      "arguments": 13,
+      "fields": [
+        {
+          "kind": "data",
+          "key": "cache_timestamp",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "enabled",
+          "value": 1
+        },
+        {
+          "kind": "spread",
+          "value": 2
+        },
+        {
+          "kind": "data",
+          "key": "networkPayloadCapture",
+          "value": 3
+        },
+        {
+          "kind": "data",
+          "key": "canvasRecording",
+          "value": 4
+        },
+        {
+          "kind": "data",
+          "key": "sampleRate",
+          "value": 5
+        },
+        {
+          "kind": "data",
+          "key": "minimumDurationMilliseconds",
+          "value": 6
+        },
+        {
+          "kind": "data",
+          "key": "endpoint",
+          "value": 7
+        },
+        {
+          "kind": "data",
+          "key": "triggerMatchType",
+          "value": 8
+        },
+        {
+          "kind": "data",
+          "key": "masking",
+          "value": 9
+        },
+        {
+          "kind": "data",
+          "key": "urlTriggers",
+          "value": 10
+        },
+        {
+          "kind": "data",
+          "key": "version",
+          "value": 11
+        },
+        {
+          "kind": "data",
+          "key": "triggerGroups",
+          "value": 12
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_5",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_8",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_9",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_10",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_11",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_12",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_13",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "localFunctions": [
+    {
+      "name": "hasDocumentEverBeenVisible",
+      "arity": 0,
+      "calls": 1
+    }
+  ],
+  "asyncClosures": [],
+  "qualified": false
+}

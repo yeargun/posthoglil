@@ -1,0 +1,17 @@
+// Whole-module migration from packages/core/src/utils/bot-detection.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+JsValue DEFAULT_BLOCKED_UA_STRS = JS.array("amazonbot", "amazonproductbot", "app.hypefactors.com", "applebot", "archive.org_bot", "awariobot", "backlinksextendedbot", "baiduspider", "bingbot", "bingpreview", "chrome-lighthouse", "dataforseobot", "deepscan", "duckduckbot", "facebookexternal", "facebookcatalog", "http://yandex.com/bots", "hubspot", "ia_archiver", "leikibot", "linkedinbot", "meta-externalagent", "mj12bot", "msnbot", "nessus", "petalbot", "pinterestbot", "prerender", "rogerbot", "screaming frog", "sebot-wa", "sitebulb", "slackbot", "slurp", "trendictionbot", "turnitin", "twitterbot", "vercel-screenshot", "vercelbot", "yahoo! slurp", "yandexbot", "zoombot", "bot.htm", "bot.php", "(bot;", "bot/", "crawler", "ahrefsbot", "ahrefssiteaudit", "semrushbot", "siteauditbot", "splitsignalbot", "gptbot", "oai-searchbot", "chatgpt-user", "perplexitybot", "better uptime bot", "sentryuptimebot", "uptimerobot", "headlesschrome", "cypress", "google-hoteladsverifier", "adsbot-google", "apis-google", "duplexweb-google", "feedfetcher-google", "google favicon", "google web preview", "google-read-aloud", "googlebot", "googleother", "google-cloudvertexbot", "googleweblight", "mediapartners-google", "storebot-google", "google-inspectiontool", "bytespider");
+
+JsValue isBlockedUA = (this JsValue __port_0, JsValue ua, JsValue customBlockedUserAgents = JS.array()) => { 
+if ((!(ua as JsValue).truthy() as JsValue).truthy()) {return (false as JsValue);}
+JsValue uaLower = (ua as JsValue)["toLowerCase"]();
+return (((DEFAULT_BLOCKED_UA_STRS as JsValue)["concat"](customBlockedUserAgents) as JsValue)["some"]((JsValue blockedUA) => { 
+JsValue blockedUaLower = (blockedUA as JsValue)["toLowerCase"]();
+return ((((uaLower as JsValue)["indexOf"](blockedUaLower) as JsValue) !== ((-(1.0 as JsValue)) as JsValue)) as JsValue);
+return JS.undefined(); }) as JsValue);
+return JS.undefined(); };
+
+
+export { DEFAULT_BLOCKED_UA_STRS as DEFAULT_BLOCKED_UA_STRS };
+export { isBlockedUA as isBlockedUA };

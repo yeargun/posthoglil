@@ -1,0 +1,147 @@
+// Whole-module migration from packages/browser/src/browser-surveys.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { addEventListener as addEventListener } from "@posthog/browser-common/utils/general-utils";
+import extern { isUndefined as isUndefined } from "@posthog/core";
+import extern { PostHogSurveys as PostHogSurveys } from "../../vendor/posthog-js/packages/browser/src/posthog-surveys.ts";
+import extern { SurveyEventName as SurveyEventName } from "../../vendor/posthog-js/packages/browser/src/posthog-surveys-types.ts";
+import extern { extendURLParams as extendURLParams } from "../../vendor/posthog-js/packages/browser/src/request.ts";
+import extern { assignableWindow as assignableWindow, window as window } from "../../vendor/posthog-js/packages/browser/src/utils/globals.ts";
+import extern { SurveyEventReceiver as SurveyEventReceiver } from "../../vendor/posthog-js/packages/browser/src/utils/survey-event-receiver.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue __lil_object_0;
+extern JsValue Promise;
+extern JsValue Object;
+extern JsValue addEventListener;
+
+extern JsValue isUndefined;
+
+extern JsValue PostHogSurveys;
+extern class PostHogSurveys {init(JsValue argument0, JsValue argument1);}
+
+extern JsValue SurveyEventName;
+
+extern JsValue extendURLParams;
+
+extern JsValue assignableWindow;
+extern JsValue window;
+
+extern JsValue SurveyEventReceiver;
+
+export class InitialSurveysKeyValueStore {
+init(JsValue _instance) { 
+((((this as JsValue) as JsValue)["_instance"] = _instance));
+ }
+
+JsValue initialize() { 
+
+return JS.undefined(); }
+
+JsValue get(JsValue keyOrKeys) { 
+if ((((JS.typeOf(keyOrKeys) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) {return (((this as JsValue) as JsValue)["_instance"] as JsValue)["get_property"](keyOrKeys);}
+JsValue values = object {  };
+for (JsValue key of keyOrKeys) {
+JsValue value = (((this as JsValue) as JsValue)["_instance"] as JsValue)["get_property"](key);
+if ((!((isUndefined as JsValue)(value) as JsValue).truthy() as JsValue).truthy()) {(((values as JsValue)[key] = value));}}
+return values;
+return JS.undefined(); }
+
+JsValue set(JsValue keyOrValues, JsValue value) { 
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["register"]((if ((((JS.typeOf(keyOrValues) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) { (__lil_object_0(() => (keyOrValues as JsValue), () => (value as JsValue)) as JsValue) } else { (keyOrValues as JsValue) })));
+return JS.undefined(); }
+
+JsValue remove(JsValue keyOrKeys) { 
+if ((((JS.typeOf(keyOrKeys) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_instance"] as JsValue)["unregister"](keyOrKeys));
+return JS.undefined();}
+((keyOrKeys as JsValue)["forEach"]((JsValue key) => { 
+return ((((this as JsValue) as JsValue)["_instance"] as JsValue)["unregister"](key) as JsValue);
+return JS.undefined(); }));
+return JS.undefined(); }
+}
+export constructor InitialSurveysKeyValueStore;
+
+func(JsValue)->JsValue createInitialSurveysClientState = (JsValue instance) => __port_1(instance);
+
+export class BrowserSurveysConfigSource {
+init(JsValue _instance) { 
+((((this as JsValue) as JsValue)["_instance"] = _instance));
+ }
+
+JsValue get() { 
+JsValue config = (((this as JsValue) as JsValue)["_instance"] as JsValue)["config"];
+return object { "disableSurveys": (config as JsValue)["disable_surveys"], "cookielessMode": !(!((config as JsValue)["cookieless_mode"] as JsValue).truthy() as JsValue).truthy(), "advancedEnableSurveys": (config as JsValue)["advanced_enable_surveys"], "requestTimeoutMs": (config as JsValue)["surveys_request_timeout_ms"] };
+return JS.undefined(); }
+
+JsValue isOptedOut() { 
+return ((((this as JsValue) as JsValue)["_instance"] as JsValue)["consent"] as JsValue)["isOptedOut"]();
+return JS.undefined(); }
+
+JsValue isCapturing() { 
+return (((this as JsValue) as JsValue)["_instance"] as JsValue)["is_capturing"]();
+return JS.undefined(); }
+
+JsValue getExtensions() { 
+JsValue extensions = if ((((((assignableWindow as JsValue) === (null as JsValue)) as JsValue) || (((assignableWindow as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((assignableWindow as JsValue)["__PosthogExtensions__"] as JsValue) };
+if ((!(extensions as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue __port_2 = extensions;
+JsValue generateSurveys = __port_2["generateSurveys"];
+JsValue loadExternalDependency = __port_2["loadExternalDependency"];
+return object { "generateSurveys": if ((generateSurveys as JsValue).truthy()) { ((JsValue isSurveysEnabled) => { 
+return ((generateSurveys as JsValue)(((this as JsValue) as JsValue)["_instance"], isSurveysEnabled) as JsValue);
+return JS.undefined(); } as JsValue) } else { (JS.undefined() as JsValue) }, "loadExternalDependency": if ((loadExternalDependency as JsValue).truthy()) { ((JsValue callback) => { 
+return ((loadExternalDependency as JsValue)(((this as JsValue) as JsValue)["_instance"], "surveys", callback) as JsValue);
+return JS.undefined(); } as JsValue) } else { (JS.undefined() as JsValue) } };
+return JS.undefined(); }
+
+JsValue createEventReceiver(JsValue onActivationChanged) { 
+return JS.construct(SurveyEventReceiver, ((this as JsValue) as JsValue)["_instance"], onActivationChanged);
+return JS.undefined(); }
+
+JsValue onMatchingConditionsChanged(JsValue callback) { 
+JsValue unsubscribeCapture = (((this as JsValue) as JsValue)["_instance"] as JsValue)["_addCaptureHook"]((JsValue event) => { 
+if ((((((((((event as JsValue) === ("$pageview" as JsValue)) as JsValue) || (((event as JsValue) === ((SurveyEventName as JsValue)["SHOWN"] as JsValue)) as JsValue)) as JsValue) || (((event as JsValue) === ((SurveyEventName as JsValue)["DISMISSED"] as JsValue)) as JsValue)) as JsValue) || (((event as JsValue) === ((SurveyEventName as JsValue)["SENT"] as JsValue)) as JsValue)) as JsValue).truthy()) {((callback as JsValue)());}
+return JS.undefined(); });
+JsValue onShown = () => { 
+return ((callback as JsValue)() as JsValue);
+return JS.undefined(); };
+((addEventListener as JsValue)(window, "PHSurveyShown", onShown));
+JsValue listening = false;
+JsValue unsubscribeFlags = (((this as JsValue) as JsValue)["_instance"] as JsValue)["onFeatureFlags"](() => { 
+if ((listening as JsValue).truthy()) {((callback as JsValue)());}
+return JS.undefined(); });
+((listening = true));
+return () => { 
+((listening = false));
+((unsubscribeCapture as JsValue)());
+((unsubscribeFlags as JsValue)());
+(if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["removeEventListener"]("PHSurveyShown", onShown) as JsValue) });
+return JS.undefined(); };
+return JS.undefined(); }
+}
+export constructor BrowserSurveysConfigSource;
+
+export class BrowserSurveys extends PostHogSurveys {
+init(JsValue _instance) { 
+super(JS.construct((BrowserSurveysConfigSource as JsValue), _instance), createInitialSurveysClientState(_instance));
+((((this as JsValue) as JsValue)["_instance"] = _instance));
+ }
+
+JsValue _sendSurveysRequest(JsValue path, JsValue ph_init) { 
+JsValue pathWithQuery = if (((ph_init as JsValue)["query"] as JsValue).truthy()) { ((extendURLParams as JsValue)(path, (ph_init as JsValue)["query"]) as JsValue) } else { (path as JsValue) };
+return JS.construct(Promise, (JsValue resolve) => { 
+JsValue _a = JS.undefined();
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["_send_request"](object { "method": (ph_init as JsValue)["method"], "url": ((((this as JsValue) as JsValue)["_instance"] as JsValue)["requestRouter"] as JsValue)["endpointFor"](if ((((((((_a = (ph_init as JsValue)["target"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { ("api" as JsValue) }, pathWithQuery), "data": (ph_init as JsValue)["body"], "headers": (ph_init as JsValue)["headers"], "timeout": (ph_init as JsValue)["timeoutMs"], "fireCallbackOnDrop": true, "transport": (ph_init as JsValue)["transport"], "compression": (ph_init as JsValue)["compression"], "timestampMode": (ph_init as JsValue)["sentAt"], "callback": resolve }));
+return JS.undefined(); });
+return JS.undefined(); }
+}
+export constructor BrowserSurveys;
+
+JsValue __port_1(JsValue instance) {
+return (((() => { JsValue __port_3 = JS.object();
+Object.defineProperty(__port_3, "projectToken", object {get: (this JsValue __port_4) => { 
+return ((instance as JsValue)["config"] as JsValue)["token"];
+return JS.undefined(); }, enumerable: true, configurable: true});
+setOwn(__port_3, "kv", JS.construct((InitialSurveysKeyValueStore as JsValue), instance));return __port_3; })()) as JsValue);
+return JS.undefined();}

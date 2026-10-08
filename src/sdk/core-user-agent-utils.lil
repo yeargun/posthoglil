@@ -1,0 +1,237 @@
+// Whole-module migration from packages/core/src/utils/user-agent-utils.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import { includes as includes } from "./core-string-utils.lil";
+import { isFunction as isFunction, isUndefined as isUndefined } from "./core-type-utils.lil";
+extern JsValue RegExp;
+extern JsValue __lil_object_4e636fd9f2b3_2;
+extern JsValue parseFloat;
+extern JsValue Math;
+
+
+
+
+JsValue FACEBOOK = "Facebook";
+
+JsValue MOBILE = "Mobile";
+
+JsValue IOS = "iOS";
+
+JsValue ANDROID = "Android";
+
+JsValue TABLET = "Tablet";
+
+JsValue ANDROID_TABLET = ((((ANDROID as JsValue) + (" " as JsValue)) as JsValue) + (TABLET as JsValue));
+
+JsValue IPAD = "iPad";
+
+JsValue APPLE = "Apple";
+
+JsValue APPLE_WATCH = ((APPLE as JsValue) + (" Watch" as JsValue));
+
+JsValue SAFARI = "Safari";
+
+JsValue BLACKBERRY = "BlackBerry";
+
+JsValue SAMSUNG = "Samsung";
+
+JsValue SAMSUNG_BROWSER = ((SAMSUNG as JsValue) + ("Browser" as JsValue));
+
+JsValue SAMSUNG_INTERNET = ((SAMSUNG as JsValue) + (" Internet" as JsValue));
+
+JsValue CHROME = "Chrome";
+
+JsValue CHROME_OS = ((CHROME as JsValue) + (" OS" as JsValue));
+
+JsValue CHROME_IOS = ((((CHROME as JsValue) + (" " as JsValue)) as JsValue) + (IOS as JsValue));
+
+JsValue INTERNET_EXPLORER = "Internet Explorer";
+
+JsValue INTERNET_EXPLORER_MOBILE = ((((INTERNET_EXPLORER as JsValue) + (" " as JsValue)) as JsValue) + (MOBILE as JsValue));
+
+JsValue OPERA = "Opera";
+
+JsValue OPERA_MINI = ((OPERA as JsValue) + (" Mini" as JsValue));
+
+JsValue EDGE = "Edge";
+
+JsValue MICROSOFT_EDGE = (("Microsoft " as JsValue) + (EDGE as JsValue));
+
+JsValue FIREFOX = "Firefox";
+
+JsValue FIREFOX_IOS = ((((FIREFOX as JsValue) + (" " as JsValue)) as JsValue) + (IOS as JsValue));
+
+JsValue NINTENDO = "Nintendo";
+
+JsValue PLAYSTATION = "PlayStation";
+
+JsValue XBOX = "Xbox";
+
+JsValue ANDROID_MOBILE = ((((ANDROID as JsValue) + (" " as JsValue)) as JsValue) + (MOBILE as JsValue));
+
+JsValue MOBILE_SAFARI = ((((MOBILE as JsValue) + (" " as JsValue)) as JsValue) + (SAFARI as JsValue));
+
+JsValue WINDOWS = "Windows";
+
+JsValue WINDOWS_PHONE = ((WINDOWS as JsValue) + (" Phone" as JsValue));
+
+JsValue NOKIA = "Nokia";
+
+JsValue OUYA = "Ouya";
+
+JsValue GENERIC = "Generic";
+
+JsValue GENERIC_MOBILE = ((((GENERIC as JsValue) + (" " as JsValue)) as JsValue) + ((MOBILE as JsValue)["toLowerCase"]() as JsValue));
+
+JsValue GENERIC_TABLET = ((((GENERIC as JsValue) + (" " as JsValue)) as JsValue) + ((TABLET as JsValue)["toLowerCase"]() as JsValue));
+
+JsValue KONQUEROR = "Konqueror";
+
+JsValue OCULUS_BROWSER = "Oculus Browser";
+
+JsValue VIVALDI = "Vivaldi";
+
+JsValue YANDEX = "Yandex";
+
+JsValue WHALE = "Whale";
+
+JsValue DUCKDUCKGO = "DuckDuckGo";
+
+JsValue PALE_MOON = "Pale Moon";
+
+JsValue WATERFOX = "Waterfox";
+
+JsValue BRAVE = "Brave";
+
+JsValue CLAUDE = "Claude";
+
+JsValue CODEX = "Codex";
+
+JsValue CHATGPT = "ChatGPT";
+
+JsValue GOOGLE_SEARCH_APP = "Google Search App";
+
+JsValue BROWSER_VERSION_REGEX_SUFFIX = "(\\d+(\\.\\d+)?)";
+
+JsValue DEFAULT_BROWSER_VERSION_REGEX = JS.construct(RegExp, (("Version/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)));
+
+JsValue AI_APP_VERSION_REGEX = JS.construct(RegExp, (((((((((((((("(" as JsValue) + (CLAUDE as JsValue)) as JsValue) + ("|" as JsValue)) as JsValue) + (CODEX as JsValue)) as JsValue) + ("|" as JsValue)) as JsValue) + (CHATGPT as JsValue)) as JsValue) + (")\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)));
+
+
+
+JsValue XBOX_REGEX = JS.construct(RegExp, XBOX, "i");
+
+JsValue PLAYSTATION_REGEX = JS.construct(RegExp, ((PLAYSTATION as JsValue) + (" \\w+" as JsValue)), "i");
+
+JsValue NINTENDO_REGEX = JS.construct(RegExp, ((NINTENDO as JsValue) + (" \\w+" as JsValue)), "i");
+
+JsValue BLACKBERRY_REGEX = JS.construct(RegExp, ((BLACKBERRY as JsValue) + ("|PlayBook|BB10" as JsValue)), "i");
+
+JsValue windowsVersionMap = object { "NT3.51": "NT 3.11", "NT4.0": "NT 4.0", "5.0": "2000", "5.1": "XP", "5.2": "XP", "6.0": "Vista", "6.1": "7", "6.2": "8", "6.3": "8.1", "6.4": "10", "10.0": "10" };
+
+
+
+func(JsValue, JsValue)->JsValue safariCheck = (JsValue ua, JsValue vendor) => __port_0(ua, vendor);
+
+JsValue detectBrowser = (this JsValue __port_1, JsValue user_agent, JsValue vendor, JsValue hints, JsValue options) => { 
+((vendor = ((vendor as JsValue) || ("" as JsValue))));
+JsValue fromHints = browserFromHints(hints);
+if ((fromHints as JsValue).truthy()) {return (fromHints as JsValue);}
+if (((((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["detectGoogleSearchApp"] as JsValue) }) as JsValue) && ((includes as JsValue)(user_agent, "GSA/") as JsValue)) as JsValue).truthy()) {return (GOOGLE_SEARCH_APP as JsValue);}
+if (((((includes as JsValue)(user_agent, " OPR/") as JsValue) && ((includes as JsValue)(user_agent, "Mini") as JsValue)) as JsValue).truthy()) {return (OPERA_MINI as JsValue);} else {if (((includes as JsValue)(user_agent, " OPR/") as JsValue).truthy()) {return (OPERA as JsValue);} else {if (((BLACKBERRY_REGEX as JsValue)["test"](user_agent) as JsValue).truthy()) {return (BLACKBERRY as JsValue);} else {if (((((includes as JsValue)(user_agent, (("IE" as JsValue) + (MOBILE as JsValue))) as JsValue) || ((includes as JsValue)(user_agent, "WPDesktop") as JsValue)) as JsValue).truthy()) {return (INTERNET_EXPLORER_MOBILE as JsValue);} else {if (((includes as JsValue)(user_agent, "OculusBrowser") as JsValue).truthy()) {return (OCULUS_BROWSER as JsValue);} else {if (((includes as JsValue)(user_agent, SAMSUNG_BROWSER) as JsValue).truthy()) {return (SAMSUNG_INTERNET as JsValue);} else {if (((((includes as JsValue)(user_agent, EDGE) as JsValue) || ((includes as JsValue)(user_agent, "Edg/") as JsValue)) as JsValue).truthy()) {return (MICROSOFT_EDGE as JsValue);} else {if (((includes as JsValue)(user_agent, ((VIVALDI as JsValue) + ("/" as JsValue))) as JsValue).truthy()) {return (VIVALDI as JsValue);} else {if (((includes as JsValue)(user_agent, "YaBrowser/") as JsValue).truthy()) {return (YANDEX as JsValue);} else {if (((includes as JsValue)(user_agent, ((WHALE as JsValue) + ("/" as JsValue))) as JsValue).truthy()) {return (WHALE as JsValue);} else {if (((((includes as JsValue)(user_agent, ((DUCKDUCKGO as JsValue) + ("/" as JsValue))) as JsValue) || ((includes as JsValue)(user_agent, "Ddg/") as JsValue)) as JsValue).truthy()) {return (DUCKDUCKGO as JsValue);} else {if (((includes as JsValue)(user_agent, ((CLAUDE as JsValue) + ("/" as JsValue))) as JsValue).truthy()) {return (CLAUDE as JsValue);} else {if (((includes as JsValue)(user_agent, ((CODEX as JsValue) + ("/" as JsValue))) as JsValue).truthy()) {return (CODEX as JsValue);} else {if (((includes as JsValue)(user_agent, ((CHATGPT as JsValue) + ("/" as JsValue))) as JsValue).truthy()) {return (CHATGPT as JsValue);} else {if (((includes as JsValue)(user_agent, "FBIOS") as JsValue).truthy()) {return (((((FACEBOOK as JsValue) + (" " as JsValue)) as JsValue) + (MOBILE as JsValue)) as JsValue);} else {if (((((includes as JsValue)(user_agent, "UCWEB") as JsValue) || ((includes as JsValue)(user_agent, "UCBrowser") as JsValue)) as JsValue).truthy()) {return ("UC Browser" as JsValue);} else {if (((includes as JsValue)(user_agent, "CriOS") as JsValue).truthy()) {return (CHROME_IOS as JsValue);} else {if (((includes as JsValue)(user_agent, "CrMo") as JsValue).truthy()) {return (CHROME as JsValue);} else {if (((includes as JsValue)(user_agent, CHROME) as JsValue).truthy()) {return (CHROME as JsValue);} else {if (((((includes as JsValue)(user_agent, ANDROID) as JsValue) && ((includes as JsValue)(user_agent, SAFARI) as JsValue)) as JsValue).truthy()) {return (ANDROID_MOBILE as JsValue);} else {if (((includes as JsValue)(user_agent, "FxiOS") as JsValue).truthy()) {return (FIREFOX_IOS as JsValue);} else {if (((includes as JsValue)((user_agent as JsValue)["toLowerCase"](), (KONQUEROR as JsValue)["toLowerCase"]()) as JsValue).truthy()) {return (KONQUEROR as JsValue);} else {if (((includes as JsValue)(user_agent, ((BRAVE as JsValue) + ("/" as JsValue))) as JsValue).truthy()) {return (BRAVE as JsValue);} else {if ((safariCheck(user_agent, vendor) as JsValue).truthy()) {return (if (((includes as JsValue)(user_agent, MOBILE) as JsValue).truthy()) { (MOBILE_SAFARI as JsValue) } else { (SAFARI as JsValue) } as JsValue);} else {if (((includes as JsValue)(user_agent, "PaleMoon/") as JsValue).truthy()) {return (PALE_MOON as JsValue);} else {if (((includes as JsValue)(user_agent, ((WATERFOX as JsValue) + ("/" as JsValue))) as JsValue).truthy()) {return (WATERFOX as JsValue);} else {if (((includes as JsValue)(user_agent, FIREFOX) as JsValue).truthy()) {return (FIREFOX as JsValue);} else {if (((((includes as JsValue)(user_agent, "MSIE") as JsValue) || ((includes as JsValue)(user_agent, "Trident/") as JsValue)) as JsValue).truthy()) {return (INTERNET_EXPLORER as JsValue);} else {if (((includes as JsValue)(user_agent, "Gecko") as JsValue).truthy()) {return (FIREFOX as JsValue);}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+return ("" as JsValue);
+return JS.undefined(); };
+
+JsValue versionRegexes = __lil_object_4e636fd9f2b3_2(() => (INTERNET_EXPLORER_MOBILE as JsValue), () => (JS.array(JS.construct(RegExp, (("rv:" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (MICROSOFT_EDGE as JsValue), () => (JS.array(JS.construct(RegExp, ((((EDGE as JsValue) + ("?\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (CHROME as JsValue), () => (JS.array(JS.construct(RegExp, (((((("(" as JsValue) + (CHROME as JsValue)) as JsValue) + ("|CrMo)\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (CHROME_IOS as JsValue), () => (JS.array(JS.construct(RegExp, (("CriOS\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (JS.array(JS.construct(RegExp, (("(UCBrowser|UCWEB)\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (SAFARI as JsValue), () => (JS.array(DEFAULT_BROWSER_VERSION_REGEX) as JsValue), () => (MOBILE_SAFARI as JsValue), () => (JS.array(DEFAULT_BROWSER_VERSION_REGEX) as JsValue), () => (OPERA as JsValue), () => (JS.array(JS.construct(RegExp, (((((("(" as JsValue) + (OPERA as JsValue)) as JsValue) + ("|OPR)\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (FIREFOX as JsValue), () => (JS.array(JS.construct(RegExp, ((((FIREFOX as JsValue) + ("\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (FIREFOX_IOS as JsValue), () => (JS.array(JS.construct(RegExp, (("FxiOS\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (KONQUEROR as JsValue), () => (JS.array(JS.construct(RegExp, (("Konqueror[:/]?" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)), "i")) as JsValue), () => (BLACKBERRY as JsValue), () => (JS.array(JS.construct(RegExp, ((((BLACKBERRY as JsValue) + (" " as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue))), DEFAULT_BROWSER_VERSION_REGEX) as JsValue), () => (ANDROID_MOBILE as JsValue), () => (JS.array(JS.construct(RegExp, (("android\\s" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)), "i")) as JsValue), () => (SAMSUNG_INTERNET as JsValue), () => (JS.array(JS.construct(RegExp, ((((SAMSUNG_BROWSER as JsValue) + ("\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (OCULUS_BROWSER as JsValue), () => (JS.array(JS.construct(RegExp, (("OculusBrowser\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (VIVALDI as JsValue), () => (JS.array(JS.construct(RegExp, ((((VIVALDI as JsValue) + ("\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (YANDEX as JsValue), () => (JS.array(JS.construct(RegExp, (("YaBrowser\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (WHALE as JsValue), () => (JS.array(JS.construct(RegExp, ((((WHALE as JsValue) + ("\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (BRAVE as JsValue), () => (JS.array(JS.construct(RegExp, ((((BRAVE as JsValue) + ("\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (CLAUDE as JsValue), () => (JS.array(AI_APP_VERSION_REGEX) as JsValue), () => (CODEX as JsValue), () => (JS.array(AI_APP_VERSION_REGEX) as JsValue), () => (CHATGPT as JsValue), () => (JS.array(AI_APP_VERSION_REGEX) as JsValue), () => (DUCKDUCKGO as JsValue), () => (JS.array(JS.construct(RegExp, (("(DuckDuckGo|Ddg)\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (PALE_MOON as JsValue), () => (JS.array(JS.construct(RegExp, (("PaleMoon\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (WATERFOX as JsValue), () => (JS.array(JS.construct(RegExp, ((((WATERFOX as JsValue) + ("\\/" as JsValue)) as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (GOOGLE_SEARCH_APP as JsValue), () => (JS.array(JS.construct(RegExp, (("GSA\\/" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (INTERNET_EXPLORER as JsValue), () => (JS.array(JS.construct(RegExp, (("(rv:|MSIE )" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue), () => (JS.array(JS.construct(RegExp, (("rv:" as JsValue) + (BROWSER_VERSION_REGEX_SUFFIX as JsValue)))) as JsValue));
+
+JsValue detectBrowserVersion = (this JsValue __port_3, JsValue userAgent, JsValue vendor, JsValue hints, JsValue options) => { 
+JsValue browser = (detectBrowser as JsValue)(userAgent, vendor, hints, options);
+JsValue regexes = (versionRegexes as JsValue)[browser];
+if (((isUndefined as JsValue)(regexes) as JsValue).truthy()) {return (null as JsValue);}
+for (JsValue i = 0.0; (((i as JsValue) < ((regexes as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {JsValue regex = (regexes as JsValue)[i];
+JsValue matches = (userAgent as JsValue)["match"](regex);
+if ((matches as JsValue).truthy()) {return ((parseFloat as JsValue)((matches as JsValue)[(((matches as JsValue)["length"] as JsValue) - (2.0 as JsValue))]) as JsValue);}}
+return (null as JsValue);
+return JS.undefined(); };
+
+JsValue osMatchers = JS.array(JS.array(JS.construct(RegExp, ((((((XBOX as JsValue) + ("; " as JsValue)) as JsValue) + (XBOX as JsValue)) as JsValue) + (" (.*?)[);]" as JsValue)), "i"), (JsValue ph_match) => { 
+return (JS.array(XBOX, (((((ph_match as JsValue) && ((ph_match as JsValue)[1.0] as JsValue))) as JsValue) || ("" as JsValue))) as JsValue);
+return JS.undefined(); }), JS.array(JS.construct(RegExp, NINTENDO, "i"), JS.array(NINTENDO, "")), JS.array(JS.construct(RegExp, PLAYSTATION, "i"), JS.array(PLAYSTATION, "")), JS.array(BLACKBERRY_REGEX, JS.array(BLACKBERRY, "")), JS.array(JS.construct(RegExp, WINDOWS, "i"), (JsValue _, JsValue user_agent) => { 
+if (((((JS.construct(RegExp, "Phone", "") as JsValue)["test"](user_agent) as JsValue) || ((JS.construct(RegExp, "WPDesktop", "") as JsValue)["test"](user_agent) as JsValue)) as JsValue).truthy()) {return (JS.array(WINDOWS_PHONE, "") as JsValue);}
+if (((((JS.construct(RegExp, MOBILE) as JsValue)["test"](user_agent) as JsValue) && (!((JS.construct(RegExp, "IEMobile\\b", "") as JsValue)["test"](user_agent) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return (JS.array(((((WINDOWS as JsValue) + (" " as JsValue)) as JsValue) + (MOBILE as JsValue)), "") as JsValue);}
+JsValue ph_match = (JS.construct(RegExp, "Windows NT ([0-9.]+)", "i") as JsValue)["exec"](user_agent);
+if ((((ph_match as JsValue) && ((ph_match as JsValue)[1.0] as JsValue)) as JsValue).truthy()) {JsValue version = (ph_match as JsValue)[1.0];
+JsValue osVersion = (((windowsVersionMap as JsValue)[version] as JsValue) || ("" as JsValue));
+if (((JS.construct(RegExp, "arm", "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {((osVersion = "RT"));}
+return (JS.array(WINDOWS, osVersion) as JsValue);}
+return (JS.array(WINDOWS, "") as JsValue);
+return JS.undefined(); }), JS.array(JS.construct(RegExp, "((iPhone|iPad|iPod).*?OS (\\d+)_(\\d+)_?(\\d+)?|iPhone)", ""), (JsValue ph_match) => { 
+if ((((ph_match as JsValue) && ((ph_match as JsValue)[3.0] as JsValue)) as JsValue).truthy()) {JsValue versionParts = JS.array((ph_match as JsValue)[3.0], (ph_match as JsValue)[4.0], (((ph_match as JsValue)[5.0] as JsValue) || ("0" as JsValue)));
+return (JS.array(IOS, (versionParts as JsValue)["join"](".")) as JsValue);}
+return (JS.array(IOS, "") as JsValue);
+return JS.undefined(); }), JS.array(JS.construct(RegExp, "(watch.*\\/(\\d+\\.\\d+\\.\\d+)|watch os,(\\d+\\.\\d+),)", "i"), (JsValue ph_match) => { 
+JsValue version = "";
+if ((((ph_match as JsValue) && ((((ph_match as JsValue)["length"] as JsValue) >= (3.0 as JsValue)) as JsValue)) as JsValue).truthy()) {((version = if (((isUndefined as JsValue)((ph_match as JsValue)[2.0]) as JsValue).truthy()) { ((ph_match as JsValue)[3.0] as JsValue) } else { ((ph_match as JsValue)[2.0] as JsValue) }));}
+return (JS.array("watchOS", version) as JsValue);
+return JS.undefined(); }), JS.array(JS.construct(RegExp, (((((((("(" as JsValue) + (ANDROID as JsValue)) as JsValue) + (" (\\d+)\\.(\\d+)\\.?(\\d+)?|" as JsValue)) as JsValue) + (ANDROID as JsValue)) as JsValue) + (")" as JsValue)), "i"), (JsValue ph_match) => { 
+if ((((ph_match as JsValue) && ((ph_match as JsValue)[2.0] as JsValue)) as JsValue).truthy()) {JsValue versionParts = JS.array((ph_match as JsValue)[2.0], (ph_match as JsValue)[3.0], (((ph_match as JsValue)[4.0] as JsValue) || ("0" as JsValue)));
+return (JS.array(ANDROID, (versionParts as JsValue)["join"](".")) as JsValue);}
+return (JS.array(ANDROID, "") as JsValue);
+return JS.undefined(); }), JS.array(JS.construct(RegExp, "Mac OS X (\\d+)[_.](\\d+)[_.]?(\\d+)?", "i"), (JsValue ph_match) => { 
+JsValue result = JS.array("Mac OS X", "");
+if ((((ph_match as JsValue) && ((ph_match as JsValue)[1.0] as JsValue)) as JsValue).truthy()) {JsValue versionParts = JS.array((ph_match as JsValue)[1.0], (ph_match as JsValue)[2.0], (((ph_match as JsValue)[3.0] as JsValue) || ("0" as JsValue)));
+(((result as JsValue)[1.0] = (versionParts as JsValue)["join"](".")));}
+return (result as JsValue);
+return JS.undefined(); }), JS.array(JS.construct(RegExp, "Mac", "i"), JS.array("Mac OS X", "")), JS.array(JS.construct(RegExp, "CrOS", ""), JS.array(CHROME_OS, "")), JS.array(JS.construct(RegExp, "Linux|debian", "i"), JS.array("Linux", "")));
+
+JsValue detectOS = (this JsValue __port_4, JsValue user_agent) => { 
+for (JsValue i = 0.0; (((i as JsValue) < ((osMatchers as JsValue)["length"] as JsValue)) as JsValue).truthy(); i = JS.number(i) + 1.0) {JsValue __port_5 = (osMatchers as JsValue)[i];
+JsValue rgex = JS.undefined();
+JsValue resultOrFn = JS.undefined();
+int __port_6 = 0;
+for (JsValue __port_7 of __port_5) {
+if (__port_6 === 0) { rgex = __port_7; }
+if (__port_6 === 1) { resultOrFn = __port_7; }
+__port_6 += 1; if (__port_6 === 2) break;
+}
+JsValue ph_match = (rgex as JsValue)["exec"](user_agent);
+JsValue result = ((ph_match as JsValue) && ((if (((isFunction as JsValue)(resultOrFn) as JsValue).truthy()) { ((resultOrFn as JsValue)(ph_match, user_agent) as JsValue) } else { (resultOrFn as JsValue) }) as JsValue));
+if ((result as JsValue).truthy()) {return (result as JsValue);}}
+return (JS.array("", "") as JsValue);
+return JS.undefined(); };
+
+JsValue detectDevice = (this JsValue __port_8, JsValue user_agent) => { 
+if (((NINTENDO_REGEX as JsValue)["test"](user_agent) as JsValue).truthy()) {return (NINTENDO as JsValue);} else {if (((PLAYSTATION_REGEX as JsValue)["test"](user_agent) as JsValue).truthy()) {return (PLAYSTATION as JsValue);} else {if (((XBOX_REGEX as JsValue)["test"](user_agent) as JsValue).truthy()) {return (XBOX as JsValue);} else {if (((JS.construct(RegExp, OUYA, "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {return (OUYA as JsValue);} else {if (((JS.construct(RegExp, (((("(" as JsValue) + (WINDOWS_PHONE as JsValue)) as JsValue) + ("|WPDesktop)" as JsValue)), "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {return (WINDOWS_PHONE as JsValue);} else {if (((JS.construct(RegExp, "iPad", "") as JsValue)["test"](user_agent) as JsValue).truthy()) {return (IPAD as JsValue);} else {if (((JS.construct(RegExp, "iPod", "") as JsValue)["test"](user_agent) as JsValue).truthy()) {return ("iPod Touch" as JsValue);} else {if (((JS.construct(RegExp, "iPhone", "") as JsValue)["test"](user_agent) as JsValue).truthy()) {return ("iPhone" as JsValue);} else {if (((JS.construct(RegExp, "(watch)(?: ?os[,/]|\\d,\\d\\/)[\\d.]+", "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {return (APPLE_WATCH as JsValue);} else {if (((BLACKBERRY_REGEX as JsValue)["test"](user_agent) as JsValue).truthy()) {return (BLACKBERRY as JsValue);} else {if (((JS.construct(RegExp, "(kobo)\\s(ereader|touch)", "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {return ("Kobo" as JsValue);} else {if (((JS.construct(RegExp, NOKIA, "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {return (NOKIA as JsValue);} else {if (((((JS.construct(RegExp, "(kf[a-z]{2}wi|aeo[c-r]{2})( bui|\\))", "i") as JsValue)["test"](user_agent) as JsValue) || ((JS.construct(RegExp, "(kf[a-z]+)( bui|\\)).+silk\\/", "i") as JsValue)["test"](user_agent) as JsValue)) as JsValue).truthy()) {return ("Kindle Fire" as JsValue);} else {if (((JS.construct(RegExp, "(Android|ZTE)", "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {if ((((!((JS.construct(RegExp, MOBILE) as JsValue)["test"](user_agent) as JsValue).truthy() as JsValue) || ((JS.construct(RegExp, "(9138B|TB782B|Nexus [97]|pixel c|HUAWEISHT|BTV|noble nook|smart ultra 6)", "i") as JsValue)["test"](user_agent) as JsValue)) as JsValue).truthy()) {if ((((((((((JS.construct(RegExp, "pixel[\\daxl ]{1,6}", "i") as JsValue)["test"](user_agent) as JsValue) && (!((JS.construct(RegExp, "pixel c", "i") as JsValue)["test"](user_agent) as JsValue).truthy() as JsValue))) as JsValue) || ((JS.construct(RegExp, "(huaweimed-al00|tah-|APA|SM-G92|i980|zte|U304AA)", "i") as JsValue)["test"](user_agent) as JsValue)) as JsValue) || (((((JS.construct(RegExp, "lmy47v", "i") as JsValue)["test"](user_agent) as JsValue) && (!((JS.construct(RegExp, "QTAQZ3", "i") as JsValue)["test"](user_agent) as JsValue).truthy() as JsValue))) as JsValue)) as JsValue).truthy()) {return (ANDROID as JsValue);}
+return (ANDROID_TABLET as JsValue);} else {return (ANDROID as JsValue);}} else {if (((JS.construct(RegExp, (((("(pda|" as JsValue) + (MOBILE as JsValue)) as JsValue) + (")" as JsValue)), "i") as JsValue)["test"](user_agent) as JsValue).truthy()) {return (GENERIC_MOBILE as JsValue);} else {if (((((JS.construct(RegExp, TABLET, "i") as JsValue)["test"](user_agent) as JsValue) && (!((JS.construct(RegExp, ((TABLET as JsValue) + (" pc" as JsValue)), "i") as JsValue)["test"](user_agent) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return (GENERIC_TABLET as JsValue);} else {return ("" as JsValue);}}}}}}}}}}}}}}}}
+return JS.undefined(); };
+
+JsValue detectDeviceType = (this JsValue __port_9, JsValue user_agent, JsValue options) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue device = (detectDevice as JsValue)(user_agent);
+if ((((((((((((device as JsValue) === (IPAD as JsValue)) as JsValue) || (((device as JsValue) === (ANDROID_TABLET as JsValue)) as JsValue)) as JsValue) || (((device as JsValue) === ("Kobo" as JsValue)) as JsValue)) as JsValue) || (((device as JsValue) === ("Kindle Fire" as JsValue)) as JsValue)) as JsValue) || (((device as JsValue) === (GENERIC_TABLET as JsValue)) as JsValue)) as JsValue).truthy()) {return (TABLET as JsValue);} else {if ((((((((((device as JsValue) === (NINTENDO as JsValue)) as JsValue) || (((device as JsValue) === (XBOX as JsValue)) as JsValue)) as JsValue) || (((device as JsValue) === (PLAYSTATION as JsValue)) as JsValue)) as JsValue) || (((device as JsValue) === (OUYA as JsValue)) as JsValue)) as JsValue).truthy()) {return ("Console" as JsValue);} else {if ((((device as JsValue) === (APPLE_WATCH as JsValue)) as JsValue).truthy()) {return ("Wearable" as JsValue);} else {if ((device as JsValue).truthy()) {return (MOBILE as JsValue);}}}}
+if (((((((if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["userAgentDataPlatform"] as JsValue) }) as JsValue) === ("Android" as JsValue)) as JsValue) && ((((if ((((((((_a = if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["maxTouchPoints"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (0.0 as JsValue) }) as JsValue) > (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue shortSide = (Math as JsValue)["min"](if ((((((((_b = if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["screenWidth"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (0.0 as JsValue) }, if ((((((((_c = if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["screenHeight"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { (0.0 as JsValue) });
+JsValue shortSideDp = ((shortSide as JsValue) / ((if ((((((((_d = if ((((((options as JsValue) === (null as JsValue)) as JsValue) || (((options as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((options as JsValue)["devicePixelRatio"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_d as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_d as JsValue) } else { (1.0 as JsValue) }) as JsValue));
+return (if ((((shortSideDp as JsValue) >= (600.0 as JsValue)) as JsValue).truthy()) { (TABLET as JsValue) } else { (MOBILE as JsValue) } as JsValue);}
+return ("Desktop" as JsValue);
+return JS.undefined(); };
+
+JsValue browserFromHints(JsValue hints) {
+if ((if ((((((hints as JsValue) === (null as JsValue)) as JsValue) || (((hints as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((hints as JsValue)["brave"] as JsValue) } as JsValue).truthy()) {return (BRAVE as JsValue);}
+return (null as JsValue);
+return JS.undefined();}
+
+JsValue isSafari(JsValue userAgent) {
+return ((((((includes as JsValue)(userAgent, SAFARI) as JsValue) && (!((includes as JsValue)(userAgent, CHROME) as JsValue).truthy() as JsValue)) as JsValue) && (!((includes as JsValue)(userAgent, ANDROID) as JsValue).truthy() as JsValue)) as JsValue);
+return JS.undefined();}
+
+JsValue __port_0(JsValue ua, JsValue vendor) {
+return ((((((vendor as JsValue) && ((includes as JsValue)(vendor, APPLE) as JsValue))) as JsValue) || (isSafari(ua) as JsValue)) as JsValue);
+return JS.undefined();}
+export { detectBrowser as detectBrowser };
+export { detectBrowserVersion as detectBrowserVersion };
+export { detectOS as detectOS };
+export { detectDevice as detectDevice };
+export { detectDeviceType as detectDeviceType };

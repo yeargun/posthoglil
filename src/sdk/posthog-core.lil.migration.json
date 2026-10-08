@@ -1,0 +1,980 @@
+{
+  "source": "packages/browser/src/posthog-core.ts",
+  "implementation": "src/sdk/posthog-core.lil",
+  "exports": [
+    "defaultConfig",
+    "configRenames",
+    "PostHog",
+    "init_from_snippet",
+    "init_as_module"
+  ],
+  "classMembers": [
+    {
+      "class": "DeprecatedWebPerformanceObserver",
+      "implementation": "__lil_get__forceAllowLocalhost",
+      "kind": "get",
+      "name": "_forceAllowLocalhost"
+    },
+    {
+      "class": "DeprecatedWebPerformanceObserver",
+      "implementation": "__lil_set__forceAllowLocalhost",
+      "kind": "set",
+      "name": "_forceAllowLocalhost"
+    },
+    {
+      "class": "PostHog",
+      "implementation": "__lil_get_decideEndpointWasHit",
+      "kind": "get",
+      "name": "decideEndpointWasHit"
+    },
+    {
+      "class": "PostHog",
+      "implementation": "__lil_get_flagsEndpointWasHit",
+      "kind": "get",
+      "name": "flagsEndpointWasHit"
+    },
+    {
+      "class": "PostHog",
+      "implementation": "__lil_method_init",
+      "kind": "method",
+      "name": "init"
+    },
+    {
+      "class": "PostHog",
+      "implementation": "__lil_get__facebookClickIdChannel",
+      "kind": "get",
+      "name": "_facebookClickIdChannel"
+    },
+    {
+      "class": "PostHog",
+      "implementation": "__lil_get__facebookBrowserIdChannel",
+      "kind": "get",
+      "name": "_facebookBrowserIdChannel"
+    },
+    {
+      "class": "PostHog",
+      "implementation": "__lil_get_logger",
+      "kind": "get",
+      "name": "logger"
+    }
+  ],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_7",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_8",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_9",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "persistence",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_10",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_11",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_12",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_13",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "distinctID",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "isIdentifiedID",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_14",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_15",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_16",
+      "arguments": 4,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "computed",
+          "key": 2,
+          "value": 3
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_17",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "transport",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_21",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_22",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_25",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        },
+        {
+          "kind": "spread",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_26",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "computed",
+          "key": 1,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_27",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "computed",
+          "key": 1,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_28",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "computed",
+          "key": 1,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_29",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_32",
+      "arguments": 10,
+      "fields": [
+        {
+          "kind": "data",
+          "key": "method",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "url",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "data",
+          "value": 2
+        },
+        {
+          "kind": "data",
+          "key": "compression",
+          "value": 3
+        },
+        {
+          "kind": "data",
+          "key": "preferSyncCompression",
+          "value": 4
+        },
+        {
+          "kind": "data",
+          "key": "timestampMode",
+          "value": 5
+        },
+        {
+          "kind": "data",
+          "key": "batchKey",
+          "value": 6
+        },
+        {
+          "kind": "spread",
+          "value": 7
+        },
+        {
+          "kind": "spread",
+          "value": 8
+        },
+        {
+          "kind": "spread",
+          "value": 9
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_35",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_36",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_38",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_39",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_41",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_42",
+      "arguments": 3,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "computed",
+          "key": 1,
+          "value": 2
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_43",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_44",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_45",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_46",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_48",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_49",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "persistence",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_50",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "persistence",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_51",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "persistence",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_52",
+      "arguments": 1,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_53",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "spread",
+          "value": 0
+        },
+        {
+          "kind": "spread",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "intrinsic": "__lil_object_58",
+      "arguments": 79,
+      "fields": [
+        {
+          "kind": "data",
+          "key": "api_host",
+          "value": 0
+        },
+        {
+          "kind": "data",
+          "key": "flags_api_host",
+          "value": 1
+        },
+        {
+          "kind": "data",
+          "key": "ui_host",
+          "value": 2
+        },
+        {
+          "kind": "data",
+          "key": "asset_host",
+          "value": 3
+        },
+        {
+          "kind": "data",
+          "key": "token",
+          "value": 4
+        },
+        {
+          "kind": "data",
+          "key": "autocapture",
+          "value": 5
+        },
+        {
+          "kind": "data",
+          "key": "cross_subdomain_cookie",
+          "value": 6
+        },
+        {
+          "kind": "data",
+          "key": "persistence",
+          "value": 7
+        },
+        {
+          "kind": "data",
+          "key": "persistence_name",
+          "value": 8
+        },
+        {
+          "kind": "data",
+          "key": "cookie_persisted_properties",
+          "value": 9
+        },
+        {
+          "kind": "data",
+          "key": "loaded",
+          "value": 10
+        },
+        {
+          "kind": "data",
+          "key": "save_campaign_params",
+          "value": 11
+        },
+        {
+          "kind": "data",
+          "key": "custom_campaign_params",
+          "value": 12
+        },
+        {
+          "kind": "data",
+          "key": "custom_blocked_useragents",
+          "value": 13
+        },
+        {
+          "kind": "data",
+          "key": "save_referrer",
+          "value": 14
+        },
+        {
+          "kind": "data",
+          "key": "capture_pageleave",
+          "value": 15
+        },
+        {
+          "kind": "data",
+          "key": "defaults",
+          "value": 16
+        },
+        {
+          "kind": "data",
+          "key": "__preview_deferred_init_extensions",
+          "value": 17
+        },
+        {
+          "kind": "data",
+          "key": "__preview_external_dependency_versioned_paths",
+          "value": 18
+        },
+        {
+          "kind": "data",
+          "key": "__preview_cookie_wins_on_conflict",
+          "value": 19
+        },
+        {
+          "kind": "data",
+          "key": "debug",
+          "value": 20
+        },
+        {
+          "kind": "data",
+          "key": "cookie_expiration",
+          "value": 21
+        },
+        {
+          "kind": "data",
+          "key": "upgrade",
+          "value": 22
+        },
+        {
+          "kind": "data",
+          "key": "disable_session_recording",
+          "value": 23
+        },
+        {
+          "kind": "data",
+          "key": "disable_persistence",
+          "value": 24
+        },
+        {
+          "kind": "data",
+          "key": "disable_web_experiments",
+          "value": 25
+        },
+        {
+          "kind": "data",
+          "key": "disable_surveys",
+          "value": 26
+        },
+        {
+          "kind": "data",
+          "key": "disable_surveys_automatic_display",
+          "value": 27
+        },
+        {
+          "kind": "data",
+          "key": "disable_conversations",
+          "value": 28
+        },
+        {
+          "kind": "data",
+          "key": "disable_product_tours",
+          "value": 29
+        },
+        {
+          "kind": "data",
+          "key": "disableDeviceModel",
+          "value": 30
+        },
+        {
+          "kind": "data",
+          "key": "reuseAnonymousId",
+          "value": 31
+        },
+        {
+          "kind": "data",
+          "key": "disable_external_dependency_loading",
+          "value": 32
+        },
+        {
+          "kind": "data",
+          "key": "strict_script_versioning",
+          "value": 33
+        },
+        {
+          "kind": "data",
+          "key": "enable_recording_console_log",
+          "value": 34
+        },
+        {
+          "kind": "data",
+          "key": "secure_cookie",
+          "value": 35
+        },
+        {
+          "kind": "data",
+          "key": "ip",
+          "value": 36
+        },
+        {
+          "kind": "data",
+          "key": "opt_out_capturing_by_default",
+          "value": 37
+        },
+        {
+          "kind": "data",
+          "key": "opt_out_persistence_by_default",
+          "value": 38
+        },
+        {
+          "kind": "data",
+          "key": "opt_out_useragent_filter",
+          "value": 39
+        },
+        {
+          "kind": "data",
+          "key": "opt_out_capturing_persistence_type",
+          "value": 40
+        },
+        {
+          "kind": "data",
+          "key": "consent_persistence_name",
+          "value": 41
+        },
+        {
+          "kind": "data",
+          "key": "opt_out_capturing_cookie_prefix",
+          "value": 42
+        },
+        {
+          "kind": "data",
+          "key": "opt_in_site_apps",
+          "value": 43
+        },
+        {
+          "kind": "data",
+          "key": "property_denylist",
+          "value": 44
+        },
+        {
+          "kind": "data",
+          "key": "respect_dnt",
+          "value": 45
+        },
+        {
+          "kind": "data",
+          "key": "sanitize_properties",
+          "value": 46
+        },
+        {
+          "kind": "data",
+          "key": "request_headers",
+          "value": 47
+        },
+        {
+          "kind": "data",
+          "key": "request_batching",
+          "value": 48
+        },
+        {
+          "kind": "data",
+          "key": "properties_string_max_length",
+          "value": 49
+        },
+        {
+          "kind": "data",
+          "key": "mask_all_element_attributes",
+          "value": 50
+        },
+        {
+          "kind": "data",
+          "key": "mask_all_text",
+          "value": 51
+        },
+        {
+          "kind": "data",
+          "key": "mask_personal_data_properties",
+          "value": 52
+        },
+        {
+          "kind": "data",
+          "key": "custom_personal_data_properties",
+          "value": 53
+        },
+        {
+          "kind": "data",
+          "key": "advanced_disable_flags",
+          "value": 54
+        },
+        {
+          "kind": "data",
+          "key": "advanced_disable_decide",
+          "value": 55
+        },
+        {
+          "kind": "data",
+          "key": "advanced_disable_feature_flags",
+          "value": 56
+        },
+        {
+          "kind": "data",
+          "key": "advanced_disable_feature_flags_on_first_load",
+          "value": 57
+        },
+        {
+          "kind": "data",
+          "key": "advanced_only_evaluate_survey_feature_flags",
+          "value": 58
+        },
+        {
+          "kind": "data",
+          "key": "advanced_feature_flags_dedup_per_session",
+          "value": 59
+        },
+        {
+          "kind": "data",
+          "key": "advanced_enable_surveys",
+          "value": 60
+        },
+        {
+          "kind": "data",
+          "key": "advanced_disable_toolbar_metrics",
+          "value": 61
+        },
+        {
+          "kind": "data",
+          "key": "feature_flag_request_timeout_ms",
+          "value": 62
+        },
+        {
+          "kind": "data",
+          "key": "feature_flag_request_max_retries",
+          "value": 63
+        },
+        {
+          "kind": "data",
+          "key": "surveys_request_timeout_ms",
+          "value": 64
+        },
+        {
+          "kind": "data",
+          "key": "on_request_error",
+          "value": 65
+        },
+        {
+          "kind": "data",
+          "key": "get_device_id",
+          "value": 66
+        },
+        {
+          "kind": "data",
+          "key": "capture_performance",
+          "value": 67
+        },
+        {
+          "kind": "data",
+          "key": "name",
+          "value": 68
+        },
+        {
+          "kind": "data",
+          "key": "bootstrap",
+          "value": 69
+        },
+        {
+          "kind": "data",
+          "key": "disable_compression",
+          "value": 70
+        },
+        {
+          "kind": "data",
+          "key": "session_idle_timeout_seconds",
+          "value": 71
+        },
+        {
+          "kind": "data",
+          "key": "person_profiles",
+          "value": 72
+        },
+        {
+          "kind": "data",
+          "key": "before_send",
+          "value": 73
+        },
+        {
+          "kind": "data",
+          "key": "get_current_url",
+          "value": 74
+        },
+        {
+          "kind": "data",
+          "key": "request_queue_config",
+          "value": 75
+        },
+        {
+          "kind": "data",
+          "key": "error_tracking",
+          "value": 76
+        },
+        {
+          "kind": "data",
+          "key": "_onCapture",
+          "value": 77
+        },
+        {
+          "kind": "spread",
+          "value": 78
+        }
+      ]
+    }
+  ],
+  "localFunctions": [
+    {
+      "name": "isReplayDebugEvent",
+      "arity": 1,
+      "calls": 2
+    },
+    {
+      "name": "fbcCookieWins",
+      "arity": 3,
+      "calls": 1
+    },
+    {
+      "name": "getSessionRecordingDefaults",
+      "arity": 1,
+      "calls": 1
+    },
+    {
+      "name": "defaultsThatVaryByConfig",
+      "arity": 1,
+      "calls": 1
+    }
+  ],
+  "asyncClosures": [],
+  "qualified": false
+}

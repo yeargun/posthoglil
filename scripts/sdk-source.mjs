@@ -61,11 +61,16 @@ function sourcePath(base) {
 }
 function readdirSafe(file) { try {readdirSync(file);return true} catch {return false} }
 
-export function workspaceSourcePlugin({objective, enabled=replacements.map(row=>row.id), applied=[],layout='separate',probe=false,plan,surface}={}) {
+export function workspaceSourcePlugin({objective, enabled=replacements.map(row=>row.id), applied=[],layout='separate',probe=false,plan,surface,overrides=new Map(),embeddedModules=new Set(),workers=[]}={}) {
   const selected=new Map(replacements.filter(row=>enabled.includes(row.id)).map(row=>[join(vendor,'packages',row.source),row]))
   return {
     name:'pinned-posthog-source',
     setup(build) {
+      build.onResolve({filter:/^posthog-js$/},()=>({path:join(vendor,'packages/browser/src/entrypoints/module.es.ts')}))
+      build.onLoad({filter:/\.[cm]?[jt]sx?$/,namespace:'file'},args=>{
+        const contents=overrides.get(args.path)
+        return contents===undefined?undefined:{contents,loader:'js',resolveDir:dirname(args.path)}
+      })
       for(const row of canonicalDependencies) {
         build.onResolve({filter:new RegExp('^'+row.alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:/|$)')},args=>({path:fileURLToPath(import.meta.resolve(row.canonical+args.path.slice(row.alias.length)))}))
       }
@@ -80,7 +85,11 @@ export function workspaceSourcePlugin({objective, enabled=replacements.map(row=>
       build.onResolve({filter:/\?worker&inline$/},args=>({path:resolve(args.resolveDir,args.path.split('?')[0]),namespace:'posthog-worker'}))
       build.onLoad({filter:/.*/,namespace:'posthog-worker'},async args=>{
         const esbuild=await import('esbuild')
-        const worker=await esbuild.build({entryPoints:[args.path],bundle:true,write:false,format:'iife',platform:'browser',target:'es2015',minify:true,logLevel:'silent'})
+        const worker=await esbuild.build({absWorkingDir:root,entryPoints:[args.path],bundle:true,write:false,format:'iife',platform:'browser',target:'es2015',minify:true,logLevel:'silent',metafile:true,
+          plugins:[workspaceSourcePlugin({overrides,embeddedModules,workers})]})
+        const inputs=Object.keys(worker.metafile.inputs).filter(path=>!path.startsWith('posthog-worker:')).map(path=>resolve(root,path))
+        for(const input of inputs)embeddedModules.add(input)
+        workers.push({entry:args.path,modules:inputs})
         const code=worker.outputFiles[0].text
         return {contents:`export default function InlineWorker(options){const url=URL.createObjectURL(new Blob([${JSON.stringify(code)}],{type:"text/javascript"}));try{return new Worker(url,options)}finally{URL.revokeObjectURL(url)}}`,loader:'js'}
       })
@@ -130,18 +139,19 @@ export function workspaceSourcePlugin({objective, enabled=replacements.map(row=>
 
 // Use the same modern syntax targets as the pinned upstream production build.
 // Both original and candidate pass through this exact source resolver and bundler.
-export async function bundleSdk({surface='standard',objective,enabled,format='esm',minify=false,layout='separate',probe=false,plan,sourceMap=false}={}) {
-  if(!surfaces[surface])throw Error(`Unknown SDK surface: ${surface}`)
+export async function bundleSdk({surface='standard',objective,enabled,format='esm',minify=false,layout='separate',probe=false,plan,sourceMap=false,entryFile,overrides}={}) {
+  if(!entryFile&&!surfaces[surface])throw Error(`Unknown SDK surface: ${surface}`)
   const applied=[]
+  const embeddedModules=new Set(),workers=[]
   const resolveHooks=[],loadHooks=[]
-  workspaceSourcePlugin({objective,enabled,applied,layout,probe,plan,surface}).setup({
+  workspaceSourcePlugin({objective,enabled,applied,layout,probe,plan,surface,overrides,embeddedModules,workers}).setup({
     onResolve:(options,run)=>resolveHooks.push({options,run}),
     onLoad:(options,run)=>loadHooks.push({options,run}),
   })
   const unpack=id=>id.startsWith('\0posthog:')?JSON.parse(id.slice(9)):{path:id,namespace:'file'}
   const pack=value=>value.namespace&&value.namespace!=='file'?'\0posthog:'+JSON.stringify(value):value.path
   const bundle=await rolldown({
-    input:join(vendor,'packages/browser/src/entrypoints',surfaces[surface]),
+    input:entryFile??join(vendor,'packages/browser/src/entrypoints',surfaces[surface]),
     platform:'browser',tsconfig:false,
     transform:{
       target:['es2015','chrome63','firefox60','ios10.3','opera51','safari12.1'],
@@ -175,12 +185,12 @@ export async function bundleSdk({surface='standard',objective,enabled,format='es
     onwarn(warning){if(warning.code!=='SOURCEMAP_ERROR')throw Error(warning.message)},
   })
   try{
-    const result=await bundle.generate({format:format==='esm'?'es':format,name:format==='iife'?'posthogSDK':undefined,minify,exports:'named',file:join(root,'.tmp/sdk-unminified.mjs'),sourcemap:sourceMap?'hidden':false,sourcemapPathTransform:(source,mapPath)=>relative(root,resolve(dirname(mapPath),source))})
+    const result=await bundle.generate({format:format==='esm'?'es':format,name:format==='iife'?'posthogSDK':undefined,minify,exports:format==='iife'?'auto':'named',file:join(root,'.tmp/sdk-unminified.mjs'),sourcemap:sourceMap?'hidden':false,sourcemapPathTransform:(source,mapPath)=>relative(root,resolve(dirname(mapPath),source))})
     const chunks=result.output.filter(row=>row.type==='chunk')
     if(chunks.length!==1)throw Error('Expected one self-contained SDK chunk')
     const code=chunks[0].code
     if(!probe&&/__posthog_lil_(?:plan|unexpected)__/.test(code))throw Error('SDK reachability plan is incomplete; regenerate and recompile it')
     const extras=result.output.filter(row=>row.type!=='chunk'&&!row.fileName.endsWith('.map')).map(row=>({path:row.fileName,contents:Buffer.from(row.source)}))
-    return {code,map:chunks[0].map,extras,applied:[...new Set(applied)].sort(),metafile:{modules:Object.keys(chunks[0].modules)}}
+    return {code,map:chunks[0].map,extras,applied:[...new Set(applied)].sort(),metafile:{modules:[...new Set([...Object.keys(chunks[0].modules),...embeddedModules])],workers}}
   }finally{await bundle.close()}
 }

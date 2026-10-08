@@ -1,0 +1,9 @@
+extern JsValue __BROWSER_COMMON_VERSION__;
+JsValue packageVersion = if (JS.typeOf(__BROWSER_COMMON_VERSION__) == "string") { __BROWSER_COMMON_VERSION__ } else { "0.0.0" };
+JsValue Config = object {
+  DEBUG: false,
+  LIB_VERSION: packageVersion,
+  LIB_NAME: "browser-common",
+  JS_SDK_VERSION: packageVersion
+};
+export { Config as default };

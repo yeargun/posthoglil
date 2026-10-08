@@ -1,4 +1,4 @@
-import {isArrayValue as isArr} from "./types.lil";
+import {isArrayValue as isArr, isString} from "./types.lil";
 import {
   hasKey,
   isBool,
@@ -491,8 +491,11 @@ export bool shouldCaptureDomEvent(
   return allowedEvent(type, allowed, ["click"]) && (arrayIncludes(autocaptureCompatibleElements, tag) || JS.strictEqual(JS.invoke(element, "getAttribute", "contenteditable"), "true"));
 }
 
-export bool isAngularStyleAttr(string attributeName) {
-  return attributeName.slice(0, 10) == "_ngcontent" || attributeName.slice(0, 7) == "_nghost";
+export bool isAngularStyleAttr(JsValue attributeName) {
+  if (isString(attributeName)) {
+    return JS.strictEqual(JS.invoke(attributeName, "substring", 0, 10), "_ngcontent") || JS.strictEqual(JS.invoke(attributeName, "substring", 0, 7), "_nghost");
+  }
+  return false;
 }
 
 export string getNestedSpanText(JsValue target) {

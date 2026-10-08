@@ -1,0 +1,1587 @@
+// Whole-module migration from packages/browser/src/extensions/replay/external/lazy-loaded-session-recorder.ts.
+// Derived from the pinned PostHog source under its repository license.
+// Review this scaffold and qualify it against upstream before registration.
+import extern { RECORDING_REMOTE_CONFIG_TTL_MS as RECORDING_REMOTE_CONFIG_TTL_MS } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern {RECORDING_REMOTE_CONFIG_TTL_MS as __port_0} from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { EventType as EventType, IncrementalSource as IncrementalSource } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/types/rrweb-types.ts";
+import extern { buildNetworkRequestOptions as buildNetworkRequestOptions } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/config.ts";
+import extern { ACTIVE as ACTIVE, BUFFERING as BUFFERING, DISABLED as DISABLED, EventTriggerMatching as EventTriggerMatching, LinkedFlagMatching as LinkedFlagMatching, PAUSED as PAUSED, SAMPLED as SAMPLED, URLTriggerMatching as URLTriggerMatching } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/triggerMatching.ts";
+import extern { circularReferenceReplacer as circularReferenceReplacer, estimateCompressedEventSize as estimateCompressedEventSize, estimateSize as estimateSize, INCREMENTAL_SNAPSHOT_EVENT_TYPE as INCREMENTAL_SNAPSHOT_EVENT_TYPE, splitBuffer as splitBuffer, truncateLargeConsoleLogs as truncateLargeConsoleLogs, UNSTRINGIFIABLE_EVENT_SIZE as UNSTRINGIFIABLE_EVENT_SIZE } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/sessionrecording-utils.ts";
+import extern {SEVEN_MEGABYTES as __port_1, splitBuffer as __port_2} from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/sessionrecording-utils.ts";
+import extern { gzipSync as gzipSync, strFromU8 as strFromU8, strToU8 as strToU8 } from "fflate";
+import extern { window as window, document as document } from "@posthog/browser-common/utils/globals";
+import extern { assignableWindow as assignableWindow } from "../../vendor/posthog-js/packages/browser/src/utils/globals.ts";
+import extern { addEventListener as addEventListener } from "@posthog/browser-common/utils/general-utils";
+import extern { MutationThrottler as MutationThrottler } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/mutation-throttler.ts";
+import extern { createLogger as createLogger } from "@posthog/browser-common/utils/logger";
+import extern { clampToRange as clampToRange, gzipCompress as gzipCompress, isArray as isArray, isBoolean as isBoolean, isFunction as isFunction, isGzipSupported as isGzipSupported, isNull as isNull, isNullish as isNullish, isNativeAsyncGzipError as isNativeAsyncGzipError, isNumber as isNumber, isObject as isObject, isUndefined as isUndefined, stripUrlHash as stripUrlHash } from "@posthog/core";
+import extern { SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP as SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP, SESSION_RECORDING_IS_SAMPLED as SESSION_RECORDING_IS_SAMPLED, SESSION_RECORDING_SAMPLE_RATE as SESSION_RECORDING_SAMPLE_RATE, SESSION_RECORDING_OVERRIDE_SAMPLING as SESSION_RECORDING_OVERRIDE_SAMPLING, SESSION_RECORDING_OVERRIDE_LINKED_FLAG as SESSION_RECORDING_OVERRIDE_LINKED_FLAG, SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER as SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER, SESSION_RECORDING_OVERRIDE_URL_TRIGGER as SESSION_RECORDING_OVERRIDE_URL_TRIGGER, SESSION_RECORDING_PAST_MINIMUM_DURATION as SESSION_RECORDING_PAST_MINIMUM_DURATION, SESSION_RECORDING_REMOTE_CONFIG as SESSION_RECORDING_REMOTE_CONFIG, SESSION_RECORDING_START_REASON as SESSION_RECORDING_START_REASON, SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS as SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS, SDK_DEBUG_REPLAY_RRWEB_ATTACHED as SDK_DEBUG_REPLAY_RRWEB_ATTACHED, SDK_DEBUG_REPLAY_RRWEB_START_ATTEMPTED as SDK_DEBUG_REPLAY_RRWEB_START_ATTEMPTED, SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION as SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION, SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION as SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION } from "../../vendor/posthog-js/packages/browser/src/constants.ts";
+import extern { sessionStore as sessionStore } from "../../vendor/posthog-js/packages/browser/src/storage.ts";
+import extern { isLocalhost as isLocalhost, maskQueryParams as maskQueryParams } from "@posthog/browser-common/utils/request-utils";
+import extern { default as Config } from "../../vendor/posthog-js/packages/browser/src/config.ts";
+import extern { FlushedSizeTracker as FlushedSizeTracker } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/flushed-size-tracker.ts";
+import extern { V1RecordingStrategy as V1RecordingStrategy, V2TriggerGroupStrategy as V2TriggerGroupStrategy, decodeSamplingDecision as decodeSamplingDecision } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/recording-strategies.ts";
+import extern { MASKED as MASKED, PERSONAL_DATA_CAMPAIGN_PARAMS as PERSONAL_DATA_CAMPAIGN_PARAMS } from "@posthog/browser-common/utils/event-utils";
+import extern { JSON_LD_EVENT_TAG as JSON_LD_EVENT_TAG, startJsonLdCapture as startJsonLdCapture } from "../../vendor/posthog-js/packages/browser/src/extensions/replay/external/json-ld.ts";
+import extern {copyProperties, setOwn} from "./property-copy.bridge.mjs";
+extern JsValue copyProperties;
+extern JsValue setOwn;
+extern JsValue globalThis;
+extern JsValue Error;
+extern JsValue Date;
+extern JsValue __lil_object_4;
+extern JsValue JSON;
+extern JsValue parseFloat;
+extern JsValue isNaN;
+extern JsValue Promise;
+extern JsValue URL;
+extern JsValue Number;
+extern JsValue clearInterval;
+extern JsValue setInterval;
+extern JsValue __lil_object_13;
+extern JsValue __lil_object_14;
+extern JsValue Reflect;
+extern JsValue Math;
+extern JsValue __lil_object_30;
+extern JsValue __lil_object_37;
+extern JsValue clearTimeout;
+extern JsValue setTimeout;
+extern JsValue __lil_object_39;
+extern JsValue __lil_object_40;
+extern JsValue __lil_object_41;
+extern JsValue __lil_object_42;
+extern JsValue __lil_object_44;
+extern JsValue __lil_object_45;
+extern JsValue __lil_object_47;
+extern JsValue Object;
+extern JsValue __lil_object_52;
+extern JsValue __lil_object_53;
+extern JsValue __lil_object_54;
+extern JsValue __lil_object_58;
+extern JsValue RangeError;
+extern JsValue Uint8Array;
+extern JsValue __lil_object_59;
+extern JsValue __lil_object_61;
+extern JsValue __lil_object_60;
+extern JsValue RECORDING_REMOTE_CONFIG_TTL_MS;
+
+extern JsValue __port_0;
+
+extern JsValue EventType;
+extern JsValue IncrementalSource;
+
+extern JsValue buildNetworkRequestOptions;
+
+extern JsValue ACTIVE;
+extern JsValue BUFFERING;
+extern JsValue DISABLED;
+extern JsValue EventTriggerMatching;
+extern JsValue LinkedFlagMatching;
+extern JsValue PAUSED;
+extern JsValue SAMPLED;
+extern JsValue URLTriggerMatching;
+
+extern JsValue circularReferenceReplacer;
+extern JsValue estimateCompressedEventSize;
+extern JsValue estimateSize;
+extern JsValue INCREMENTAL_SNAPSHOT_EVENT_TYPE;
+extern JsValue splitBuffer;
+extern JsValue truncateLargeConsoleLogs;
+extern JsValue UNSTRINGIFIABLE_EVENT_SIZE;
+
+extern JsValue __port_1;
+extern JsValue __port_2;
+
+extern JsValue gzipSync;
+extern JsValue strFromU8;
+extern JsValue strToU8;
+
+extern JsValue window;
+extern JsValue document;
+
+extern JsValue assignableWindow;
+
+extern JsValue addEventListener;
+
+extern JsValue MutationThrottler;
+
+extern JsValue createLogger;
+
+extern JsValue clampToRange;
+extern JsValue gzipCompress;
+extern JsValue isArray;
+extern JsValue isBoolean;
+extern JsValue isFunction;
+extern JsValue isGzipSupported;
+extern JsValue isNull;
+extern JsValue isNullish;
+extern JsValue isNativeAsyncGzipError;
+extern JsValue isNumber;
+extern JsValue isObject;
+extern JsValue isUndefined;
+extern JsValue stripUrlHash;
+
+extern JsValue SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP;
+extern JsValue SESSION_RECORDING_IS_SAMPLED;
+extern JsValue SESSION_RECORDING_SAMPLE_RATE;
+extern JsValue SESSION_RECORDING_OVERRIDE_SAMPLING;
+extern JsValue SESSION_RECORDING_OVERRIDE_LINKED_FLAG;
+extern JsValue SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER;
+extern JsValue SESSION_RECORDING_OVERRIDE_URL_TRIGGER;
+extern JsValue SESSION_RECORDING_PAST_MINIMUM_DURATION;
+extern JsValue SESSION_RECORDING_REMOTE_CONFIG;
+extern JsValue SESSION_RECORDING_START_REASON;
+extern JsValue SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS;
+extern JsValue SDK_DEBUG_REPLAY_RRWEB_ATTACHED;
+extern JsValue SDK_DEBUG_REPLAY_RRWEB_START_ATTEMPTED;
+extern JsValue SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION;
+extern JsValue SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION;
+
+extern JsValue sessionStore;
+
+extern JsValue isLocalhost;
+extern JsValue maskQueryParams;
+
+extern JsValue Config;
+
+extern JsValue FlushedSizeTracker;
+
+extern JsValue V1RecordingStrategy;
+extern JsValue V2TriggerGroupStrategy;
+extern JsValue decodeSamplingDecision;
+
+extern JsValue MASKED;
+extern JsValue PERSONAL_DATA_CAMPAIGN_PARAMS;
+
+extern JsValue JSON_LD_EVENT_TAG;
+extern JsValue startJsonLdCapture;
+
+JsValue BASE_ENDPOINT = "/s/";
+
+JsValue DEFAULT_CANVAS_QUALITY = 0.4;
+
+JsValue DEFAULT_CANVAS_FPS = 4.0;
+
+JsValue MAX_CANVAS_FPS = 12.0;
+
+JsValue MAX_CANVAS_QUALITY = 1.0;
+
+JsValue MIN_CANVAS_SCALE = 0.1;
+
+JsValue TWO_SECONDS = 2000.0;
+
+JsValue ONE_KB = 1024.0;
+
+JsValue ONE_MINUTE = ((1000.0 as JsValue) * (60.0 as JsValue));
+
+JsValue FIVE_MINUTES = ((ONE_MINUTE as JsValue) * (5.0 as JsValue));
+
+JsValue ONE_HOUR = ((ONE_MINUTE as JsValue) * (60.0 as JsValue));
+
+JsValue MIN_TRIGGER_PENDING_BUFFER_INTERVAL_MILLIS = 1000.0;
+
+JsValue MAX_TRIGGER_PENDING_BUFFER_INTERVAL_MILLIS = ONE_HOUR;
+
+JsValue SLOW_FULL_SNAPSHOT_THRESHOLD_MS = 500.0;
+
+
+
+JsValue RECORDING_IDLE_THRESHOLD_MS = FIVE_MINUTES;
+
+JsValue RECORDING_MAX_EVENT_SIZE = ((((ONE_KB as JsValue) * (ONE_KB as JsValue)) as JsValue) * (0.9 as JsValue));
+
+JsValue RECORDING_BUFFER_TIMEOUT = 2000.0;
+
+JsValue SESSION_RECORDING_BATCH_KEY = "recordings";
+
+JsValue PENDING_BUFFER_STORAGE_SUFFIX = "_replay_pending_buffer";
+
+JsValue LOGGER_PREFIX = "[SessionRecording]";
+
+JsValue logger = (createLogger as JsValue)(LOGGER_PREFIX);
+
+JsValue ACTIVE_SOURCES = JS.array((IncrementalSource as JsValue)["MouseMove"], (IncrementalSource as JsValue)["MouseInteraction"], (IncrementalSource as JsValue)["Scroll"], (IncrementalSource as JsValue)["ViewportResize"], (IncrementalSource as JsValue)["Input"], (IncrementalSource as JsValue)["TouchMove"], (IncrementalSource as JsValue)["MediaInteraction"], (IncrementalSource as JsValue)["Drag"]);
+
+func(JsValue)->JsValue newQueuedEvent = (JsValue rrwebMethod) => __port_3(rrwebMethod);
+
+
+
+
+
+
+
+
+
+
+
+
+
+JsValue _gzippedEmptyArray = JS.undefined();
+
+JsValue _gzippedEmptyArrayPromise = JS.undefined();
+
+JsValue _isNativeAsyncSessionRecordingGzipSupported = ((((JS.typeOf(globalThis) as JsValue) !== ("undefined" as JsValue)) as JsValue) && ((isGzipSupported as JsValue)() as JsValue));
+
+JsValue _nativeAsyncSessionRecordingGzipDisabled = false;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export class LazyLoadedSessionRecording {
+JsValue __lil_get_sessionId() { 
+return ((this as JsValue) as JsValue)["_sessionId"];
+return JS.undefined(); }
+
+JsValue __lil_get__sessionManager() { 
+if ((!((((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"] as JsValue).truthy() as JsValue).truthy()) {throw JS.construct(Error, ((LOGGER_PREFIX as JsValue) + (" must be started with a valid sessionManager." as JsValue)));}
+return (((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"];
+return JS.undefined(); }
+
+JsValue __lil_get__sessionIdleThresholdMilliseconds() { 
+return (((((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["session_idle_threshold_ms"] as JsValue) || (RECORDING_IDLE_THRESHOLD_MS as JsValue));
+return JS.undefined(); }
+
+JsValue __lil_get__isSampled() { 
+JsValue currentValue = (((this as JsValue) as JsValue)["_instance"] as JsValue)["get_property"](SESSION_RECORDING_IS_SAMPLED);
+return (decodeSamplingDecision as JsValue)(currentValue, ((this as JsValue) as JsValue)["sessionId"]);
+return JS.undefined(); }
+
+JsValue __lil_get__sampleRate() { 
+JsValue _a = JS.undefined();
+JsValue rate = if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfig"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["sampleRate"] as JsValue) };
+return if (((isNumber as JsValue)(rate) as JsValue).truthy()) { (rate as JsValue) } else { (null as JsValue) };
+return JS.undefined(); }
+
+JsValue __lil_get__minimumDuration() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+return if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["getMinimumDuration"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (null as JsValue) };
+return JS.undefined(); }
+
+init(JsValue _instance, JsValue documentWasEverVisible) { 
+((((this as JsValue) as JsValue)["_instance"] = _instance));
+((((this as JsValue) as JsValue)["_endpoint"] = BASE_ENDPOINT));
+((((this as JsValue) as JsValue)["_forceAllowLocalhostNetworkCapture"] = false));
+((((this as JsValue) as JsValue)["_stopRrweb"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_jsonLdCaptureReady"] = false));
+((((this as JsValue) as JsValue)["_lastActivityTimestamp"] = (Date as JsValue)["now"]()));
+((((this as JsValue) as JsValue)["_isActivatingTrigger"] = false));
+((((this as JsValue) as JsValue)["_queuedRRWebEvents"] = JS.array()));
+((((this as JsValue) as JsValue)["_isIdle"] = "unknown"));
+((((this as JsValue) as JsValue)["_eventsDroppedWhileIdle"] = 0.0));
+((((this as JsValue) as JsValue)["_throttledMutationsDropped"] = 0.0));
+((((this as JsValue) as JsValue)["_oversizedMutationsDropped"] = 0.0));
+((((this as JsValue) as JsValue)["_oversizedMutationBytesDropped"] = 0.0));
+((((this as JsValue) as JsValue)["_unstringifiableEventsDropped"] = 0.0));
+((((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] = false));
+((((this as JsValue) as JsValue)["_heldEpochShipsOnUnload"] = false));
+((((this as JsValue) as JsValue)["_heldBufferOverflowed"] = false));
+((((this as JsValue) as JsValue)["_suppressNextFreshStartHold"] = false));
+((((this as JsValue) as JsValue)["_rrwebError"] = false));
+((((this as JsValue) as JsValue)["_rrwebStartAttempted"] = false));
+((((this as JsValue) as JsValue)["_snapshotCostErrorLogged"] = false));
+((((this as JsValue) as JsValue)["_hasWarnedClientMaskingOverride"] = false));
+((((this as JsValue) as JsValue)["_hasWarnedExclusiveAttributeMasking"] = false));
+((((this as JsValue) as JsValue)["_maskRegionsFnFailed"] = false));
+((((this as JsValue) as JsValue)["_hasLoggedRecorderCallbackError"] = false));
+((((this as JsValue) as JsValue)["_lastFullSnapshotSessionId"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_fullSnapshotHealAttemptedFor"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_pendingBufferRestored"] = false));
+((((this as JsValue) as JsValue)["_pendingCompressionEvents"] = JS.array()));
+((((this as JsValue) as JsValue)["_queuedCompressionEvents"] = 0.0));
+((((this as JsValue) as JsValue)["_compressionQueueGeneration"] = 0.0));
+((((this as JsValue) as JsValue)["_isStoppingAfterCompression"] = false));
+((((this as JsValue) as JsValue)["_removePageViewCaptureHook"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_removeEventTriggerCaptureHook"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_onSessionIdListener"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_onSessionIdleResetForcedListener"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_forceIdleSessionIdListener"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_onSessionIdCallback"] = (JsValue sessionId, JsValue windowId, JsValue changeReason) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+if ((!(changeReason as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+if ((((((sessionId as JsValue) === (((this as JsValue) as JsValue)["_sessionId"] as JsValue)) as JsValue) && (((windowId as JsValue) === (((this as JsValue) as JsValue)["_windowId"] as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue wasLikelyReset = (changeReason as JsValue)["noSessionId"];
+JsValue shouldLinkSessions = ((!(wasLikelyReset as JsValue).truthy() as JsValue) && (((((changeReason as JsValue)["activityTimeout"] as JsValue) || ((changeReason as JsValue)["sessionPastMaximumLength"] as JsValue))) as JsValue));
+JsValue oldSessionId = ((this as JsValue) as JsValue)["_sessionId"];
+JsValue oldWindowId = ((this as JsValue) as JsValue)["_windowId"];
+if ((shouldLinkSessions as JsValue).truthy()) {(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$session_ending", object { "currentSessionId": oldSessionId, "currentWindowId": oldWindowId, "nextSessionId": sessionId, "nextWindowId": windowId, "changeReason": changeReason, "lastActivityTimestamp": ((this as JsValue) as JsValue)["_lastActivityTimestamp"], "flushed_size": if ((((((((_a = ((this as JsValue) as JsValue)["_flushedSizeTracker"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["currentTrackedSize"](oldSessionId) as JsValue) } }));}
+(if ((((((((_b = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["unregister"](SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP) as JsValue) });
+(if ((((((((_d = if ((((((((_c = getRRWeb())) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["resetMaxDepthState"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["call"](_c) as JsValue) });
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$session_id_change", object { "sessionId": sessionId, "windowId": windowId, "changeReason": changeReason }));
+(((this as JsValue) as JsValue)["_clearConditionalRecordingPersistence"]());
+if (((((((((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (false as JsValue)) as JsValue) || (!(((this as JsValue) as JsValue)["isStarted"] as JsValue).truthy() as JsValue))) as JsValue) && ((((((((this as JsValue) as JsValue)["_sessionId"] as JsValue) !== (sessionId as JsValue)) as JsValue) || (((((this as JsValue) as JsValue)["_windowId"] as JsValue) !== (windowId as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {JsValue holdNextEpoch = ((((((this as JsValue) as JsValue)["_sessionId"] as JsValue) !== (sessionId as JsValue)) as JsValue) && (((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (false as JsValue)) as JsValue));
+((((this as JsValue) as JsValue)["_isIdle"] = "unknown"));
+(((this as JsValue) as JsValue)["_restartForSessionIdChange"](holdNextEpoch));}
+if ((shouldLinkSessions as JsValue).truthy()) {(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$session_starting", object { "previousSessionId": oldSessionId, "previousWindowId": oldWindowId, "nextSessionId": sessionId, "nextWindowId": windowId, "changeReason": changeReason, "lastActivityTimestamp": ((this as JsValue) as JsValue)["_lastActivityTimestamp"] }));}
+(if ((((((((_e = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["makeSamplingDecisions"](sessionId) as JsValue) });
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_isRestartingForSessionIdChange"] = false));
+((((this as JsValue) as JsValue)["_hasPassedMinimumDuration"] = () => { 
+JsValue _a = JS.undefined();
+JsValue persistedSessionId = if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["props"] as JsValue)[SESSION_RECORDING_PAST_MINIMUM_DURATION] as JsValue) };
+return ((persistedSessionId as JsValue) === (((this as JsValue) as JsValue)["_sessionId"] as JsValue));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_getBufferDuration"] = () => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+if ((((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {return null;}
+JsValue firstTimestamp = if ((((((((_a = ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)[0.0])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["timestamp"] as JsValue) };
+JsValue lastTimestamp = if ((((((((_b = ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)[((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) - (1.0 as JsValue))])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["timestamp"] as JsValue) };
+if ((((!((isNumber as JsValue)(firstTimestamp) as JsValue).truthy() as JsValue) || (!((isNumber as JsValue)(lastTimestamp) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return null;}
+return ((lastTimestamp as JsValue) - (firstTimestamp as JsValue));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_isBelowMinimumDuration"] = () => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue minimumDuration = ((this as JsValue) as JsValue)["_minimumDuration"];
+if ((!((isNumber as JsValue)(minimumDuration) as JsValue).truthy() as JsValue).truthy()) {return false;}
+JsValue strictMode = if ((((((((_b = if ((((((((_a = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["strictMinimumDuration"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (false as JsValue) };
+if ((!(strictMode as JsValue).truthy() as JsValue).truthy()) {JsValue sessionDuration = ((this as JsValue) as JsValue)["_sessionDuration"];
+JsValue isPositiveSessionDuration = (((isNumber as JsValue)(sessionDuration) as JsValue) && (((sessionDuration as JsValue) >= (0.0 as JsValue)) as JsValue));
+return ((isPositiveSessionDuration as JsValue) && (((sessionDuration as JsValue) < (minimumDuration as JsValue)) as JsValue));}
+if ((((this as JsValue) as JsValue)["_hasPassedMinimumDuration"]() as JsValue).truthy()) {return false;}
+JsValue bufferDuration = ((this as JsValue) as JsValue)["_getBufferDuration"]();
+if (((isNull as JsValue)(bufferDuration) as JsValue).truthy()) {return true;}
+if ((((bufferDuration as JsValue) >= (minimumDuration as JsValue)) as JsValue).truthy()) {(if ((((((((_c = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["register"](__lil_object_4(() => (SESSION_RECORDING_PAST_MINIMUM_DURATION as JsValue), () => (((this as JsValue) as JsValue)["_sessionId"] as JsValue))) as JsValue) });
+return false;}
+return true;
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_onBeforeUnload"] = () => { 
+if ((((((this as JsValue) as JsValue)["status"] as JsValue) === (BUFFERING as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearBuffer"]());
+return JS.undefined();}
+if ((((((((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] as JsValue) && (((this as JsValue) as JsValue)["_heldEpochShipsOnUnload"] as JsValue)) as JsValue) && (((this as JsValue) as JsValue)["_documentWasEverVisible"] as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_setFlushHold"](JS.undefined()));
+if ((((this as JsValue) as JsValue)["_heldBufferOverflowed"] as JsValue).truthy()) {((((this as JsValue) as JsValue)["_heldBufferOverflowed"] = false));
+(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());}}
+(((this as JsValue) as JsValue)["_drainCompressionQueueSync"]());
+(((this as JsValue) as JsValue)["_flushBuffer"](true));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_onPageHide"] = () => { 
+(((this as JsValue) as JsValue)["_onBeforeUnload"]());
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_onOffline"] = () => { 
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("browser offline", object {  }));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_onOnline"] = () => { 
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("browser online", object {  }));
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_onVisibilityChange"] = () => { 
+if ((if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["visibilityState"] as JsValue) } as JsValue).truthy()) {if (((((document as JsValue)["visibilityState"] as JsValue) === ("visible" as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_documentWasEverVisible"] = true));}
+JsValue label = (("window " as JsValue) + ((document as JsValue)["visibilityState"] as JsValue));
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"](label, object {  }));}
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_documentWasEverVisible"] = if ((((((documentWasEverVisible as JsValue) !== (null as JsValue)) as JsValue) && (((documentWasEverVisible as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (documentWasEverVisible as JsValue) } else { (true as JsValue) }));
+JsValue __port_5 = (((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["checkAndGetSessionAndWindowId"]();
+JsValue sessionId = __port_5["sessionId"];
+JsValue windowId = __port_5["windowId"];
+JsValue sessionStartTimestamp = __port_5["sessionStartTimestamp"];
+((((this as JsValue) as JsValue)["_sessionId"] = sessionId));
+((((this as JsValue) as JsValue)["_windowId"] = windowId));
+((((this as JsValue) as JsValue)["_sessionStartTimestamp"] = sessionStartTimestamp));
+((((this as JsValue) as JsValue)["_linkedFlagMatching"] = JS.construct(LinkedFlagMatching, ((this as JsValue) as JsValue)["_instance"])));
+((((this as JsValue) as JsValue)["_urlTriggerMatching"] = JS.construct(URLTriggerMatching, ((this as JsValue) as JsValue)["_instance"])));
+((((this as JsValue) as JsValue)["_eventTriggerMatching"] = JS.construct(EventTriggerMatching, ((this as JsValue) as JsValue)["_instance"])));
+((((this as JsValue) as JsValue)["_buffer"] = ((this as JsValue) as JsValue)["_clearBuffer"]()));
+JsValue persistenceName = ((((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["persistence_name"] as JsValue) || (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["token"] as JsValue));
+((((this as JsValue) as JsValue)["_pendingBufferStorageKey"] = (((((("ph" as JsValue) + (PENDING_BUFFER_STORAGE_SUFFIX as JsValue)) as JsValue) + ("_" as JsValue)) as JsValue) + ((JSON as JsValue)["stringify"](JS.array(persistenceName, ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["token"])) as JsValue))));
+if ((((((this as JsValue) as JsValue)["_sessionIdleThresholdMilliseconds"] as JsValue) >= ((((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["sessionTimeoutMs"] as JsValue)) as JsValue).truthy()) {((logger as JsValue)["warn"](`session_idle_threshold_ms (${((this as JsValue) as JsValue)["_sessionIdleThresholdMilliseconds"]}) is greater than the session timeout (${(((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["sessionTimeoutMs"]}). Session will never be detected as idle`));}
+((((this as JsValue) as JsValue)["_flushedSizeTracker"] = JS.construct(FlushedSizeTracker, ((this as JsValue) as JsValue)["_instance"])));
+ }
+
+JsValue setDocumentWasEverVisible(JsValue documentWasEverVisible) { 
+if ((documentWasEverVisible as JsValue).truthy()) {((((this as JsValue) as JsValue)["_documentWasEverVisible"] = true));}
+return JS.undefined(); }
+
+JsValue __lil_get__masking() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue _h = JS.undefined();
+JsValue _j = JS.undefined();
+JsValue masking_server_side = if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfig"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["masking"] as JsValue) };
+JsValue masking_client_side = object { "maskAllInputs": if ((((((((_b = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["maskAllInputs"] as JsValue) }, "maskTextSelector": if ((((((((_c = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["maskTextSelector"] as JsValue) }, "blockSelector": if ((((((((_d = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["blockSelector"] as JsValue) }, "maskAllElementAttributes": if ((((((((_e = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["maskAllElementAttributes"] as JsValue) } };
+JsValue maskAllInputs = if ((((((((_f = if ((((((masking_client_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_client_side as JsValue)["maskAllInputs"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_f as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_f as JsValue) } else { (if ((((((masking_server_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_server_side as JsValue)["maskAllInputs"] as JsValue) } as JsValue) };
+JsValue maskTextSelector = if ((((((((_g = if ((((((masking_client_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_client_side as JsValue)["maskTextSelector"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_g as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_g as JsValue) } else { (if ((((((masking_server_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_server_side as JsValue)["maskTextSelector"] as JsValue) } as JsValue) };
+JsValue blockSelector = if ((((((((_h = if ((((((masking_client_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_client_side as JsValue)["blockSelector"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_h as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_h as JsValue) } else { (if ((((((masking_server_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_server_side as JsValue)["blockSelector"] as JsValue) } as JsValue) };
+JsValue maskAllElementAttributes = if ((((((((_j = if ((((((masking_client_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_client_side as JsValue)["maskAllElementAttributes"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_j as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_j as JsValue) } else { (if ((((((masking_server_side as JsValue) === (null as JsValue)) as JsValue) || (((masking_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((masking_server_side as JsValue)["maskAllElementAttributes"] as JsValue) } as JsValue) };
+return if ((((((((!((isUndefined as JsValue)(maskAllInputs) as JsValue).truthy() as JsValue) || (!((isUndefined as JsValue)(maskTextSelector) as JsValue).truthy() as JsValue)) as JsValue) || (!((isUndefined as JsValue)(blockSelector) as JsValue).truthy() as JsValue)) as JsValue) || (!((isUndefined as JsValue)(maskAllElementAttributes) as JsValue).truthy() as JsValue)) as JsValue).truthy()) { (object { "maskAllInputs": if ((((((maskAllInputs as JsValue) !== (null as JsValue)) as JsValue) && (((maskAllInputs as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (maskAllInputs as JsValue) } else { (true as JsValue) }, "maskTextSelector": maskTextSelector, "blockSelector": blockSelector, "maskAllElementAttributes": maskAllElementAttributes } as JsValue) } else { (JS.undefined() as JsValue) };
+return JS.undefined(); }
+
+JsValue _warnIfClientMaskingShadowsServer() { 
+JsValue _a = JS.undefined();
+if ((((this as JsValue) as JsValue)["_hasWarnedClientMaskingOverride"] as JsValue).truthy()) {return JS.undefined();}
+JsValue masking_server_side = if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfig"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["masking"] as JsValue) };
+if (((isNullish as JsValue)(masking_server_side) as JsValue).truthy()) {return JS.undefined();}
+JsValue clientConfig = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"];
+JsValue divergentFields = (JS.array("maskAllInputs", "maskTextSelector", "blockSelector", "maskAllElementAttributes") as JsValue)["filter"]((JsValue field) => { 
+JsValue clientValue = if ((((((clientConfig as JsValue) === (null as JsValue)) as JsValue) || (((clientConfig as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((clientConfig as JsValue)[field] as JsValue) };
+JsValue serverValue = (masking_server_side as JsValue)[field];
+return ((!((isUndefined as JsValue)(clientValue) as JsValue).truthy() as JsValue) && (((clientValue as JsValue) !== (serverValue as JsValue)) as JsValue));
+return JS.undefined(); });
+if (((((divergentFields as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_hasWarnedClientMaskingOverride"] = true));
+((logger as JsValue)["warn"]((((((((("Session recording masking is configured both in `posthog.init` and in your project settings, and they differ. " as JsValue) + ("The `session_recording` options in `posthog.init` take precedence, so the project (\"Privacy and masking\") setting is ignored for: " as JsValue)) as JsValue) + ((divergentFields as JsValue)["join"](", ") as JsValue)) as JsValue) + (". Remove these masking options from `posthog.init` to use the project setting instead. " as JsValue)) as JsValue) + ("See https://posthog.com/docs/session-replay/privacy" as JsValue)), object { "client": object { "maskAllInputs": if ((((((clientConfig as JsValue) === (null as JsValue)) as JsValue) || (((clientConfig as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((clientConfig as JsValue)["maskAllInputs"] as JsValue) }, "maskTextSelector": if ((((((clientConfig as JsValue) === (null as JsValue)) as JsValue) || (((clientConfig as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((clientConfig as JsValue)["maskTextSelector"] as JsValue) }, "blockSelector": if ((((((clientConfig as JsValue) === (null as JsValue)) as JsValue) || (((clientConfig as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((clientConfig as JsValue)["blockSelector"] as JsValue) }, "maskAllElementAttributes": if ((((((clientConfig as JsValue) === (null as JsValue)) as JsValue) || (((clientConfig as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((clientConfig as JsValue)["maskAllElementAttributes"] as JsValue) } }, "project": masking_server_side }));
+return JS.undefined(); }
+
+JsValue __lil_get__canvasResolutionScale() { 
+JsValue _a = JS.undefined();
+return (clampToRange as JsValue)(if ((((((((_a = (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["canvasCapture"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["resolutionScale"] as JsValue) }, MIN_CANVAS_SCALE, 1.0, (createLogger as JsValue)("canvas recording resolution scale"), 1.0);
+return JS.undefined(); }
+
+JsValue __lil_get__canvasRecording() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue canvasRecording_client_side = (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["captureCanvas"];
+JsValue canvasRecording_server_side = if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfig"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["canvasRecording"] as JsValue) };
+JsValue enabled = if ((((((((_c = if ((((((((_b = if ((((((canvasRecording_client_side as JsValue) === (null as JsValue)) as JsValue) || (((canvasRecording_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((canvasRecording_client_side as JsValue)["recordCanvas"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (if ((((((canvasRecording_server_side as JsValue) === (null as JsValue)) as JsValue) || (((canvasRecording_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((canvasRecording_server_side as JsValue)["enabled"] as JsValue) } as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { (false as JsValue) };
+JsValue fps = if ((((((((_e = if ((((((((_d = if ((((((canvasRecording_client_side as JsValue) === (null as JsValue)) as JsValue) || (((canvasRecording_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((canvasRecording_client_side as JsValue)["canvasFps"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_d as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_d as JsValue) } else { (if ((((((canvasRecording_server_side as JsValue) === (null as JsValue)) as JsValue) || (((canvasRecording_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((canvasRecording_server_side as JsValue)["fps"] as JsValue) } as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_e as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_e as JsValue) } else { (DEFAULT_CANVAS_FPS as JsValue) };
+JsValue quality = if ((((((((_g = if ((((((((_f = if ((((((canvasRecording_client_side as JsValue) === (null as JsValue)) as JsValue) || (((canvasRecording_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((canvasRecording_client_side as JsValue)["canvasQuality"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_f as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_f as JsValue) } else { (if ((((((canvasRecording_server_side as JsValue) === (null as JsValue)) as JsValue) || (((canvasRecording_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((canvasRecording_server_side as JsValue)["quality"] as JsValue) } as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_g as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_g as JsValue) } else { (DEFAULT_CANVAS_QUALITY as JsValue) };
+if ((((JS.typeOf(quality) as JsValue) === ("string" as JsValue)) as JsValue).truthy()) {JsValue parsed = (parseFloat as JsValue)(quality);
+((quality = if (((isNaN as JsValue)(parsed) as JsValue).truthy()) { (0.4 as JsValue) } else { (parsed as JsValue) }));}
+return object { "enabled": enabled, "fps": (clampToRange as JsValue)(fps, 0.0, MAX_CANVAS_FPS, (createLogger as JsValue)("canvas recording fps"), DEFAULT_CANVAS_FPS), "quality": (clampToRange as JsValue)(quality, 0.0, MAX_CANVAS_QUALITY, (createLogger as JsValue)("canvas recording quality"), DEFAULT_CANVAS_QUALITY) };
+return JS.undefined(); }
+
+JsValue __lil_get__isConsoleLogCaptureEnabled() { 
+JsValue _a = JS.undefined();
+JsValue enabled_server_side = !(!((if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfig"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["consoleLogRecordingEnabled"] as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+JsValue enabled_client_side = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["enable_recording_console_log"];
+return if ((((((enabled_client_side as JsValue) !== (null as JsValue)) as JsValue) && (((enabled_client_side as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (enabled_client_side as JsValue) } else { (enabled_server_side as JsValue) };
+return JS.undefined(); }
+
+JsValue __lil_get__networkPayloadCapture() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue networkPayloadCapture_server_side = if ((((((((_a = ((this as JsValue) as JsValue)["_remoteConfig"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["networkPayloadCapture"] as JsValue) };
+JsValue networkPayloadCapture_client_side = object { "recordHeaders": if ((((((((_b = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["recordHeaders"] as JsValue) }, "recordBody": if ((((((((_c = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["recordBody"] as JsValue) } };
+JsValue headersEnabled = (((if ((((((networkPayloadCapture_client_side as JsValue) === (null as JsValue)) as JsValue) || (((networkPayloadCapture_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((networkPayloadCapture_client_side as JsValue)["recordHeaders"] as JsValue) }) as JsValue) || ((if ((((((networkPayloadCapture_server_side as JsValue) === (null as JsValue)) as JsValue) || (((networkPayloadCapture_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((networkPayloadCapture_server_side as JsValue)["recordHeaders"] as JsValue) }) as JsValue));
+JsValue bodyEnabled = (((if ((((((networkPayloadCapture_client_side as JsValue) === (null as JsValue)) as JsValue) || (((networkPayloadCapture_client_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((networkPayloadCapture_client_side as JsValue)["recordBody"] as JsValue) }) as JsValue) || ((if ((((((networkPayloadCapture_server_side as JsValue) === (null as JsValue)) as JsValue) || (((networkPayloadCapture_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((networkPayloadCapture_server_side as JsValue)["recordBody"] as JsValue) }) as JsValue));
+JsValue clientNetworkTiming = networkTimingFromConfig(((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["capture_performance"]);
+JsValue serverNetworkTiming = networkTimingFromConfig(if ((((((networkPayloadCapture_server_side as JsValue) === (null as JsValue)) as JsValue) || (((networkPayloadCapture_server_side as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((networkPayloadCapture_server_side as JsValue)["capturePerformance"] as JsValue) });
+JsValue networkTimingEnabled = !(!((if (((isBoolean as JsValue)(clientNetworkTiming) as JsValue).truthy()) { (clientNetworkTiming as JsValue) } else { (serverNetworkTiming as JsValue) }) as JsValue).truthy() as JsValue).truthy();
+return if ((((((headersEnabled as JsValue) || (bodyEnabled as JsValue)) as JsValue) || (networkTimingEnabled as JsValue)) as JsValue).truthy()) { (object { "recordHeaders": headersEnabled, "recordBody": bodyEnabled, "recordPerformance": networkTimingEnabled } as JsValue) } else { (JS.undefined() as JsValue) };
+return JS.undefined(); }
+
+JsValue _gatherRRWebPlugins() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue plugins = JS.array();
+JsValue recordConsolePlugin = if ((((((((_b = if ((((((((_a = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["rrwebPlugins"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["getRecordConsolePlugin"] as JsValue) };
+if ((((recordConsolePlugin as JsValue) && (((this as JsValue) as JsValue)["_isConsoleLogCaptureEnabled"] as JsValue)) as JsValue).truthy()) {((plugins as JsValue)["push"]((recordConsolePlugin as JsValue)()));}
+JsValue networkPlugin = if ((((((((_d = if ((((((((_c = (assignableWindow as JsValue)["__PosthogExtensions__"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["rrwebPlugins"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["getRecordNetworkPlugin"] as JsValue) };
+if ((((!(!(((this as JsValue) as JsValue)["_networkPayloadCapture"] as JsValue).truthy() as JsValue).truthy() as JsValue) && ((isFunction as JsValue)(networkPlugin) as JsValue)) as JsValue).truthy()) {JsValue canRecordNetwork = ((!((isLocalhost as JsValue)() as JsValue).truthy() as JsValue) || (((this as JsValue) as JsValue)["_forceAllowLocalhostNetworkCapture"] as JsValue));
+if ((canRecordNetwork as JsValue).truthy()) {JsValue isIngestionEndpoint = if (((isFunction as JsValue)(((((this as JsValue) as JsValue)["_instance"] as JsValue)["requestRouter"] as JsValue)["isIngestionEndpoint"]) as JsValue).truthy()) { ((((((this as JsValue) as JsValue)["_instance"] as JsValue)["requestRouter"] as JsValue)["isIngestionEndpoint"] as JsValue)["bind"]((((this as JsValue) as JsValue)["_instance"] as JsValue)["requestRouter"]) as JsValue) } else { (JS.undefined() as JsValue) };
+((plugins as JsValue)["push"]((networkPlugin as JsValue)((buildNetworkRequestOptions as JsValue)((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"], ((this as JsValue) as JsValue)["_networkPayloadCapture"], isIngestionEndpoint))));} else {((logger as JsValue)["info"]("NetworkCapture not started because we are on localhost."));}}
+return plugins;
+return JS.undefined(); }
+
+JsValue _stripUrlHash(JsValue url) { 
+return if ((((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["disable_capture_url_hashes"] as JsValue).truthy()) { ((stripUrlHash as JsValue)(url) as JsValue) } else { (url as JsValue) };
+return JS.undefined(); }
+
+JsValue _maskReplayUrl(JsValue url, JsValue forceStripHash = false) { 
+JsValue href = if ((forceStripHash as JsValue).truthy()) { ((stripUrlHash as JsValue)(url) as JsValue) } else { (((this as JsValue) as JsValue)["_stripUrlHash"](url) as JsValue) };
+JsValue paramsToMask = if ((((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["mask_personal_data_properties"] as JsValue).truthy()) { ((() => { JsValue __port_6 = JS.array();
+for (JsValue __port_7 of PERSONAL_DATA_CAMPAIGN_PARAMS) { __port_6.push(__port_7); }
+for (JsValue __port_8 of (((((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["custom_personal_data_properties"] as JsValue) || (JS.array() as JsValue)))) { __port_6.push(__port_8); }return __port_6; })() as JsValue) } else { (JS.array() as JsValue) };
+return ((this as JsValue) as JsValue)["_maskUrl"]((maskQueryParams as JsValue)(href, paramsToMask, MASKED));
+return JS.undefined(); }
+
+JsValue _maskUrl(JsValue url) { 
+JsValue _a = JS.undefined();
+JsValue userSessionRecordingOptions = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"];
+if (((userSessionRecordingOptions as JsValue)["maskCapturedNetworkRequestFn"] as JsValue).truthy()) {JsValue result = (userSessionRecordingOptions as JsValue)["maskCapturedNetworkRequestFn"](object { "name": url });
+return if ((((((((_a = if ((((((result as JsValue) === (null as JsValue)) as JsValue) || (((result as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((result as JsValue)["name"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (if ((((((result as JsValue) === (null as JsValue)) as JsValue) || (((result as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((result as JsValue)["url"] as JsValue) } as JsValue) };}
+if (((userSessionRecordingOptions as JsValue)["maskNetworkRequestFn"] as JsValue).truthy()) {JsValue result = (userSessionRecordingOptions as JsValue)["maskNetworkRequestFn"](object { "url": url });
+return if ((((((result as JsValue) === (null as JsValue)) as JsValue) || (((result as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((result as JsValue)["url"] as JsValue) };}
+return url;
+return JS.undefined(); }
+
+JsValue _tryRRWebMethod(JsValue queuedRRWebEvent) { 
+try {((queuedRRWebEvent as JsValue)["rrwebMethod"]());
+return true;} catch (JsValue e) {if (((((((this as JsValue) as JsValue)["_queuedRRWebEvents"] as JsValue)["length"] as JsValue) < (10.0 as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_queuedRRWebEvents"] as JsValue)["push"](object { "enqueuedAt": (((queuedRRWebEvent as JsValue)["enqueuedAt"] as JsValue) || ((Date as JsValue)["now"]() as JsValue)), "attempt": (((queuedRRWebEvent as JsValue)["attempt"] as JsValue) + (1.0 as JsValue)), "rrwebMethod": (queuedRRWebEvent as JsValue)["rrwebMethod"] }));} else {((logger as JsValue)["warn"]("could not emit queued rrweb event.", e, queuedRRWebEvent));}
+return false;}
+return JS.undefined(); }
+
+JsValue _tryAddCustomEvent(JsValue tag, JsValue payload) { 
+return ((this as JsValue) as JsValue)["_tryRRWebMethod"](newQueuedEvent(() => { 
+return ((getRRWebRecord() as JsValue)["addCustomEvent"](tag, payload) as JsValue);
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue _canCaptureJsonLd() { 
+JsValue _a = JS.undefined();
+return (((((((((this as JsValue) as JsValue)["_jsonLdCaptureReady"] as JsValue) && ((((if ((((((((_a = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["captureJsonLd"] as JsValue) }) as JsValue) === (true as JsValue)) as JsValue)) as JsValue) && (!((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] as JsValue).truthy() as JsValue)) as JsValue) && (((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (true as JsValue)) as JsValue)));
+return JS.undefined(); }
+
+JsValue _tryAddJsonLdEvent(JsValue jsonLd) { 
+if ((!(((this as JsValue) as JsValue)["_canCaptureJsonLd"]() as JsValue).truthy() as JsValue).truthy()) {return false;}
+try {JsValue rrwebRecord = getRRWebRecord();
+if ((!(rrwebRecord as JsValue).truthy() as JsValue).truthy()) {return false;}
+((rrwebRecord as JsValue)["addCustomEvent"](JSON_LD_EVENT_TAG, jsonLd));
+return ((this as JsValue) as JsValue)["_canCaptureJsonLd"]();} catch (JsValue __port_9) {return false;}
+return JS.undefined(); }
+
+JsValue _scheduleJsonLdScan(JsValue force = false) { 
+(((Promise as JsValue)["resolve"]() as JsValue)["then"](() => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = ((this as JsValue) as JsValue)["_jsonLdCapture"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["scan"](force) as JsValue) };
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue _pageViewFallBack() { 
+try {if ((((((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["capture_pageview"] as JsValue) || (!(window as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue url = JS.construct(URL, ((window as JsValue)["location"] as JsValue)["href"]);
+JsValue currentUrl = ((this as JsValue) as JsValue)["_maskReplayUrl"]((((((url as JsValue)["origin"] as JsValue) + ((url as JsValue)["pathname"] as JsValue)) as JsValue) + ((url as JsValue)["search"] as JsValue)));
+if ((((((this as JsValue) as JsValue)["_lastHref"] as JsValue) !== (currentUrl as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lastHref"] = currentUrl));
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$url_changed", object { "href": currentUrl }));}} catch (JsValue __port_10) {}
+return JS.undefined(); }
+
+JsValue _processQueuedEvents() { 
+if (((((this as JsValue) as JsValue)["_queuedRRWebEvents"] as JsValue)["length"] as JsValue).truthy()) {JsValue itemsToProcess = (() => { JsValue __port_11 = JS.array();
+for (JsValue __port_12 of ((this as JsValue) as JsValue)["_queuedRRWebEvents"]) { __port_11.push(__port_12); }return __port_11; })();
+((((this as JsValue) as JsValue)["_queuedRRWebEvents"] = JS.array()));
+((itemsToProcess as JsValue)["forEach"]((JsValue queuedRRWebEvent) => { 
+if (((((((Date as JsValue)["now"]() as JsValue) - ((queuedRRWebEvent as JsValue)["enqueuedAt"] as JsValue)) as JsValue) <= (TWO_SECONDS as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_tryRRWebMethod"](queuedRRWebEvent));}
+return JS.undefined(); }));}
+return JS.undefined(); }
+
+JsValue _tryTakeFullSnapshot() { 
+return ((this as JsValue) as JsValue)["_tryRRWebMethod"](newQueuedEvent(() => { 
+return ((getRRWebRecord() as JsValue)["takeFullSnapshot"]() as JsValue);
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue __lil_get__fullSnapshotIntervalMillis() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+if (((((if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["hasPendingTriggers"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) }) as JsValue) && (!((JS.array("sampled", "active") as JsValue)["includes"](((this as JsValue) as JsValue)["status"]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue configuredInterval = if ((((((((_b = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["trigger_pending_buffer_interval_millis"] as JsValue) };
+return if (((((((((isNumber as JsValue)(configuredInterval) as JsValue) && ((Number as JsValue)["isFinite"](configuredInterval) as JsValue)) as JsValue) && (((configuredInterval as JsValue) >= (MIN_TRIGGER_PENDING_BUFFER_INTERVAL_MILLIS as JsValue)) as JsValue)) as JsValue) && (((configuredInterval as JsValue) <= (MAX_TRIGGER_PENDING_BUFFER_INTERVAL_MILLIS as JsValue)) as JsValue)) as JsValue).truthy()) { (configuredInterval as JsValue) } else { (ONE_MINUTE as JsValue) };}
+return if ((((((((_d = if ((((((((_c = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["full_snapshot_interval_millis"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_d as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_d as JsValue) } else { (FIVE_MINUTES as JsValue) };
+return JS.undefined(); }
+
+JsValue _scheduleFullSnapshot() { 
+if ((((this as JsValue) as JsValue)["_fullSnapshotTimer"] as JsValue).truthy()) {((clearInterval as JsValue)(((this as JsValue) as JsValue)["_fullSnapshotTimer"]));}
+if ((((((this as JsValue) as JsValue)["_isIdle"] as JsValue) === (true as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+JsValue interval = ((this as JsValue) as JsValue)["_fullSnapshotIntervalMillis"];
+if ((!(interval as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_fullSnapshotTimer"] = (setInterval as JsValue)(() => { 
+(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());
+return JS.undefined(); }, interval)));
+return JS.undefined(); }
+
+JsValue _onTriggerActivated(JsValue triggerType) { 
+if ((((triggerType as JsValue) === ("event" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_releaseHoldAndFlush"]());}
+if (((((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] as JsValue) || (!((JS.array("sampled", "active") as JsValue)["includes"](((this as JsValue) as JsValue)["status"]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_scheduleFullSnapshot"]());
+return JS.undefined(); }
+
+JsValue _pauseRecording() { 
+JsValue _a = JS.undefined();
+if (((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] as JsValue).truthy()) {return JS.undefined();}
+(((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] = true));
+(if ((((((((_a = ((this as JsValue) as JsValue)["_jsonLdCapture"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["scan"]() as JsValue) });
+((clearInterval as JsValue)(((this as JsValue) as JsValue)["_fullSnapshotTimer"]));
+((logger as JsValue)["info"]("recording paused due to URL blocker"));
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("recording paused", object { "reason": "url blocker" }));
+return JS.undefined(); }
+
+JsValue _resumeRecording() { 
+JsValue _a = JS.undefined();
+if ((!((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+(if ((((((((_a = ((this as JsValue) as JsValue)["_jsonLdCapture"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["scan"]() as JsValue) });
+(((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] = false));
+(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());
+(((this as JsValue) as JsValue)["_scheduleJsonLdScan"]());
+(((this as JsValue) as JsValue)["_scheduleFullSnapshot"]());
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("recording resumed", object { "reason": "left blocked url" }));
+((logger as JsValue)["info"]("recording resumed"));
+return JS.undefined(); }
+
+JsValue _activateTrigger(JsValue triggerType, JsValue matchDetail) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+if ((((triggerType as JsValue) === ("event" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_releaseHoldAndFlush"]());}
+if ((((this as JsValue) as JsValue)["_isActivatingTrigger"] as JsValue).truthy()) {return JS.undefined();}
+if ((!((if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["hasPendingTriggers"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_isActivatingTrigger"] = true));
+try {JsValue persistenceKey = if ((((triggerType as JsValue) === ("url" as JsValue)) as JsValue).truthy()) { (SESSION_RECORDING_URL_TRIGGER_ACTIVATED_SESSION as JsValue) } else { (SESSION_RECORDING_EVENT_TRIGGER_ACTIVATED_SESSION as JsValue) };
+(if ((((((((_b = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["register"](__lil_object_13(() => (persistenceKey as JsValue), () => (((this as JsValue) as JsValue)["sessionId"] as JsValue))) as JsValue) });
+(if ((((((((_c = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["updateActiveTriggers"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) });
+(((this as JsValue) as JsValue)["_onTriggerActivated"]());
+(((this as JsValue) as JsValue)["_flushBuffer"]());
+(((this as JsValue) as JsValue)["_reportStarted"]((((triggerType as JsValue) + ("_trigger_matched" as JsValue))), __lil_object_14(() => (if ((((triggerType as JsValue) === ("url" as JsValue)) as JsValue).truthy()) { ("matchedUrl" as JsValue) } else { ("matchedEvent" as JsValue) } as JsValue), () => (matchDetail as JsValue))));} finally {((((this as JsValue) as JsValue)["_isActivatingTrigger"] = false));}
+return JS.undefined(); }
+
+JsValue __lil_get_isStarted() { 
+return !(!(((this as JsValue) as JsValue)["_stopRrweb"] as JsValue).truthy() as JsValue).truthy();
+return JS.undefined(); }
+
+JsValue __lil_get__remoteConfig() { 
+JsValue _a = JS.undefined();
+JsValue persistedConfig = (((this as JsValue) as JsValue)["_instance"] as JsValue)["get_property"](SESSION_RECORDING_REMOTE_CONFIG);
+if ((!(persistedConfig as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue parsedConfig = JS.undefined();
+try {((parsedConfig = if (((isObject as JsValue)(persistedConfig) as JsValue).truthy()) { (persistedConfig as JsValue) } else { ((JSON as JsValue)["parse"](persistedConfig) as JsValue) }));} catch (JsValue e) {((logger as JsValue)["warn"]("persisted remote config for session recording is invalid and will be ignored", e));
+return JS.undefined();}
+if ((((!(((this as JsValue) as JsValue)["isStarted"] as JsValue).truthy() as JsValue) && (!(((this as JsValue) as JsValue)["_isRestartingForSessionIdChange"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {JsValue cacheTimestamp = if ((((((((_a = (parsedConfig as JsValue)["cache_timestamp"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { ((Date as JsValue)["now"]() as JsValue) };
+if (((((((Date as JsValue)["now"]() as JsValue) - (cacheTimestamp as JsValue)) as JsValue) > (RECORDING_REMOTE_CONFIG_TTL_MS as JsValue)) as JsValue).truthy()) {((logger as JsValue)["info"]("persisted remote config for session recording is stale and will be ignored", object { "cacheTimestamp": cacheTimestamp, "persistedConfig": persistedConfig }));
+return JS.undefined();}}
+return parsedConfig;
+return JS.undefined(); }
+
+JsValue _checkOverride(JsValue key, JsValue overrideFunction, JsValue clearOverride) { 
+JsValue overrideFlag = (((this as JsValue) as JsValue)["_instance"] as JsValue)["get_property"](key);
+if ((overrideFlag as JsValue).truthy()) {((overrideFunction as JsValue)());
+((clearOverride as JsValue)());}
+return JS.undefined(); }
+
+JsValue start(JsValue startReason) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue config = ((this as JsValue) as JsValue)["_remoteConfig"];
+if ((!(config as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["info"]("remote config must be stored in persistence before recording can start"));
+return JS.undefined();}
+if ((!(((this as JsValue) as JsValue)["isStarted"] as JsValue).truthy() as JsValue).truthy()) {JsValue holdFreshStart = ((((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (false as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_suppressNextFreshStartHold"] as JsValue).truthy() as JsValue));
+(((this as JsValue) as JsValue)["_setFlushHold"](if ((holdFreshStart as JsValue).truthy()) { ("no_interaction_since_recording_started" as JsValue) } else { (JS.undefined() as JsValue) }));
+((((this as JsValue) as JsValue)["_suppressNextFreshStartHold"] = false));
+((((this as JsValue) as JsValue)["_heldEpochShipsOnUnload"] = holdFreshStart));
+((((this as JsValue) as JsValue)["_heldBufferOverflowed"] = false));}
+if ((((this as JsValue) as JsValue)["_isStoppingAfterCompression"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_invalidateCompressionQueue"]());
+(((this as JsValue) as JsValue)["_clearBuffer"]());}
+JsValue __port_15 = (((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["checkAndGetSessionAndWindowId"]();
+JsValue sessionId = __port_15["sessionId"];
+JsValue windowId = __port_15["windowId"];
+JsValue sessionStartTimestamp = __port_15["sessionStartTimestamp"];
+((((this as JsValue) as JsValue)["_sessionId"] = sessionId));
+((((this as JsValue) as JsValue)["_windowId"] = windowId));
+((((this as JsValue) as JsValue)["_sessionStartTimestamp"] = sessionStartTimestamp));
+(((this as JsValue) as JsValue)["_restorePendingBuffer"]());
+(if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["unregister"](SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP) as JsValue) });
+if ((if ((((((config as JsValue) === (null as JsValue)) as JsValue) || (((config as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((config as JsValue)["endpoint"] as JsValue) } as JsValue).truthy()) {((((this as JsValue) as JsValue)["_endpoint"] = if ((((((config as JsValue) === (null as JsValue)) as JsValue) || (((config as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((config as JsValue)["endpoint"] as JsValue) }));}
+JsValue isV2 = (((((((if ((((((config as JsValue) === (null as JsValue)) as JsValue) || (((config as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((config as JsValue)["version"] as JsValue) }) as JsValue) === (2.0 as JsValue)) as JsValue) && ((if ((((((config as JsValue) === (null as JsValue)) as JsValue) || (((config as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((config as JsValue)["triggerGroups"] as JsValue) }) as JsValue)) as JsValue) && (((((config as JsValue)["triggerGroups"] as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue));
+if ((isV2 as JsValue).truthy()) {((((this as JsValue) as JsValue)["_strategy"] = JS.construct(V2TriggerGroupStrategy, ((this as JsValue) as JsValue)["_instance"], ((this as JsValue) as JsValue)["_urlTriggerMatching"], (((this as JsValue) as JsValue)["_reportStarted"] as JsValue)["bind"]((this as JsValue)), (((this as JsValue) as JsValue)["_tryAddCustomEvent"] as JsValue)["bind"]((this as JsValue)), (((this as JsValue) as JsValue)["_onTriggerActivated"] as JsValue)["bind"]((this as JsValue)))));} else {((((this as JsValue) as JsValue)["_strategy"] = Reflect.construct(V1RecordingStrategy, JS.array(((this as JsValue) as JsValue)["_instance"], ((this as JsValue) as JsValue)["_urlTriggerMatching"], ((this as JsValue) as JsValue)["_eventTriggerMatching"], ((this as JsValue) as JsValue)["_linkedFlagMatching"], (((this as JsValue) as JsValue)["_reportStarted"] as JsValue)["bind"]((this as JsValue)), (((this as JsValue) as JsValue)["_tryTakeFullSnapshot"] as JsValue)["bind"]((this as JsValue)), (((this as JsValue) as JsValue)["_onTriggerActivated"] as JsValue)["bind"]((this as JsValue))))));}
+((((this as JsValue) as JsValue)["_strategy"] as JsValue)["onRemoteConfig"](config));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_removeEventTriggerCaptureHook"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_removeEventTriggerCaptureHook"] = (((this as JsValue) as JsValue)["_strategy"] as JsValue)["setupEventTriggerListeners"](((((this as JsValue) as JsValue)["_instance"] as JsValue)["on"] as JsValue)["bind"](((this as JsValue) as JsValue)["_instance"], "eventCaptured"), ((this as JsValue) as JsValue)["sessionId"], (JsValue triggerType, JsValue matchDetail) => { 
+return (((this as JsValue) as JsValue)["_activateTrigger"](triggerType, matchDetail) as JsValue);
+return JS.undefined(); })));
+(((this as JsValue) as JsValue)["_checkOverride"](SESSION_RECORDING_OVERRIDE_SAMPLING, () => { 
+(((this as JsValue) as JsValue)["overrideSampling"]());
+return JS.undefined(); }, () => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["unregister"](SESSION_RECORDING_OVERRIDE_SAMPLING) as JsValue) };
+return JS.undefined(); }));
+(((this as JsValue) as JsValue)["_checkOverride"](SESSION_RECORDING_OVERRIDE_LINKED_FLAG, () => { 
+(((this as JsValue) as JsValue)["overrideLinkedFlag"]());
+return JS.undefined(); }, () => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["unregister"](SESSION_RECORDING_OVERRIDE_LINKED_FLAG) as JsValue) };
+return JS.undefined(); }));
+(((this as JsValue) as JsValue)["_checkOverride"](SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER, () => { 
+(((this as JsValue) as JsValue)["overrideTrigger"]("event"));
+return JS.undefined(); }, () => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["unregister"](SESSION_RECORDING_OVERRIDE_EVENT_TRIGGER) as JsValue) };
+return JS.undefined(); }));
+(((this as JsValue) as JsValue)["_checkOverride"](SESSION_RECORDING_OVERRIDE_URL_TRIGGER, () => { 
+(((this as JsValue) as JsValue)["overrideTrigger"]("url"));
+return JS.undefined(); }, () => { 
+JsValue _a = JS.undefined();
+return if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["unregister"](SESSION_RECORDING_OVERRIDE_URL_TRIGGER) as JsValue) };
+return JS.undefined(); }));
+((((this as JsValue) as JsValue)["_strategy"] as JsValue)["makeSamplingDecisions"](((this as JsValue) as JsValue)["sessionId"]));
+(((this as JsValue) as JsValue)["_startRecorder"]());
+if ((((this as JsValue) as JsValue)["_rrwebError"] as JsValue).truthy()) {return JS.undefined();}
+((addEventListener as JsValue)(window, "beforeunload", ((this as JsValue) as JsValue)["_onBeforeUnload"]));
+((addEventListener as JsValue)(window, "pagehide", ((this as JsValue) as JsValue)["_onPageHide"]));
+((addEventListener as JsValue)(window, "offline", ((this as JsValue) as JsValue)["_onOffline"]));
+((addEventListener as JsValue)(window, "online", ((this as JsValue) as JsValue)["_onOnline"]));
+((addEventListener as JsValue)(document, "visibilitychange", ((this as JsValue) as JsValue)["_onVisibilityChange"]));
+if ((((!(((this as JsValue) as JsValue)["_onSessionIdListener"] as JsValue).truthy() as JsValue) && ((isFunction as JsValue)((((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["onSessionId"]) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_onSessionIdListener"] = (((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["onSessionId"](((this as JsValue) as JsValue)["_onSessionIdCallback"])));}
+if ((((!(((this as JsValue) as JsValue)["_onSessionIdleResetForcedListener"] as JsValue).truthy() as JsValue) && ((isFunction as JsValue)((((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["on"]) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_onSessionIdleResetForcedListener"] = (((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["on"]("forcedIdleReset", () => { 
+(((this as JsValue) as JsValue)["_clearConditionalRecordingPersistence"]());
+((((this as JsValue) as JsValue)["_isIdle"] = "unknown"));
+(((this as JsValue) as JsValue)["stop"]());
+((((this as JsValue) as JsValue)["_forceIdleSessionIdListener"] = (((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["onSessionId"]((JsValue sessionId, JsValue windowId, JsValue changeReason) => { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_forceIdleSessionIdListener"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_forceIdleSessionIdListener"] = JS.undefined()));
+(((this as JsValue) as JsValue)["_onSessionIdCallback"](sessionId, windowId, changeReason));
+return JS.undefined(); })));
+return JS.undefined(); })));} else {if ((!((isFunction as JsValue)((((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["on"]) as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["warn"]((("bundled core has no SessionIdManager.on (requires posthog-js >= 1.268.6); " as JsValue) + ("recording will start but skip forced-idle-reset handling" as JsValue))));}}
+if (((isNullish as JsValue)(((this as JsValue) as JsValue)["_removePageViewCaptureHook"]) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_removePageViewCaptureHook"] = (((this as JsValue) as JsValue)["_instance"] as JsValue)["on"]("eventCaptured", (JsValue event) => { 
+try {if (((((event as JsValue)["event"] as JsValue) === ("$pageview" as JsValue)) as JsValue).truthy()) {JsValue href = if (((if ((((((event as JsValue) === (null as JsValue)) as JsValue) || (((event as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((event as JsValue)["properties"] as JsValue)["$current_url"] as JsValue) }) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_maskReplayUrl"](((event as JsValue)["properties"] as JsValue)["$current_url"]) as JsValue) } else { ("" as JsValue) };
+if ((!(href as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$pageview", object { "href": href }));}} catch (JsValue e) {((logger as JsValue)["error"]("Could not add $pageview to rrweb session", e));}
+return JS.undefined(); })));}
+if ((((((this as JsValue) as JsValue)["status"] as JsValue) === (ACTIVE as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_reportStarted"](((startReason as JsValue) || ("recording_initialized" as JsValue))));}
+return JS.undefined(); }
+
+JsValue _teardown() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+(if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["removeEventListener"]("beforeunload", ((this as JsValue) as JsValue)["_onBeforeUnload"]) as JsValue) });
+(if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["removeEventListener"]("pagehide", ((this as JsValue) as JsValue)["_onPageHide"]) as JsValue) });
+(if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["removeEventListener"]("offline", ((this as JsValue) as JsValue)["_onOffline"]) as JsValue) });
+(if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["removeEventListener"]("online", ((this as JsValue) as JsValue)["_onOnline"]) as JsValue) });
+(if ((((((document as JsValue) === (null as JsValue)) as JsValue) || (((document as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((document as JsValue)["removeEventListener"]("visibilitychange", ((this as JsValue) as JsValue)["_onVisibilityChange"]) as JsValue) });
+((clearInterval as JsValue)(((this as JsValue) as JsValue)["_fullSnapshotTimer"]));
+(((this as JsValue) as JsValue)["_clearFlushBufferTimer"]());
+(if ((((((((_a = ((this as JsValue) as JsValue)["_removePageViewCaptureHook"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_removePageViewCaptureHook"] = JS.undefined()));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_removeEventTriggerCaptureHook"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_removeEventTriggerCaptureHook"] = JS.undefined()));
+(if ((((((((_c = ((this as JsValue) as JsValue)["_onSessionIdListener"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_onSessionIdListener"] = JS.undefined()));
+(if ((((((((_d = ((this as JsValue) as JsValue)["_onSessionIdleResetForcedListener"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_onSessionIdleResetForcedListener"] = JS.undefined()));
+(if ((((((((_e = ((this as JsValue) as JsValue)["_forceIdleSessionIdListener"])) as JsValue) === (null as JsValue)) as JsValue) || (((_e as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_e as JsValue)["call"]((this as JsValue)) as JsValue) });
+((((this as JsValue) as JsValue)["_forceIdleSessionIdListener"] = JS.undefined()));
+(if ((((((((_f = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_f as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_f as JsValue)["stop"]() as JsValue) });
+(((this as JsValue) as JsValue)["_stopRecordingProducers"]());
+(((this as JsValue) as JsValue)["_invalidateCompressionQueue"]());
+return JS.undefined(); }
+
+JsValue _invalidateCompressionQueue() { 
+((() => { JsValue __port_16 = (this as JsValue); return (__port_16["_compressionQueueGeneration"] = ((__port_16["_compressionQueueGeneration"] as JsValue) + (1.0 as JsValue))); })());
+((((this as JsValue) as JsValue)["_pendingCompressionEvents"] = JS.array()));
+((((this as JsValue) as JsValue)["_queuedCompressionEvents"] = 0.0));
+((((this as JsValue) as JsValue)["_compressionQueue"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_isStoppingAfterCompression"] = false));
+return JS.undefined(); }
+
+JsValue _stopRecordingProducers() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_mutationThrottler"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["stop"]() as JsValue) });
+((((this as JsValue) as JsValue)["_queuedRRWebEvents"] = JS.array()));
+(if ((((((((_b = ((this as JsValue) as JsValue)["_jsonLdCapture"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["stop"]() as JsValue) });
+((((this as JsValue) as JsValue)["_jsonLdCapture"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_jsonLdCaptureReady"] = false));
+try {(if ((((((((_c = ((this as JsValue) as JsValue)["_stopRrweb"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["call"]((this as JsValue)) as JsValue) });} catch (JsValue e) {((logger as JsValue)["warn"]("could not stop rrweb", e));}
+((((this as JsValue) as JsValue)["_stopRrweb"] = JS.undefined()));
+return JS.undefined(); }
+
+JsValue _stopAfterCompressionQueueDrains() { 
+if ((((!(((this as JsValue) as JsValue)["_compressionQueue"] as JsValue).truthy() as JsValue) || (((((this as JsValue) as JsValue)["_queuedCompressionEvents"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {return false;}
+if ((((this as JsValue) as JsValue)["_isStoppingAfterCompression"] as JsValue).truthy()) {return true;}
+((((this as JsValue) as JsValue)["_isStoppingAfterCompression"] = true));
+((((this as JsValue) as JsValue)["_flushHoldReason"] = JS.undefined()));
+JsValue generation = ((this as JsValue) as JsValue)["_compressionQueueGeneration"];
+(((this as JsValue) as JsValue)["_clearFlushBufferTimer"]());
+(((this as JsValue) as JsValue)["_stopRecordingProducers"]());
+((((((this as JsValue) as JsValue)["_compressionQueue"] as JsValue)["catch"](() => { 
+return (JS.undefined() as JsValue);
+return JS.undefined(); }) as JsValue)["then"](() => { 
+if ((((generation as JsValue) !== (((this as JsValue) as JsValue)["_compressionQueueGeneration"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_isStoppingAfterCompression"] = false));
+(((this as JsValue) as JsValue)["_flushBuffer"]());
+(((this as JsValue) as JsValue)["_clearBuffer"]());
+(((this as JsValue) as JsValue)["_releaseHoldAfterStop"]());
+(((this as JsValue) as JsValue)["_teardown"]());
+((logger as JsValue)["info"]("stopped"));
+return JS.undefined(); }) as JsValue)["catch"](() => { 
+((((this as JsValue) as JsValue)["_isStoppingAfterCompression"] = false));
+(((this as JsValue) as JsValue)["_releaseHoldAfterStop"]());
+(((this as JsValue) as JsValue)["_teardown"]());
+((logger as JsValue)["info"]("stopped"));
+return JS.undefined(); }));
+return true;
+return JS.undefined(); }
+
+JsValue stop() { 
+(((this as JsValue) as JsValue)["_stopRecordingProducers"]());
+if ((((this as JsValue) as JsValue)["_isRestartingForSessionIdChange"] as JsValue).truthy()) {(((this as JsValue) as JsValue)["_drainCompressionQueueSync"]());} else {if ((((this as JsValue) as JsValue)["_stopAfterCompressionQueueDrains"]() as JsValue).truthy()) {return JS.undefined();}}
+(((this as JsValue) as JsValue)["_flushBuffer"]());
+(((this as JsValue) as JsValue)["_clearBuffer"]());
+(((this as JsValue) as JsValue)["_releaseHoldAfterStop"]());
+(((this as JsValue) as JsValue)["_teardown"]());
+((logger as JsValue)["info"]("stopped"));
+return JS.undefined(); }
+
+JsValue _releaseHoldAfterStop() { 
+(((this as JsValue) as JsValue)["_setFlushHold"](JS.undefined(), object { "preserveLogDedup": ((this as JsValue) as JsValue)["_isRestartingForSessionIdChange"] }));
+((((this as JsValue) as JsValue)["_heldEpochShipsOnUnload"] = false));
+return JS.undefined(); }
+
+JsValue flushBeforeIdentityReset() { 
+if ((((!(((this as JsValue) as JsValue)["isStarted"] as JsValue).truthy() as JsValue) && (!(((this as JsValue) as JsValue)["_isStoppingAfterCompression"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_drainCompressionQueueSync"]());
+(((this as JsValue) as JsValue)["_flushBuffer"]());
+return JS.undefined(); }
+
+JsValue _restartForSessionIdChange(JsValue holdNextEpoch) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+((((this as JsValue) as JsValue)["_isRestartingForSessionIdChange"] = true));
+((((this as JsValue) as JsValue)["_lastActivityTimestamp"] = (Date as JsValue)["now"]()));
+try {(((this as JsValue) as JsValue)["stop"]());
+((((this as JsValue) as JsValue)["_lastSeenSnapshotCost"] = JS.undefined()));
+((((this as JsValue) as JsValue)["_unstringifiableEventsDropped"] = 0.0));
+((((this as JsValue) as JsValue)["_throttledMutationsDropped"] = 0.0));
+((((this as JsValue) as JsValue)["_oversizedMutationsDropped"] = 0.0));
+((((this as JsValue) as JsValue)["_oversizedMutationBytesDropped"] = 0.0));
+(if ((((((((_b = if ((((((((_a = getRRWeb())) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["resetSnapshotCostState"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a) as JsValue) });
+(((this as JsValue) as JsValue)["start"]("session_id_changed"));} finally {((((this as JsValue) as JsValue)["_isRestartingForSessionIdChange"] = false));}
+(((this as JsValue) as JsValue)["_setFlushHold"](if ((holdNextEpoch as JsValue).truthy()) { ("no_interaction_since_session_rotated" as JsValue) } else { (JS.undefined() as JsValue) }));
+((((this as JsValue) as JsValue)["_heldEpochShipsOnUnload"] = false));
+return JS.undefined(); }
+
+JsValue _setFlushHold(JsValue reason, JsValue __port_17 = object {  }) { JsValue __port_18 = __port_17;
+JsValue __port_19 = __port_18["preserveLogDedup"];
+JsValue preserveLogDedup = if (JS.isUndefined(__port_19)) { (false as JsValue) } else { __port_19 };
+((((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] = !((isUndefined as JsValue)(reason) as JsValue).truthy()));
+((((this as JsValue) as JsValue)["_flushHoldReason"] = reason));
+if (((isUndefined as JsValue)(reason) as JsValue).truthy()) {if ((!(preserveLogDedup as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lastLoggedFlushHold"] = JS.undefined()));}
+return JS.undefined();}
+if ((((this as JsValue) as JsValue)["_isRestartingForSessionIdChange"] as JsValue).truthy()) {return JS.undefined();}
+JsValue holdKey = `${((this as JsValue) as JsValue)["sessionId"]}:${reason}`;
+if ((((holdKey as JsValue) === (((this as JsValue) as JsValue)["_lastLoggedFlushHold"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_lastLoggedFlushHold"] = holdKey));
+((logger as JsValue)["info"](`holding buffer: ${reason}. nothing is uploaded until the user interacts with the page`));
+return JS.undefined(); }
+
+JsValue _releaseHoldAndFlush() { 
+if ((!(((this as JsValue) as JsValue)["isStarted"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_suppressNextFreshStartHold"] = true));}
+if ((!(((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_setFlushHold"](JS.undefined()));
+((((this as JsValue) as JsValue)["_heldEpochShipsOnUnload"] = false));
+if ((((this as JsValue) as JsValue)["_heldBufferOverflowed"] as JsValue).truthy()) {((((this as JsValue) as JsValue)["_heldBufferOverflowed"] = false));
+(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());}
+(((this as JsValue) as JsValue)["_scheduleFlushBuffer"]());
+return JS.undefined(); }
+
+JsValue discard(JsValue __port_20 = object {  }) { JsValue __port_21 = __port_20;
+JsValue __port_22 = __port_21["discardProducerEvents"];
+JsValue discardProducerEvents = if (JS.isUndefined(__port_22)) { (false as JsValue) } else { __port_22 };
+((((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] = true));
+if ((discardProducerEvents as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearBuffer"]());
+(((this as JsValue) as JsValue)["_stopRecordingProducers"]());}
+(((this as JsValue) as JsValue)["_clearBuffer"]());
+(((this as JsValue) as JsValue)["_teardown"]());
+(((this as JsValue) as JsValue)["_clearBuffer"]());
+(((this as JsValue) as JsValue)["_releaseHoldAfterStop"]());
+((logger as JsValue)["info"]("discarded"));
+return JS.undefined(); }
+
+JsValue _captureProcessedEvent(JsValue event, JsValue eventToSend, JsValue size, JsValue targetSessionId, JsValue targetWindowId) { 
+if ((((size as JsValue) === (UNSTRINGIFIABLE_EVENT_SIZE as JsValue)) as JsValue).truthy()) {((() => { JsValue __port_23 = (this as JsValue); return (__port_23["_unstringifiableEventsDropped"] = ((__port_23["_unstringifiableEventsDropped"] as JsValue) + (1.0 as JsValue))); })());
+((logger as JsValue)["warn"]("could not stringify event - dropping it to keep the rest of the recording"));
+return JS.undefined();}
+JsValue properties = object { "$snapshot_bytes": size, "$snapshot_data": eventToSend, "$session_id": targetSessionId, "$window_id": targetWindowId };
+if ((((((this as JsValue) as JsValue)["status"] as JsValue) === (DISABLED as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearBuffer"]());
+return JS.undefined();}
+(((this as JsValue) as JsValue)["_ensureFullSnapshotForSession"](event, targetSessionId));
+(((this as JsValue) as JsValue)["_captureSnapshotBuffered"](properties));
+return JS.undefined(); }
+
+JsValue _safeTrackFullSnapshotCost() { 
+try {(((this as JsValue) as JsValue)["_trackFullSnapshotCost"]());} catch (JsValue e) {if ((!(((this as JsValue) as JsValue)["_snapshotCostErrorLogged"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_snapshotCostErrorLogged"] = true));
+((logger as JsValue)["error"]("could not track full snapshot cost", e));}}
+return JS.undefined(); }
+
+JsValue _trackFullSnapshotCost() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue cost = if ((((((((_b = if ((((((((_a = getRRWeb())) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["getLastSnapshotCost"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a) as JsValue) };
+if ((((!(cost as JsValue).truthy() as JsValue) || (((cost as JsValue) === (((this as JsValue) as JsValue)["_lastSeenSnapshotCost"] as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_lastSeenSnapshotCost"] = cost));
+if (((((cost as JsValue)["durationMs"] as JsValue) >= (SLOW_FULL_SNAPSHOT_THRESHOLD_MS as JsValue)) as JsValue).truthy()) {((logger as JsValue)["warn"]("full snapshot was slow, the page may have been unresponsive while it ran", object { "durationMs": (Math as JsValue)["round"]((cost as JsValue)["durationMs"]), "stylesheetMs": (Math as JsValue)["round"]((cost as JsValue)["stylesheetMs"]), "nodeCount": (cost as JsValue)["nodeCount"], "cssRuleCount": (cost as JsValue)["cssRuleCount"], "nonDeferrableCssRuleCount": (cost as JsValue)["nonDeferrableCssRuleCount"], "deferredStylesheetCount": (cost as JsValue)["deferredStylesheetCount"] }));}
+return JS.undefined(); }
+
+JsValue _ensureFullSnapshotForSession(JsValue event, JsValue targetSessionId) { 
+if (((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lastFullSnapshotSessionId"] = targetSessionId));
+return JS.undefined();}
+if (((((event as JsValue)["type"] as JsValue) !== ((EventType as JsValue)["IncrementalSnapshot"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if (((((((isUndefined as JsValue)(((this as JsValue) as JsValue)["_lastFullSnapshotSessionId"]) as JsValue) || (((((this as JsValue) as JsValue)["_lastFullSnapshotSessionId"] as JsValue) === (targetSessionId as JsValue)) as JsValue)) as JsValue) || (((((this as JsValue) as JsValue)["_fullSnapshotHealAttemptedFor"] as JsValue) === (targetSessionId as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_fullSnapshotHealAttemptedFor"] = targetSessionId));
+((logger as JsValue)["info"]("incremental snapshot for a session with no full snapshot - requesting one", object { "sessionId": targetSessionId }));
+(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());
+return JS.undefined(); }
+
+JsValue _finishQueuedCompressionEvent(JsValue queuedEvent) { 
+if (((((queuedEvent as JsValue)["counted"] as JsValue) && ((((queuedEvent as JsValue)["generation"] as JsValue) === (((this as JsValue) as JsValue)["_compressionQueueGeneration"] as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_queuedCompressionEvents"] = (Math as JsValue)["max"](0.0, ((((this as JsValue) as JsValue)["_queuedCompressionEvents"] as JsValue) - (1.0 as JsValue)))));}
+(((queuedEvent as JsValue)["counted"] = false));
+((((this as JsValue) as JsValue)["_pendingCompressionEvents"] = (((this as JsValue) as JsValue)["_pendingCompressionEvents"] as JsValue)["filter"]((JsValue x) => { 
+return (((x as JsValue) !== (queuedEvent as JsValue)) as JsValue);
+return JS.undefined(); })));
+return JS.undefined(); }
+
+JsValue _captureQueuedCompressionEvent(JsValue queuedEvent, JsValue eventToSend, JsValue size) { 
+if (((((queuedEvent as JsValue)["processed"] as JsValue) || ((((queuedEvent as JsValue)["generation"] as JsValue) !== (((this as JsValue) as JsValue)["_compressionQueueGeneration"] as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+(((queuedEvent as JsValue)["processed"] = true));
+(((this as JsValue) as JsValue)["_captureProcessedEvent"]((queuedEvent as JsValue)["event"], eventToSend, size, (queuedEvent as JsValue)["targetSessionId"], (queuedEvent as JsValue)["targetWindowId"]));
+return JS.undefined(); }
+
+JsValue _processQueuedCompressionEventSync(JsValue queuedEvent) { 
+try {JsValue eventToSend = (queuedEvent as JsValue)["event"];
+JsValue size = JS.undefined();
+if (((queuedEvent as JsValue)["compressionEnabled"] as JsValue).truthy()) {try {
+(((() => { JsValue __port_24 = compressEventSync((queuedEvent as JsValue)["event"]);
+eventToSend = __port_24["event"];
+size = __port_24["size"];return __port_24; })()));} catch (JsValue e) {((logger as JsValue)["warn"]("could not process queued compression event - will use uncompressed event", e));}}
+if (((isUndefined as JsValue)(size) as JsValue).truthy()) {((size = (estimateSize as JsValue)((queuedEvent as JsValue)["event"])));}
+try {(((this as JsValue) as JsValue)["_captureQueuedCompressionEvent"](queuedEvent, eventToSend, size));} catch (JsValue e) {((logger as JsValue)["warn"]("could not capture queued compression event", e));}} finally {(((this as JsValue) as JsValue)["_finishQueuedCompressionEvent"](queuedEvent));}
+return JS.undefined(); }
+
+JsValue _drainCompressionQueueSync() { 
+JsValue queuedEvents = (() => { JsValue __port_25 = JS.array();
+for (JsValue __port_26 of ((this as JsValue) as JsValue)["_pendingCompressionEvents"]) { __port_25.push(__port_26); }return __port_25; })();
+((queuedEvents as JsValue)["forEach"]((JsValue queuedEvent) => { 
+try {(((this as JsValue) as JsValue)["_processQueuedCompressionEventSync"](queuedEvent));} catch (JsValue e) {((logger as JsValue)["warn"]("could not drain queued compression event", e));}
+return JS.undefined(); }));
+return JS.undefined(); }
+
+JsValue _enqueueCompression(JsValue event, JsValue compressionEnabled, JsValue targetSessionId, JsValue targetWindowId) { 
+JsValue queuedEvent = object { "event": event, "compressionEnabled": compressionEnabled, "targetSessionId": targetSessionId, "targetWindowId": targetWindowId, "generation": ((this as JsValue) as JsValue)["_compressionQueueGeneration"], "processed": false, "counted": true };
+((((this as JsValue) as JsValue)["_pendingCompressionEvents"] as JsValue)["push"](queuedEvent));
+((() => { JsValue __port_27 = (this as JsValue); return (__port_27["_queuedCompressionEvents"] = ((__port_27["_queuedCompressionEvents"] as JsValue) + (1.0 as JsValue))); })());
+JsValue processEvent = () => __port_28((this as JsValue), event, compressionEnabled, queuedEvent);
+((((this as JsValue) as JsValue)["_compressionQueue"] = if ((((this as JsValue) as JsValue)["_compressionQueue"] as JsValue).truthy()) { (((((this as JsValue) as JsValue)["_compressionQueue"] as JsValue)["catch"](() => { 
+return (JS.undefined() as JsValue);
+return JS.undefined(); }) as JsValue)["then"](processEvent) as JsValue) } else { ((processEvent as JsValue)() as JsValue) }));
+return JS.undefined(); }
+
+JsValue onRRwebEmit(JsValue rawEvent) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+JsValue _f = JS.undefined();
+JsValue _g = JS.undefined();
+JsValue _h = JS.undefined();
+JsValue _j = JS.undefined();
+JsValue _k = JS.undefined();
+JsValue _l = JS.undefined();
+if ((!((((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionManager"] as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+(((this as JsValue) as JsValue)["_processQueuedEvents"]());
+if ((((!(rawEvent as JsValue).truthy() as JsValue) || (!((isObject as JsValue)(rawEvent) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if (((((rawEvent as JsValue)["type"] as JsValue) === ((EventType as JsValue)["Meta"] as JsValue)) as JsValue).truthy()) {JsValue href = ((this as JsValue) as JsValue)["_maskReplayUrl"](((rawEvent as JsValue)["data"] as JsValue)["href"]);
+((((this as JsValue) as JsValue)["_lastHref"] = href));
+if ((!(href as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+((((rawEvent as JsValue)["data"] as JsValue)["href"] = href));} else {(((this as JsValue) as JsValue)["_pageViewFallBack"]());}
+(if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["checkUrlTriggers"](((this as JsValue) as JsValue)["sessionId"], () => { 
+return (((this as JsValue) as JsValue)["_pauseRecording"]() as JsValue);
+return JS.undefined(); }, () => { 
+return (((this as JsValue) as JsValue)["_resumeRecording"]() as JsValue);
+return JS.undefined(); }, (JsValue triggerType, JsValue matchDetail) => { 
+return (((this as JsValue) as JsValue)["_activateTrigger"](triggerType, matchDetail) as JsValue);
+return JS.undefined(); }) as JsValue) });
+if (((((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] as JsValue) && (!(isRecordingPausedEvent(rawEvent) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if (((((rawEvent as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_safeTrackFullSnapshotCost"]());
+(((Promise as JsValue)["resolve"]() as JsValue)["then"](() => { 
+return (((this as JsValue) as JsValue)["_safeTrackFullSnapshotCost"]() as JsValue);
+return JS.undefined(); }));
+(((this as JsValue) as JsValue)["_scheduleFullSnapshot"]());
+(if ((((((((_b = ((this as JsValue) as JsValue)["_mutationThrottler"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["reset"]() as JsValue) });
+(if ((((((((_c = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_c as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_c as JsValue)["register_once"](__lil_object_30(() => (SESSION_RECORDING_FIRST_FULL_SNAPSHOT_TIMESTAMP as JsValue), () => ((rawEvent as JsValue)["timestamp"] as JsValue)), JS.undefined()) as JsValue) });}
+JsValue jsonLdRemovedFromPendingBuffer = (((((rawEvent as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue) && ((if ((((((((_d = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_d as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_d as JsValue)["hasPendingTriggers"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) }) as JsValue));
+if ((jsonLdRemovedFromPendingBuffer as JsValue).truthy()) {(((this as JsValue) as JsValue)["_clearBufferBeforeMostRecentMeta"]());}
+JsValue throttledEvent = if ((((this as JsValue) as JsValue)["_mutationThrottler"] as JsValue).truthy()) { ((((this as JsValue) as JsValue)["_mutationThrottler"] as JsValue)["throttleMutations"](rawEvent) as JsValue) } else { (rawEvent as JsValue) };
+if ((!(throttledEvent as JsValue).truthy() as JsValue).truthy()) {if ((((((this as JsValue) as JsValue)["_isIdle"] as JsValue) === (true as JsValue)) as JsValue).truthy()) {((() => { JsValue __port_32 = (this as JsValue); number __port_31 = JS.number(__port_32["_eventsDroppedWhileIdle"]); __port_32["_eventsDroppedWhileIdle"] = __port_31 + 1.0; return __port_31; })());}
+return JS.undefined();}
+JsValue event = (truncateLargeConsoleLogs as JsValue)(throttledEvent);
+JsValue sessionEndingPayload = getSessionEndingPayload(event);
+JsValue sessionStartingPayload = getSessionStartingPayload(event);
+JsValue sessionIdlePayload = getSessionIdlePayload(event);
+if ((((sessionEndingPayload as JsValue) || (sessionStartingPayload as JsValue)) as JsValue).truthy()) {if ((if ((((((sessionEndingPayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionEndingPayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionEndingPayload as JsValue)["lastActivityTimestamp"] as JsValue) } as JsValue).truthy()) {(((event as JsValue)["timestamp"] = (sessionEndingPayload as JsValue)["lastActivityTimestamp"]));}} else {if ((!((if ((((((sessionIdlePayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionIdlePayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionIdlePayload as JsValue)["sessionId"] as JsValue) }) as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_updateWindowAndSessionIds"](event));}}
+JsValue targetSessionId = if ((((((((_g = if ((((((((_f = if ((((((((_e = if ((((((sessionEndingPayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionEndingPayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionEndingPayload as JsValue)["currentSessionId"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_e as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_e as JsValue) } else { (if ((((((sessionStartingPayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionStartingPayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionStartingPayload as JsValue)["nextSessionId"] as JsValue) } as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_f as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_f as JsValue) } else { (if ((((((sessionIdlePayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionIdlePayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionIdlePayload as JsValue)["sessionId"] as JsValue) } as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_g as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_g as JsValue) } else { (((this as JsValue) as JsValue)["_sessionId"] as JsValue) };
+JsValue targetWindowId = if ((((((((_k = if ((((((((_j = if ((((((((_h = if ((((((sessionEndingPayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionEndingPayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionEndingPayload as JsValue)["currentWindowId"] as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_h as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_h as JsValue) } else { (if ((((((sessionStartingPayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionStartingPayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionStartingPayload as JsValue)["nextWindowId"] as JsValue) } as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_j as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_j as JsValue) } else { (if ((((((sessionIdlePayload as JsValue) === (null as JsValue)) as JsValue) || (((sessionIdlePayload as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((sessionIdlePayload as JsValue)["windowId"] as JsValue) } as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_k as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_k as JsValue) } else { (((this as JsValue) as JsValue)["_windowId"] as JsValue) };
+if ((((((((this as JsValue) as JsValue)["_isIdle"] as JsValue) === (true as JsValue)) as JsValue) && (!(isAllowedWhenIdle(event) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {if ((isMirrorDesyncingWhenDropped(event) as JsValue).truthy()) {((() => { JsValue __port_34 = (this as JsValue); number __port_33 = JS.number(__port_34["_eventsDroppedWhileIdle"]); __port_34["_eventsDroppedWhileIdle"] = __port_33 + 1.0; return __port_33; })());}
+return JS.undefined();}
+if (((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_eventsDroppedWhileIdle"] = 0.0));}
+if ((sessionIdlePayload as JsValue).truthy()) {(((event as JsValue)["timestamp"] = (((sessionIdlePayload as JsValue)["lastActivityTimestamp"] as JsValue) + ((sessionIdlePayload as JsValue)["threshold"] as JsValue))));}
+JsValue jsonLdCaptureWasReady = ((this as JsValue) as JsValue)["_jsonLdCaptureReady"];
+((((this as JsValue) as JsValue)["_jsonLdCaptureReady"] = true));
+if ((jsonLdRemovedFromPendingBuffer as JsValue).truthy()) {(((this as JsValue) as JsValue)["_scheduleJsonLdScan"](true));} else {if ((!(jsonLdCaptureWasReady as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_scheduleJsonLdScan"]());}}
+JsValue compressionEnabled = if ((((((((_l = (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["compress_events"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_l as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_l as JsValue) } else { (true as JsValue) };
+if (((((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["Custom"] as JsValue)) as JsValue) && (((((event as JsValue)["data"] as JsValue)["tag"] as JsValue) === (JSON_LD_EVENT_TAG as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue href = JS.undefined();
+try {((href = if ((window as JsValue).truthy()) { (((this as JsValue) as JsValue)["_maskReplayUrl"](((window as JsValue)["location"] as JsValue)["href"]) as JsValue) } else { (JS.undefined() as JsValue) }));} catch (JsValue __port_35) {}
+((((event as JsValue)["data"] as JsValue)["href"] = href));}
+if ((((((((this as JsValue) as JsValue)["_queuedCompressionEvents"] as JsValue) > (0.0 as JsValue)) as JsValue) || ((((compressionEnabled as JsValue) && (shouldUseNativeAsyncSessionRecordingGzip(event) as JsValue))) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_enqueueCompression"](event, compressionEnabled, targetSessionId, targetWindowId));
+return JS.undefined();}
+JsValue __port_36 = if ((compressionEnabled as JsValue).truthy()) { (compressEventSync(event) as JsValue) } else { (object { "event": event, "size": (estimateSize as JsValue)(event) } as JsValue) };
+JsValue eventToSend = __port_36["event"];
+JsValue size = __port_36["size"];
+(((this as JsValue) as JsValue)["_captureProcessedEvent"](event, eventToSend, size, targetSessionId, targetWindowId));
+return JS.undefined(); }
+
+JsValue __lil_get_status() { 
+if ((!(((this as JsValue) as JsValue)["_strategy"] as JsValue).truthy() as JsValue).truthy()) {return DISABLED;}
+JsValue context = object { "instance": ((this as JsValue) as JsValue)["_instance"], "sessionId": ((this as JsValue) as JsValue)["sessionId"], "isSampled": ((this as JsValue) as JsValue)["_isSampled"], "rrwebError": ((this as JsValue) as JsValue)["_rrwebError"], "urlTriggerMatching": ((this as JsValue) as JsValue)["_urlTriggerMatching"], "eventTriggerMatching": ((this as JsValue) as JsValue)["_eventTriggerMatching"], "linkedFlagMatching": ((this as JsValue) as JsValue)["_linkedFlagMatching"], "remoteConfig": ((this as JsValue) as JsValue)["_remoteConfig"] };
+return (((this as JsValue) as JsValue)["_strategy"] as JsValue)["getStatus"](context);
+return JS.undefined(); }
+
+JsValue log(JsValue message, JsValue level = "log") { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["sessionRecording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["onRRwebEmit"](object { "type": 6.0, "data": object { "plugin": "rrweb/console@1", "payload": object { "level": level, "trace": JS.array(), "payload": JS.array((JSON as JsValue)["stringify"](message)) } }, "timestamp": (Date as JsValue)["now"]() }) as JsValue) });
+return JS.undefined(); }
+
+JsValue overrideLinkedFlag() { 
+(((((this as JsValue) as JsValue)["_linkedFlagMatching"] as JsValue)["linkedFlagSeen"] = true));
+(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());
+(((this as JsValue) as JsValue)["_releaseHoldAndFlush"]());
+(((this as JsValue) as JsValue)["_reportStarted"]("linked_flag_overridden"));
+return JS.undefined(); }
+
+JsValue overrideSampling() { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["register"](__lil_object_37(() => (SESSION_RECORDING_IS_SAMPLED as JsValue), () => (((this as JsValue) as JsValue)["sessionId"] as JsValue), () => (SESSION_RECORDING_SAMPLE_RATE as JsValue), () => (null as JsValue))) as JsValue) });
+(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());
+(((this as JsValue) as JsValue)["_releaseHoldAndFlush"]());
+(((this as JsValue) as JsValue)["_reportStarted"]("sampling_overridden"));
+return JS.undefined(); }
+
+JsValue overrideTrigger(JsValue triggerType) { 
+(((this as JsValue) as JsValue)["_activateTrigger"](triggerType));
+(((this as JsValue) as JsValue)["_releaseHoldAndFlush"]());
+return JS.undefined(); }
+
+JsValue _currentMaskedHostname() { 
+JsValue _a = JS.undefined();
+try {JsValue href = if ((((((((_a = if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["location"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["href"] as JsValue) };
+if ((!(href as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+JsValue maskedUrl = ((this as JsValue) as JsValue)["_maskReplayUrl"](href);
+if ((!(maskedUrl as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+return (((JS.construct(URL, maskedUrl) as JsValue)["hostname"] as JsValue) || (JS.undefined() as JsValue));} catch (JsValue __port_38) {return JS.undefined();}
+return JS.undefined(); }
+
+JsValue _clearFlushBufferTimer() { 
+if ((((this as JsValue) as JsValue)["_flushBufferTimer"] as JsValue).truthy()) {((clearTimeout as JsValue)(((this as JsValue) as JsValue)["_flushBufferTimer"]));
+((((this as JsValue) as JsValue)["_flushBufferTimer"] = JS.undefined()));}
+return JS.undefined(); }
+
+JsValue _scheduleFlushBuffer() { 
+if ((!(((this as JsValue) as JsValue)["_flushBufferTimer"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_flushBufferTimer"] = (setTimeout as JsValue)(() => { 
+(((this as JsValue) as JsValue)["_flushBuffer"]());
+return JS.undefined(); }, RECORDING_BUFFER_TIMEOUT)));}
+return JS.undefined(); }
+
+JsValue _wouldOpenRecordingWithMarkersOnly() { 
+if ((((((((this as JsValue) as JsValue)["_lastFullSnapshotSessionId"] as JsValue) === ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["sessionId"] as JsValue)) as JsValue) || (((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {return false;}
+return ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["every"]((JsValue event) => { 
+return ((((((((if ((((((event as JsValue) === (null as JsValue)) as JsValue) || (((event as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((event as JsValue)["type"] as JsValue) }) as JsValue) === ((EventType as JsValue)["Custom"] as JsValue)) as JsValue) && (!(isSessionEndingEvent(event) as JsValue).truthy() as JsValue)) as JsValue) && (!(isSessionStartingEvent(event) as JsValue).truthy() as JsValue)) as JsValue);
+return JS.undefined(); });
+return JS.undefined(); }
+
+JsValue _describePendingTriggerConditions() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+return if ((((((((_b = if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["getPendingTriggerConditions"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (JS.array() as JsValue) };
+return JS.undefined(); }
+
+JsValue _maybeLogBufferingReason(JsValue status) { 
+if ((((status as JsValue) !== (BUFFERING as JsValue)) as JsValue).truthy()) {if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_lastLoggedBufferingReason"]) as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_instance"] as JsValue)["register_for_session"](__lil_object_39(() => (SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS as JsValue), () => (JS.array() as JsValue))));}
+((((this as JsValue) as JsValue)["_lastLoggedBufferingReason"] = JS.undefined()));
+return JS.undefined();}
+JsValue pending = ((this as JsValue) as JsValue)["_describePendingTriggerConditions"]();
+if (((((pending as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_lastLoggedBufferingReason"]) as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_instance"] as JsValue)["register_for_session"](__lil_object_40(() => (SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS as JsValue), () => (JS.array() as JsValue))));}
+((((this as JsValue) as JsValue)["_lastLoggedBufferingReason"] = JS.undefined()));
+return JS.undefined();}
+JsValue reason = (pending as JsValue)["join"](", ");
+JsValue reasonKey = `${((this as JsValue) as JsValue)["sessionId"]}:${reason}`;
+if ((((reasonKey as JsValue) === (((this as JsValue) as JsValue)["_lastLoggedBufferingReason"] as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_lastLoggedBufferingReason"] = reasonKey));
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["register_for_session"](__lil_object_41(() => (SDK_DEBUG_REPLAY_PENDING_TRIGGER_CONDITIONS as JsValue), () => (pending as JsValue))));
+((logger as JsValue)["info"](`buffering: ${reason}`));
+return JS.undefined(); }
+
+JsValue _canParkPendingBuffer() { 
+JsValue _a = JS.undefined();
+return (((((((((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["persistence"] as JsValue) !== ("memory" as JsValue)) as JsValue) && ((((if ((((((((_a = (((this as JsValue) as JsValue)["_instance"] as JsValue)["persistence"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["_disabled"] as JsValue) }) as JsValue) !== (true as JsValue)) as JsValue)) as JsValue) && ((sessionStore as JsValue)["_is_supported"]() as JsValue)));
+return JS.undefined(); }
+
+JsValue _parkBufferForNextPage() { 
+if ((((((((((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue) || ((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"] as JsValue) === (((this as JsValue) as JsValue)["_lastParkedBufferSize"] as JsValue)) as JsValue)) as JsValue) || ((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"] as JsValue) > (RECORDING_MAX_EVENT_SIZE as JsValue)) as JsValue)) as JsValue) || (!(((this as JsValue) as JsValue)["_canParkPendingBuffer"]() as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_lastParkedBufferSize"] = (((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"]));
+((sessionStore as JsValue)["_set"](((this as JsValue) as JsValue)["_pendingBufferStorageKey"], ((this as JsValue) as JsValue)["_buffer"]));
+return JS.undefined(); }
+
+JsValue _restorePendingBuffer() { 
+if ((((((this as JsValue) as JsValue)["_pendingBufferRestored"] as JsValue) || (!(((this as JsValue) as JsValue)["_canParkPendingBuffer"]() as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_pendingBufferRestored"] = true));
+JsValue parked = (sessionStore as JsValue)["_parse"](((this as JsValue) as JsValue)["_pendingBufferStorageKey"]);
+((sessionStore as JsValue)["_remove"](((this as JsValue) as JsValue)["_pendingBufferStorageKey"]));
+if ((((((((((((!((isObject as JsValue)(parked) as JsValue).truthy() as JsValue) || (!((isArray as JsValue)((parked as JsValue)["data"]) as JsValue).truthy() as JsValue)) as JsValue) || (((((parked as JsValue)["data"] as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue) || (!((isArray as JsValue)((parked as JsValue)["sizes"]) as JsValue).truthy() as JsValue)) as JsValue) || (((((parked as JsValue)["sizes"] as JsValue)["length"] as JsValue) !== (((parked as JsValue)["data"] as JsValue)["length"] as JsValue)) as JsValue)) as JsValue) || (!((isNumber as JsValue)((parked as JsValue)["size"]) as JsValue).truthy() as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if (((((((parked as JsValue)["sessionId"] as JsValue) !== (((this as JsValue) as JsValue)["_sessionId"] as JsValue)) as JsValue) || ((((parked as JsValue)["windowId"] as JsValue) !== (((this as JsValue) as JsValue)["_windowId"] as JsValue)) as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_buffer"] = parked));
+return JS.undefined(); }
+
+JsValue _flushBuffer(JsValue isUnloading = false) { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+(((this as JsValue) as JsValue)["_clearFlushBufferTimer"]());
+if ((((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] as JsValue).truthy()) {return ((this as JsValue) as JsValue)["_buffer"];}
+if ((((this as JsValue) as JsValue)["_wouldOpenRecordingWithMarkersOnly"]() as JsValue).truthy()) {if (((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"] as JsValue) > (RECORDING_MAX_EVENT_SIZE as JsValue)) as JsValue).truthy()) {return ((this as JsValue) as JsValue)["_clearBuffer"]();}
+if ((isUnloading as JsValue).truthy()) {(((this as JsValue) as JsValue)["_parkBufferForNextPage"]());}
+return ((this as JsValue) as JsValue)["_buffer"];}
+JsValue validatedBuffer = ((this as JsValue) as JsValue)["_buffer"];
+(if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["ensureSamplingDecision"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) });
+JsValue isBelowMinimumDuration = ((this as JsValue) as JsValue)["_isBelowMinimumDuration"]();
+JsValue status = ((this as JsValue) as JsValue)["status"];
+(((this as JsValue) as JsValue)["_maybeLogBufferingReason"](status));
+if ((((((((((status as JsValue) === (BUFFERING as JsValue)) as JsValue) || (((status as JsValue) === (PAUSED as JsValue)) as JsValue)) as JsValue) || (((status as JsValue) === (DISABLED as JsValue)) as JsValue)) as JsValue) || (isBelowMinimumDuration as JsValue)) as JsValue).truthy()) {if ((((isUnloading as JsValue) && ((((((status as JsValue) === (ACTIVE as JsValue)) as JsValue) || (((status as JsValue) === (SAMPLED as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_parkBufferForNextPage"]());}
+(((this as JsValue) as JsValue)["_scheduleFlushBuffer"]());
+return ((this as JsValue) as JsValue)["_buffer"];}
+if ((((((this as JsValue) as JsValue)["_buffer"] as JsValue) !== (validatedBuffer as JsValue)) as JsValue).truthy()) {return ((this as JsValue) as JsValue)["_buffer"];}
+if ((((((validatedBuffer as JsValue)["data"] as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) {JsValue snapshotHostname = ((this as JsValue) as JsValue)["_currentMaskedHostname"]();
+JsValue snapshotEvents = (splitBuffer as JsValue)(validatedBuffer);
+((snapshotEvents as JsValue)["forEach"]((JsValue snapshotBuffer) => { 
+JsValue _a = JS.undefined();
+try {(if ((((((((_a = ((this as JsValue) as JsValue)["_flushedSizeTracker"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["trackSize"]((snapshotBuffer as JsValue)["sessionId"], (snapshotBuffer as JsValue)["size"]) as JsValue) });
+(((this as JsValue) as JsValue)["_captureSnapshot"](__lil_object_42(() => ((snapshotBuffer as JsValue)["size"] as JsValue), () => ((snapshotBuffer as JsValue)["data"] as JsValue), () => ((snapshotBuffer as JsValue)["sessionId"] as JsValue), () => ((snapshotBuffer as JsValue)["windowId"] as JsValue), () => ((Config as JsValue)["LIB_NAME"] as JsValue), () => ((Config as JsValue)["LIB_VERSION"] as JsValue), () => (snapshotHostname as JsValue), () => ((if ((((((this as JsValue) as JsValue)["_throttledMutationsDropped"] as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) { (object { "$sdk_debug_replay_throttled_mutations_dropped": ((this as JsValue) as JsValue)["_throttledMutationsDropped"] } as JsValue) } else { (object {  } as JsValue) }) as JsValue), () => ((if ((((((this as JsValue) as JsValue)["_oversizedMutationsDropped"] as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) { (object { "$sdk_debug_replay_oversized_mutations_dropped": ((this as JsValue) as JsValue)["_oversizedMutationsDropped"] } as JsValue) } else { (object {  } as JsValue) }) as JsValue), () => ((if ((((((this as JsValue) as JsValue)["_oversizedMutationBytesDropped"] as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) { (object { "$sdk_debug_replay_oversized_mutation_bytes_dropped": ((this as JsValue) as JsValue)["_oversizedMutationBytesDropped"] } as JsValue) } else { (object {  } as JsValue) }) as JsValue), () => ((if ((((((this as JsValue) as JsValue)["_unstringifiableEventsDropped"] as JsValue) > (0.0 as JsValue)) as JsValue).truthy()) { (object { "$sdk_debug_replay_unstringifiable_events_dropped": ((this as JsValue) as JsValue)["_unstringifiableEventsDropped"] } as JsValue) } else { (object {  } as JsValue) }) as JsValue))));} catch (JsValue e) {((logger as JsValue)["warn"]("could not capture snapshot chunk - skipping it", e));}
+return JS.undefined(); }));
+if ((!((isUndefined as JsValue)(((this as JsValue) as JsValue)["_lastParkedBufferSize"]) as JsValue).truthy() as JsValue).truthy()) {((sessionStore as JsValue)["_remove"](((this as JsValue) as JsValue)["_pendingBufferStorageKey"]));
+((((this as JsValue) as JsValue)["_lastParkedBufferSize"] = JS.undefined()));}
+(if ((((((((_b = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["onFlushComplete"]() as JsValue) });}
+return ((this as JsValue) as JsValue)["_clearBuffer"]();
+return JS.undefined(); }
+
+JsValue _captureSnapshotBuffered(JsValue properties) { 
+JsValue _a = JS.undefined();
+JsValue additionalBytes = ((2.0 as JsValue) + (((((if ((((((((_a = ((this as JsValue) as JsValue)["_buffer"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["data"] as JsValue)["length"] as JsValue) }) as JsValue) || (0.0 as JsValue))) as JsValue));
+JsValue targetSessionId = (properties as JsValue)["$session_id"];
+JsValue sessionChanged = (((((this as JsValue) as JsValue)["_buffer"] as JsValue)["sessionId"] as JsValue) !== (targetSessionId as JsValue));
+if ((((sessionChanged as JsValue) || ((((((((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (true as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] as JsValue).truthy() as JsValue)) as JsValue) && ((((((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"] as JsValue) + ((properties as JsValue)["$snapshot_bytes"] as JsValue)) as JsValue) + (additionalBytes as JsValue)) as JsValue) > (RECORDING_MAX_EVENT_SIZE as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {JsValue sessionBeforeFlush = ((this as JsValue) as JsValue)["_sessionId"];
+((((this as JsValue) as JsValue)["_buffer"] = ((this as JsValue) as JsValue)["_flushBuffer"]()));
+if ((((((this as JsValue) as JsValue)["_sessionId"] as JsValue) !== (sessionBeforeFlush as JsValue)) as JsValue).truthy()) {return JS.undefined();}
+if ((((sessionChanged as JsValue) && (((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) > (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_buffer"] = ((this as JsValue) as JsValue)["_clearBuffer"]()));}
+(((((this as JsValue) as JsValue)["_buffer"] as JsValue)["sessionId"] = targetSessionId));
+(((((this as JsValue) as JsValue)["_buffer"] as JsValue)["windowId"] = (properties as JsValue)["$window_id"]));}
+if ((((((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] as JsValue) && ((((((this as JsValue) as JsValue)["_heldBufferOverflowed"] as JsValue) || ((((((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"] as JsValue) + ((properties as JsValue)["$snapshot_bytes"] as JsValue)) as JsValue) + (additionalBytes as JsValue)) as JsValue) > (RECORDING_MAX_EVENT_SIZE as JsValue)) as JsValue))) as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_heldBufferOverflowed"] = true));
+return JS.undefined();}
+((() => { JsValue __port_43 = ((this as JsValue) as JsValue)["_buffer"]; return (__port_43["size"] = ((__port_43["size"] as JsValue) + ((properties as JsValue)["$snapshot_bytes"] as JsValue))); })());
+(((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["push"]((properties as JsValue)["$snapshot_data"]));
+(((((this as JsValue) as JsValue)["_buffer"] as JsValue)["sizes"] as JsValue)["push"]((properties as JsValue)["$snapshot_bytes"]));
+if ((((((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (true as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_holdFlushUntilInteraction"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_scheduleFlushBuffer"]());}
+return JS.undefined(); }
+
+JsValue _captureSnapshot(JsValue properties) { 
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["capture"]("$snapshot", properties, object { "_url": ((((this as JsValue) as JsValue)["_instance"] as JsValue)["requestRouter"] as JsValue)["endpointFor"]("api", ((this as JsValue) as JsValue)["_endpoint"]), "_noTruncate": true, "_batchKey": SESSION_RECORDING_BATCH_KEY, "skip_client_rate_limiting": true }));
+return JS.undefined(); }
+
+JsValue __lil_get__sessionDuration() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue mostRecentSnapshot = if ((((((((_a = ((this as JsValue) as JsValue)["_buffer"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_a as JsValue)["data"] as JsValue)[(((if ((((((((_b = ((this as JsValue) as JsValue)["_buffer"])) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { (((_b as JsValue)["data"] as JsValue)["length"] as JsValue) }) as JsValue) - (1.0 as JsValue))] as JsValue) };
+return if ((mostRecentSnapshot as JsValue).truthy()) { ((((mostRecentSnapshot as JsValue)["timestamp"] as JsValue) - (((this as JsValue) as JsValue)["_sessionStartTimestamp"] as JsValue)) as JsValue) } else { (null as JsValue) };
+return JS.undefined(); }
+
+JsValue _clearBufferBeforeMostRecentMeta() { 
+if ((((!(((this as JsValue) as JsValue)["_buffer"] as JsValue).truthy() as JsValue) || (((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {return ((this as JsValue) as JsValue)["_clearBuffer"]();}
+JsValue lastMetaIndex = (-(1.0 as JsValue));
+for (JsValue i = ((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue) - (1.0 as JsValue)); (((i as JsValue) >= (0.0 as JsValue)) as JsValue).truthy(); i = JS.number(i) - 1.0) {if (((((((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)[i] as JsValue)["type"] as JsValue) === ((EventType as JsValue)["Meta"] as JsValue)) as JsValue).truthy()) {((lastMetaIndex = i));
+break;}}
+if ((((lastMetaIndex as JsValue) >= (0.0 as JsValue)) as JsValue).truthy()) {(((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] = ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["slice"](lastMetaIndex)));
+(((((this as JsValue) as JsValue)["_buffer"] as JsValue)["sizes"] = ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["sizes"] as JsValue)["slice"](lastMetaIndex)));
+(((((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"] = ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["sizes"] as JsValue)["reduce"]((JsValue a, JsValue b) => { 
+return (((a as JsValue) + (b as JsValue)) as JsValue);
+return JS.undefined(); }, 0.0)));
+return ((this as JsValue) as JsValue)["_buffer"];} else {return ((this as JsValue) as JsValue)["_clearBuffer"]();}
+return JS.undefined(); }
+
+JsValue _clearBuffer() { 
+((((this as JsValue) as JsValue)["_buffer"] = object { "size": 0.0, "data": JS.array(), "sizes": JS.array(), "sessionId": ((this as JsValue) as JsValue)["_sessionId"], "windowId": ((this as JsValue) as JsValue)["_windowId"] }));
+return ((this as JsValue) as JsValue)["_buffer"];
+return JS.undefined(); }
+
+JsValue _reportStarted(JsValue startReason, JsValue tagPayload) { 
+((((this as JsValue) as JsValue)["_instance"] as JsValue)["register_for_session"](__lil_object_44(() => (SESSION_RECORDING_START_REASON as JsValue), () => (startReason as JsValue))));
+((logger as JsValue)["info"]((startReason as JsValue)["replace"]("_", " "), tagPayload));
+if ((((startReason as JsValue) !== ("session_id_changed" as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$recording_started", __lil_object_45(() => (startReason as JsValue), () => (tagPayload as JsValue))));}
+return JS.undefined(); }
+
+JsValue _isInteractiveEvent(JsValue event) { 
+JsValue _a = JS.undefined();
+return ((((((event as JsValue)["type"] as JsValue) === (INCREMENTAL_SNAPSHOT_EVENT_TYPE as JsValue)) as JsValue) && ((((ACTIVE_SOURCES as JsValue)["indexOf"](if ((((((((_a = (event as JsValue)["data"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["source"] as JsValue) }) as JsValue) !== ((-(1.0 as JsValue)) as JsValue)) as JsValue)));
+return JS.undefined(); }
+
+JsValue _updateWindowAndSessionIds(JsValue event) { 
+JsValue _a = JS.undefined();
+JsValue isUserInteraction = ((this as JsValue) as JsValue)["_isInteractiveEvent"](event);
+if ((((!(isUserInteraction as JsValue).truthy() as JsValue) && (((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (true as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue timeSinceLastActivity = (((event as JsValue)["timestamp"] as JsValue) - (((this as JsValue) as JsValue)["_lastActivityTimestamp"] as JsValue));
+if ((((timeSinceLastActivity as JsValue) > (((this as JsValue) as JsValue)["_sessionIdleThresholdMilliseconds"] as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_isIdle"] = true));
+((clearInterval as JsValue)(((this as JsValue) as JsValue)["_fullSnapshotTimer"]));
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("sessionIdle", object { "eventTimestamp": (event as JsValue)["timestamp"], "lastActivityTimestamp": ((this as JsValue) as JsValue)["_lastActivityTimestamp"], "threshold": ((this as JsValue) as JsValue)["_sessionIdleThresholdMilliseconds"], "bufferLength": ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"], "bufferSize": (((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"], "sessionId": ((this as JsValue) as JsValue)["_sessionId"], "windowId": ((this as JsValue) as JsValue)["_windowId"] }));
+(((this as JsValue) as JsValue)["_flushBuffer"]());}}
+JsValue __port_46 = (((this as JsValue) as JsValue)["_sessionManager"] as JsValue)["checkAndGetSessionAndWindowId"](!(isUserInteraction as JsValue).truthy(), (event as JsValue)["timestamp"]);
+JsValue windowId = __port_46["windowId"];
+JsValue sessionId = __port_46["sessionId"];
+JsValue returningFromIdle = false;
+if ((isUserInteraction as JsValue).truthy()) {((((this as JsValue) as JsValue)["_lastActivityTimestamp"] = (event as JsValue)["timestamp"]));
+if ((((this as JsValue) as JsValue)["_isIdle"] as JsValue).truthy()) {JsValue idleWasUnknown = ((((this as JsValue) as JsValue)["_isIdle"] as JsValue) === ("unknown" as JsValue));
+((((this as JsValue) as JsValue)["_isIdle"] = false));
+if ((!(idleWasUnknown as JsValue).truthy() as JsValue).truthy()) {(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("sessionNoLongerIdle", object { "reason": "user activity", "type": (event as JsValue)["type"] }));
+((returningFromIdle = true));}}}
+JsValue sessionIdChanged = ((((this as JsValue) as JsValue)["_sessionId"] as JsValue) !== (sessionId as JsValue));
+JsValue windowIdChanged = ((((this as JsValue) as JsValue)["_windowId"] as JsValue) !== (windowId as JsValue));
+((((this as JsValue) as JsValue)["_windowId"] = windowId));
+((((this as JsValue) as JsValue)["_sessionId"] = sessionId));
+if ((((sessionIdChanged as JsValue) || (windowIdChanged as JsValue)) as JsValue).truthy()) {JsValue holdNextEpoch = ((sessionIdChanged as JsValue) && (((((this as JsValue) as JsValue)["_isIdle"] as JsValue) !== (false as JsValue)) as JsValue));
+if ((holdNextEpoch as JsValue).truthy()) {((((this as JsValue) as JsValue)["_isIdle"] = "unknown"));}
+(((this as JsValue) as JsValue)["_restartForSessionIdChange"](holdNextEpoch));} else {if ((isUserInteraction as JsValue).truthy()) {(((this as JsValue) as JsValue)["_releaseHoldAndFlush"]());}
+if ((returningFromIdle as JsValue).truthy()) {JsValue bufferCanShip = (((JS.array("sampled", "active") as JsValue)["includes"](((this as JsValue) as JsValue)["status"]) as JsValue) || ((if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["hasPendingTriggers"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) }) as JsValue));
+if ((((((((this as JsValue) as JsValue)["_eventsDroppedWhileIdle"] as JsValue) > (0.0 as JsValue)) as JsValue) && (bufferCanShip as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]());}
+(((this as JsValue) as JsValue)["_scheduleJsonLdScan"]());
+(((this as JsValue) as JsValue)["_scheduleFullSnapshot"]());}}
+return JS.undefined(); }
+
+JsValue _clearConditionalRecordingPersistence() { 
+JsValue _a = JS.undefined();
+(if ((((((((_a = ((this as JsValue) as JsValue)["_strategy"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["clearConditionalRecordingPersistence"]() as JsValue) });
+return JS.undefined(); }
+
+JsValue __lil_get_sdkDebugProperties() { 
+JsValue _a = JS.undefined();
+return __lil_object_47(() => (((this as JsValue) as JsValue)["status"] as JsValue), () => (((this as JsValue) as JsValue)["_flushHoldReason"] as JsValue), () => (((((this as JsValue) as JsValue)["_buffer"] as JsValue)["data"] as JsValue)["length"] as JsValue), () => ((((this as JsValue) as JsValue)["_buffer"] as JsValue)["size"] as JsValue), () => (((this as JsValue) as JsValue)["_sessionStartTimestamp"] as JsValue), () => (if ((((((((_a = ((this as JsValue) as JsValue)["_flushedSizeTracker"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["currentTrackedSize"](((this as JsValue) as JsValue)["sessionId"]) as JsValue) } as JsValue), () => (((this as JsValue) as JsValue)["_rrwebError"] as JsValue), () => (SDK_DEBUG_REPLAY_RRWEB_ATTACHED as JsValue), () => (((this as JsValue) as JsValue)["_rrwebAttached"] as JsValue), () => (SDK_DEBUG_REPLAY_RRWEB_START_ATTEMPTED as JsValue), () => (((this as JsValue) as JsValue)["_rrwebStartAttempted"] as JsValue));
+return JS.undefined(); }
+
+JsValue __lil_get__rrwebAttached() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+if ((!(((this as JsValue) as JsValue)["_stopRrweb"] as JsValue).truthy() as JsValue).truthy()) {return false;}
+return if ((((((((_c = if ((((((((_b = if ((((((((_a = getRRWebRecord())) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["isRecording"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["call"](_a) as JsValue) })) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { (true as JsValue) };
+return JS.undefined(); }
+
+JsValue _startRecorder() { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue _d = JS.undefined();
+JsValue _e = JS.undefined();
+if ((((this as JsValue) as JsValue)["_stopRrweb"] as JsValue).truthy()) {return JS.undefined();}
+((((this as JsValue) as JsValue)["_rrwebStartAttempted"] = true));
+JsValue sessionRecordingOptions = object { "blockClass": "ph-no-capture", "blockSelector": JS.undefined(), "ignoreClass": "ph-ignore-input", "maskTextClass": "ph-mask", "maskTextSelector": JS.undefined(), "maskTextFn": JS.undefined(), "maskAllInputs": true, "maskInputOptions": object { "password": true }, "maskInputFn": JS.undefined(), "maskAllElementAttributes": false, "maskAttributeFn": JS.undefined(), "slimDOMOptions": object {  }, "collectFonts": false, "inlineStylesheet": true, "inlineStylesheetBudgetRules": 10000.0, "recordCrossOriginIframes": false, "sampling": JS.undefined(), "attributeFilter": JS.undefined() };
+JsValue userSessionRecordingOptions = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"];
+for (JsValue __port_48 of (Object as JsValue)["entries"](((userSessionRecordingOptions as JsValue) || (object {  } as JsValue)))) {JsValue __port_49 = __port_48;
+JsValue key = JS.undefined();
+JsValue value = JS.undefined();
+int __port_50 = 0;
+for (JsValue __port_51 of __port_49) {
+if (__port_50 === 0) { key = __port_51; }
+if (__port_50 === 1) { value = __port_51; }
+__port_50 += 1; if (__port_50 === 2) break;
+}
+if ((JS.in(key, sessionRecordingOptions) as JsValue).truthy()) {if ((((key as JsValue) === ("maskInputOptions" as JsValue)) as JsValue).truthy()) {(((sessionRecordingOptions as JsValue)["maskInputOptions"] = __lil_object_52(() => (true as JsValue), () => (value as JsValue))));} else {if ((((key as JsValue) === ("sampling" as JsValue)) as JsValue).truthy()) {JsValue userSampling = (if ((((((value as JsValue) !== (null as JsValue)) as JsValue) && (((value as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (value as JsValue) } else { (object {  } as JsValue) });
+JsValue sampling = object {  };
+if ((!((isUndefined as JsValue)((userSampling as JsValue)["mousemove"]) as JsValue).truthy() as JsValue).truthy()) {(((sampling as JsValue)["mousemove"] = (userSampling as JsValue)["mousemove"]));}
+if ((!((isUndefined as JsValue)((userSampling as JsValue)["mouseInteraction"]) as JsValue).truthy() as JsValue).truthy()) {(((sampling as JsValue)["mouseInteraction"] = (userSampling as JsValue)["mouseInteraction"]));}
+(((sessionRecordingOptions as JsValue)["sampling"] = sampling));} else {(((sessionRecordingOptions as JsValue)[key] = value));}}}}
+if (((((((((if ((((((userSessionRecordingOptions as JsValue) === (null as JsValue)) as JsValue) || (((userSessionRecordingOptions as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((userSessionRecordingOptions as JsValue)["captureJsonLd"] as JsValue) }) as JsValue) === (true as JsValue)) as JsValue) && ((((sessionRecordingOptions as JsValue)["slimDOMOptions"] as JsValue) !== (true as JsValue)) as JsValue)) as JsValue) && ((((sessionRecordingOptions as JsValue)["slimDOMOptions"] as JsValue) !== ("all" as JsValue)) as JsValue)) as JsValue).truthy()) {(((sessionRecordingOptions as JsValue)["slimDOMOptions"] = __lil_object_53(() => ((sessionRecordingOptions as JsValue)["slimDOMOptions"] as JsValue), () => (true as JsValue))));}
+if ((((((this as JsValue) as JsValue)["_canvasRecording"] as JsValue) && ((((this as JsValue) as JsValue)["_canvasRecording"] as JsValue)["enabled"] as JsValue)) as JsValue).truthy()) {(((sessionRecordingOptions as JsValue)["recordCanvas"] = true));
+(((sessionRecordingOptions as JsValue)["sampling"] = __lil_object_54(() => ((sessionRecordingOptions as JsValue)["sampling"] as JsValue), () => ((((this as JsValue) as JsValue)["_canvasRecording"] as JsValue)["fps"] as JsValue))));
+(((sessionRecordingOptions as JsValue)["dataURLOptions"] = object { "type": "image/webp", "quality": (((this as JsValue) as JsValue)["_canvasRecording"] as JsValue)["quality"] }));
+(((sessionRecordingOptions as JsValue)["canvasResolutionScale"] = ((this as JsValue) as JsValue)["_canvasResolutionScale"]));
+(((sessionRecordingOptions as JsValue)["canvasMasking"] = object { "configured": () => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+return (isFunction as JsValue)(if ((((((((_b = if ((((((((_a = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["canvasCapture"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["maskRegionsFn"] as JsValue) });
+return JS.undefined(); }, "regionsFn": (JsValue canvas) => { 
+JsValue _a = JS.undefined();
+JsValue _b = JS.undefined();
+JsValue _c = JS.undefined();
+JsValue fn = if ((((((((_b = if ((((((((_a = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["canvasCapture"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_b as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_b as JsValue)["maskRegionsFn"] as JsValue) };
+if ((!((isFunction as JsValue)(fn) as JsValue).truthy() as JsValue).truthy()) {return JS.undefined();}
+try {return if ((((((((_c = (fn as JsValue)(canvas))) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { (null as JsValue) };} catch (JsValue e) {if ((!(((this as JsValue) as JsValue)["_maskRegionsFnFailed"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_maskRegionsFnFailed"] = true));
+((logger as JsValue)["warn"]("canvasCapture.maskRegionsFn threw, canvas frames will be skipped", e));}
+return null;}
+return JS.undefined(); } }));}
+if ((((this as JsValue) as JsValue)["_masking"] as JsValue).truthy()) {(((sessionRecordingOptions as JsValue)["maskAllInputs"] = if ((((((((_a = (((this as JsValue) as JsValue)["_masking"] as JsValue)["maskAllInputs"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_a as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_a as JsValue) } else { (true as JsValue) }));
+(((sessionRecordingOptions as JsValue)["maskTextSelector"] = if ((((((((_b = (((this as JsValue) as JsValue)["_masking"] as JsValue)["maskTextSelector"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_b as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_b as JsValue) } else { (JS.undefined() as JsValue) }));
+(((sessionRecordingOptions as JsValue)["blockSelector"] = if ((((((((_c = (((this as JsValue) as JsValue)["_masking"] as JsValue)["blockSelector"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_c as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_c as JsValue) } else { (JS.undefined() as JsValue) }));
+(((sessionRecordingOptions as JsValue)["maskAllElementAttributes"] = if ((((((((_d = (((this as JsValue) as JsValue)["_masking"] as JsValue)["maskAllElementAttributes"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_d as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_d as JsValue) } else { (false as JsValue) }));}
+if (((((sessionRecordingOptions as JsValue)["maskAllElementAttributes"] as JsValue) && ((sessionRecordingOptions as JsValue)["maskAttributeFn"] as JsValue)) as JsValue).truthy()) {(((sessionRecordingOptions as JsValue)["maskAttributeFn"] = JS.undefined()));
+if ((!(((this as JsValue) as JsValue)["_hasWarnedExclusiveAttributeMasking"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_hasWarnedExclusiveAttributeMasking"] = true));
+((logger as JsValue)["warn"]((((("`maskAllElementAttributes` and `maskAttributeFn` are mutually exclusive, and `maskAttributeFn` is being ignored. " as JsValue) + ("Remove one of the two. Note that `maskAllElementAttributes` can also come from your project's \"Privacy and masking\" settings. " as JsValue)) as JsValue) + ("See https://posthog.com/docs/session-replay/privacy" as JsValue))));}}
+(((this as JsValue) as JsValue)["_warnIfClientMaskingShadowsServer"]());
+JsValue rrwebRecord = getRRWebRecord();
+if ((!(rrwebRecord as JsValue).truthy() as JsValue).truthy()) {((logger as JsValue)["error"]("_startRecorder was called but rrwebRecord is not available. This indicates something has gone wrong."));
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_mutationThrottler"] = if ((((((((_e = ((this as JsValue) as JsValue)["_mutationThrottler"])) as JsValue) !== (null as JsValue)) as JsValue) && (((_e as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_e as JsValue) } else { (JS.construct(MutationThrottler, rrwebRecord, object { "refillRate": (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["__mutationThrottlerRefillRate"], "bucketSize": (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["__mutationThrottlerBucketSize"], "onBlockedNode": (JsValue id, JsValue node) => { 
+JsValue message = `Too many mutations on node '${id}'. Rate limiting. This could be due to SVG animations or something similar`;
+((logger as JsValue)["info"](message, object { "node": node }));
+(((this as JsValue) as JsValue)["log"](((((LOGGER_PREFIX as JsValue) + (" " as JsValue)) as JsValue) + (message as JsValue)), "warn"));
+return JS.undefined(); }, "onDroppedAttributeMutations": (JsValue count) => { 
+return (((() => { JsValue __port_55 = (this as JsValue); return (__port_55["_throttledMutationsDropped"] = ((__port_55["_throttledMutationsDropped"] as JsValue) + (count as JsValue))); })()) as JsValue);
+return JS.undefined(); }, "bytesRefillRate": (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["__mutationBytesRefillRate"], "bytesBucketSize": (((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"] as JsValue)["__mutationBytesBucketSize"], "resyncIntervalMs": ((this as JsValue) as JsValue)["_fullSnapshotIntervalMillis"], "onDroppedOversizedMutation": (JsValue bytes) => { 
+if ((((((this as JsValue) as JsValue)["_oversizedMutationsDropped"] as JsValue) === (0.0 as JsValue)) as JsValue).truthy()) {(((this as JsValue) as JsValue)["log"](((LOGGER_PREFIX as JsValue) + (" Dropped an oversized DOM mutation to keep the recording playable. The recording will resync with a full snapshot." as JsValue)), "warn"));}
+((() => { JsValue __port_56 = (this as JsValue); return (__port_56["_oversizedMutationsDropped"] = ((__port_56["_oversizedMutationsDropped"] as JsValue) + (1.0 as JsValue))); })());
+((() => { JsValue __port_57 = (this as JsValue); return (__port_57["_oversizedMutationBytesDropped"] = ((__port_57["_oversizedMutationBytesDropped"] as JsValue) + (bytes as JsValue))); })());
+return JS.undefined(); }, "requestFullSnapshot": () => { 
+return (((this as JsValue) as JsValue)["_tryTakeFullSnapshot"]() as JsValue);
+return JS.undefined(); } }) as JsValue) }));
+JsValue activePlugins = ((this as JsValue) as JsValue)["_gatherRRWebPlugins"]();
+((((this as JsValue) as JsValue)["_stopRrweb"] = (rrwebRecord as JsValue)(__lil_object_58(() => ((JsValue event) => { 
+(((this as JsValue) as JsValue)["onRRwebEmit"](event));
+return JS.undefined(); } as JsValue), () => (activePlugins as JsValue), () => ((JsValue error, JsValue context) => { 
+if ((((context as JsValue) !== ("rrweb" as JsValue)) as JsValue).truthy()) {return false;}
+if ((!(((this as JsValue) as JsValue)["_hasLoggedRecorderCallbackError"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_hasLoggedRecorderCallbackError"] = true));
+((logger as JsValue)["error"]("rrweb internal error - recording will continue but may be incomplete", error));}
+return true;
+return JS.undefined(); } as JsValue), () => (sessionRecordingOptions as JsValue), () => ("DOMContentLoaded" as JsValue)))));
+if ((!(((this as JsValue) as JsValue)["_stopRrweb"] as JsValue).truthy() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_rrwebError"] = true));
+((logger as JsValue)["error"]("rrweb failed to start - Loss of recording data is possible. Check the browser console for rrweb errors."));
+return JS.undefined();}
+((((this as JsValue) as JsValue)["_rrwebError"] = false));
+if (((((((((((if ((((((userSessionRecordingOptions as JsValue) === (null as JsValue)) as JsValue) || (((userSessionRecordingOptions as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((userSessionRecordingOptions as JsValue)["captureJsonLd"] as JsValue) }) as JsValue) === (true as JsValue)) as JsValue) && (document as JsValue)) as JsValue) && ((if ((((((window as JsValue) === (null as JsValue)) as JsValue) || (((window as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((window as JsValue)["MutationObserver"] as JsValue) }) as JsValue)) as JsValue) && (!(((this as JsValue) as JsValue)["_jsonLdCapture"] as JsValue).truthy() as JsValue)) as JsValue).truthy()) {((((this as JsValue) as JsValue)["_jsonLdCapture"] = (startJsonLdCapture as JsValue)(document, (window as JsValue)["MutationObserver"], object { "maskUrl": (JsValue url) => { 
+return (((this as JsValue) as JsValue)["_maskReplayUrl"](url) as JsValue);
+return JS.undefined(); }, "attributeFilter": (sessionRecordingOptions as JsValue)["attributeFilter"], "blockClass": (sessionRecordingOptions as JsValue)["blockClass"], "blockSelector": (sessionRecordingOptions as JsValue)["blockSelector"], "isRecordedElement": (JsValue element) => { 
+return (((((rrwebRecord as JsValue)["mirror"] as JsValue)["getId"](element) as JsValue) > (0.0 as JsValue)) as JsValue);
+return JS.undefined(); }, "maskAllElementAttributes": (sessionRecordingOptions as JsValue)["maskAllElementAttributes"], "maskAttributeFn": (sessionRecordingOptions as JsValue)["maskAttributeFn"], "maskTextClass": (sessionRecordingOptions as JsValue)["maskTextClass"], "maskTextSelector": (sessionRecordingOptions as JsValue)["maskTextSelector"], "getCaptureState": () => { 
+JsValue _a = JS.undefined();
+return if (((((((((if ((((((((_a = ((((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] as JsValue)["session_recording"])) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["captureJsonLd"] as JsValue) }) as JsValue) !== (true as JsValue)) as JsValue) || ((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["urlBlocked"] as JsValue)) as JsValue) || ((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["isCurrentUrlBlocked"]() as JsValue)) as JsValue).truthy()) { (null as JsValue) } else { (((this as JsValue) as JsValue)["_canCaptureJsonLd"]() as JsValue) };
+return JS.undefined(); }, "emit": (JsValue jsonLd) => { 
+return (((this as JsValue) as JsValue)["_tryAddJsonLdEvent"](jsonLd) as JsValue);
+return JS.undefined(); } })));
+if (((((this as JsValue) as JsValue)["_urlTriggerMatching"] as JsValue)["isCurrentUrlBlocked"]() as JsValue).truthy()) {((((this as JsValue) as JsValue)["_jsonLdCapture"] as JsValue)["scan"]());}}
+((((this as JsValue) as JsValue)["_lastActivityTimestamp"] = (Date as JsValue)["now"]()));
+((((this as JsValue) as JsValue)["_isIdle"] = if (((isBoolean as JsValue)(((this as JsValue) as JsValue)["_isIdle"]) as JsValue).truthy()) { (((this as JsValue) as JsValue)["_isIdle"] as JsValue) } else { ("unknown" as JsValue) }));
+(((this as JsValue) as JsValue)["tryAddCustomEvent"]("$remote_config_received", ((this as JsValue) as JsValue)["_remoteConfig"]));
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$session_options", object { "sessionRecordingOptions": sessionRecordingOptions, "activePlugins": (activePlugins as JsValue)["map"]((JsValue p) => { 
+return (if ((((((p as JsValue) === (null as JsValue)) as JsValue) || (((p as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((p as JsValue)["name"] as JsValue) } as JsValue);
+return JS.undefined(); }) }));
+(((this as JsValue) as JsValue)["_tryAddCustomEvent"]("$posthog_config", object { "config": (((this as JsValue) as JsValue)["_instance"] as JsValue)["config"] }));
+return JS.undefined(); }
+
+JsValue tryAddCustomEvent(JsValue tag, JsValue payload) { 
+return ((this as JsValue) as JsValue)["_tryAddCustomEvent"](tag, payload);
+return JS.undefined(); }
+}
+export constructor LazyLoadedSessionRecording;
+
+JsValue networkTimingFromConfig(JsValue config) {
+return if (((isObject as JsValue)(config) as JsValue).truthy()) { ((config as JsValue)["network_timing"] as JsValue) } else { (config as JsValue) };
+return JS.undefined();}
+
+JsValue __port_3(JsValue rrwebMethod) {
+return ((object { "rrwebMethod": rrwebMethod, "enqueuedAt": (Date as JsValue)["now"](), "attempt": 1.0 }) as JsValue);
+return JS.undefined();}
+
+JsValue getRRWeb() {
+JsValue _a = JS.undefined();
+return if ((((((((_a = if ((((((assignableWindow as JsValue) === (null as JsValue)) as JsValue) || (((assignableWindow as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((assignableWindow as JsValue)["__PosthogExtensions__"] as JsValue) })) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["rrweb"] as JsValue) };
+return JS.undefined();}
+
+JsValue getRRWebRecord() {
+JsValue _a = JS.undefined();
+return if ((((((((_a = getRRWeb())) as JsValue) === (null as JsValue)) as JsValue) || (((_a as JsValue) === (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (JS.undefined() as JsValue) } else { ((_a as JsValue)["record"] as JsValue) };
+return JS.undefined();}
+
+JsValue gzipStringToString(JsValue serializedData) {
+return (strFromU8 as JsValue)((gzipSync as JsValue)((strToU8 as JsValue)(serializedData)), true);
+return JS.undefined();}
+
+JsValue serializeForCompression(JsValue data) {
+try {return (JSON as JsValue)["stringify"](data);} catch (JsValue e) {if (((e instanceof RangeError) as JsValue).truthy()) {throw e;}
+return (JSON as JsValue)["stringify"](data, (circularReferenceReplacer as JsValue)());}
+return JS.undefined();}
+
+JsValue gzipToString(JsValue data) {
+return gzipStringToString(serializeForCompression(data));
+return JS.undefined();}
+
+async JsValue gzipToStringAsync(JsValue data) {
+JsValue serializedData = serializeForCompression(data);
+JsValue compressed = (await (JS.assume((gzipCompress as JsValue)(serializedData, (Config as JsValue)["DEBUG"], object { "rethrow": true })) as Task<JsValue>));
+return (strFromU8 as JsValue)(JS.construct(Uint8Array, (await (JS.assume((compressed as JsValue)["arrayBuffer"]()) as Task<JsValue>))), true);
+return JS.undefined();}
+
+JsValue gzipField(JsValue data) {
+if (((((isArray as JsValue)(data) as JsValue) && ((((data as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {((_gzippedEmptyArray = if ((((((_gzippedEmptyArray as JsValue) !== (null as JsValue)) as JsValue) && (((_gzippedEmptyArray as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_gzippedEmptyArray as JsValue) } else { (gzipToString(JS.array()) as JsValue) }));
+return _gzippedEmptyArray;}
+return gzipToString(data);
+return JS.undefined();}
+
+async JsValue gzipFieldAsync(JsValue data) {
+if (((((isArray as JsValue)(data) as JsValue) && ((((data as JsValue)["length"] as JsValue) === (0.0 as JsValue)) as JsValue)) as JsValue).truthy()) {if ((_gzippedEmptyArray as JsValue).truthy()) {return _gzippedEmptyArray;}
+((_gzippedEmptyArrayPromise = if ((((((_gzippedEmptyArrayPromise as JsValue) !== (null as JsValue)) as JsValue) && (((_gzippedEmptyArrayPromise as JsValue) !== (JS.undefined() as JsValue)) as JsValue)) as JsValue).truthy()) { (_gzippedEmptyArrayPromise as JsValue) } else { ((((gzipToStringAsync as JsValue)(JS.array()) as JsValue)["then"]((JsValue compressed) => { 
+((_gzippedEmptyArray = compressed));
+return compressed;
+return JS.undefined(); }) as JsValue)["catch"]((JsValue error) => { 
+((_gzippedEmptyArray = JS.undefined()));
+((_gzippedEmptyArrayPromise = JS.undefined()));
+throw error;
+return JS.undefined(); }) as JsValue) }));
+return _gzippedEmptyArrayPromise;}
+return (gzipToStringAsync as JsValue)(data);
+return JS.undefined();}
+
+JsValue shouldCompressEvent(JsValue event) {
+return ((((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue) || (((((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["IncrementalSnapshot"] as JsValue)) as JsValue) && ((((((((event as JsValue)["data"] as JsValue)["source"] as JsValue) === ((IncrementalSource as JsValue)["Mutation"] as JsValue)) as JsValue) || (((((event as JsValue)["data"] as JsValue)["source"] as JsValue) === ((IncrementalSource as JsValue)["StyleSheetRule"] as JsValue)) as JsValue))) as JsValue))) as JsValue)));
+return JS.undefined();}
+
+JsValue shouldUseNativeAsyncSessionRecordingGzip(JsValue event) {
+return (((((_isNativeAsyncSessionRecordingGzipSupported as JsValue) && (!(_nativeAsyncSessionRecordingGzipDisabled as JsValue).truthy() as JsValue)) as JsValue) && (shouldCompressEvent(event) as JsValue)));
+return JS.undefined();}
+
+JsValue compressedResult(JsValue event) {
+return object { "event": event, "size": (estimateCompressedEventSize as JsValue)(event) };
+return JS.undefined();}
+
+JsValue buildCompressedFullSnapshotEvent(JsValue event, JsValue data) {
+return __lil_object_59(() => (event as JsValue), () => (data as JsValue), () => ("2024-10" as JsValue));
+return JS.undefined();}
+
+JsValue buildCompressedIncrementalEvent(JsValue event, JsValue fields) {
+return __lil_object_60(() => (event as JsValue), () => ("2024-10" as JsValue), () => (__lil_object_61(() => ((event as JsValue)["data"] as JsValue), () => (fields as JsValue)) as JsValue));
+return JS.undefined();}
+
+JsValue compressEventSync(JsValue event) {
+try {if (((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue).truthy()) {return compressedResult(buildCompressedFullSnapshotEvent(event, gzipToString((event as JsValue)["data"])));}
+if (((((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["IncrementalSnapshot"] as JsValue)) as JsValue) && (((((event as JsValue)["data"] as JsValue)["source"] as JsValue) === ((IncrementalSource as JsValue)["Mutation"] as JsValue)) as JsValue)) as JsValue).truthy()) {return compressedResult(buildCompressedIncrementalEvent(event, object { "texts": gzipField(((event as JsValue)["data"] as JsValue)["texts"]), "attributes": gzipField(((event as JsValue)["data"] as JsValue)["attributes"]), "removes": gzipField(((event as JsValue)["data"] as JsValue)["removes"]), "adds": gzipField(((event as JsValue)["data"] as JsValue)["adds"]) }));}
+if (((((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["IncrementalSnapshot"] as JsValue)) as JsValue) && (((((event as JsValue)["data"] as JsValue)["source"] as JsValue) === ((IncrementalSource as JsValue)["StyleSheetRule"] as JsValue)) as JsValue)) as JsValue).truthy()) {return compressedResult(buildCompressedIncrementalEvent(event, object { "adds": if ((((event as JsValue)["data"] as JsValue)["adds"] as JsValue).truthy()) { (gzipToString(((event as JsValue)["data"] as JsValue)["adds"]) as JsValue) } else { (JS.undefined() as JsValue) }, "removes": if ((((event as JsValue)["data"] as JsValue)["removes"] as JsValue).truthy()) { (gzipToString(((event as JsValue)["data"] as JsValue)["removes"]) as JsValue) } else { (JS.undefined() as JsValue) } }));}} catch (JsValue e) {((logger as JsValue)["warn"]("could not compress event - will use uncompressed event", e));}
+return object { "event": event, "size": (estimateSize as JsValue)(event) };
+return JS.undefined();}
+
+async JsValue compressEventAsync(JsValue event) {
+try {if (((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue).truthy()) {return compressedResult(buildCompressedFullSnapshotEvent(event, (await (JS.assume((gzipToStringAsync as JsValue)((event as JsValue)["data"])) as Task<JsValue>))));}
+if (((((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["IncrementalSnapshot"] as JsValue)) as JsValue) && (((((event as JsValue)["data"] as JsValue)["source"] as JsValue) === ((IncrementalSource as JsValue)["Mutation"] as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue __port_62 = (await (JS.assume((Promise as JsValue)["all"](JS.array((gzipFieldAsync as JsValue)(((event as JsValue)["data"] as JsValue)["texts"]), (gzipFieldAsync as JsValue)(((event as JsValue)["data"] as JsValue)["attributes"]), (gzipFieldAsync as JsValue)(((event as JsValue)["data"] as JsValue)["removes"]), (gzipFieldAsync as JsValue)(((event as JsValue)["data"] as JsValue)["adds"])))) as Task<JsValue>));
+JsValue texts = JS.undefined();
+JsValue attributes = JS.undefined();
+JsValue removes = JS.undefined();
+JsValue adds = JS.undefined();
+int __port_63 = 0;
+for (JsValue __port_64 of __port_62) {
+if (__port_63 === 0) { texts = __port_64; }
+if (__port_63 === 1) { attributes = __port_64; }
+if (__port_63 === 2) { removes = __port_64; }
+if (__port_63 === 3) { adds = __port_64; }
+__port_63 += 1; if (__port_63 === 4) break;
+}
+return compressedResult(buildCompressedIncrementalEvent(event, object { "texts": texts, "attributes": attributes, "removes": removes, "adds": adds }));}
+if (((((((event as JsValue)["type"] as JsValue) === ((EventType as JsValue)["IncrementalSnapshot"] as JsValue)) as JsValue) && (((((event as JsValue)["data"] as JsValue)["source"] as JsValue) === ((IncrementalSource as JsValue)["StyleSheetRule"] as JsValue)) as JsValue)) as JsValue).truthy()) {JsValue __port_65 = (await (JS.assume((Promise as JsValue)["all"](JS.array(if ((((event as JsValue)["data"] as JsValue)["adds"] as JsValue).truthy()) { ((gzipToStringAsync as JsValue)(((event as JsValue)["data"] as JsValue)["adds"]) as JsValue) } else { (JS.undefined() as JsValue) }, if ((((event as JsValue)["data"] as JsValue)["removes"] as JsValue).truthy()) { ((gzipToStringAsync as JsValue)(((event as JsValue)["data"] as JsValue)["removes"]) as JsValue) } else { (JS.undefined() as JsValue) }))) as Task<JsValue>));
+JsValue adds = JS.undefined();
+JsValue removes = JS.undefined();
+int __port_66 = 0;
+for (JsValue __port_67 of __port_65) {
+if (__port_66 === 0) { adds = __port_67; }
+if (__port_66 === 1) { removes = __port_67; }
+__port_66 += 1; if (__port_66 === 2) break;
+}
+return compressedResult(buildCompressedIncrementalEvent(event, object { "adds": adds, "removes": removes }));}} catch (JsValue e) {if (((isNativeAsyncGzipError as JsValue)(e) as JsValue).truthy()) {((_nativeAsyncSessionRecordingGzipDisabled = true));}
+((logger as JsValue)["warn"]("could not compress event asynchronously - trying synchronous compression", e));
+return compressEventSync(event);}
+return object { "event": event, "size": (estimateSize as JsValue)(event) };
+return JS.undefined();}
+
+JsValue isCustomEvent(JsValue e, JsValue tag) {
+return (((((e as JsValue)["type"] as JsValue) === ((EventType as JsValue)["Custom"] as JsValue)) as JsValue) && (((((e as JsValue)["data"] as JsValue)["tag"] as JsValue) === (tag as JsValue)) as JsValue));
+return JS.undefined();}
+
+JsValue isSessionIdleEvent(JsValue e) {
+return isCustomEvent(e, "sessionIdle");
+return JS.undefined();}
+
+JsValue getSessionIdlePayload(JsValue e) {
+return if ((isSessionIdleEvent(e) as JsValue).truthy()) { (((e as JsValue)["data"] as JsValue)["payload"] as JsValue) } else { (null as JsValue) };
+return JS.undefined();}
+
+JsValue isSessionEndingEvent(JsValue e) {
+return isCustomEvent(e, "$session_ending");
+return JS.undefined();}
+
+JsValue getSessionEndingPayload(JsValue e) {
+return if ((isSessionEndingEvent(e) as JsValue).truthy()) { (((e as JsValue)["data"] as JsValue)["payload"] as JsValue) } else { (null as JsValue) };
+return JS.undefined();}
+
+JsValue isSessionStartingEvent(JsValue e) {
+return isCustomEvent(e, "$session_starting");
+return JS.undefined();}
+
+JsValue getSessionStartingPayload(JsValue e) {
+return if ((isSessionStartingEvent(e) as JsValue).truthy()) { (((e as JsValue)["data"] as JsValue)["payload"] as JsValue) } else { (null as JsValue) };
+return JS.undefined();}
+
+JsValue isAllowedWhenIdle(JsValue e) {
+return ((((isSessionIdleEvent(e) as JsValue) || (isSessionEndingEvent(e) as JsValue)) as JsValue) || (isSessionStartingEvent(e) as JsValue));
+return JS.undefined();}
+
+JsValue isMirrorDesyncingWhenDropped(JsValue e) {
+if (((((((e as JsValue)["type"] as JsValue) === ((EventType as JsValue)["FullSnapshot"] as JsValue)) as JsValue) || ((((e as JsValue)["type"] as JsValue) === ((EventType as JsValue)["Meta"] as JsValue)) as JsValue)) as JsValue).truthy()) {return true;}
+return (((((e as JsValue)["type"] as JsValue) === ((EventType as JsValue)["IncrementalSnapshot"] as JsValue)) as JsValue) && (((((e as JsValue)["data"] as JsValue)["source"] as JsValue) !== ((IncrementalSource as JsValue)["CanvasMutation"] as JsValue)) as JsValue));
+return JS.undefined();}
+
+JsValue isRecordingPausedEvent(JsValue e) {
+return (((((e as JsValue)["type"] as JsValue) === ((EventType as JsValue)["Custom"] as JsValue)) as JsValue) && (((((e as JsValue)["data"] as JsValue)["tag"] as JsValue) === ("recording paused" as JsValue)) as JsValue));
+return JS.undefined();}
+
+async JsValue __port_28(JsValue __port_29, JsValue event, JsValue compressionEnabled, JsValue queuedEvent) {try {if (((queuedEvent as JsValue)["processed"] as JsValue).truthy()) {return JS.undefined();}
+JsValue eventToSend = JS.undefined();
+JsValue size = JS.undefined();
+try {JsValue result = if ((compressionEnabled as JsValue).truthy()) { (if ((shouldUseNativeAsyncSessionRecordingGzip(event) as JsValue).truthy()) { ((await (JS.assume((compressEventAsync as JsValue)(event)) as Task<JsValue>)) as JsValue) } else { (compressEventSync(event) as JsValue) } as JsValue) } else { (object { "event": event, "size": (estimateSize as JsValue)(event) } as JsValue) };
+((eventToSend = (result as JsValue)["event"]));
+((size = (result as JsValue)["size"]));} catch (JsValue e) {((logger as JsValue)["warn"]("could not process queued compression event - will use uncompressed event", e));
+((eventToSend = event));
+((size = (estimateSize as JsValue)(event)));}
+((__port_29 as JsValue)["_captureQueuedCompressionEvent"](queuedEvent, eventToSend, size));} finally {((__port_29 as JsValue)["_finishQueuedCompressionEvent"](queuedEvent));}
+return JS.undefined();}
+export { __port_0 as RECORDING_REMOTE_CONFIG_TTL_MS };
+export { __port_1 as SEVEN_MEGABYTES };
+export { __port_2 as splitBuffer };
+export { RECORDING_IDLE_THRESHOLD_MS as RECORDING_IDLE_THRESHOLD_MS };
+export { RECORDING_MAX_EVENT_SIZE as RECORDING_MAX_EVENT_SIZE };
+export { RECORDING_BUFFER_TIMEOUT as RECORDING_BUFFER_TIMEOUT };
+export { SESSION_RECORDING_BATCH_KEY as SESSION_RECORDING_BATCH_KEY };
+export { PENDING_BUFFER_STORAGE_SUFFIX as PENDING_BUFFER_STORAGE_SUFFIX };

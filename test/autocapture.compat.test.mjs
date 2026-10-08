@@ -165,7 +165,7 @@ describe("browser-common autocapture utility compatibility", () => {
   })
 
   it("matches Angular attributes and the legacy elements-chain serialization", () => {
-    for (const name of ["_ngcontent-ab1", "_nghost-x", "ngcontent", "data-id"]) {
+    for (const name of ["_ngcontent-ab1", "_nghost-x", "ngcontent", "data-id", null, undefined, 42, {}, [], new String("_ngcontent-boxed"), new String("_nghost-boxed")]) {
       same("isAngularStyleAttr", [name])
     }
     const cases = [

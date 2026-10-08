@@ -1,0 +1,86 @@
+{
+  "source": "packages/browser/src/extensions/browser-client.ts",
+  "implementation": "src/sdk/browser-client.lil",
+  "exports": [
+    "BrowserClientAdapter"
+  ],
+  "classMembers": [
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_logger",
+      "kind": "get",
+      "name": "logger"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_distinctId",
+      "kind": "get",
+      "name": "distinctId"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_anonymousId",
+      "kind": "get",
+      "name": "anonymousId"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_deviceId",
+      "kind": "get",
+      "name": "deviceId"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_library",
+      "kind": "get",
+      "name": "library"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_initialPersonProperties",
+      "kind": "get",
+      "name": "initialPersonProperties"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_groups",
+      "kind": "get",
+      "name": "groups"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_session",
+      "kind": "get",
+      "name": "session"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_canCapture",
+      "kind": "get",
+      "name": "canCapture"
+    },
+    {
+      "class": "BrowserClientAdapter",
+      "implementation": "__lil_get_projectToken",
+      "kind": "get",
+      "name": "projectToken"
+    }
+  ],
+  "classBases": [],
+  "objectLiterals": [
+    {
+      "intrinsic": "__lil_object_0",
+      "arguments": 2,
+      "fields": [
+        {
+          "kind": "computed",
+          "key": 0,
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "localFunctions": [],
+  "asyncClosures": [],
+  "qualified": false
+}
