@@ -1,0 +1,415 @@
+// packages/browser/src/site-apps.ts
+// `posthog.siteApps` keeps upstream's public members (`apps`, the `isEnabled` and `siteAppLoaders`
+// getters, `initialize`, `globalsForEvent`, `setupSiteApp`, `onRemoteConfig`); `_instance` is a
+// reserved (unmangled) name upstream, so it stays a field of that name. Site apps, their loaders
+// and the events handed to them are page or server data and stay `JsValue`.
+import { isNull } from "../core/utils/type-utils.lil";
+import extern { document } from "@upstream/browser-common/utils/globals";
+import extern { assignableWindow } from "@upstream/browser/utils/globals";
+import extern { createLogger } from "@upstream/browser-common/utils/logger";
+extern JsValue document;
+extern JsValue assignableWindow;
+extern JsValue createLogger;
+extern JsValue Object;
+extern JsValue Error;
+extern JsValue WeakSet;
+
+JsValue logger = createLogger("[SiteApps]");
+string APP_INIT_ERROR = "Error while initializing PostHog app with config id ";
+
+export class SiteApps {
+  JsValue _instance;
+  float _siteAppElementPatchCount = 0.0;
+  JsValue[] _bufferedInvocations;
+  JsValue apps;
+  JsValue _stopBuffering = undefined;
+  JsValue _restoreSiteAppElementPatches = undefined;
+
+  init(JsValue _instance) {
+    this._instance = _instance;
+    // events captured between loading posthog-js and the site app; up to 1000 events
+    this._bufferedInvocations = [];
+    this.apps = object {};
+  }
+
+  void initialize() {
+    if ((this as JsValue).isEnabled.truthy()) {
+      SiteApps self = this;
+      JsValue stop = this._instance._addCaptureHook((JsValue eventName, JsValue eventPayload) => {
+        eventCollector(self, eventPayload);
+      });
+      this._stopBuffering = () => {
+        stop();
+        self._bufferedInvocations = [];
+        self._stopBuffering = undefined;
+      };
+    }
+  }
+
+  JsValue globalsForEvent(JsValue event) {
+    if (!event.truthy()) {
+      throw new Error("Event payload is required");
+    }
+    JsValue groups = object {};
+    JsValue groupIds = this._instance.get_property("$groups") || ([] as JsValue);
+    JsValue groupProperties = this._instance.get_property("$stored_group_properties") || object {};
+    for (JsValue entry of Object.entries(groupProperties)) {
+      JsValue type = entry[0];
+      JsValue properties = entry[1];
+      groups[type] = object { id: groupIds[type], type: type, properties: properties };
+    }
+    // `const { $set_once, $set, ...rest } = event`
+    JsValue setOnce = event.$set_once;
+    JsValue set = event.$set;
+    JsValue globalsEvent = object {};
+    for (JsValue key of Object.keys(event)) {
+      if (key !== "$set_once" && key !== "$set") {
+        globalsEvent[key] = event[key];
+      }
+    }
+    JsValue properties = Object.assign(object {}, event.properties);
+    if (set.truthy()) {
+      JsValue eventProperties = event.properties;
+      JsValue existing = (if (eventProperties == null) { undefined } else { eventProperties.$set }) ?? object {};
+      properties.$set = Object.assign(object {}, existing, set);
+    }
+    if (setOnce.truthy()) {
+      JsValue eventProperties = event.properties;
+      JsValue existing = (if (eventProperties == null) { undefined } else { eventProperties.$set_once }) ?? object {};
+      properties.$set_once = Object.assign(object {}, existing, setOnce);
+    }
+    globalsEvent.properties = properties;
+    JsValue chainProperties = event.properties;
+    globalsEvent.elements_chain = (if (chainProperties == null) { undefined } else { chainProperties.$elements_chain }) ?? "";
+    JsValue idProperties = event.properties;
+    globalsEvent.distinct_id = if (idProperties == null) { undefined } else { idProperties.distinct_id };
+    return object {
+      event: globalsEvent,
+      person: object {
+        properties: this._instance.get_property("$stored_person_properties")
+      },
+      groups: groups
+    };
+  }
+
+  void setupSiteApp(JsValue loader) {
+    SiteApps self = this;
+    JsValue app = this.apps[loader.id];
+    func()->void processBufferedEvents = () => {
+      if (!app.errored.truthy() && self._bufferedInvocations.length > 0) {
+        logger.info(`Processing ${self._bufferedInvocations.length} events for site app with id ${loader.id}`);
+        self._bufferedInvocations.forEach((JsValue globals) => {
+          runWithPreparedSiteAppElements(self, (JsValue restore) => processEvent(app, globals), true);
+        });
+        app.processedBuffer = true;
+      }
+      if (Object.values(self.apps).every((JsValue other) => other.processedBuffer || other.errored).truthy()) {
+        if (self._stopBuffering != null) {
+          self._stopBuffering();
+        }
+      }
+    };
+
+    bool hasInitReturned = false;
+    func(bool)->void onLoaded = (bool success) => {
+      app.errored = !success;
+      app.loaded = true;
+      logger.info(`Site app with id ${loader.id} ${if (success) { "loaded" } else { "errored" }}`);
+      // processBufferedEvents waits until init() has returned and processEvent is set up
+      if (hasInitReturned) {
+        processBufferedEvents();
+      }
+    };
+
+    try {
+      JsValue initResult = runWithPreparedSiteAppElements(this, (JsValue restore) => loader.init(object {
+        posthog: self._instance,
+        callback: (JsValue success) => {
+          restore();
+          onLoaded(success as bool);
+        }
+      }), false);
+      JsValue appProcessEvent = initResult.processEvent;
+      if (appProcessEvent.truthy()) {
+        app.processEvent = appProcessEvent;
+      }
+      hasInitReturned = true;
+    } catch (JsValue e) {
+      logger.error(APP_INIT_ERROR + loader.id, e);
+      onLoaded(false);
+    }
+
+    // an app that loaded synchronously processes the buffered events now
+    if (hasInitReturned && app.loaded.truthy()) {
+      try {
+        processBufferedEvents();
+      } catch (JsValue e) {
+        logger.error(`Error while processing buffered events PostHog app with config id ${loader.id}`, e);
+        app.errored = true;
+      }
+    }
+  }
+
+  void onRemoteConfig(JsValue result) {
+    JsValue receiver = this as JsValue;
+    JsValue loaders = receiver.siteAppLoaders;
+    if ((if (loaders == null) { undefined } else { loaders["length"] }).truthy()) {
+      if (!receiver.isEnabled.truthy()) {
+        logger.error("PostHog site apps are disabled. Enable the \"opt_in_site_apps\" config to proceed.");
+        return;
+      }
+      setupSiteApps(this);
+      // NOTE: this could only fire when there are listeners for the event
+      SiteApps self = this;
+      this._instance.on("eventCaptured", (JsValue event) => {
+        onCapturedEvent(self, event);
+      });
+      return;
+    }
+
+    // Below is only the fallback for legacy site app support.
+    if (this._stopBuffering != null) {
+      this._stopBuffering();
+    }
+    // A failed fetch has no legacy site apps to load; buffering has already been stopped above.
+    if (!result.ok.truthy()) {
+      return;
+    }
+    JsValue response = result.config;
+    JsValue siteApps = response.siteApps;
+    if (!(if (siteApps == null) { undefined } else { siteApps["length"] }).truthy()) {
+      return;
+    }
+    if (!receiver.isEnabled.truthy()) {
+      logger.error("PostHog site apps are disabled. Enable the \"opt_in_site_apps\" config to proceed.");
+      return;
+    }
+    for (JsValue siteApp of response.siteApps) {
+      JsValue id = siteApp.id;
+      JsValue url = siteApp.url;
+      assignableWindow[`__$$ph_site_app_${id}`] = this._instance;
+      JsValue extensions = assignableWindow.__PosthogExtensions__;
+      JsValue loadSiteApp = if (extensions == null) { undefined } else { extensions.loadSiteApp };
+      if (loadSiteApp != null) {
+        loadSiteApp.call(extensions, this._instance, url, (JsValue err) => {
+          if (err.truthy()) {
+            return logger.error(APP_INIT_ERROR + id, err);
+          }
+          return undefined;
+        });
+      }
+    }
+  }
+}
+export constructor SiteApps;
+
+JsValue proto = (SiteApps as JsValue).prototype;
+Object.defineProperty(proto, "isEnabled", object {
+  get: (this JsValue receiver) => (receiver as SiteApps)._instance.config.opt_in_site_apps.truthy(),
+  configurable: true
+});
+Object.defineProperty(proto, "siteAppLoaders", object {
+  get: (this JsValue receiver) => {
+    JsValue remoteConfig = assignableWindow._POSTHOG_REMOTE_CONFIG;
+    JsValue forToken = if (remoteConfig == null) { undefined } else { remoteConfig[(receiver as SiteApps)._instance.config.token] };
+    return if (forToken == null) { undefined } else { forToken.siteApps };
+  },
+  configurable: true
+});
+
+// `app.processEvent?.(globals)`
+JsValue processEvent(JsValue app, JsValue globals) {
+  JsValue handler = app.processEvent;
+  return if (handler == null) { undefined } else { handler.call(app, globals) };
+}
+
+void eventCollector(SiteApps self, JsValue eventPayload) {
+  if (!eventPayload.truthy()) {
+    return;
+  }
+  JsValue globals = (self as JsValue).globalsForEvent(eventPayload);
+  self._bufferedInvocations.push(globals);
+  if (self._bufferedInvocations.length > 1000) {
+    self._bufferedInvocations = self._bufferedInvocations.slice(10);
+  }
+}
+
+JsValue prepareElementForSiteApp(SiteApps self, JsValue element) {
+  JsValue tag = element.tagName;
+  JsValue tagName = if (tag == null) { undefined } else { tag.toLowerCase() };
+  if (tagName === "style" && self._instance.config.prepare_external_dependency_stylesheet.truthy()) {
+    JsValue prepared = self._instance.config.prepare_external_dependency_stylesheet(element);
+    if (!prepared.truthy()) {
+      logger.error("prepare_external_dependency_stylesheet returned null");
+      return null;
+    }
+    return prepared;
+  }
+  if (tagName === "script" && self._instance.config.prepare_external_dependency_script.truthy()) {
+    JsValue prepared = self._instance.config.prepare_external_dependency_script(element);
+    if (!prepared.truthy()) {
+      logger.error("prepare_external_dependency_script returned null");
+      return null;
+    }
+    return prepared;
+  }
+  return element;
+}
+
+JsValue noop = () => {};
+
+// Node insertion methods are wrapped while site app code runs, so the page's
+// `prepare_external_dependency_*` hooks see the elements a site app inserts.
+JsValue patchSiteAppElementInsertionMethods(SiteApps self) {
+  if (!self._instance.config.prepare_external_dependency_stylesheet.truthy() && !self._instance.config.prepare_external_dependency_script.truthy()) {
+    return () => {};
+  }
+  JsValue win = if (document == null) { undefined } else { document.defaultView };
+  JsValue nodeClass = if (win == null) { undefined } else { win.Node };
+  JsValue nodePrototype = if (nodeClass == null) { undefined } else { nodeClass.prototype };
+  if (!win.truthy() || !nodePrototype.truthy()) {
+    return () => {};
+  }
+
+  self._siteAppElementPatchCount += 1.0;
+
+  if (self._restoreSiteAppElementPatches.truthy()) {
+    return releaseSiteAppElementPatches(self);
+  }
+
+  (func()->void)[] restore = [];
+  JsValue preparedNodes = new WeakSet();
+  func(JsValue, string, func(JsValue)->JsValue)->void patch = (JsValue prototype, string method, func(JsValue)->JsValue replacement) => {
+    if (!(if (prototype == null) { undefined } else { prototype[method] }).truthy()) {
+      return;
+    }
+    JsValue original = prototype[method];
+    prototype[method] = replacement(original);
+    restore.push(() => {
+      prototype[method] = original;
+    });
+  };
+  func(JsValue)->JsValue prepareNode = (JsValue node) => {
+    if (preparedNodes.has(node).truthy()) {
+      return node;
+    }
+    JsValue prepared = prepareElementForSiteApp(self, node);
+    if (prepared.truthy()) {
+      preparedNodes.add(prepared);
+    }
+    return prepared;
+  };
+  func(JsValue[])->JsValue[] prepareNodes = (JsValue[] nodes) => nodes
+    .map((JsValue node) => if (node is string) { node } else { prepareNode(node) })
+    .filter((JsValue node) => !isNull(node));
+
+  patch(nodePrototype, "appendChild", (JsValue original) => JS.method1((JsValue receiver, JsValue child) => {
+    JsValue prepared = prepareNode(child);
+    return if (prepared.truthy()) { original.call(receiver, prepared) } else { child };
+  }));
+  patch(nodePrototype, "insertBefore", (JsValue original) => JS.method2((JsValue receiver, JsValue newChild, JsValue refChild) => {
+    JsValue prepared = prepareNode(newChild);
+    return if (prepared.truthy()) { original.call(receiver, prepared, refChild) } else { newChild };
+  }));
+  patch(nodePrototype, "replaceChild", (JsValue original) => JS.method2((JsValue receiver, JsValue newChild, JsValue oldChild) => {
+    JsValue prepared = prepareNode(newChild);
+    return if (prepared.truthy()) { original.call(receiver, prepared, oldChild) } else { oldChild };
+  }));
+  JsValue element = win.Element;
+  JsValue documentClass = win.Document;
+  JsValue fragment = win.DocumentFragment;
+  JsValue[] parents = [
+    if (element == null) { undefined } else { element.prototype },
+    if (documentClass == null) { undefined } else { documentClass.prototype },
+    if (fragment == null) { undefined } else { fragment.prototype }
+  ];
+  parents.forEach((JsValue prototype) => {
+    patch(prototype, "append", (JsValue original) => (this JsValue receiver, JsValue... nodes) => original.apply(receiver, prepareNodes(nodes)));
+    patch(prototype, "prepend", (JsValue original) => (this JsValue receiver, JsValue... nodes) => original.apply(receiver, prepareNodes(nodes)));
+  });
+  JsValue elementAgain = win.Element;
+  JsValue characterData = win.CharacterData;
+  JsValue documentType = win.DocumentType;
+  JsValue[] children = [
+    if (elementAgain == null) { undefined } else { elementAgain.prototype },
+    if (characterData == null) { undefined } else { characterData.prototype },
+    if (documentType == null) { undefined } else { documentType.prototype }
+  ];
+  children.forEach((JsValue prototype) => {
+    patch(prototype, "before", (JsValue original) => (this JsValue receiver, JsValue... nodes) => original.apply(receiver, prepareNodes(nodes)));
+    patch(prototype, "after", (JsValue original) => (this JsValue receiver, JsValue... nodes) => original.apply(receiver, prepareNodes(nodes)));
+    patch(prototype, "replaceWith", (JsValue original) => (this JsValue receiver, JsValue... nodes) => {
+      JsValue[] prepared = prepareNodes(nodes);
+      return if (nodes.length > 0 && prepared.length == 0) { undefined } else { original.apply(receiver, prepared) };
+    });
+  });
+  JsValue elementForAdjacent = win.Element;
+  patch(if (elementForAdjacent == null) { undefined } else { elementForAdjacent.prototype }, "insertAdjacentElement", (JsValue original) => JS.method2((JsValue receiver, JsValue position, JsValue insertedElement) => {
+    JsValue prepared = prepareNode(insertedElement);
+    return if (prepared.truthy()) { original.call(receiver, position, prepared) } else { null };
+  }));
+
+  self._restoreSiteAppElementPatches = () => {
+    restore.forEach((func()->void undo) => {
+      undo();
+    });
+    self._restoreSiteAppElementPatches = undefined;
+  };
+
+  return releaseSiteAppElementPatches(self);
+}
+
+JsValue releaseSiteAppElementPatches(SiteApps self) {
+  bool released = false;
+  return () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    self._siteAppElementPatchCount -= 1.0;
+    if (self._siteAppElementPatchCount == 0.0) {
+      if (self._restoreSiteAppElementPatches != null) {
+        self._restoreSiteAppElementPatches();
+      }
+    }
+  };
+}
+
+JsValue runWithPreparedSiteAppElements(SiteApps self, func(JsValue)->JsValue callback, bool restoreSynchronously) {
+  JsValue restore = patchSiteAppElementInsertionMethods(self);
+  try {
+    JsValue result = callback(restore);
+    if (restoreSynchronously) {
+      restore();
+    }
+    return result;
+  } catch (JsValue e) {
+    restore();
+    throw e;
+  }
+}
+
+void setupSiteApps(SiteApps self) {
+  JsValue siteAppLoaders = (self as JsValue).siteAppLoaders || ([] as JsValue);
+  // two passes, so that apps is populated before init is called
+  for (JsValue loader of siteAppLoaders) {
+    self.apps[loader.id] = object { id: loader.id, loaded: false, errored: false, processedBuffer: false };
+  }
+  for (JsValue loader of siteAppLoaders) {
+    (self as JsValue).setupSiteApp(loader);
+  }
+}
+
+void onCapturedEvent(SiteApps self, JsValue event) {
+  if (Object.keys(self.apps)["length"] === 0) {
+    return;
+  }
+  JsValue globals = (self as JsValue).globalsForEvent(event);
+  for (JsValue app of Object.values(self.apps)) {
+    try {
+      runWithPreparedSiteAppElements(self, (JsValue restore) => processEvent(app, globals), true);
+    } catch (JsValue e) {
+      logger.error(`Error while processing event ${event.event} for site app ${app.id}`, e);
+    }
+  }
+}
